@@ -1,9 +1,10 @@
-SELECT trn.status, tr.id
-FROM tap_res tr
-JOIN tap_res_new trn ON tr.result_id = trn.result_id
-WHERE trn.status IN ('failure', 'success')
-  AND tr.date = (
-    SELECT MAX(date)
-    FROM tap_res tr_inner
-    WHERE tr_inner.result_id = tr.result_id
-  );
+SELECT
+  tap_res.result_id,
+  tap_res.id,
+  tap_res.date,
+  tap_res_new.status
+FROM tap_res
+LEFT JOIN tap_res_new ON tap_res.result_id = tap_res_new.result_id
+WHERE tap_res_new.status IS NOT NULL
+GROUP BY tap_res.result_id, tap_res_new.status
+ORDER BY tap_res.date DESC;
