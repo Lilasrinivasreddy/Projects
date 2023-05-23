@@ -1,25 +1,12 @@
-UPDATE
-  Tapsium_AIML.dummy_results_data
-SET
-  date1 = (
-    SELECT
-      MAX(date)
-    FROM
-      (
-        SELECT
-          result_id,
-          date,
-          status,
-          ROW_NUMBER() OVER (PARTITION BY status ORDER BY date DESC) AS rn
-        FROM
-          Tapsium_AIML.dummy_results_data
-        LEFT JOIN
-          Tapsium_AIML.new_results_data
-          ON
-            Tapsium_AIML.dummy_results_data.result_id = Tapsium_AIML.new_results_data.result_id
-      ) AS t
-    WHERE
-      rn = 1
-  )
+SELECT
+  CASE
+    WHEN n.status = 'failure' THEN d.id
+    WHEN n.status = 'success' THEN d.id
+  END AS result_id,
+  n.status
+FROM Tapsium_AIML.dummy_results_data d
+JOIN Tapsium_AIML.new_results_data n ON d.result_id = n.result_id
 WHERE
-  status IN ('failure', 'success');
+  (n.status = 'failure' AND d.date1 = (SELECT MAX(date1) FROM Tapsium_AIML.dummy_results_data WHERE result_id = n.result_id))
+  OR
+  (n.status = 'success' AND d.date1 = (SELECT MAX(date1) FROM Tapsium_AIML.dummy_results_data WHERE result_id = n.result_id))
