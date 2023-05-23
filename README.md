@@ -1,10 +1,19 @@
 SELECT
-  tap_res.result_id,
-  tap_res.id,
-  tap_res.date,
-  tap_res_new.status
-FROM tap_res
-LEFT JOIN tap_res_new ON tap_res.result_id = tap_res_new.result_id
-WHERE tap_res_new.status IS NOT NULL
-GROUP BY tap_res.result_id, tap_res_new.status
-ORDER BY tap_res.date DESC;
+  result_id,
+  status,
+  date
+FROM
+  (
+    SELECT
+      result_id,
+      status,
+      date,
+      ROW_NUMBER() OVER (PARTITION BY status ORDER BY date DESC) AS rn
+    FROM
+      Tapsium_AIML.dummy_results_data
+    JOIN
+      Tapsium_AIML.new_results_data
+      ON dummy_results_data.result_id = new_results_data.result_id
+  ) AS t
+WHERE
+  rn = 1;
