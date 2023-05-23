@@ -11,6 +11,6 @@ FROM
   ) AS nd
 JOIN Tapsium_AIML.new_results_data AS sd ON nd.result_id = sd.result_id
 WHERE
-  (status = 'failure' AND date1 = nd.max_date)
+  (status = 'failure' AND nd.max_date = (SELECT MAX(date1) FROM Tapsium_AIML.dummy_results_data))
   OR
-  (status = 'success' AND date1 = nd.max_date);
+  (status = 'success' AND nd.max_date = (SELECT MAX(date1) FROM Tapsium_AIML.dummy_results_data));
