@@ -1,35 +1,25 @@
-SELECT
-  result_id,
-  id,
-  date,
-  status
-FROM
+UPDATE
   Tapsium_AIML.dummy_results_data
-LEFT JOIN
-  Tapsium_AIML.new_results_data
-ON
-  Tapsium_AIML.dummy_results_data.result_id = Tapsium_AIML.new_results_data.result_id
+SET
+  date1 = (
+    SELECT
+      MAX(date)
+    FROM
+      (
+        SELECT
+          result_id,
+          date,
+          status,
+          ROW_NUMBER() OVER (PARTITION BY status ORDER BY date DESC) AS rn
+        FROM
+          Tapsium_AIML.dummy_results_data
+        LEFT JOIN
+          Tapsium_AIML.new_results_data
+          ON
+            Tapsium_AIML.dummy_results_data.result_id = Tapsium_AIML.new_results_data.result_id
+      ) AS t
+    WHERE
+      rn = 1
+  )
 WHERE
-  status = 'failure'
-ORDER BY
-  date DESC
-LIMIT
-  1
-UNION ALL
-SELECT
-  result_id,
-  id,
-  date,
-  status
-FROM
-  Tapsium_AIML.dummy_results_data
-LEFT JOIN
-  Tapsium_AIML.new_results_data
-ON
-  Tapsium_AIML.dummy_results_data.result_id = Tapsium_AIML.new_results_data.result_id
-WHERE
-  status = 'success'
-ORDER BY
-  date DESC
-LIMIT
-  1;
+  status IN ('failure', 'success');
