@@ -76,3 +76,43 @@ def extract_text_between_texts(target_text):
     bill_values = pd.DataFrame(dollar_values[:-2]).T
     
     return bill_values
+    
+    
+    import mysql.connector
+
+def insert_into_mysql_db(host, user, password, database, data):
+    try:
+        # Connect to the MySQL database
+        conn = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database
+        )
+        
+        # Create a cursor object to execute SQL queries
+        cursor = conn.cursor()
+        
+        # SQL query to insert data into the table
+        sql = "INSERT INTO your_table_name (column1, column2, column3) VALUES (%s, %s, %s)"
+        
+        # Execute the query for each set of data
+        for item in data:
+            # Assuming data is a list of tuples, modify this part based on your data structure
+            cursor.execute(sql, item)
+        
+        # Commit the changes to the database
+        conn.commit()
+        
+        print("Data inserted successfully into MySQL database")
+        
+    except mysql.connector.Error as error:
+        print(f"Error inserting data into MySQL database: {error}")
+        
+    finally:
+        # Close the cursor and database connection
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+            print("MySQL connection is closed")
+
