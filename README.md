@@ -1,23 +1,33 @@
-import pandas as pd
+import os
+import csv
 
-# Define the hardcoded latitude and longitude values
-state_coordinates = {
-    'CA': {'Latitude': 36.7783, 'Longitude': -119.4179},
-    'FL': {'Latitude': 27.7663, 'Longitude': -81.6868},
-    'GA': {'Latitude': 32.1656, 'Longitude': -82.9001},
-    'IL': {'Latitude': 39.7817, 'Longitude': -89.6501},
-    'NJ': {'Latitude': 40.0583, 'Longitude': -74.4057},
-    'NY': {'Latitude': 43.2994, 'Longitude': -74.2179},
-    'OH': {'Latitude': 40.4173, 'Longitude': -82.9071},
-    'PA': {'Latitude': 41.2033, 'Longitude': -77.1945},
-    'TX': {'Latitude': 31.9686, 'Longitude': -99.9018}
-}
+# Path to the parent folder containing all the folders
+parent_folder = 'path_to_parent_folder'
 
-# Load your DataFrame with the 'State' column
-df = pd.read_csv('your_data.csv')  # Replace 'your_data.csv' with your actual data file
+consolidated_file_path = 'path_to_save_consolidated_file.csv'
 
-# Add latitude and longitude columns based on the 'State' column
-df[['Latitude', 'Longitude']] = df['State'].map(state_coordinates)
+# Open the consolidated file in write mode
+with open(consolidated_file_path, 'w', newline='') as consolidated_file:
+    writer = csv.writer(consolidated_file)
 
-# Print the resulting DataFrame
-print(df)
+    # Iterate over each folder
+    for folder_name in os.listdir(parent_folder):
+        folder_path = os.path.join(parent_folder, folder_name)
+
+        # Check if the path is a directory
+        if os.path.isdir(folder_path):
+            # Iterate over each file in the folder
+            for file_name in os.listdir(folder_path):
+                file_path = os.path.join(folder_path, file_name)
+
+                # Check if the file is a CSV file
+                if file_name.endswith('.csv'):
+                    # Open the CSV file and read its contents
+                    with open(file_path, 'r') as csv_file:
+                        reader = csv.reader(csv_file)
+                        file_data = list(reader)
+
+                    # Write the contents of the CSV file to the consolidated file
+                    writer.writerows(file_data)
+
+print("Consolidation complete!")
