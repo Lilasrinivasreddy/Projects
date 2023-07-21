@@ -1,33 +1,22 @@
-import os
-import csv
+import pandas as pd
 
-# Path to the parent folder containing all the folders
-parent_folder = 'path_to_parent_folder'
+def merge_csv_files(file1, file2, join_columns):
+    # Read CSV files into pandas DataFrames
+    df1 = pd.read_csv(file1)
+    df2 = pd.read_csv(file2)
+    
+    # Merge DataFrames using inner join on specified columns
+    merged_df = pd.merge(df1, df2, on=join_columns, how='inner')
+    
+    # Return the merged DataFrame
+    return merged_df
 
-consolidated_file_path = 'path_to_save_consolidated_file.csv'
+# Example usage
+file1 = 'file1.csv'
+file2 = 'file2.csv'
+join_columns = ['column1', 'column2']  # Specify the columns to join on
 
-# Open the consolidated file in write mode
-with open(consolidated_file_path, 'w', newline='') as consolidated_file:
-    writer = csv.writer(consolidated_file)
+merged_data = merge_csv_files(file1, file2, join_columns)
 
-    # Iterate over each folder
-    for folder_name in os.listdir(parent_folder):
-        folder_path = os.path.join(parent_folder, folder_name)
-
-        # Check if the path is a directory
-        if os.path.isdir(folder_path):
-            # Iterate over each file in the folder
-            for file_name in os.listdir(folder_path):
-                file_path = os.path.join(folder_path, file_name)
-
-                # Check if the file is a CSV file
-                if file_name.endswith('.csv'):
-                    # Open the CSV file and read its contents
-                    with open(file_path, 'r') as csv_file:
-                        reader = csv.reader(csv_file)
-                        file_data = list(reader)
-
-                    # Write the contents of the CSV file to the consolidated file
-                    writer.writerows(file_data)
-
-print("Consolidation complete!")
+# Print the merged DataFrame
+print(merged_data)
