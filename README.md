@@ -1,41 +1,29 @@
-Here’s a basic Python script that demonstrates how to fetch data from Teradata SQL and load it into Google BigQuery, with proper handling of data types.
-
-### Requirements:
-1. **Python libraries**:
-   - `teradatasql` to connect to Teradata.
-   - `pandas` to handle data manipulation.
-   - `google-cloud-bigquery` to upload the data into BigQuery.
-   
-2. **Authentication**: 
-   Make sure your Google Cloud SDK is set up and you've authenticated using a service account that has permissions to load data into BigQuery.
-
-You can install the necessary packages using:
-```bash
-pip install teradatasql pandas google-cloud-bigquery
-```
-
-### Script:
-```python
+import argparse
 import teradatasql
 import pandas as pd
 from google.cloud import bigquery
+import os
 
-# Teradata connection details
+# Teradata connection details (these can also be dynamically passed if needed)
 TERADATA_HOST = 'your_teradata_host'
 TERADATA_USER = 'your_teradata_username'
 TERADATA_PASSWORD = 'your_teradata_password'
-TERADATA_QUERY = 'SELECT * FROM your_table'
 
-# BigQuery settings
+# BigQuery settings (these can also be dynamically passed if needed)
 BIGQUERY_PROJECT = 'your_gcp_project_id'
 BIGQUERY_DATASET = 'your_dataset'
 BIGQUERY_TABLE = 'your_table'
 
-# Fetch data from Teradata
+# Function to fetch data from Teradata table
 def fetch_data_from_teradata(query):
     with teradatasql.connect(f'{"hostname=" + TERADATA_HOST}', user=TERADATA_USER, password=TERADATA_PASSWORD) as connection:
         df = pd.read_sql(query, connection)
         return df
+
+# Function to load data from CSV stored in Teradata
+def load_data_from_csv_in_teradata(csv_file_path):
+    query = f"SELECT * FROM {csv_file_path}"  # Assuming Teradata allows querying CSV files in this manner
+    return fetch_data_from_teradata(query)
 
 # Load DataFrame to BigQuery
 def load_data_to_bigquery(df, project, dataset, table):
@@ -71,26 +59,36 @@ def get_bq_type(dtype):
     else:
         return 'STRING'
 
-if __name__ == "__main__":
-    # Fetch data from Teradata SQL
-    df = fetch_data_from_teradata(TERADATA_QUERY)
+# Main function to handle logic of CSV or Table in Teradata
+def main():
+    # Setup argument parser for dynamic input
+    parser = argparse.ArgumentParser(description="Fetch data from Teradata and load it into BigQuery")
+    parser.add_argument('--data_type', type=str, required=True, choices=['csv', 'table'],
+                        help="Type of data source: 'csv' for CSV file or 'table' for Teradata table")
+    parser.add_argument('--source', type=str, required=True,
+                        help="For CSV: Path to the CSV file in Teradata, for Table: Teradata table name")
+    parser.add_argument('--project', type=str, required=True,
+                        help="Google Cloud project ID")
+    parser.add_argument('--dataset', type=str, required=True,
+                        help="BigQuery dataset name")
+    parser.add_argument('--table', type=str, required=True,
+                        help="BigQuery table name")
     
-    # Load data into Google BigQuery
-    load_data_to_bigquery(df, BIGQUERY_PROJECT, BIGQUERY_DATASET, BIGQUERY_TABLE)
-```
+    args = parser.parse_args()
+    
+    # Fetch data based on the data type
+    if args.data_type == "csv":
+        print("Loading data from CSV stored in Teradata...")
+        df = load_data_from_csv_in_teradata(args.source)
+    elif args.data_type == "table":
+        print("Fetching data from Teradata table...")
+        query = f"SELECT * FROM {args.source}"
+        df = fetch_data_from_teradata(query)
+    else:
+        raise ValueError("Invalid data type. Choose 'csv' or 'table'.")
+    
+    # Load the data into BigQuery
+    load_data_to_bigquery(df, args.project, args.dataset, args.table)
 
-### Explanation:
-1. **Fetching Data from Teradata**:
-   - The script connects to Teradata using the `teradatasql` connector and retrieves the result of the SQL query into a Pandas DataFrame.
-
-2. **Handling Data Types**:
-   - The `get_bq_type()` function ensures that the Pandas data types are converted to corresponding BigQuery data types (`INTEGER`, `FLOAT`, `STRING`, etc.).
-
-3. **Uploading to BigQuery**:
-   - The data from the DataFrame is loaded into BigQuery using `bigquery.Client()`. The schema is defined based on the DataFrame's data types.
-
-### Notes:
-- Make sure to replace placeholders (`your_teradata_host`, `your_gcp_project_id`, etc.) with actual values.
-- This script assumes basic data types. For complex data types (arrays, structs), you may need to adjust the schema and data conversion logic.
-
-Let me know if you need further adjustments or clarifications!
+if __name__ == "__main__":
+    main()
