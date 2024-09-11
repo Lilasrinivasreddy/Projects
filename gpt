@@ -1,34 +1,47 @@
+[TERADATA]
+host = your_teradata_host
+username = your_teradata_username
+password = your_teradata_password
+
+[GOOGLE_CLOUD]
+project_id = your_gcp_project_id
+dataset = your_bigquery_dataset
+table = your_bigquery_table
+
+
+
 import argparse
 import teradatasql
 import pandas as pd
 from google.cloud import bigquery
+import configparser
 import os
 
-# Teradata connection details (these can also be dynamically passed if needed)
-TERADATA_HOST = 'your_teradata_host'
-TERADATA_USER = 'your_teradata_username'
-TERADATA_PASSWORD = 'your_teradata_password'
-
-# BigQuery settings (these can also be dynamically passed if needed)
-BIGQUERY_PROJECT = 'your_gcp_project_id'
-BIGQUERY_DATASET = 'your_dataset'
-BIGQUERY_TABLE = 'your_table'
+# Function to load config file
+def load_config(config_file='config.ini'):
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    return config
 
 # Function to fetch data from Teradata table
-def fetch_data_from_teradata(query):
-    with teradatasql.connect(f'{"hostname=" + TERADATA_HOST}', user=TERADATA_USER, password=TERADATA_PASSWORD) as connection:
+def fetch_data_from_teradata(query, teradata_config):
+    with teradatasql.connect(
+        host=teradata_config['host'], 
+        user=teradata_config['username'], 
+        password=teradata_config['password']
+    ) as connection:
         df = pd.read_sql(query, connection)
         return df
 
 # Function to load data from CSV stored in Teradata
-def load_data_from_csv_in_teradata(csv_file_path):
+def load_data_from_csv_in_teradata(csv_file_path, teradata_config):
     query = f"SELECT * FROM {csv_file_path}"  # Assuming Teradata allows querying CSV files in this manner
-    return fetch_data_from_teradata(query)
+    return fetch_data_from_teradata(query, teradata_config)
 
 # Load DataFrame to BigQuery
-def load_data_to_bigquery(df, project, dataset, table):
-    client = bigquery.Client(project=project)
-    table_id = f'{project}.{dataset}.{table}'
+def load_data_to_bigquery(df, gcloud_config):
+    client = bigquery.Client(project=gcloud_config['project_id'])
+    table_id = f'{gcloud_config["project_id"]}.{gcloud_config["dataset"]}.{gcloud_config["table"]}'
     
     # Define the schema based on the DataFrame
     job_config = bigquery.LoadJobConfig()
@@ -61,34 +74,35 @@ def get_bq_type(dtype):
 
 # Main function to handle logic of CSV or Table in Teradata
 def main():
+    # Load configuration from config file
+    config = load_config()
+
     # Setup argument parser for dynamic input
     parser = argparse.ArgumentParser(description="Fetch data from Teradata and load it into BigQuery")
     parser.add_argument('--data_type', type=str, required=True, choices=['csv', 'table'],
                         help="Type of data source: 'csv' for CSV file or 'table' for Teradata table")
     parser.add_argument('--source', type=str, required=True,
                         help="For CSV: Path to the CSV file in Teradata, for Table: Teradata table name")
-    parser.add_argument('--project', type=str, required=True,
-                        help="Google Cloud project ID")
-    parser.add_argument('--dataset', type=str, required=True,
-                        help="BigQuery dataset name")
-    parser.add_argument('--table', type=str, required=True,
-                        help="BigQuery table name")
     
     args = parser.parse_args()
+    
+    # Fetch Teradata config
+    teradata_config = config['TERADATA']
+    gcloud_config = config['GOOGLE_CLOUD']
     
     # Fetch data based on the data type
     if args.data_type == "csv":
         print("Loading data from CSV stored in Teradata...")
-        df = load_data_from_csv_in_teradata(args.source)
+        df = load_data_from_csv_in_teradata(args.source, teradata_config)
     elif args.data_type == "table":
         print("Fetching data from Teradata table...")
         query = f"SELECT * FROM {args.source}"
-        df = fetch_data_from_teradata(query)
+        df = fetch_data_from_teradata(query, teradata_config)
     else:
         raise ValueError("Invalid data type. Choose 'csv' or 'table'.")
     
     # Load the data into BigQuery
-    load_data_to_bigquery(df, args.project, args.dataset, args.table)
+    load_data_to_bigquery(df, gcloud_config)
 
 if __name__ == "__main__":
     main()
