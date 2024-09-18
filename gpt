@@ -1,1 +1,57 @@
-Lila 
+from django.http import JsonResponse
+from google.cloud import bigquery
+import json
+
+class ReportFilterData(View):
+    def post(self, request, *args, **kwargs):
+        try:
+            # Load request data based on content type
+            if request.content_type == 'application/json':
+                data = json.loads(request.body.decode('utf-8'))
+            else:
+                data = request.POST
+            
+            # Initialize BigQuery client
+            bq_client = bigquery.Client()
+
+            # Base query for dynamic filter updates
+            base_query = '''
+            SELECT DISTINCT {columns} 
+            FROM `project_id.dataset.table_name`
+            WHERE 1=1
+            '''
+            filters = {
+                'product_name': data.get('product_name'),
+                'data_lob': data.get('data_lob'),
+                'product_type': data.get('product_type'),
+                'product_area': data.get('product_area'),
+                'business_program': data.get('business_program')
+            }
+
+            # Build conditions based on available filter data
+            conditions = []
+            query_columns = "product_name, data_lob, product_type, product_area, business_program"
+
+            # Identify which filter is provided and prepare the query
+            for key, value in filters.items():
+                if value:
+                    conditions.append(f"{key} = '{value}'")
+                    # Update query_columns to exclude the current filter from results to fetch other filter values
+                    query_columns = ", ".join([col for col in query_columns.split(", ") if col != key])
+                    break  # Remove this line if multiple simultaneous filter criteria should be supported
+
+            # Finalize the query with conditions
+            if conditions:
+                query = base_query.format(columns=query_columns) + " AND " + " AND ".join(conditions)
+            else:
+                query = base_query.format(columns=query_columns)
+
+            # Execute the query and gather results
+            results = bq_client.query(query).result()
+            filtered_data = [dict(row.items()) for row in results]
+
+            # Return the filtered data as a JSON response
+            return JsonResponse({'results': filtered_data}, status=200)
+        
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
