@@ -1,57 +1,174 @@
+Yes, you can integrate the GET request into the class function along with the POST request. Below is the refactored version of your code where both GET and POST methods are handled within the same class function DynamicFilter:
+
+Complete Code:
+
 from django.http import JsonResponse
-from google.cloud import bigquery
+from django.views import View
 import json
 
-class ReportFilterData(View):
+class DynamicFilter(View):
+    def get(self, request, *args, **kwargs):
+        try:
+            # Query to fetch distinct filter values for the dropdowns
+            query = """
+            SELECT 
+                ARRAY_AGG(DISTINCT data_lob) AS data_lob_values,
+                ARRAY_AGG(DISTINCT product_area) AS product_area_values,
+                ARRAY_AGG(DISTINCT product_name) AS product_name_values,
+                ARRAY_AGG(DISTINCT business_program) AS business_program_values,
+                ARRAY_AGG(DISTINCT DATA_SRC) AS data_src_values
+            FROM `project.dataset.AUTO_PRFL_RPT_SAMPLE_V`
+            """
+            # Execute the BigQuery query
+            self.db_bigquery_client()  # Assuming the client is initialized elsewhere
+            query_job = self.client.query(query)
+            results = query_job.result()
+
+            # Convert results into a dictionary
+            distinct_values = [dict(row) for row in results]
+
+            # Prepare dropdown data in the required format
+            dropdown_data = [
+                {
+                    "label": "LOB",
+                    "name": "data_lob",
+                    "options": distinct_values[0].get('data_lob_values', [])
+                },
+                {
+                    "label": "Product Area",
+                    "name": "product_area",
+                    "options": distinct_values[0].get('product_area_values', [])
+                },
+                {
+                    "label": "Product Name",
+                    "name": "product_name",
+                    "options": distinct_values[0].get('product_name_values', [])
+                },
+                {
+                    "label": "Business Program",
+                    "name": "business_program_data",
+                    "options": distinct_values[0].get('business_program_values', [])
+                },
+                {
+                    "label": "DATA_SRC",
+                    "name": "data_src",
+                    "options": distinct_values[0].get('data_src_values', [])
+                }
+            ]
+            return JsonResponse({"filteredropdownData": dropdown_data})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
     def post(self, request, *args, **kwargs):
         try:
-            # Load request data based on content type
+            # Extract the request body as JSON
             if request.content_type == 'application/json':
                 data = json.loads(request.body.decode('utf-8'))
             else:
                 data = request.POST
-            
-            # Initialize BigQuery client
-            bq_client = bigquery.Client()
 
-            # Base query for dynamic filter updates
-            base_query = '''
-            SELECT DISTINCT {columns} 
-            FROM `project_id.dataset.table_name`
-            WHERE 1=1
-            '''
-            filters = {
-                'product_name': data.get('product_name'),
-                'data_lob': data.get('data_lob'),
-                'product_type': data.get('product_type'),
-                'product_area': data.get('product_area'),
-                'business_program': data.get('business_program')
-            }
+            # Extract filter values from the request
+            DATA_SRC = data.get('DATA_SRC')
+            data_lob = data.get('data_lob')
+            product_type = data.get('product_type')
+            product_area = data.get('product_area')
+            product_name = data.get('product_name')
 
-            # Build conditions based on available filter data
+            # Base query to select distinct values
+            base_query = """
+            SELECT DISTINCT data_lob, product_type, product_area, product_name, business_program
+            FROM `project.dataset.AUTO_PRFL_RPT_SAMPLE_V`
+            """
+
+            # Conditions array to apply filters independently (without hierarchy)
             conditions = []
-            query_columns = "product_name, data_lob, product_type, product_area, business_program"
 
-            # Identify which filter is provided and prepare the query
-            for key, value in filters.items():
-                if value:
-                    conditions.append(f"{key} = '{value}'")
-                    # Update query_columns to exclude the current filter from results to fetch other filter values
-                    query_columns = ", ".join([col for col in query_columns.split(", ") if col != key])
-                    break  # Remove this line if multiple simultaneous filter criteria should be supported
+            if DATA_SRC:
+                conditions.append(f"DATA_SRC = '{DATA_SRC}'")
+            if data_lob:
+                conditions.append(f"data_lob = '{data_lob}'")
+            if product_type:
+                conditions.append(f"product_type = '{product_type}'")
+            if product_area:
+                conditions.append(f"product_area = '{product_area}'")
+            if product_name:
+                conditions.append(f"product_name = '{product_name}'")
 
-            # Finalize the query with conditions
+            # Add conditions to the query if any filters are provided
             if conditions:
-                query = base_query.format(columns=query_columns) + " AND " + " AND ".join(conditions)
-            else:
-                query = base_query.format(columns=query_columns)
+                base_query += " WHERE " + " AND ".join(conditions)
 
-            # Execute the query and gather results
-            results = bq_client.query(query).result()
-            filtered_data = [dict(row.items()) for row in results]
+            # Debug: Print the query for troubleshooting
+            print(base_query)
 
-            # Return the filtered data as a JSON response
-            return JsonResponse({'results': filtered_data}, status=200)
-        
+            # Execute the query in BigQuery
+            self.db_bigquery_client()  # Assuming the client is initialized elsewhere
+            results = self.client.query(base_query).result()
+
+            # Collect distinct results for each filter category
+            data_lobs = set()
+            product_types = set()
+            product_areas = set()
+            product_names = set()
+            business_programs = set()
+
+            for row in results:
+                data_lobs.add(row['data_lob'])
+                product_types.add(row['product_type'])
+                product_areas.add(row['product_area'])
+                product_names.add(row['product_name'])
+                business_programs.add(row['business_program'])
+
+            # Helper function to return a single value or list depending on length
+            def single_or_array(values):
+                return list(values) if len(values) > 1 else next(iter(values), None)
+
+            # Construct the JSON response in the required format
+            filteredropdownData = [
+                {
+                    "label": "LOB",
+                    "name": "data_lob",
+                    "options": single_or_array(data_lobs)
+                },
+                {
+                    "label": "Product Type",
+                    "name": "product_type",
+                    "options": single_or_array(product_types)
+                },
+                {
+                    "label": "Product Area",
+                    "name": "product_area",
+                    "options": single_or_array(product_areas)
+                },
+                {
+                    "label": "Product Name",
+                    "name": "product_name",
+                    "options": single_or_array(product_names)
+                },
+                {
+                    "label": "Business Program",
+                    "name": "business_program_data",
+                    "options": single_or_array(business_programs)
+                }
+            ]
+
+            # Return the formatted JSON response
+            return JsonResponse({"filteredropdownData": filteredropdownData})
+
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({"error": str(e)}, status=500)
+
+Explanation:
+
+GET request: The get method fetches distinct values for the dropdown filters from BigQuery and returns them in JSON format.
+
+POST request: The post method extracts filter parameters from the request and dynamically constructs a query based on the filters provided. The query is then executed to retrieve matching records, and the filtered results are returned as a JSON response.
+
+Single or Array Helper Function: single_or_array ensures that if only one value exists, it returns that value directly instead of wrapping it in a list, providing cleaner responses for the front end.
+
+Error Handling: Both the GET and POST methods include error handling to return a JSON response with a 500 status code if something goes wrong.
+
+
+This structure allows you to handle both GET (for retrieving initial dropdown data) and POST (for applying filters and retrieving results) requests in a single class. Let me know if you need any further modifications or clarifications!
+
