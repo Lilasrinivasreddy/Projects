@@ -1,60 +1,78 @@
-@method_decorator(csrf_exempt, name='dispatch')
-class ReportFilterData(FetchDatabaseAsView):
-    def post(self, request, *args, **kwargs):
-        try:
-            if request.content_type == 'application/json':
-                data = json.loads(request.body.decode('utf-8'))
-            else:
-                data = request.POST
-            
-            print(data)
-            
-            # Extracting filter parameters
-            product_name = data.get('product_name')
-            data_lob = data.get('data_lob')
-            product_type = data.get('product_type')
-            product_area = data.get('product_area')
-            business_program = data.get('business_program')
+from datetime import timedelta
+from airflow import DAG
+from airflow.contrib.operators.bigquery_operator import BigQueryOperator
+from airflow.utils.dates import days_ago
+import importlib
+from airflow.models import Variable
+from airflow.utils.email import send_email
 
-            # Start building base query
-            base_query = '''
-            SELECT DISTINCT {columns}
-            FROM `self.dq_project_id`.dqa_dq_tbls.AUTO_PRFL_RPT_SAMPLE_v
-            WHERE 1=1
-            '''
-            conditions = []
+# Dynamically load environment configuration
+env_config_module = importlib.import_module("vr-it-hgw-aidedo-0.env_config")
+ENVIRONMENT = Variable.get("composer_env")
+PROJECT_ID = env_config_module.config[ENVIRONMENT]["project_id"]
+GCP_CONNECTION_ID = env_config_module.config[ENVIRONMENT]["gcp_connection_id"]
+EMAIL_LIST = env_config_module.config[ENVIRONMENT]["email_list"]
+VSAT = env_config_module.config[ENVIRONMENT]["VSAT"]
+PROJECT_SPACE = env_config_module.config[ENVIRONMENT]["ProjectSpace"]
+APPLICATION_NAME = env_config_module.config[ENVIRONMENT]["ApplicationName"]
+ENV_NAME = env_config_module.config[ENVIRONMENT]["env_name"]
 
-            # If product_name is selected, fetch corresponding lob, product_type, and others dynamically
-            if product_name:
-                query = base_query.format(columns="data_lob, product_type, product_area, business_program") + " AND product_name = '{}'".format(product_name)
-            
-            # If data_lob is selected
-            elif data_lob:
-                query = base_query.format(columns="product_name, product_type, product_area, business_program") + " AND data_lob = '{}'".format(data_lob)
+# Minimal function to include environment in the email subject
+def send_failure_email_with_env(context):
+    subject = f"[{ENVIRONMENT.upper()} ALERT] Airflow Task Failed in DAG: {context['dag'].dag_id}"
+    body = f"""
+    Environment: {ENVIRONMENT.upper()}
+    DAG: {context['dag'].dag_id}
+    Task: {context['task_instance'].task_id}
+    Execution Time: {context['ts']}
+    Log Url: {context['task_instance'].log_url}
+    
+    This task failed in the {ENVIRONMENT.upper()} environment.
+    """
+    send_email(EMAIL_LIST.split(','), subject, body)
 
-            # If product_type is selected
-            elif product_type:
-                query = base_query.format(columns="product_name, data_lob, product_area, business_program") + " AND product_type = '{}'".format(product_type)
+# Define default_args with the custom on_failure_callback
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': days_ago(1),
+    'email': EMAIL_LIST.split(','),  # Convert comma-separated email list to list
+    'email_on_failure': True,
+    'email_on_retry': False,
+    'retries': 2,
+    'retry_delay': timedelta(minutes=1),
+    'on_failure_callback': send_failure_email_with_env  # Minimal callback for environment in subject
+}
 
-            # If product_area is selected
-            elif product_area:
-                query = base_query.format(columns="product_name, data_lob, product_type, business_program") + " AND product_area = '{}'".format(product_area)
+# Define the DAG
+dag = DAG(
+    dag_id=f"{ENV_NAME}_dag_{VSAT}_{PROJECT_SPACE}_{APPLICATION_NAME}_process_monitoring_report_daily",
+    schedule_interval="0 8 * * *",
+    max_active_runs=1,
+    catchup=False,
+    default_args=default_args,
+    description="This DAG is for process monitoring which will run at 08:00.",
+    concurrency=3
+)
 
-            # If business_program is selected
-            elif business_program:
-                query = base_query.format(columns="product_name, data_lob, product_type, product_area") + " AND business_program = '{}'".format(business_program)
+# Define tasks
+dof_etl_process_monitor_report = BigQueryOperator(
+    task_id="dof_etl_process_monitor_report",
+    gcp_conn_id=GCP_CONNECTION_ID,
+    sql="sql/dof_etl_process_monitor_report.sql",
+    write_disposition="WRITE_APPEND",
+    use_legacy_sql=False,
+    dag=dag
+)
 
-            # If no filter is selected, fetch all
-            else:
-                query = base_query.format(columns="product_name, data_lob, product_type, product_area, business_program")
+dof_etl_realtime_process_monitor_report = BigQueryOperator(
+    task_id="dof_etl_realtime_process_monitor_report",
+    gcp_conn_id=GCP_CONNECTION_ID,
+    sql="sql/dof_etl_realtime_process_monitor_report.sql",
+    write_disposition="WRITE_APPEND",
+    use_legacy_sql=False,
+    dag=dag
+)
 
-            # Query BigQuery and fetch results
-            bq_client = bigquery.Client()
-            results = bq_client.query(query).result()
-            filtered_data = [dict(row.items()) for row in results]
-
-            # Return JSON response with the filtered data
-            return JsonResponse({'results': filtered_data}, status=200)
-        
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+# Define task dependencies
+dof_etl_process_monitor_report >> dof_etl_realtime_process_monitor_report
