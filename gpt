@@ -1,78 +1,25 @@
-from datetime import timedelta
-from airflow import DAG
-from airflow.contrib.operators.bigquery_operator import BigQueryOperator
-from airflow.utils.dates import days_ago
-import importlib
-from airflow.models import Variable
-from airflow.utils.email import send_email
 
-# Dynamically load environment configuration
-env_config_module = importlib.import_module("vr-it-hgw-aidedo-0.env_config")
-ENVIRONMENT = Variable.get("composer_env")
-PROJECT_ID = env_config_module.config[ENVIRONMENT]["project_id"]
-GCP_CONNECTION_ID = env_config_module.config[ENVIRONMENT]["gcp_connection_id"]
-EMAIL_LIST = env_config_module.config[ENVIRONMENT]["email_list"]
-VSAT = env_config_module.config[ENVIRONMENT]["VSAT"]
-PROJECT_SPACE = env_config_module.config[ENVIRONMENT]["ProjectSpace"]
-APPLICATION_NAME = env_config_module.config[ENVIRONMENT]["ApplicationName"]
-ENV_NAME = env_config_module.config[ENVIRONMENT]["env_name"]
 
-# Minimal function to include environment in the email subject
-def send_failure_email_with_env(context):
-    subject = f"[{ENVIRONMENT.upper()} ALERT] Airflow Task Failed in DAG: {context['dag'].dag_id}"
-    body = f"""
-    Environment: {ENVIRONMENT.upper()}
-    DAG: {context['dag'].dag_id}
-    Task: {context['task_instance'].task_id}
-    Execution Time: {context['ts']}
-    Log Url: {context['task_instance'].log_url}
-    
-    This task failed in the {ENVIRONMENT.upper()} environment.
-    """
-    send_email(EMAIL_LIST.split(','), subject, body)
 
-# Define default_args with the custom on_failure_callback
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(1),
-    'email': EMAIL_LIST.split(','),  # Convert comma-separated email list to list
+    'start_date':days_ago(1),
+    'email': f"{EMAIL_LIST}",
     'email_on_failure': True,
     'email_on_retry': False,
-    'retries': 2,
-    'retry_delay': timedelta(minutes=1),
-    'on_failure_callback': send_failure_email_with_env  # Minimal callback for environment in subject
+    'retries': 1,
+    'retry_delay': timedelta(minutes=1)
 }
 
-# Define the DAG
-dag = DAG(
-    dag_id=f"{ENV_NAME}_dag_{VSAT}_{PROJECT_SPACE}_{APPLICATION_NAME}_process_monitoring_report_daily",
-    schedule_interval="0 8 * * *",
-    max_active_runs=1,
+
+dag=DAG(
+    dag_id=f"dg_{VSAT}_{PROJECT_SPACE}_{APPLICATION_NAME}_process_monitoring_report_daily",
+    schedule_interval='0 0 * * *',
+    max_active_runs= 1,
     catchup=False,
     default_args=default_args,
-    description="This DAG is for process monitoring which will run at 08:00.",
+    description='Ths dag is for process monitoring which will run at 00:00',
     concurrency=3
 )
 
-# Define tasks
-dof_etl_process_monitor_report = BigQueryOperator(
-    task_id="dof_etl_process_monitor_report",
-    gcp_conn_id=GCP_CONNECTION_ID,
-    sql="sql/dof_etl_process_monitor_report.sql",
-    write_disposition="WRITE_APPEND",
-    use_legacy_sql=False,
-    dag=dag
-)
-
-dof_etl_realtime_process_monitor_report = BigQueryOperator(
-    task_id="dof_etl_realtime_process_monitor_report",
-    gcp_conn_id=GCP_CONNECTION_ID,
-    sql="sql/dof_etl_realtime_process_monitor_report.sql",
-    write_disposition="WRITE_APPEND",
-    use_legacy_sql=False,
-    dag=dag
-)
-
-# Define task dependencies
-dof_etl_process_monitor_report >> dof_etl_realtime_process_monitor_report
