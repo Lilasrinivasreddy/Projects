@@ -1,1 +1,1053 @@
+	Metadata link:							
+	Note	1. Red highlited should be matching with logs						
+								
+SL No	Module	Testcase Description	Expected Result	Pass/Fail	Name	Comments	Assignee	Action
+1	Process Metadata	Program_name/Scope_name/Project_name validation	"Names like observability,dashboard, epdo,data, etl not allowed,
+Names should not contain description
+Program Name with Single word should start with Capital letter
+Program Name with Multiple word seperated by '_' , Both words should be seperated and starting with capital letter
+Program Name with Multiple words , Both words should be seperated by Space and Camel case eg: Ran Dashboard"	Pass			Pavani	
+2	Process Metadata	application_name validation	"Should be single word seperated by '_' all in Camel case
+Preferred Acronym in capital for eg . ML,DE,Curation,Ingestion"	Pass			Pavani	
+3	Process Metadata	process_name validation	"Names should not contain description
+Should be single word seperated by '_' all in small case
+should not be server name, file path"	Pass			Pavani	
+4	Process Metadata	subprocess_name validation	"Names should not contain description
+Should be single word seperated by '_' all in small case
+should not be server name, file path"	Pass			Pavani	
+5	Process Metadata	frequency validation	should be in one of the  below frequencies in lower case ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]	Pass			Pavani	
+6	Process Metadata	is_active validation	Should be  'Y,N'	Pass			Pavani	
+7	Process Metadata	is_critical validation	Should be  'Y,N'	Pass			Pavani	
+8	Process Metadata	platform_name validation	String ;should be in (GCP,Unix,AWS,Teradata,EDL)	Pass			Pavani	
+9	Process Metadata	env_name validation	String ;should be in (GCP_BQ,Unix,JAVA,EDW_TD,GCP,EDL_HDFS,GCP_GCS,OnPrem_Hive,GCP_HIVE)	Pass			Pavani	
+10	Process Metadata	process_poc validation	Should be mail id	Pass			Pavani	
+11	Process Metadata	run_day validation	Depending on frequency	Pass			Pavani	
+12	Process Metadata	run_hour validation	should in 24 hr numeric value 'string' format (23:00:00) . No AM or PM allowed eg:07:00:00 PM (value <= 23:59:59)	Pass			Pavani	
+13	Process Metadata	scheduler_name validation	Should be single word	Pass			Pavani	
+14	Process Metadata	sla validation	"should in 24 hr 'string' format
+greater than run_hour"	Pass			Pavani	
+15	Process Metadata	create_dt validation	Blank or date value in string	Pass			Pavani	
+16	Process Metadata	source validation	String value , comma seperated, If variable present corresponding value to be present in config sheet	Pass			Pavani	
+17	Process Metadata	target validation	String value , comma seperated, If variable present corresponding value to be present in config sheet	Pass			Pavani	
+18	Process Metadata	source_type validation	String value, Should be in Pubsub,Table,Esp,File,Kafka	Pass			Pavani	
+19	Process Metadata	target_type validation	String value should be in File,Kafka,Pubsub,Table,Topic	Pass			Pavani	
+20	Process Metadata	source_servername validation	String value	Pass			Pavani	
+21	Process Metadata	target_servername validation	String value	Pass			Pavani	
+22	Process Metadata	process_seq_num validation	numeriv value	Pass			Pavani	
+23	Process Metadata	sub_process_seq_num validation	numeric value	Pass			Pavani	
+24	Process Metadata	source_environment validation	String value ,underscore seperated	Pass			Pavani	
+25	Process Metadata	target_environment validation	String value ,underscore seperated	Pass			Pavani	
+26	Process Metadata	interval validation	Mandatory for hourly process numeric value	Pass			Pavani	
+27	Process Metadata	step_id validation	"Blank or numeric value, 
+Should be matching with the log value"	Pass			Pavani	
+28	Process Metadata	logs_enabled validation	Should be  'Y,N'	Pass			Pavani	
+29	Process Metadata	is_mandatory validation	Should be  'Y,N' four hourly and custom hourly	Pass			Pavani	
+30	Process Metadata	run_date_buffer_interval validation	24 hour format,numeric value\	Pass			Pavani	
+31	Process Metadata	timezone validation	Blank or in (UTC,GMT,EST)	Pass			Pavani	
+32	Process Metadata	logs_trace_id_enabled validation	Should be  'Y,N'	Pass			Pavani	
+33	Process Metadata	volume_query validation	if collect_volume Y then query should be present	Pass			Pavani	
+34	Process Metadata	reason_is_active_change validation	Description if there is change in is_active column	Pass			Pavani	
+35	Process Metadata	duration_threshold_low_value validation	Numeric value or blank	Pass			Pavani	
+36	Process Metadata	duration_threshold_high_value validation	Numeric value or blank	Pass			Pavani	
+37	Process Metadata	collect_volume validation	Should be  'Y,N'	Pass			Pavani	
+38	Process Metadata	businessunit validation	String value	Pass			Pavani	
+39	Process Metadata	vsad validation	mandatory value eg:hgrv/gk1v	Pass			Pavani	
+40	Process Metadata	portfolio validation	String value				Pavani	
+41	Process Metadata	application validation	String value				Pavani	
+43	Process_alert_and_notification metadata	application_name validation	matching with application_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+44	Process_alert_and_notification metadata	program_name validation	matching with program_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+45	Process_alert_and_notification metadata	process_name validation	matching with process_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+46	Process_alert_and_notification metadata	platform_name validation	matching with platform_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+47	Process_alert_and_notification metadata	env_name validation	matching with env_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+48	Process_alert_and_notification metadata	sla_buffer validation	Numeric value, string datatype	Pass			Pavani	
+49	Process_alert_and_notification metadata	alert_failure validation	Should be  'Y,N' or Blank	Pass			Pavani	
+50	Process_alert_and_notification metadata	process_failed_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+51	Process_alert_and_notification metadata	alert_sla_misses validation	Should be  'Y,N' or Blank	Pass			Pavani	
+52	Process_alert_and_notification metadata	process_sla_miss_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+53	Process_alert_and_notification metadata	alert_pending validation	Should be  'Y,N' or Blank	Pass			Pavani	
+54	Process_alert_and_notification metadata	process_pending_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+55	Process_alert_and_notification metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Opsgine alerts required for the app'n team	Pavani	
+56	Process_alert_and_notification metadata	alert_metadata validation	String JSON format for additional information opsgenie alert	Pass			Pavani	
+57	Process_alert_and_notification metadata	alert_additional_info validation	blank or metadata columns as comma seperated string	Pass			Pavani	
+58	Process_alert_and_notification metadata	alert_required_columns validation	String value comma seperated column names	Pass			Pavani	
+59	Process_alert_and_notification metadata	notify_success validation	Should be  'Y,N' or blank	Pass			Pavani	
+60	Process_alert_and_notification metadata	success_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+61	Process_alert_and_notification metadata	notify_failure validation	Should be  'Y,N' or blank	Pass			Pavani	
+62	Process_alert_and_notification metadata	failure_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+63	Process_alert_and_notification metadata	notify_sla_miss validation	Should be  'Y,N' or blank	Pass			Pavani	
+64	Process_alert_and_notification metadata	sla_miss_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+65	Process_alert_and_notification metadata	notification_required_columns validation	String value comma seperated column names	Pass			Pavani	
+66	Process_alert_and_notification metadata	notification_additional_info validation	Additional information to be added in the email JSON format	Pass			Pavani	
+67	Process_alert_and_notification metadata	notify_process_status_change validation	Should be  'Y,N' or blank	Pass			Pavani	
+68	Process_alert_and_notification metadata	process_status_change_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+69	Process_alert_and_notification metadata	dependency_notification validation	Should be  'Y,N' or blank	Pass			Pavani	
+70	Process_alert_and_notification metadata	dependency_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+72	File metadata	file_name validation	Complete file name with extension, and parameterised for numeric values			No Files Data	Pavani	
+73	File metadata	file_path validation	file path			No Files Data	Pavani	
+74	File metadata	server_name validation	String value			No Files Data	Pavani	
+75	File metadata	application_name validation	matching with application_name,( in process sheet )			No Files Data	Pavani	
+76	File metadata	platform_name validation	matching with platform_name,( in process sheet )			No Files Data	Pavani	
+77	File metadata	env_name validation	matching with env_name,( in process sheet )			No Files Data	Pavani	
+78	File metadata	comment_text validation	 Blanck or File comment			No Files Data	Pavani	
+79	File metadata	file_middle_pattern validation	repetative middle pattern file			No Files Data	Pavani	
+80	File metadata	file_prefix validation	string ; sub string of file name			No Files Data	Pavani	
+81	File metadata	file_suffix validation	string ; sub string of file name			No Files Data	Pavani	
+82	File metadata	frequency validation	Frequency of the file			No Files Data	Pavani	
+83	File metadata	instance_ind validation	Specific to EDW only			No Files Data	Pavani	
+84	File metadata	is_active validation	Should be  'Y,N'			No Files Data	Pavani	
+85	File metadata	notify_source validation	Should be  'Y,N' or blank			No Files Data	Pavani	
+86	File metadata	run_day validation	Same as process_date numeric value as string			No Files Data	Pavani	
+87	File metadata	process_owner validation	email id			No Files Data	Pavani	
+88	File metadata	sla validation	24 hour format string value			No Files Data	Pavani	
+89	File metadata	source_poc validation	email id			No Files Data	Pavani	
+90	File metadata	threshold_low validation	numeric value			No Files Data	Pavani	
+91	File metadata	threshold_unit validation	non numeric string value (percentage or count)			No Files Data	Pavani	
+92	File metadata	threshold_up validation	numeric value			No Files Data	Pavani	
+93	File metadata	create_dt validation	Blank or date value in string			No Files Data	Pavani	
+94	File metadata	notify_downstream validation	Should be  'Y,N'			No Files Data	Pavani	
+95	File metadata	downstream_email validation	Email list comma seperated or blank			No Files Data	Pavani	
+96	File metadata	interval validation	 fixed or hourly frequency based files. INTEGER VALUE			No Files Data	Pavani	
+97	File metadata	file_name_regexp validation	Blank or regexp format file name			No Files Data	Pavani	
+98	File metadata	run_hour validation	should in 24 hr numeric value 'string' format			No Files Data	Pavani	
+99	File metadata	file_arrival_custom_interval validation	Numeric value ( negative also possible)			No Files Data	Pavani	
+100	File metadata	source_system validation	Blank or String value			No Files Data	Pavani	
+101	File metadata	sla_notification_buffer validation	24 hr format numeric value			No Files Data	Pavani	
+102	File metadata	notify_sla_misses validation	Should be  'Y,N'			No Files Data	Pavani	
+103	File metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Files Data	Pavani	
+104	File metadata	notify_file_size validation	Should be  'Y,N'			No Files Data	Pavani	
+105	File metadata	file_size_limit validation	Should be  'Y,N'			No Files Data	Pavani	
+106	File metadata	alert_info validation	if file_size_limit is Y then numeric value			No Files Data	Pavani	
+108	Table metadata	application_name validation	matching with application_name,( in process sheet )	Pass			Pavani	
+109	Table metadata	db_name validation	String value	Pass			Pavani	
+110	Table metadata	table_name validation	string value	Pass			Pavani	
+111	Table metadata	servername validation	string value	Pass			Pavani	
+112	Table metadata	platform_name validation	matching with platform_name,( in process sheet )	Pass			Pavani	
+113	Table metadata	env_name validation	matching with env_name,( in process sheet )	Pass			Pavani	
+114	Table metadata	frequency validation	Frequency of the table	Pass			Pavani	
+115	Table metadata	is_active validation	Should be  'Y,N'	Pass			Pavani	
+116	Table metadata	run_day validation	Same as process_date numeric value as string	Pass			Pavani	
+117	Table metadata	run_hour validation	24 hour format string value	Pass			Pavani	
+118	Table metadata	sla validation	24 hour format string value	Pass			Pavani	
+119	Table metadata	table_process_day validation	Blank or day( Thursday, Wednesday etc)	Pass			Pavani	
+120	Table metadata	threshold_low validation	Numeric value	Pass			Pavani	
+121	Table metadata	threshold_unit validation	should be in Percentage /Count	Pass			Pavani	
+122	Table metadata	threshold_up validation	Numeric value	Pass			Pavani	
+123	Table metadata	tool_name validation	Should be in GCP_Hive,GCP_BQ,EDW_TD,OnPrem_Hive,AEDW_TD,VBG_TD	Pass			Pavani	
+124	Table metadata	create_dt validation	Blank or date value in string	Pass			Pavani	
+125	Table metadata	notify_table_size validation	Should be  'Y,N' or blank	Pass			Pavani	
+126	Table metadata	table_size_limit validation	Numeric value				Pavani	
+127	Table metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Opsgine alerts required for the team	Pavani	
+128	Table metadata	table_size_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+129	Table metadata	alert_table_size validation	Should be  'Y,N' or blank	Pass			Pavani	
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+	Metadata link:							
+	Note	1. Red highlited should be matching with logs						
+								
+SL No	Module	Testcase Description	Expected Result	Pass/Fail	Name	Comments	Assignee	Action
+1	Process Metadata	Program_name/Scope_name/Project_name validation	"Names like observability,dashboard, epdo,data, etl not allowed,
+Names should not contain description
+Program Name with Single word should start with Capital letter
+Program Name with Multiple word seperated by '_' , Both words should be seperated and starting with capital letter
+Program Name with Multiple words , Both words should be seperated by Space and Camel case eg: Ran Dashboard"	Pass			Pavani	
+2	Process Metadata	application_name validation	"Should be single word seperated by '_' all in Camel case
+Preferred Acronym in capital for eg . ML,DE,Curation,Ingestion"	Pass			Pavani	
+3	Process Metadata	process_name validation	"Names should not contain description
+Should be single word seperated by '_' all in small case
+should not be server name, file path"	Pass			Pavani	
+4	Process Metadata	subprocess_name validation	"Names should not contain description
+Should be single word seperated by '_' all in small case
+should not be server name, file path"	Pass			Pavani	
+5	Process Metadata	frequency validation	should be in one of the  below frequencies in lower case ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]	Pass			Pavani	
+6	Process Metadata	is_active validation	Should be  'Y,N'	Pass			Pavani	
+7	Process Metadata	is_critical validation	Should be  'Y,N'	Pass			Pavani	
+8	Process Metadata	platform_name validation	String ;should be in (GCP,Unix,AWS,Teradata,EDL)	Pass			Pavani	
+9	Process Metadata	env_name validation	String ;should be in (GCP_BQ,Unix,JAVA,EDW_TD,GCP,EDL_HDFS,GCP_GCS,OnPrem_Hive,GCP_HIVE)	Pass			Pavani	
+10	Process Metadata	process_poc validation	Should be mail id	Pass			Pavani	
+11	Process Metadata	run_day validation	Depending on frequency	Pass			Pavani	
+12	Process Metadata	run_hour validation	should in 24 hr numeric value 'string' format (23:00:00) . No AM or PM allowed eg:07:00:00 PM (value <= 23:59:59)	Pass			Pavani	
+13	Process Metadata	scheduler_name validation	Should be single word	Pass			Pavani	
+14	Process Metadata	sla validation	"should in 24 hr 'string' format
+greater than run_hour"	Pass			Pavani	
+15	Process Metadata	create_dt validation	Blank or date value in string	Pass			Pavani	
+16	Process Metadata	source validation	String value , comma seperated, If variable present corresponding value to be present in config sheet	Pass			Pavani	
+17	Process Metadata	target validation	String value , comma seperated, If variable present corresponding value to be present in config sheet	Pass			Pavani	
+18	Process Metadata	source_type validation	String value, Should be in Pubsub,Table,Esp,File,Kafka	Pass			Pavani	
+19	Process Metadata	target_type validation	String value should be in File,Kafka,Pubsub,Table,Topic	Pass			Pavani	
+20	Process Metadata	source_servername validation	String value	Pass			Pavani	
+21	Process Metadata	target_servername validation	String value	Pass			Pavani	
+22	Process Metadata	process_seq_num validation	numeriv value	Pass			Pavani	
+23	Process Metadata	sub_process_seq_num validation	numeric value	Pass			Pavani	
+24	Process Metadata	source_environment validation	String value ,underscore seperated	Pass			Pavani	
+25	Process Metadata	target_environment validation	String value ,underscore seperated	Pass			Pavani	
+26	Process Metadata	interval validation	Mandatory for hourly process numeric value	Pass			Pavani	
+27	Process Metadata	step_id validation	"Blank or numeric value, 
+Should be matching with the log value"	Pass			Pavani	
+28	Process Metadata	logs_enabled validation	Should be  'Y,N'	Pass			Pavani	
+29	Process Metadata	is_mandatory validation	Should be  'Y,N' four hourly and custom hourly	Pass			Pavani	
+30	Process Metadata	run_date_buffer_interval validation	24 hour format,numeric value\	Pass			Pavani	
+31	Process Metadata	timezone validation	Blank or in (UTC,GMT,EST)	Pass			Pavani	
+32	Process Metadata	logs_trace_id_enabled validation	Should be  'Y,N'	Pass			Pavani	
+33	Process Metadata	volume_query validation	if collect_volume Y then query should be present	Pass			Pavani	
+34	Process Metadata	reason_is_active_change validation	Description if there is change in is_active column	Pass			Pavani	
+35	Process Metadata	duration_threshold_low_value validation	Numeric value or blank	Pass			Pavani	
+36	Process Metadata	duration_threshold_high_value validation	Numeric value or blank	Pass			Pavani	
+37	Process Metadata	collect_volume validation	Should be  'Y,N'	Pass			Pavani	
+38	Process Metadata	businessunit validation	String value	Pass			Pavani	
+39	Process Metadata	vsad validation	mandatory value eg:hgrv/gk1v	Pass			Pavani	
+40	Process Metadata	portfolio validation	String value				Pavani	
+41	Process Metadata	application validation	String value				Pavani	
+43	Process_alert_and_notification metadata	application_name validation	matching with application_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+44	Process_alert_and_notification metadata	program_name validation	matching with program_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+45	Process_alert_and_notification metadata	process_name validation	matching with process_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+46	Process_alert_and_notification metadata	platform_name validation	matching with platform_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+47	Process_alert_and_notification metadata	env_name validation	matching with env_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+48	Process_alert_and_notification metadata	sla_buffer validation	Numeric value, string datatype	Pass			Pavani	
+49	Process_alert_and_notification metadata	alert_failure validation	Should be  'Y,N' or Blank	Pass			Pavani	
+50	Process_alert_and_notification metadata	process_failed_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+51	Process_alert_and_notification metadata	alert_sla_misses validation	Should be  'Y,N' or Blank	Pass			Pavani	
+52	Process_alert_and_notification metadata	process_sla_miss_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+53	Process_alert_and_notification metadata	alert_pending validation	Should be  'Y,N' or Blank	Pass			Pavani	
+54	Process_alert_and_notification metadata	process_pending_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+55	Process_alert_and_notification metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Opsgine alerts required for the app'n team	Pavani	
+56	Process_alert_and_notification metadata	alert_metadata validation	String JSON format for additional information opsgenie alert	Pass			Pavani	
+57	Process_alert_and_notification metadata	alert_additional_info validation	blank or metadata columns as comma seperated string	Pass			Pavani	
+58	Process_alert_and_notification metadata	alert_required_columns validation	String value comma seperated column names	Pass			Pavani	
+59	Process_alert_and_notification metadata	notify_success validation	Should be  'Y,N' or blank	Pass			Pavani	
+60	Process_alert_and_notification metadata	success_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+61	Process_alert_and_notification metadata	notify_failure validation	Should be  'Y,N' or blank	Pass			Pavani	
+62	Process_alert_and_notification metadata	failure_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+63	Process_alert_and_notification metadata	notify_sla_miss validation	Should be  'Y,N' or blank	Pass			Pavani	
+64	Process_alert_and_notification metadata	sla_miss_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+65	Process_alert_and_notification metadata	notification_required_columns validation	String value comma seperated column names	Pass			Pavani	
+66	Process_alert_and_notification metadata	notification_additional_info validation	Additional information to be added in the email JSON format	Pass			Pavani	
+67	Process_alert_and_notification metadata	notify_process_status_change validation	Should be  'Y,N' or blank	Pass			Pavani	
+68	Process_alert_and_notification metadata	process_status_change_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+69	Process_alert_and_notification metadata	dependency_notification validation	Should be  'Y,N' or blank	Pass			Pavani	
+70	Process_alert_and_notification metadata	dependency_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+72	File metadata	file_name validation	Complete file name with extension, and parameterised for numeric values			No Files Data	Pavani	
+73	File metadata	file_path validation	file path			No Files Data	Pavani	
+74	File metadata	server_name validation	String value			No Files Data	Pavani	
+75	File metadata	application_name validation	matching with application_name,( in process sheet )			No Files Data	Pavani	
+76	File metadata	platform_name validation	matching with platform_name,( in process sheet )			No Files Data	Pavani	
+77	File metadata	env_name validation	matching with env_name,( in process sheet )			No Files Data	Pavani	
+78	File metadata	comment_text validation	 Blanck or File comment			No Files Data	Pavani	
+79	File metadata	file_middle_pattern validation	repetative middle pattern file			No Files Data	Pavani	
+80	File metadata	file_prefix validation	string ; sub string of file name			No Files Data	Pavani	
+81	File metadata	file_suffix validation	string ; sub string of file name			No Files Data	Pavani	
+82	File metadata	frequency validation	Frequency of the file			No Files Data	Pavani	
+83	File metadata	instance_ind validation	Specific to EDW only			No Files Data	Pavani	
+84	File metadata	is_active validation	Should be  'Y,N'			No Files Data	Pavani	
+85	File metadata	notify_source validation	Should be  'Y,N' or blank			No Files Data	Pavani	
+86	File metadata	run_day validation	Same as process_date numeric value as string			No Files Data	Pavani	
+87	File metadata	process_owner validation	email id			No Files Data	Pavani	
+88	File metadata	sla validation	24 hour format string value			No Files Data	Pavani	
+89	File metadata	source_poc validation	email id			No Files Data	Pavani	
+90	File metadata	threshold_low validation	numeric value			No Files Data	Pavani	
+91	File metadata	threshold_unit validation	non numeric string value (percentage or count)			No Files Data	Pavani	
+92	File metadata	threshold_up validation	numeric value			No Files Data	Pavani	
+93	File metadata	create_dt validation	Blank or date value in string			No Files Data	Pavani	
+94	File metadata	notify_downstream validation	Should be  'Y,N'			No Files Data	Pavani	
+95	File metadata	downstream_email validation	Email list comma seperated or blank			No Files Data	Pavani	
+96	File metadata	interval validation	 fixed or hourly frequency based files. INTEGER VALUE			No Files Data	Pavani	
+97	File metadata	file_name_regexp validation	Blank or regexp format file name			No Files Data	Pavani	
+98	File metadata	run_hour validation	should in 24 hr numeric value 'string' format			No Files Data	Pavani	
+99	File metadata	file_arrival_custom_interval validation	Numeric value ( negative also possible)			No Files Data	Pavani	
+100	File metadata	source_system validation	Blank or String value			No Files Data	Pavani	
+101	File metadata	sla_notification_buffer validation	24 hr format numeric value			No Files Data	Pavani	
+102	File metadata	notify_sla_misses validation	Should be  'Y,N'			No Files Data	Pavani	
+103	File metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Files Data	Pavani	
+104	File metadata	notify_file_size validation	Should be  'Y,N'			No Files Data	Pavani	
+105	File metadata	file_size_limit validation	Should be  'Y,N'			No Files Data	Pavani	
+106	File metadata	alert_info validation	if file_size_limit is Y then numeric value			No Files Data	Pavani	
+108	Table metadata	application_name validation	matching with application_name,( in process sheet )	Pass			Pavani	
+109	Table metadata	db_name validation	String value	Pass			Pavani	
+110	Table metadata	table_name validation	string value	Pass			Pavani	
+111	Table metadata	servername validation	string value	Pass			Pavani	
+112	Table metadata	platform_name validation	matching with platform_name,( in process sheet )	Pass			Pavani	
+113	Table metadata	env_name validation	matching with env_name,( in process sheet )	Pass			Pavani	
+114	Table metadata	frequency validation	Frequency of the table	Pass			Pavani	
+115	Table metadata	is_active validation	Should be  'Y,N'	Pass			Pavani	
+116	Table metadata	run_day validation	Same as process_date numeric value as string	Pass			Pavani	
+117	Table metadata	run_hour validation	24 hour format string value	Pass			Pavani	
+118	Table metadata	sla validation	24 hour format string value	Pass			Pavani	
+119	Table metadata	table_process_day validation	Blank or day( Thursday, Wednesday etc)	Pass			Pavani	
+120	Table metadata	threshold_low validation	Numeric value	Pass			Pavani	
+121	Table metadata	threshold_unit validation	should be in Percentage /Count	Pass			Pavani	
+122	Table metadata	threshold_up validation	Numeric value	Pass			Pavani	
+123	Table metadata	tool_name validation	Should be in GCP_Hive,GCP_BQ,EDW_TD,OnPrem_Hive,AEDW_TD,VBG_TD	Pass			Pavani	
+124	Table metadata	create_dt validation	Blank or date value in string	Pass			Pavani	
+125	Table metadata	notify_table_size validation	Should be  'Y,N' or blank	Pass			Pavani	
+126	Table metadata	table_size_limit validation	Numeric value				Pavani	
+127	Table metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Opsgine alerts required for the team	Pavani	
+128	Table metadata	table_size_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+129	Table metadata	alert_table_size validation	Should be  'Y,N' or blank	Pass			Pavani	
+------------------------------------------------------------------------------------------------------------------------
+
+	Metadata link:							
+	Note	1. Red highlited should be matching with logs						
+								
+SL No	Module	Testcase Description	Expected Result	Pass/Fail	Name	Comments	Assignee	Action
+1	Process Metadata	Program_name/Scope_name/Project_name validation	"Names like observability,dashboard, epdo,data, etl not allowed,
+Names should not contain description
+Program Name with Single word should start with Capital letter
+Program Name with Multiple word seperated by '_' , Both words should be seperated and starting with capital letter
+Program Name with Multiple words , Both words should be seperated by Space and Camel case eg: Ran Dashboard"	Pass			Pavani	
+2	Process Metadata	application_name validation	"Should be single word seperated by '_' all in Camel case
+Preferred Acronym in capital for eg . ML,DE,Curation,Ingestion"	Pass			Pavani	
+3	Process Metadata	process_name validation	"Names should not contain description
+Should be single word seperated by '_' all in small case
+should not be server name, file path"	Pass			Pavani	
+4	Process Metadata	subprocess_name validation	"Names should not contain description
+Should be single word seperated by '_' all in small case
+should not be server name, file path"	Pass			Pavani	
+5	Process Metadata	frequency validation	should be in one of the  below frequencies in lower case ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]	Pass			Pavani	
+6	Process Metadata	is_active validation	Should be  'Y,N'	Pass			Pavani	
+7	Process Metadata	is_critical validation	Should be  'Y,N'	Pass			Pavani	
+8	Process Metadata	platform_name validation	String ;should be in (GCP,Unix,AWS,Teradata,EDL)	Pass			Pavani	
+9	Process Metadata	env_name validation	String ;should be in (GCP_BQ,Unix,JAVA,EDW_TD,GCP,EDL_HDFS,GCP_GCS,OnPrem_Hive,GCP_HIVE)	Pass			Pavani	
+10	Process Metadata	process_poc validation	Should be mail id	Pass			Pavani	
+11	Process Metadata	run_day validation	Depending on frequency	Pass			Pavani	
+12	Process Metadata	run_hour validation	should in 24 hr numeric value 'string' format (23:00:00) . No AM or PM allowed eg:07:00:00 PM (value <= 23:59:59)	Pass			Pavani	
+13	Process Metadata	scheduler_name validation	Should be single word	Pass			Pavani	
+14	Process Metadata	sla validation	"should in 24 hr 'string' format
+greater than run_hour"	Pass			Pavani	
+15	Process Metadata	create_dt validation	Blank or date value in string	Pass			Pavani	
+16	Process Metadata	source validation	String value , comma seperated, If variable present corresponding value to be present in config sheet	Pass			Pavani	
+17	Process Metadata	target validation	String value , comma seperated, If variable present corresponding value to be present in config sheet	Pass			Pavani	
+18	Process Metadata	source_type validation	String value, Should be in Pubsub,Table,Esp,File,Kafka	Pass			Pavani	
+19	Process Metadata	target_type validation	String value should be in File,Kafka,Pubsub,Table,Topic	Pass			Pavani	
+20	Process Metadata	source_servername validation	String value	Pass			Pavani	
+21	Process Metadata	target_servername validation	String value	Pass			Pavani	
+22	Process Metadata	process_seq_num validation	numeriv value	Pass			Pavani	
+23	Process Metadata	sub_process_seq_num validation	numeric value	Pass			Pavani	
+24	Process Metadata	source_environment validation	String value ,underscore seperated	Pass			Pavani	
+25	Process Metadata	target_environment validation	String value ,underscore seperated	Pass			Pavani	
+26	Process Metadata	interval validation	Mandatory for hourly process numeric value	Pass			Pavani	
+27	Process Metadata	step_id validation	"Blank or numeric value, 
+Should be matching with the log value"	Pass			Pavani	
+28	Process Metadata	logs_enabled validation	Should be  'Y,N'	Pass			Pavani	
+29	Process Metadata	is_mandatory validation	Should be  'Y,N' four hourly and custom hourly	Pass			Pavani	
+30	Process Metadata	run_date_buffer_interval validation	24 hour format,numeric value\	Pass			Pavani	
+31	Process Metadata	timezone validation	Blank or in (UTC,GMT,EST)	Pass			Pavani	
+32	Process Metadata	logs_trace_id_enabled validation	Should be  'Y,N'	Pass			Pavani	
+33	Process Metadata	volume_query validation	if collect_volume Y then query should be present	Pass			Pavani	
+34	Process Metadata	reason_is_active_change validation	Description if there is change in is_active column	Pass			Pavani	
+35	Process Metadata	duration_threshold_low_value validation	Numeric value or blank	Pass			Pavani	
+36	Process Metadata	duration_threshold_high_value validation	Numeric value or blank	Pass			Pavani	
+37	Process Metadata	collect_volume validation	Should be  'Y,N'	Pass			Pavani	
+38	Process Metadata	businessunit validation	String value	Pass			Pavani	
+39	Process Metadata	vsad validation	mandatory value eg:hgrv/gk1v	Pass			Pavani	
+40	Process Metadata	portfolio validation	String value				Pavani	
+41	Process Metadata	application validation	String value				Pavani	
+43	Process_alert_and_notification metadata	application_name validation	matching with application_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+44	Process_alert_and_notification metadata	program_name validation	matching with program_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+45	Process_alert_and_notification metadata	process_name validation	matching with process_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+46	Process_alert_and_notification metadata	platform_name validation	matching with platform_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+47	Process_alert_and_notification metadata	env_name validation	matching with env_name,( in process sheet or in the process_meta table)	Pass			Pavani	
+48	Process_alert_and_notification metadata	sla_buffer validation	Numeric value, string datatype	Pass			Pavani	
+49	Process_alert_and_notification metadata	alert_failure validation	Should be  'Y,N' or Blank	Pass			Pavani	
+50	Process_alert_and_notification metadata	process_failed_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+51	Process_alert_and_notification metadata	alert_sla_misses validation	Should be  'Y,N' or Blank	Pass			Pavani	
+52	Process_alert_and_notification metadata	process_sla_miss_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+53	Process_alert_and_notification metadata	alert_pending validation	Should be  'Y,N' or Blank	Pass			Pavani	
+54	Process_alert_and_notification metadata	process_pending_alert_priority validation	Blank or value should be in (P1,P2,P3,P4,P5)	Pass			Pavani	
+55	Process_alert_and_notification metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Opsgine alerts required for the app'n team	Pavani	
+56	Process_alert_and_notification metadata	alert_metadata validation	String JSON format for additional information opsgenie alert	Pass			Pavani	
+57	Process_alert_and_notification metadata	alert_additional_info validation	blank or metadata columns as comma seperated string	Pass			Pavani	
+58	Process_alert_and_notification metadata	alert_required_columns validation	String value comma seperated column names	Pass			Pavani	
+59	Process_alert_and_notification metadata	notify_success validation	Should be  'Y,N' or blank	Pass			Pavani	
+60	Process_alert_and_notification metadata	success_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+61	Process_alert_and_notification metadata	notify_failure validation	Should be  'Y,N' or blank	Pass			Pavani	
+62	Process_alert_and_notification metadata	failure_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+63	Process_alert_and_notification metadata	notify_sla_miss validation	Should be  'Y,N' or blank	Pass			Pavani	
+64	Process_alert_and_notification metadata	sla_miss_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+65	Process_alert_and_notification metadata	notification_required_columns validation	String value comma seperated column names	Pass			Pavani	
+66	Process_alert_and_notification metadata	notification_additional_info validation	Additional information to be added in the email JSON format	Pass			Pavani	
+67	Process_alert_and_notification metadata	notify_process_status_change validation	Should be  'Y,N' or blank	Pass			Pavani	
+68	Process_alert_and_notification metadata	process_status_change_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+69	Process_alert_and_notification metadata	dependency_notification validation	Should be  'Y,N' or blank	Pass			Pavani	
+70	Process_alert_and_notification metadata	dependency_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+72	File metadata	file_name validation	Complete file name with extension, and parameterised for numeric values			No Files Data	Pavani	
+73	File metadata	file_path validation	file path			No Files Data	Pavani	
+74	File metadata	server_name validation	String value			No Files Data	Pavani	
+75	File metadata	application_name validation	matching with application_name,( in process sheet )			No Files Data	Pavani	
+76	File metadata	platform_name validation	matching with platform_name,( in process sheet )			No Files Data	Pavani	
+77	File metadata	env_name validation	matching with env_name,( in process sheet )			No Files Data	Pavani	
+78	File metadata	comment_text validation	 Blanck or File comment			No Files Data	Pavani	
+79	File metadata	file_middle_pattern validation	repetative middle pattern file			No Files Data	Pavani	
+80	File metadata	file_prefix validation	string ; sub string of file name			No Files Data	Pavani	
+81	File metadata	file_suffix validation	string ; sub string of file name			No Files Data	Pavani	
+82	File metadata	frequency validation	Frequency of the file			No Files Data	Pavani	
+83	File metadata	instance_ind validation	Specific to EDW only			No Files Data	Pavani	
+84	File metadata	is_active validation	Should be  'Y,N'			No Files Data	Pavani	
+85	File metadata	notify_source validation	Should be  'Y,N' or blank			No Files Data	Pavani	
+86	File metadata	run_day validation	Same as process_date numeric value as string			No Files Data	Pavani	
+87	File metadata	process_owner validation	email id			No Files Data	Pavani	
+88	File metadata	sla validation	24 hour format string value			No Files Data	Pavani	
+89	File metadata	source_poc validation	email id			No Files Data	Pavani	
+90	File metadata	threshold_low validation	numeric value			No Files Data	Pavani	
+91	File metadata	threshold_unit validation	non numeric string value (percentage or count)			No Files Data	Pavani	
+92	File metadata	threshold_up validation	numeric value			No Files Data	Pavani	
+93	File metadata	create_dt validation	Blank or date value in string			No Files Data	Pavani	
+94	File metadata	notify_downstream validation	Should be  'Y,N'			No Files Data	Pavani	
+95	File metadata	downstream_email validation	Email list comma seperated or blank			No Files Data	Pavani	
+96	File metadata	interval validation	 fixed or hourly frequency based files. INTEGER VALUE			No Files Data	Pavani	
+97	File metadata	file_name_regexp validation	Blank or regexp format file name			No Files Data	Pavani	
+98	File metadata	run_hour validation	should in 24 hr numeric value 'string' format			No Files Data	Pavani	
+99	File metadata	file_arrival_custom_interval validation	Numeric value ( negative also possible)			No Files Data	Pavani	
+100	File metadata	source_system validation	Blank or String value			No Files Data	Pavani	
+101	File metadata	sla_notification_buffer validation	24 hr format numeric value			No Files Data	Pavani	
+102	File metadata	notify_sla_misses validation	Should be  'Y,N'			No Files Data	Pavani	
+103	File metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Files Data	Pavani	
+104	File metadata	notify_file_size validation	Should be  'Y,N'			No Files Data	Pavani	
+105	File metadata	file_size_limit validation	Should be  'Y,N'			No Files Data	Pavani	
+106	File metadata	alert_info validation	if file_size_limit is Y then numeric value			No Files Data	Pavani	
+108	Table metadata	application_name validation	matching with application_name,( in process sheet )	Pass			Pavani	
+109	Table metadata	db_name validation	String value	Pass			Pavani	
+110	Table metadata	table_name validation	string value	Pass			Pavani	
+111	Table metadata	servername validation	string value	Pass			Pavani	
+112	Table metadata	platform_name validation	matching with platform_name,( in process sheet )	Pass			Pavani	
+113	Table metadata	env_name validation	matching with env_name,( in process sheet )	Pass			Pavani	
+114	Table metadata	frequency validation	Frequency of the table	Pass			Pavani	
+115	Table metadata	is_active validation	Should be  'Y,N'	Pass			Pavani	
+116	Table metadata	run_day validation	Same as process_date numeric value as string	Pass			Pavani	
+117	Table metadata	run_hour validation	24 hour format string value	Pass			Pavani	
+118	Table metadata	sla validation	24 hour format string value	Pass			Pavani	
+119	Table metadata	table_process_day validation	Blank or day( Thursday, Wednesday etc)	Pass			Pavani	
+120	Table metadata	threshold_low validation	Numeric value	Pass			Pavani	
+121	Table metadata	threshold_unit validation	should be in Percentage /Count	Pass			Pavani	
+122	Table metadata	threshold_up validation	Numeric value	Pass			Pavani	
+123	Table metadata	tool_name validation	Should be in GCP_Hive,GCP_BQ,EDW_TD,OnPrem_Hive,AEDW_TD,VBG_TD	Pass			Pavani	
+124	Table metadata	create_dt validation	Blank or date value in string	Pass			Pavani	
+125	Table metadata	notify_table_size validation	Should be  'Y,N' or blank	Pass			Pavani	
+126	Table metadata	table_size_limit validation	Numeric value				Pavani	
+127	Table metadata	opsgenie_team validation	Opsgenie board name, (case sensitive ), multiple teams should be comma seperated			No Opsgine alerts required for the team	Pavani	
+128	Table metadata	table_size_notification_email_list validation	Email list comma seperated or blank	Pass			Pavani	
+129	Table metadata	alert_table_size validation	Should be  'Y,N' or blank	Pass			Pavani	
+-------------------------------------------------------------------------
+CREATE or REPLACE TABLE dataobservability_tbls.dof_lineage_diagram_etl partition by process_date as
+SELECT tbl.*, tags.tag_value as tag,
+  dq.`TBL_COMPLETENESS` AS tbl_completeness,
+  dq.`TBL_TIMELINESS` AS tbl_timeliness,
+  dq.`TBL_UNIQUENESS` AS tbl_uniqueness
+   from (
+SELECT
+  COALESCE(map.mapped_program_name, process_report.program_name) AS project_name,
+  process_report.process_id,
+  process_report.process_date,
+  process_report.sub_process AS subprocess_name,
+  process_report.process_poc,
+  /*ARRAY_AGG(DISTINCT IFNULL(sla_time, '')) AS sla_history,*/
+  process_report.frequency,
+  run_day,
+  /*ARRAY_AGG(DISTINCT IFNULL(process_report.schedule_time, '')) AS run_hour_history,*/
+  is_critical,
+  scheduler_name,
+  COALESCE(notify_failure, 'Y') AS notify_fails,
+  failure_notification_email_list,
+  COALESCE(notify_success, 'N') AS notify_success,
+  success_notification_email_list,
+  process_meta.is_active,
+  process_report.application_name,
+  create_dt,
+  process_seq_num,
+  source_environment,
+  meta.env_name,
+  source_servername,
+  sub_process_seq_num,
+  target_environment,
+  target_servername,
+  meta.process_source AS source,
+  meta.process_target AS target,
+  process_report.source_type,
+  process_report.target_type,
+  process_report.process_name,
+  COALESCE(map.mapped_program_name, process_report.program_name) AS program_name,
+  process_report.monitor_date,
+  IF
+  (process_report.target_count = 0, NULL, process_report.target_count) AS target_count,
+  file_detail.file_arrival_status as source_file_status,
+  process_meta.is_mandatory as mandatory_process,
+  file_detail.is_mandatory as mandatory_file,
+  ARRAY_AGG(DISTINCT IFNULL(CAST(expected_datetime AS STRING format 'yyyy-mm-dd HH24:MI:SS'), '')) AS sla_history,
+  ARRAY_AGG( IFNULL( CAST( process_report.start_time AS string format 'yyyy-mm-dd HH24:MI:SS'),'')) AS run_hour_history,
+  ARRAY_AGG(DISTINCT IFNULL(process_report.process_status, '')) AS run_status_history,
+  ARRAY_AGG(DISTINCT IFNULL(sla_met, '')) AS sla_met_history,
+  /*process_report.program_name,*/ /*tag_value AS tag,*/
+  ARRAY_AGG(DISTINCT (0)) AS trace_id_history,
+  ARRAY_AGG(DISTINCT (process_meta.source)) as source_history,
+  ARRAY_AGG(DISTINCT (process_meta.target)) as  target_history,
+  /*ARRAY_AGG(IFNULL(CAST(process_report.end_time AS string),'')) AS end_time_history,*/
+  ARRAY_AGG( IFNULL( CAST( process_report.end_time AS string format 'yyyy-mm-dd HH24:MI:SS'),'')) AS end_time_history,
+  ARRAY_AGG(process_report.process_date) AS process_date_history,
+  /*CAST(COALESCE(NULL,1) as STRING) as total_instance_count,*/ CAST((MAX(success_instance_count) + MAX(failed_instance_count)+ MAX(pending_instance_count)+MAX(others_instance_count)) AS string) AS total_instance_count,
+  CAST(MAX(success_instance_count) AS string) AS success_instance_count,
+  CAST(MAX(failed_instance_count) AS string) AS failed_instance_count,
+  CAST(MAX(pending_instance_count) AS string) AS pending_instance_count,
+  CAST(MAX(others_instance_count) AS string) AS others_instance_count
+FROM
+  `dataobservability_tbls_v.dof_entity_relation_lineage_meta_v` AS meta
+INNER JOIN
+  `dataobservability_tbls_v.dof_process_monitor_lineage_latest_rpt_v` AS process_report
+ON
+  process_report.project_name=meta.project_name
+  AND process_report.sub_process=meta.sub_process
+  -- AND process_report.process_name =case when meta.sub_process in ('soi_egress') then concat('cfi_send_soi_egress_',meta.process_name) else meta.process_name END
+  AND process_report.process_name =meta.process_name
+  AND UPPER(process_report.frequency) IN ('DAILY') /*select daily, weekly and monthly records*/
+INNER JOIN
+  `dataobservability_tbls.dof_process_meta` AS process_meta
+ON
+  process_meta.subprocess_name=process_report.sub_process
+    AND case when process_meta.subprocess_name='soi_egress' then concat('cfi_send_soi_egress_',process_meta.process_name) else process_meta.process_name end  =process_report.process_name  
+  --AND process_meta.process_name=process_report.process_name 
+    AND process_meta.step_id =process_report.step_id
+    AND process_meta.process_id =process_report.process_id 
+LEFT JOIN
+(select distinct concat(file_meta.file_path,file_meta.file_name) as qualified_file_name, file_meta.is_mandatory, file_report.file_pattern, file_report.file_arrival_status, file_report.process_date, file_report.overall_file_status from `dataobservability_tbls.dof_file_meta` file_meta INNER JOIN `dataobservability_tbls.dof_files_monitor_rpt` file_report
+on file_meta.file_id = file_report.file_id and file_report.is_valid = true
+) file_detail
+ON process_meta.source = file_detail.qualified_file_name and process_report.process_date = file_detail.process_date and lower(process_meta.source_type) = 'file'
+LEFT JOIN
+  `dataobservability_tbls.dof_process_alert_notification_meta` AS alert_meta
+ON
+  process_meta.application_name=alert_meta.application_name
+  AND process_meta.program_name=alert_meta.program_name
+  AND process_meta.platform_name=alert_meta.platform_name
+  AND process_meta.env_name=alert_meta.env_name
+  AND process_meta.process_name=alert_meta.process_name
+LEFT JOIN
+  `dataobservability_tbls_v.dof_program_name_mapping_v` map
+ON
+  LOWER(process_report.program_name) = LOWER(map.meta_program_name)
+WHERE
+  process_report.source_type IS NOT NULL
+  AND process_report.target_type IS NOT NULL
+  AND process_report.process_status IS NOT NULL
+  AND is_valid IS TRUE
+  AND (UPPER(process_meta.is_active) = 'Y'
+    OR process_meta.is_active IS NULL)
+  AND sla_time IS NOT NULL
+GROUP BY
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34
+UNION ALL
+SELECT
+  COALESCE(map.mapped_program_name, process_report.program_name) AS project_name,
+  process_report.process_id,
+  process_report.process_date,
+  process_report.sub_process AS subprocess_name,
+  process_report.process_poc,
+  /*ARRAY_AGG(DISTINCT IFNULL(sla_time, '')) AS sla_history,*/
+  process_report.frequency,
+  run_day,
+  /*ARRAY_AGG(DISTINCT IFNULL(process_report.schedule_time, '')) AS run_hour_history,*/
+  is_critical,
+  scheduler_name,
+  COALESCE(notify_failure, 'Y') AS notify_fails,
+  failure_notification_email_list,
+  COALESCE(notify_success, 'N') AS notify_success,
+  success_notification_email_list,
+  process_meta.is_active,
+  process_report.application_name,
+  create_dt,
+  '1',
+  source_environment,
+   meta.env_name,
+  source_servername,
+  '1',
+  target_environment,
+  target_servername,
+  meta.process_source AS source,
+  meta.process_target AS target,
+  process_report.source_type,
+  process_report.target_type,
+  process_report.process_name,
+  COALESCE(map.mapped_program_name, process_report.program_name) AS program_name,
+  process_report.monitor_date,
+  IF
+  (process_report.target_count = 0, NULL, process_report.target_count) AS target_count,
+  file_detail.file_arrival_status as source_file_status,
+  process_meta.is_mandatory as mandatory_process,
+  file_detail.is_mandatory as mandatory_file,
+  ARRAY_AGG(DISTINCT IFNULL(CAST(expected_datetime AS STRING format 'yyyy-mm-dd HH24:MI:SS'), '')) AS sla_history,
+  ARRAY_AGG( IFNULL( CAST( process_report.start_time AS string format 'yyyy-mm-dd HH24:MI:SS'),'')) AS run_hour_history,
+  ARRAY_AGG(DISTINCT IFNULL(process_report.process_status, '')) AS run_status_history,
+  ARRAY_AGG(DISTINCT IFNULL(sla_met, '')) AS sla_met_history,
+  /*process_report.program_name,*/ /*tag_value AS tag,*/
+  ARRAY_AGG(DISTINCT (0)) AS trace_id_history,
+  ARRAY_AGG(DISTINCT (process_report.source_name)) AS source_history,
+  ARRAY_AGG(DISTINCT (process_report.target_name)) AS target_history,
+  /*ARRAY_AGG(IFNULL(CAST(process_report.end_time AS string),'')) AS end_time_history,*/
+   ARRAY_AGG( IFNULL( CAST( process_report.end_time AS string format 'yyyy-mm-dd HH24:MI:SS'),'')) AS end_time_history,
+  ARRAY_AGG(process_report.process_date) AS process_date_history,
+  /*CAST(COALESCE(NULL,1) as STRING) as total_instance_count,*/ CAST((MAX(success_instance_count) + MAX(failed_instance_count)+ MAX(pending_instance_count)+MAX(others_instance_count)) AS string) AS total_instance_count,
+  CAST(MAX(success_instance_count) AS string) AS success_instance_count,
+  CAST(MAX(failed_instance_count) AS string) AS failed_instance_count,
+  CAST(MAX(pending_instance_count) AS string) AS pending_instance_count,
+  CAST(MAX(others_instance_count) AS string) AS others_instance_count
+FROM
+  `dataobservability_tbls_v.dof_entity_relation_lineage_meta_v` AS meta
+INNER JOIN
+  `dataobservability_tbls_v.dof_process_monitor_lineage_latest_rpt_v` AS process_report
+ON
+  process_report.project_name=meta.project_name
+  AND process_report.sub_process=meta.sub_process
+  AND process_report.process_name =meta.process_name
+  AND UPPER(process_report.frequency) IN ('REAL_TIME') /*select daily, weekly and monthly records*/
+INNER JOIN
+  `dataobservability_tbls.dof_realtime_process_meta` AS process_meta
+ON
+  process_meta.subprocess_name=process_report.sub_process
+    AND case when process_meta.subprocess_name='soi_egress' then concat('cfi_send_soi_egress_',process_meta.process_name) else process_meta.process_name end  =process_report.process_name  
+  --AND process_meta.process_name=process_report.process_name 
+  --AND process_meta.step_id =process_report.step_id
+    AND process_meta.process_id =process_report.process_id 
+LEFT JOIN
+(select distinct concat(file_meta.file_path,file_meta.file_name) as qualified_file_name, file_meta.is_mandatory, file_report.file_pattern, file_report.file_arrival_status, file_report.process_date,file_report.overall_file_status from `dataobservability_tbls.dof_file_meta` file_meta INNER JOIN `dataobservability_tbls.dof_files_monitor_rpt` file_report
+on file_meta.file_id = file_report.file_id and file_report.is_valid = true
+) file_detail
+ON process_meta.source = file_detail.qualified_file_name and process_report.process_date = file_detail.process_date and lower(process_meta.source_type) = 'file'
+LEFT JOIN
+  `dataobservability_tbls.dof_process_alert_notification_meta` AS alert_meta
+ON
+  process_meta.application_name=alert_meta.application_name
+  AND process_meta.program_name=alert_meta.program_name
+  AND process_meta.platform_name=alert_meta.platform_name
+  AND process_meta.env_name=alert_meta.env_name
+  AND process_meta.process_name=alert_meta.process_name
+LEFT JOIN
+  `dataobservability_tbls_v.dof_program_name_mapping_v` map
+ON
+  LOWER(process_report.program_name) = LOWER(map.meta_program_name)
+WHERE
+  process_report.source_type IS NOT NULL
+  AND process_report.target_type IS NOT NULL
+  AND process_report.process_status IS NOT NULL
+  AND is_valid IS TRUE
+  AND (UPPER(process_meta.is_active) = 'Y'
+    OR process_meta.is_active IS NULL)
+  AND sla_time IS NOT NULL
+GROUP BY
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34
+UNION ALL
+SELECT
+  COALESCE(map.mapped_program_name, process_report.program_name) AS project_name,
+  process_report.process_id,
+  process_report.process_date,
+  process_report.sub_process AS subprocess_name,
+  process_report.process_poc,
+  /*ARRAY_AGG(IFNULL(sla_time, '')) AS sla_history,*/
+  process_report.frequency,
+  run_day,
+  /*ARRAY_AGG(IFNULL(process_report.schedule_time, '')) AS run_hour_history,*/
+  is_critical,
+  scheduler_name,
+  COALESCE(notify_failure, 'Y') AS notify_fails,
+  failure_notification_email_list,
+  COALESCE(notify_success, 'N') AS notify_success,
+  success_notification_email_list,
+  process_meta.is_active,
+  process_report.application_name,
+  create_dt,
+  process_seq_num,
+  source_environment,
+   meta.env_name,
+  source_servername,
+  sub_process_seq_num,
+  target_environment,
+  target_servername,
+  meta.process_source AS source,
+  meta.process_target AS target,
+  process_report.source_type,
+  process_report.target_type,
+  process_report.process_name,
+  COALESCE(map.mapped_program_name, process_report.program_name) AS program_name,
+  process_report.monitor_date,
+IF
+  (process_report.target_count = 0, NULL, process_report.target_count) AS target_count,
+  file_detail.overall_file_status as source_file_status,
+  process_meta.is_mandatory as mandatory_process,
+  file_detail.is_mandatory as mandatory_file,
+  ARRAY_AGG(IFNULL(CAST(expected_datetime AS STRING format 'yyyy-mm-dd HH24:MI:SS'), '')) AS sla_history,
+  ARRAY_AGG( IFNULL( CAST( process_report.start_time AS string format 'yyyy-mm-dd HH24:MI:SS'),'')) AS run_hour_history,
+  ARRAY_AGG(IFNULL(process_report.overall_process_status, '')) AS run_status_history,
+  ARRAY_AGG(IFNULL(sla_met, '')) AS sla_met_history,
+  /*process_report.program_name,*/ /*tag_value AS tag,*/
+  ARRAY_AGG(IFNULL(process_report.trace_id, 1)) AS trace_id_history,
+  ARRAY_AGG(process_report.source_name) AS source_history,
+  ARRAY_AGG(process_report.target_name) AS target_history,
+  /*ARRAY_AGG(IFNULL(CAST(process_report.end_time AS string),'')) AS end_time_history,*/
+   ARRAY_AGG( IFNULL( CAST( process_report.end_time AS string format 'yyyy-mm-dd HH24:MI:SS'),'')) AS end_time_history,
+  ARRAY_AGG(process_report.process_date) AS process_date_history,
+  CAST(MAX(total_instance_count) AS string) AS total_instance_count,
+  CAST(MAX(success_instance_count) AS string) AS success_instance_count,
+  CAST(MAX(failed_instance_count) AS string) AS failed_instance_count,
+  CAST(MAX(pending_instance_count) AS string) AS pending_instance_count,
+  CAST(MAX(others_instance_count) AS string) AS others_instance_count
+FROM
+  `dataobservability_tbls_v.dof_entity_relation_lineage_meta_v` AS meta
+INNER JOIN (
+  SELECT
+    *
+  FROM (
+    SELECT
+      DISTINCT lineage.*,
+      max_value.max_trace_id
+    FROM
+      `dataobservability_tbls_v.dof_process_monitor_lineage_latest_rpt_v` AS lineage
+    JOIN (
+      SELECT
+        program_name,
+        process_date,
+        process_status,
+        overall_process_status,
+        frequency,
+        MAX(trace_id) AS max_trace_id
+      FROM
+        `dataobservability_tbls_v.dof_process_monitor_lineage_latest_rpt_v`
+      WHERE
+        TIMESTAMP(DATETIME(CAST(process_date AS DATE), CAST(schedule_time AS TIME))) < CURRENT_TIMESTAMP()
+      GROUP BY
+        program_name,
+        process_date,
+        process_status,
+        overall_process_status,
+        frequency,
+        trace_id QUALIFY ROW_NUMBER() OVER (PARTITION BY program_name, process_date, process_status, frequency ORDER BY trace_id DESC) = 1 ) max_value
+    ON
+      max_value.program_name = lineage.program_name
+      AND max_value.process_date = lineage.process_date
+      AND max_value.process_status=lineage.process_status
+      AND max_value.frequency=lineage.frequency
+    WHERE
+      lineage.trace_id <= max_trace_id QUALIFY ROW_NUMBER() OVER (PARTITION BY program_name, process_date, process_name, sub_process, process_status ORDER BY trace_id DESC) < 4 )
+  WHERE
+    UPPER(frequency) IN ('HOURLY',
+      'FIXED',
+      'HOURLY_CUSTOM')
+    AND source_type IS NOT NULL
+    AND target_type IS NOT NULL
+    AND process_status IS NOT NULL
+    AND overall_process_status IS NOT NULL
+    AND is_valid IS TRUE
+    AND sla_time IS NOT NULL
+  ORDER BY
+    sub_process,
+    schedule_time DESC ) AS process_report
+ON
+  process_report.project_name=meta.project_name
+  AND process_report.sub_process=meta.sub_process
+  AND process_report.process_name =meta.process_name
+INNER JOIN
+  `dataobservability_tbls.dof_process_meta` AS process_meta
+ON
+  process_meta.subprocess_name=process_report.sub_process
+    AND case when process_meta.subprocess_name='soi_egress' then concat('cfi_send_soi_egress_',process_meta.process_name) else process_meta.process_name end  =process_report.process_name  
+  --AND process_meta.process_name=process_report.process_name 
+    AND process_meta.step_id =process_report.step_id
+    AND process_meta.process_id =process_report.process_id 
+LEFT JOIN
+(select distinct concat(file_meta.file_path,file_meta.file_name) as qualified_file_name, file_meta.is_mandatory, file_report.file_pattern, file_report.file_arrival_status, file_report.process_date,file_report.overall_file_status from `dataobservability_tbls.dof_file_meta` file_meta INNER JOIN `dataobservability_tbls.dof_files_monitor_rpt` file_report
+on file_meta.file_id = file_report.file_id and file_report.is_valid = true
+) file_detail
+ON process_meta.source = file_detail.qualified_file_name and process_report.process_date = file_detail.process_date and lower(process_meta.source_type) = 'file'
+LEFT JOIN
+  `dataobservability_tbls.dof_process_alert_notification_meta` AS alert_meta
+ON
+  process_meta.application_name=alert_meta.application_name
+  AND process_meta.program_name=alert_meta.program_name
+  AND process_meta.platform_name=alert_meta.platform_name
+  AND process_meta.env_name=alert_meta.env_name
+  AND process_meta.process_name=alert_meta.process_name
+LEFT JOIN
+  `dataobservability_tbls_v.dof_program_name_mapping_v` map
+ON
+  LOWER(process_report.program_name) = LOWER(map.meta_program_name)
+WHERE
+  (UPPER(process_meta.is_active) = 'Y'
+    OR process_meta.is_active IS NULL)
+GROUP BY
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34
+UNION ALL
+SELECT
+  COALESCE(map.mapped_program_name, process_report.program_name) AS project_name,
+  process_report.process_id,
+  week_date AS process_date,
+  process_report.sub_process AS subprocess_name,
+  process_report.process_poc,
+  /*ARRAY_AGG(DISTINCT IFNULL(sla_time, '')) AS sla_history,*/
+  process_report.frequency,
+  run_day,
+  /*ARRAY_AGG(DISTINCT IFNULL(process_report.schedule_time, '')) AS run_hour_history,*/
+  is_critical,
+  scheduler_name,
+  COALESCE(notify_failure, 'Y') AS notify_fails,
+  failure_notification_email_list,
+  COALESCE(notify_success, 'N') AS notify_success,
+  success_notification_email_list,
+  process_meta.is_active,
+  process_report.application_name,
+  create_dt,
+  process_seq_num,
+  source_environment,
+  meta.env_name,
+  source_servername,
+  sub_process_seq_num,
+  target_environment,
+  target_servername,
+  meta.process_source AS source,
+  meta.process_target AS target,
+  process_report.source_type,
+  process_report.target_type,
+  process_report.process_name,
+  COALESCE(map.mapped_program_name, process_report.program_name) AS program_name,
+  process_report.monitor_date,
+  IF
+  (process_report.target_count = 0, NULL, process_report.target_count) AS target_count,
+  file_detail.file_arrival_status as source_file_status,
+  process_meta.is_mandatory as mandatory_process,
+  file_detail.is_mandatory as mandatory_file,
+  ARRAY_AGG( IFNULL(CAST(expected_datetime AS STRING format 'yyyy-mm-dd HH24:mi:SS'), '') order by expected_datetime) AS sla_history,
+  ARRAY_AGG( IFNULL( CAST( process_report.start_time AS string format 'yyyy-mm-dd HH24:mi:SS'),'') order by expected_datetime) AS run_hour_history,
+  ARRAY_AGG( IFNULL(process_report.process_status, '') order by expected_datetime) AS run_status_history,
+  ARRAY_AGG( IFNULL(sla_met, '') order by expected_datetime) AS sla_met_history,
+  /*process_report.program_name,*/ /*tag_value AS tag,*/
+  ARRAY_AGG(DISTINCT (0)) AS trace_id_history,
+  ARRAY_AGG( (process_meta.source) order by expected_datetime) as source_history,
+  ARRAY_AGG( (process_meta.target) order by expected_datetime) as target_history,
+  /*ARRAY_AGG(IFNULL(CAST(process_report.end_time AS string),'')) AS end_time_history,*/
+  ARRAY_AGG( IFNULL( CAST( process_report.end_time AS string format 'yyyy-mm-dd HH24:mi:SS'),'') order by expected_datetime) AS end_time_history,
+  ARRAY_AGG( process_report.process_date order by expected_datetime) AS process_date_history,
+  /*CAST(COALESCE(NULL,1) as STRING) as total_instance_count,*/ CAST((MAX(success_instance_count) + MAX(failed_instance_count)+ MAX(pending_instance_count)+MAX(others_instance_count)) AS string) AS total_instance_count,
+  CAST(MAX(success_instance_count) AS string) AS success_instance_count,
+  CAST(MAX(failed_instance_count) AS string) AS failed_instance_count,
+  CAST(MAX(pending_instance_count) AS string) AS pending_instance_count,
+  CAST(MAX(others_instance_count) AS string) AS others_instance_count
+FROM
+  `dataobservability_tbls_v.dof_entity_relation_lineage_meta_v` AS meta
+INNER JOIN (
+  SELECT
+    V.*,
+    date AS week_date
+  FROM (
+    SELECT
+      *
+    FROM
+      `dataobservability_tbls_v.dof_process_monitor_lineage_latest_rpt_v`
+    WHERE
+      process_date > current_date() - 60 and LOWER(frequency) IN ('monthly',
+        'weekly')) V
+  INNER JOIN (SELECT date,EXTRACT(YEAR FROM date) AS year,EXTRACT(week FROM date) AS week, EXTRACT(Month FROM date) AS Month FROM UNNEST(GENERATE_DATE_ARRAY(current_date-60, current_Date)) AS date ) A /* update to identify common weeks that are present in two months */
+  ON
+    EXTRACT(YEAR
+    FROM
+      process_date)=year
+    AND
+    CASE
+      WHEN LOWER(V.frequency) IN ('weekly') THEN EXTRACT(week FROM process_date)= week
+     WHEN LOWER(V.frequency) IN ('monthly') THEN EXTRACT(MONTH FROM process_date) = Month
+  END
+    /* second weekly condition to join successive month in the same week */
+  WHERE
+    process_date IS NOT NULL
+  ORDER BY
+    week_date ) AS process_report
+ON
+  process_report.project_name=meta.project_name
+  AND process_report.sub_process=meta.sub_process
+  AND process_report.process_name =meta.process_name
+  AND UPPER(process_report.frequency) IN ('MONTHLY', 'WEEKLY') /*select weekly and monthly records*/
+INNER JOIN
+  `dataobservability_tbls.dof_process_meta` AS process_meta
+ON
+  process_meta.subprocess_name=process_report.sub_process
+    AND case when process_meta.subprocess_name='soi_egress' then concat('cfi_send_soi_egress_',process_meta.process_name) else process_meta.process_name end  =process_report.process_name  
+  --AND process_meta.process_name=process_report.process_name 
+    AND process_meta.step_id =process_report.step_id
+    AND process_meta.process_id =process_report.process_id 
+LEFT JOIN
+(select distinct concat(file_meta.file_path,file_meta.file_name) as qualified_file_name, file_meta.is_mandatory, file_report.file_pattern, file_report.file_arrival_status, file_report.process_date,file_report.overall_file_status from `dataobservability_tbls.dof_file_meta` file_meta INNER JOIN `dataobservability_tbls.dof_files_monitor_rpt` file_report
+on file_meta.file_id = file_report.file_id and file_report.is_valid = true
+) file_detail
+ON process_meta.source = file_detail.qualified_file_name and process_report.process_date = file_detail.process_date and lower(process_meta.source_type) = 'file'
+LEFT JOIN
+  `dataobservability_tbls.dof_process_alert_notification_meta` AS alert_meta
+ON
+  process_meta.application_name=alert_meta.application_name
+  AND process_meta.program_name=alert_meta.program_name
+  AND process_meta.platform_name=alert_meta.platform_name
+  AND process_meta.env_name=alert_meta.env_name
+  AND process_meta.process_name=alert_meta.process_name
+LEFT JOIN
+  `dataobservability_tbls_v.dof_program_name_mapping_v` map
+ON
+  LOWER(process_report.program_name) = LOWER(map.meta_program_name)
+WHERE
+  process_report.source_type IS NOT NULL
+  AND process_report.target_type IS NOT NULL
+  AND process_report.process_status IS NOT NULL
+  AND is_valid IS TRUE
+  AND (UPPER(process_meta.is_active) = 'Y'
+    OR process_meta.is_active IS NULL)
+  AND sla_time IS NOT NULL
+GROUP BY
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34
+  ) tbl
+  LEFT JOIN
+  `dataobservability_tbls_v.dof_metadata_tag_relation_v` AS tags
+ON
+  tags.metadata_id = tbl.process_id
+  LEFT JOIN
+(SELECT
+    `TBL_COMPLETENESS`,
+    `TBL_TIMELINESS`,
+    `TBL_UNIQUENESS`,
+    run_date,
+    DB_NAME,
+    SRC_TBL,
+    prfl.product_name
+  FROM `vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.AUTO_PRFL_RPT_V` prfl
+  INNER JOIN `dataobservability_tbls.dof_dq_product_name_mapping_ref` ref
+    ON prfl.product_name = ref.product_name
+  GROUP BY `TBL_COMPLETENESS`, `TBL_TIMELINESS`, `TBL_UNIQUENESS`, run_date, DB_NAME, SRC_TBL, prfl.product_name) dq
+ON tbl.process_date = dq.run_date
+  AND (LOWER(ARRAY_REVERSE(SPLIT(dq.DB_NAME, '.'))[SAFE_OFFSET(0)]) = LOWER(ARRAY_REVERSE(SPLIT(tbl.target, '.'))[SAFE_OFFSET(1)]) 
+  AND
+    LOWER(ARRAY_REVERSE(SPLIT(tbl.target, '.'))[SAFE_OFFSET(0)]) = LOWER(dq.SRC_TBL)
+    OR LOWER(dq.SRC_TBL) = LOWER(CONCAT(ARRAY_REVERSE(SPLIT(tbl.target, '.'))[SAFE_OFFSET(0)], '_v'))
+  )
+where tbl.process_date >= (current_date - 31);
 
