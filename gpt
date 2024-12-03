@@ -1,1 +1,120 @@
+-- CTE for Entity Relation Lineage Metadata
+WITH dof_entity_relation_lineage_meta_v AS (
+  SELECT DISTINCT
+    relationship_id,
+    project_name,
+    CASE 
+      WHEN sub_process = 'soi_egress' THEN CONCAT('cfi_send_soi_egress_', process_name)
+      ELSE process_name
+    END AS process_name,
+    source_type,
+    target_type,
+    sub_process,
+    application_name,
+    step_id,
+    env_name,
+    TRIM(REPLACE(process_source, '\n', '')) AS process_source,
+    TRIM(REPLACE(process_target, '\n', '')) AS process_target
+  FROM `vz-it-pr-hgrv-aidedo-0.aid_epdo_prd_tbls_nogsam_v.dof_entity_relation_meta` lm
+  INNER JOIN `vz-it-pr-hgrv-aidedo-0.aid_epdo_prd_tbls_nogsam_v.dof_process_meta` pm
+    ON lm.process_name = pm.process_name
+  WHERE pm.is_active = 'Y'
+    AND (TRIM(lm.process_target) <> '' OR TRIM(lm.process_source) <> '')
+    AND (lm.process_target IS NOT NULL OR lm.process_source IS NOT NULL)
+),
+
+-- CTE for Process Monitor Lineage Report
+dof_process_monitor_lineage_latest_rpt_v AS (
+  SELECT DISTINCT
+    process_id,
+    program_name,
+    project_name,
+    CASE
+      WHEN sub_process = 'soi_egress' THEN CONCAT('cfi_send_soi_egress_', process_name)
+      ELSE process_name
+    END AS process_name,
+    process_status,
+    frequency,
+    process_date,
+    schedule_time,
+    sla_time,
+    expected_datetime,
+    start_time,
+    end_time,
+    source_type,
+    target_type,
+    source_name,
+    target_name,
+    application_name,
+    is_valid,
+    monitor_date,
+    MAX(pending_instance_count) OVER (PARTITION BY program_name, project_name, process_name, process_date) AS pending_instance_count,
+    MAX(success_instance_count) OVER (PARTITION BY program_name, project_name, process_name, process_date) AS success_instance_count,
+    MAX(failed_instance_count) OVER (PARTITION BY program_name, project_name, process_name, process_date) AS failed_instance_count,
+    MAX(others_instance_count) OVER (PARTITION BY program_name, project_name, process_name, process_date) AS others_instance_count
+  FROM `vz-it-pr-hgrv-aidedo-0.aid_epdo_prd_tbls_nogsam_v.dof_process_monitor_rpt`
+  WHERE is_valid = TRUE
+),
+
+-- Final Query for Daily Records
+dof_lineage_diagram_etl AS (
+  SELECT
+    COALESCE(map.mapped_program_name, process_report.program_name) AS project_name,
+    process_report.process_id,
+    process_report.process_date,
+    process_report.sub_process AS subprocess_name,
+    process_report.process_poc,
+    process_report.frequency,
+    process_report.is_critical,
+    process_report.scheduler_name,
+    COALESCE(process_meta.notify_failure, 'Y') AS notify_fails,
+    process_meta.failure_notification_email_list,
+    COALESCE(process_meta.notify_success, 'N') AS notify_success,
+    process_meta.success_notification_email_list,
+    process_meta.is_active,
+    process_report.application_name,
+    process_meta.source_environment,
+    process_meta.env_name,
+    process_meta.source_servername,
+    process_meta.target_environment,
+    process_meta.target_servername,
+    meta.process_source AS source,
+    meta.process_target AS target,
+    process_report.source_type,
+    process_report.target_type,
+    process_report.process_name,
+    IF(process_report.target_count = 0, NULL, process_report.target_count) AS target_count,
+    ARRAY_AGG(IFNULL(CAST(process_report.expected_datetime AS STRING FORMAT 'yyyy-mm-dd HH24:MI:SS'), '')) AS sla_history,
+    ARRAY_AGG(IFNULL(CAST(process_report.start_time AS STRING FORMAT 'yyyy-mm-dd HH24:MI:SS'), '')) AS run_hour_history,
+    ARRAY_AGG(DISTINCT process_report.process_status) AS run_status_history,
+    ARRAY_AGG(DISTINCT process_report.sla_met) AS sla_met_history,
+    CAST((MAX(success_instance_count) + MAX(failed_instance_count) + MAX(pending_instance_count) + MAX(others_instance_count)) AS STRING) AS total_instance_count,
+    MAX(success_instance_count) AS success_instance_count,
+    MAX(failed_instance_count) AS failed_instance_count,
+    MAX(pending_instance_count) AS pending_instance_count,
+    MAX(others_instance_count) AS others_instance_count
+  FROM dof_entity_relation_lineage_meta_v AS meta
+  INNER JOIN dof_process_monitor_lineage_latest_rpt_v AS process_report
+    ON process_report.project_name = meta.project_name
+    AND process_report.sub_process = meta.sub_process
+    AND process_report.process_name = meta.process_name
+    AND UPPER(process_report.frequency) = 'DAILY'
+  LEFT JOIN `vz-it-pr-hgrv-aidedo-0.aid_epdo_prd_tbls_nogsam_v.dof_process_meta` process_meta
+    ON process_meta.subprocess_name = process_report.sub_process
+    AND process_meta.process_name = process_report.process_name
+  LEFT JOIN `vz-it-pr-hgrv-aidedo-0.aid_epdo_prd_tbls_nogsam_v.dof_program_name_mapping_v` map
+    ON LOWER(process_report.program_name) = LOWER(map.meta_program_name)
+  WHERE process_report.source_type IS NOT NULL
+    AND process_report.target_type IS NOT NULL
+    AND process_report.process_status IS NOT NULL
+    AND process_report.is_valid = TRUE
+  GROUP BY
+    project_name, process_id, process_date, subprocess_name, process_poc, frequency, 
+    is_critical, scheduler_name, notify_fails, failure_notification_email_list, 
+    notify_success, success_notification_email_list, is_active, application_name, 
+    source_environment, env_name, source_servername, target_environment, 
+    target_servername, source, target, source_type, target_type, process_name
+)
+
+SELECT * FROM dof_lineage_diagram_etl;
 
