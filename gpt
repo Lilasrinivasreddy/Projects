@@ -2,7 +2,7 @@
 WITH dof_entity_relation_lineage_meta_v AS (
   SELECT DISTINCT
     relationship_id,
-    project_name,
+    meta.project_name,
     CASE 
       WHEN sub_process = 'soi_egress' THEN CONCAT('cfi_send_soi_egress_', process_name)
       ELSE process_name
@@ -27,8 +27,8 @@ WITH dof_entity_relation_lineage_meta_v AS (
 dof_process_monitor_lineage_latest_rpt_v AS (
   SELECT DISTINCT
     process_id,
-    program_name,
-    project_name,
+    report.program_name,
+    report.project_name,
     CASE
       WHEN sub_process = 'soi_egress' THEN CONCAT('cfi_send_soi_egress_', process_name)
       ELSE process_name
@@ -48,11 +48,11 @@ dof_process_monitor_lineage_latest_rpt_v AS (
     application_name,
     is_valid,
     monitor_date,
-    MAX(pending_instance_count) OVER (PARTITION BY program_name, project_name, process_name, process_date) AS pending_instance_count,
-    MAX(success_instance_count) OVER (PARTITION BY program_name, project_name, process_name, process_date) AS success_instance_count,
-    MAX(failed_instance_count) OVER (PARTITION BY program_name, project_name, process_name, process_date) AS failed_instance_count,
-    MAX(others_instance_count) OVER (PARTITION BY program_name, project_name, process_name, process_date) AS others_instance_count
-  FROM `vz-it-pr-hgrv-aidedo-0.aid_epdo_prd_tbls_nogsam_v.dof_process_monitor_rpt`
+    MAX(pending_instance_count) OVER (PARTITION BY report.program_name, report.project_name, process_name, process_date) AS pending_instance_count,
+    MAX(success_instance_count) OVER (PARTITION BY report.program_name, report.project_name, process_name, process_date) AS success_instance_count,
+    MAX(failed_instance_count) OVER (PARTITION BY report.program_name, report.project_name, process_name, process_date) AS failed_instance_count,
+    MAX(others_instance_count) OVER (PARTITION BY report.program_name, report.project_name, process_name, process_date) AS others_instance_count
+  FROM `vz-it-pr-hgrv-aidedo-0.aid_epdo_prd_tbls_nogsam_v.dof_process_monitor_rpt` report
   WHERE is_valid = TRUE
 ),
 
@@ -109,12 +109,30 @@ dof_lineage_diagram_etl AS (
     AND process_report.process_status IS NOT NULL
     AND process_report.is_valid = TRUE
   GROUP BY
-    project_name, process_id, process_date, subprocess_name, process_poc, frequency, 
-    is_critical, scheduler_name, notify_fails, failure_notification_email_list, 
-    notify_success, success_notification_email_list, is_active, application_name, 
-    source_environment, env_name, source_servername, target_environment, 
-    target_servername, source, target, source_type, target_type, process_name
+    COALESCE(map.mapped_program_name, process_report.program_name),
+    process_report.process_id,
+    process_report.process_date,
+    process_report.sub_process,
+    process_report.process_poc,
+    process_report.frequency,
+    process_report.is_critical,
+    process_report.scheduler_name,
+    process_meta.notify_failure,
+    process_meta.failure_notification_email_list,
+    process_meta.notify_success,
+    process_meta.success_notification_email_list,
+    process_meta.is_active,
+    process_report.application_name,
+    process_meta.source_environment,
+    process_meta.env_name,
+    process_meta.source_servername,
+    process_meta.target_environment,
+    process_meta.target_servername,
+    meta.process_source,
+    meta.process_target,
+    process_report.source_type,
+    process_report.target_type,
+    process_report.process_name
 )
 
 SELECT * FROM dof_lineage_diagram_etl;
-
