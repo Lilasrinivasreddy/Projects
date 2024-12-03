@@ -48,10 +48,10 @@ dof_process_monitor_lineage_latest_rpt_v AS (
     rpt.application_name,
     rpt.is_valid,
     rpt.monitor_date,
-    MAX(rpt.pending_instance_count) OVER (PARTITION BY rpt.program_name, rpt.project_name, rpt.process_name, rpt.process_date) AS pending_instance_count,
-    MAX(rpt.success_instance_count) OVER (PARTITION BY rpt.program_name, rpt.project_name, rpt.process_name, rpt.process_date) AS success_instance_count,
-    MAX(rpt.failed_instance_count) OVER (PARTITION BY rpt.program_name, rpt.project_name, rpt.process_name, rpt.process_date) AS failed_instance_count,
-    MAX(rpt.others_instance_count) OVER (PARTITION BY rpt.program_name, rpt.project_name, rpt.process_name, rpt.process_date) AS others_instance_count
+    COUNTIF(UPPER(rpt.process_status) IN ('PENDING')) OVER (PARTITION BY rpt.program_name, rpt.project_name, rpt.process_name, rpt.process_date) AS pending_instance_count,
+    COUNTIF(UPPER(rpt.process_status) = 'SUCCESS') OVER (PARTITION BY rpt.program_name, rpt.project_name, rpt.process_name, rpt.process_date) AS success_instance_count,
+    COUNTIF(UPPER(rpt.process_status) IN ('FAILURE', 'FAILED')) OVER (PARTITION BY rpt.program_name, rpt.project_name, rpt.process_name, rpt.process_date) AS failed_instance_count,
+    COUNTIF(UPPER(rpt.process_status) IN ('WAIT', 'HELD', 'PROGRESS')) OVER (PARTITION BY rpt.program_name, rpt.project_name, rpt.process_name, rpt.process_date) AS others_instance_count
   FROM `vz-it-pr-hgrv-aidedo-0.aid_epdo_prd_tbls_nogsam_v.dof_process_monitor_rpt` rpt
   WHERE rpt.is_valid = TRUE
 ),
@@ -84,8 +84,8 @@ dof_lineage_diagram_etl AS (
     process_report.target_type,
     process_report.process_name,
     IF(process_report.target_count = 0, NULL, process_report.target_count) AS target_count,
-    ARRAY_AGG(IFNULL(CAST(process_report.expected_datetime AS STRING FORMAT 'yyyy-mm-dd HH24:MI:SS'), '')) AS sla_history,
-    ARRAY_AGG(IFNULL(CAST(process_report.start_time AS STRING FORMAT 'yyyy-mm-dd HH24:MI:SS'), '')) AS run_hour_history,
+    ARRAY_AGG(IFNULL(CAST(process_report.expected_datetime AS STRING FORMAT 'yyyy-MM-dd HH:mm:ss'), '')) AS sla_history,
+    ARRAY_AGG(IFNULL(CAST(process_report.start_time AS STRING FORMAT 'yyyy-MM-dd HH:mm:ss'), '')) AS run_hour_history,
     ARRAY_AGG(DISTINCT process_report.process_status) AS run_status_history,
     ARRAY_AGG(DISTINCT process_report.sla_met) AS sla_met_history,
     CAST((MAX(success_instance_count) + MAX(failed_instance_count) + MAX(pending_instance_count) + MAX(others_instance_count)) AS STRING) AS total_instance_count,
