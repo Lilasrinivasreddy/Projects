@@ -1,3 +1,150 @@
+#chat
+import sys
+from google.cloud import bigquery, storage
+import pandas as pd
+import numpy as np
+import json
+import smtplib
+from email.message import EmailMessage
+from datetime import datetime
+
+# Column definitions and validations
+tables_column_list = ["application_name", "db_name", "table_name", "servername", "platform_name", "env_name", "frequency", "is_active", "run_day", "run_hour", "sla"]
+files_column_list = ["file_name", "file_path", "server_name", "application_name", "platform_name", "env_name", "frequency", "is_active", "run_day", "run_hour", "sla"]
+process_column_list = ["program_name", "application_name", "process_name", "subprocess_name", "frequency", "is_active", "platform_name", "env_name", "run_day", "run_hour", "sla"]
+
+frequency_list = ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]
+bool_flag = ["true", "false"]
+flags = ["y", "n"]
+
+# Initialize clients
+client = bigquery.Client()
+storage_client = storage.Client()
+
+
+def validate_columns(dataframe, expected_columns):
+    """Validate that all expected columns are present and no additional columns exist."""
+    actual_columns = set(dataframe.columns)
+    missing_columns = set(expected_columns) - actual_columns
+    additional_columns = actual_columns - set(expected_columns)
+
+    if missing_columns or additional_columns:
+        raise ValueError(
+            f"Column validation failed. Missing columns: {missing_columns}, Additional columns: {additional_columns}"
+        )
+
+
+def transform_data(dataframe, variable_list, replacement_list):
+    """Replace placeholders with environment-specific values."""
+    return dataframe.replace(variable_list, replacement_list, regex=True)
+
+
+def validate_data_types(dataframe, column_validations):
+    """Validate data types and formats for specific columns."""
+    for column, validation in column_validations.items():
+        if validation == "bool":
+            invalid = dataframe[column].str.lower().isin(flags) == False
+            if invalid.any():
+                raise ValueError(f"Invalid boolean values found in column: {column}")
+        elif validation == "time":
+            try:
+                pd.to_datetime(dataframe[column], format="%H:%M:%S", errors="coerce")
+            except:
+                raise ValueError(f"Invalid time format in column: {column}")
+        elif validation == "not_null":
+            if dataframe[column].isnull().any():
+                raise ValueError(f"Null values found in column: {column}")
+
+
+def load_to_bigquery(dataframe, table_id):
+    """Load transformed and validated data into BigQuery."""
+    pandas_gbq.to_gbq(dataframe, table_id, if_exists="replace")
+
+
+def process_metadata(file_data, sheet_name, column_list, variable_list, replacement_list, table_id):
+    """Process metadata for a specific sheet."""
+    dataframe = pd.read_excel(file_data, sheet_name=sheet_name, dtype=str).fillna("")
+
+    validate_columns(dataframe, column_list)
+    dataframe = transform_data(dataframe, variable_list, replacement_list)
+
+    # Example column-specific validations
+    column_validations = {
+        "is_active": "bool",
+        "run_hour": "time",
+        "frequency": "not_null",
+    }
+    validate_data_types(dataframe, column_validations)
+
+    load_to_bigquery(dataframe, table_id)
+
+
+def send_notification(subject, content):
+    """Send email notification."""
+    msg = EmailMessage()
+    msg.set_content(content)
+    msg["Subject"] = subject
+    msg["From"] = "do-not-reply@example.com"
+    msg["To"] = "recipient@example.com"
+
+    with smtplib.SMTP("smtp.example.com", 25) as smtp:
+        smtp.send_message(msg)
+
+
+def dof_meta_gcs_bq_trigger_api(event, context):
+    """Main function to handle metadata processing."""
+    try:
+        file_name = event["name"]
+        bucket_name = event["bucket"]
+
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(file_name)
+        file_data = blob.download_as_bytes()
+
+        variable_list = ["<VAR>"]
+        replacement_list = ["dev"]
+
+        process_metadata(
+            file_data,
+            "Tables",
+            tables_column_list,
+            variable_list,
+            replacement_list,
+            "project.dataset.table_stg",
+        )
+
+        process_metadata(
+            file_data,
+            "Files",
+            files_column_list,
+            variable_list,
+            replacement_list,
+            "project.dataset.file_stg",
+        )
+
+        process_metadata(
+            file_data,
+            "Process",
+            process_column_list,
+            variable_list,
+            replacement_list,
+            "project.dataset.process_stg",
+        )
+
+        send_notification(
+            "Metadata Pipeline Success",
+            f"The file {file_name} was successfully processed.",
+        )
+
+    except Exception as e:
+        error_message = f"Error processing file: {file_name}. Error: {str(e)}"
+        print(error_message)
+        send_notification("Metadata Pipeline Failure", error_message)
+----------====================-------------------=============----------------==================----------------============-------------------
+
+
+
+
 import sys
 from google.cloud import bigquery
 from google.cloud import storage
