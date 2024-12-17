@@ -1,3 +1,127 @@
+if not files_df.empty:
+                files_df.dropna(axis=0, how="all", inplace=True)
+                
+                f_application_name_validation_cnt=file_name_validation_cnt=f_frequency_validation_cnt=f_platform_name_validtion_cnt=f_env_name_validtion_cnt=f_is_active_validation_cnt=file_path_validation_cnt=f_timezone_validation_cnt=source_poc_validation_cnt=file_prefix_cnt=file_middle_pattern_cnt=file_suffix_cnt=notify_sla_misses_cnt=notify_file_size_cnt=file_size_limit_cnt=f_threshold_low_cnt=f_threshold_up_cnt = 0
+                files_df.dropna(axis=0, how="all", inplace=True)
+                total_files_count = files_df.shape[0]
+
+                #application name validation
+                f_application_name_validation_cnt = files_df.loc[files_df['application_name'].str.contains('nan',case=False), :].shape[0]+files_df.loc[files_df['application_name'].str.contains(r'\s',case=False), :].shape[0]
+
+                #file name validation
+                file_name_validation_cnt = files_df['file_name'].isna().sum() +files_df.loc[files_df['file_name'].str.contains(r'\s',case=False), :].shape[0]
+
+                #frequency validation - ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"] case sensitive      
+                f_frequency_validation_cnt = total_files_count - files_df['frequency'].str.lower().isin(frequency_list).sum()
+
+                #platform_name validation -[GCP,Unix,AWS,Teradata,EDL]
+                f_platform_name_validtion_cnt = total_files_count - files_df['platform_name'].str.lower().isin(platform_list).sum()
+
+                #env_name validation -[GCP_BQ,Unix,JAVA,EDW_TD,GCP,EDL_HDFS,GCP_GCS,OnPrem_Hive,GCP_HIVE)]
+                f_env_name_validtion_cnt = total_files_count - files_df['env_name'].str.lower().isin(env_list).sum()
+
+                #timezone validation [utc/est]
+                f_timezone_validation_cnt = total_files_count - files_df['timezone'].str.lower().isin(["utc","est"]).sum()
+
+                #file path validation
+                #file_path_validation_cnt = ((files_df['file_path'].isna()) | (~files_df['file_path'].str.startswith('gs')) | (~files_df['file_path'].str.startswith('/')) | (~files_df['file_path'].str.endswith('/'))).sum()
+
+                #is_active validation
+                f_is_active_validation_cnt =  total_files_count - files_df['is_active'].fillna('n').str.lower().isin(flags).sum()
+
+                #source_poc_validation
+                null_source_poc_cnt = files_df['source_poc'].isnull().sum()
+                source_poc_validation_cnt =  total_files_count -  files_df.loc[files_df['source_poc'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+',case=False), :].shape[0]
+                source_poc_validation_cnt = source_poc_validation_cnt - null_source_poc_cnt
+
+                #process_owner validation
+                null_process_owner_cnt = files_df['process_owner'].isnull().sum()
+                process_owner_validation_cnt =  total_files_count -  files_df.loc[files_df['process_owner'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+',case=False), :].shape[0]
+                process_owner_validation_cnt = process_owner_validation_cnt - null_process_owner_cnt
+                
+                #file_prefix/file_middle_pattern/file_suffix validation
+                #file_middle_pattern can be null the condition is file_name = file_prefix + file_middle_pattern + file_suffix
+                #file_prefix_cnt = ((files_df['file_middle_pattern'].notna()) & (files_df['file_name'] != files_df['file_prefix'] + files_df['file_middle_pattern'] + files_df['file_suffix'])).sum() + ((files_df['file_middle_pattern'].isna()) & (files_df['file_name'] != files_df['file_prefix'] + files_df['file_suffix'])).sum()
+                file_suffix_cnt = file_middle_pattern_cnt = file_prefix_cnt
+                
+                #notify_sla_misses validation
+                notify_sla_misses_cnt = len(files_df['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_df['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+
+                #notify_file_size validation
+                notify_file_size_cnt =len(files_df['notify_file_size'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_df['notify_file_size'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+
+                #file_size_limit validation
+                file_size_limit_cnt = len(files_df['file_size_limit'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_df['file_size_limit'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+
+                #threshold_low validation
+                low_null_count = files_df['threshold_low'].replace('',pd.NA,inplace = False).isna().sum()
+                low_numeric_count = files_df['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+                f_threshold_low_cnt = total_files_count - low_null_count - low_numeric_count
+
+                #threshold_up validation
+                up_null_count = files_df['threshold_up'].replace('',pd.NA,inplace = False).isna().sum()
+                up_numeric_count = files_df['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+                f_threshold_up_cnt = total_files_count - up_null_count - up_numeric_count
+
+                if  missing_column_cnt > 0 or additional_column_cnt > 0  or  cnt > 0 or f_application_name_validation_cnt > 0 or file_name_validation_cnt > 0 or f_frequency_validation_cnt > 0 or f_platform_name_validtion_cnt > 0 or f_env_name_validtion_cnt > 0 or f_is_active_validation_cnt > 0 or file_prefix_cnt > 0 or source_poc_validation_cnt > 0 or f_threshold_up_cnt > 0 or f_threshold_low_cnt > 0 or notify_file_size_cnt > 0 or notify_sla_misses_cnt > 0 or file_size_limit_cnt > 0:
+                    raise ValueError("COMMON VALIDATION:\n\n Missing columns in metadata :\n\tFiles:{0} \n\tTables:{1} \n\tProcess:{2} \n\tRT_process:{3} \n\tProcess_alert_notification: {4} \nAdditional columns in metadata :\n\tFiles:{5} \n\tTables:{6} \n\tProcess:{7} \n\tRT_process:{8} \n\tProcess_alert_notification: {9} \nVariables still present in metadata: \n\tFiles:{10} \n\tTables:{11} \n\tProcess:{12} \n\tRT_process:{13} \n\tProcess_alert_notification: {14}\n\n FILE META VALIDATION:\n\n Column validation failed counts : \n\tapplication_name  : {15} \n\tfile_name  : {16} \n\tfrequency  : {17} \n\tplatform_name_validtion  : {18} \n\tenv_name_validtion  : {19} \n\tis_active  : {20} \n\tfile_path_validation : {21} \n\ttimezone_validation : {22}  \n\tsource_poc_validation : {23} \n\tfile_prefix_validation : {24} \n\tfile_middle_validation : {25} \n\tfile_suffix_validation : {26} \n\tnotify_sla_misses_validation : {27} \n\tnotify_file_size_validation : {28} \n\tfile_size_limit_validation : {29} \n\tthreshold_low_validation : {30} \n\tthreshold_up_validation : {31}".format(missed_fle_col,missed_tbl_col,missed_prcs_col,missed_rt_prcs_col,missed_pa_notify_col,add_fle_col,add_tbl_col,add_prcs_col,add_rt_prcs_col,add_pa_notify_col,f_cnt,t_cnt,p_cnt,rt_cnt,pa_cnt,f_application_name_validation_cnt,file_name_validation_cnt,f_frequency_validation_cnt,f_platform_name_validtion_cnt,f_env_name_validtion_cnt,f_is_active_validation_cnt,file_path_validation_cnt,f_timezone_validation_cnt,source_poc_validation_cnt,file_prefix_cnt,file_middle_pattern_cnt,file_suffix_cnt,notify_sla_misses_cnt,notify_file_size_cnt,file_size_limit_cnt,f_threshold_low_cnt,f_threshold_up_cnt))
+                # Checking the null values in Mandatory Columns
+                
+                file_nullval_file_name = files_df[files_df["file_name"].isna()]
+                file_nullval_file_path = files_df[files_df["file_path"].isna()]
+                file_nullval_application_name = files_df[
+                    files_df["application_name"].isna()
+                ]
+                file_nullval_platform_name = files_df[files_df["platform_name"].isna()]
+                file_nullval_env_name = files_df[files_df["env_name"].isna()]
+                file_nullval_server_name = files_df[files_df["server_name"].isna()]
+
+                if "dev" in env:
+                    files_df.replace(variable_list, dev_list, inplace=True, regex=True)
+                    print(files_df)
+                elif "test" in env:
+                    files_df.replace(variable_list, test_list, inplace=True, regex=True)
+                    print(files_df)
+                elif "ple" in env:
+                    process_df.replace(variable_list, ple_list, inplace=True, regex=True)
+                else:
+                    files_df.replace(variable_list, prod_list, inplace=True, regex=True)
+                    print(files_df)
+                files_df["interval"].fillna("0", inplace=True)
+                files_df = files_df.fillna("")
+                files_df = files_df.applymap(str)
+                file_stg = 1
+                if len(file_nullval_file_name) > 0 or len(file_nullval_file_path ) > 0 or len(file_nullval_application_name ) > 0 or len(file_nullval_platform_name ) > 0 or len(file_nullval_env_name ) > 0 or len(file_nullval_server_name ) > 0 :
+                    raise ValueError("FILE META VALIDATION\n\n Column validation failed counts : \n\tEmpty File name  : {0}\n\tEmpty File path  : {1}\n\tEmpty application name  : {2}\n\tEmpty platform name  : {3}\n\tEmpty env name  : {4}\n\tEmpty Server name  : {5}".format(file_nullval_file_name,file_nullval_file_path,file_nullval_application_name ,file_nullval_platform_name,file_nullval_env_name ,file_nullval_server_name))	
+                #if len(file_nullval_file_name) > 0:
+                #    print(file_nullval_file_name)
+                #    raise ValueError("File Name is a mandatory Column in Files Tab. It can't be left empty.")
+                #if len(file_nullval_file_path) > 0:
+                #    print(file_nullval_file_path)
+                #    raise ValueError("File Path is a mandatory Column in Files Tab. It can't be left empty.")
+                #if len(file_nullval_server_name) > 0:
+                #    print(file_nullval_server_name)
+                #    raise ValueError("Server Name is a mandatory Column in Files Tab. It can't be left empty.")
+                #if len(file_nullval_application_name) > 0:
+                #    print(file_nullval_application_name)
+                #    raise ValueError("Application Name is a mandatory Column in Files Tab. It can't be left empty.")
+                #if len(file_nullval_platform_name) > 0:
+                #    print(file_nullval_platform_name)
+                #    raise ValueError("Platform Name is a mandatory Column in Files Tab. It can't be left empty.")
+                #if len(file_nullval_env_name) > 0:
+                #    print(file_nullval_env_name)
+                #    raise ValueError("Env Name is a mandatory Column in Files Tab. It can't be left empty.")
+                else:
+                    pandas_gbq.to_gbq(files_df,"dataobservability_tbls.dof_file_meta_stg",if_exists="replace",)
+                    print("Data loaded to File staging Table")
+            else:
+                print("Files Tab is Empty")
+                file_stg = 0
+                file_query_job = client.query(
+                    """ DELETE from dataobservability_tbls.dof_file_meta_stg where true"""
+                )
+                print(file_query_job.result())
+
 #chat
 import sys
 from google.cloud import bigquery, storage
