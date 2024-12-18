@@ -1,29 +1,95 @@
-Attribute Name	dag_id	task_id	composer_instance_name	step_id	file_name	file_path	landing_server_name	environment_name	file_middle_pattern	file_prefix	file_suffix	schedule_interval	frequency	direction	timezone	is_mandatory	is_active	file_arrival_custom_interval	sla	source_system	source_poc	sla_notification_buffer	notify_source	notify_sla_misses	alert_channel	alert_target_team_name	notify_file_size	size_threshold_low_limit	size_threshold_high_limit	size_threshold_limit_unit	interval	archive_locaton	failure_location	sourceFormat	sourceUris	fixedWidth	fieldDelimiter	skipLeadingRows	maxBadRecords	nullMarker	allowQuotedNewlines	allowJaggedRows	ignoreUnknownValues
-Mandatory	Y			N	Y	Y	Y	Y	N*	Y	Y	Y	Y		N	N	Y	N	Y	Y	Y	N	N	N	Y	Y	N	N*	N*	N*	Y*	N	N	N	N	N	N	N	N	N	N	N	N
-Description	Process_name is dag_id. this is the dag name in Airflow. name should match with airflow name			if any task is processing data into multiple targets, then this will be specify each step.	Actual name of the file which is getting monitored	"Absolute path of the File directory
-if it's gcs, then bucket path.
-it it's unix, then full path of the unix directory"	"Name of the server on which the file is Transferred.
-if its as GCS bucket, the project name of the GCS.
-if it's unix server, the Unix server name"	Environment of the file landing	"Middle pattern of the file 
-if the file name is TP_PEGA_NBA_SESSION_SDC3_yyyymmdd.DAT, in this case yyyymmdd will be middle pattern.
-if file name have date as middle name the it is mandatory.
-keywords for timestamp:
-year : 1992 -> yyyy
-month: 09 -> mm
-day : 22 -> dd
-hour: 16 -> hh
-minutes: 52 -> mi
-seconds :45->ss
-milli seconds : 12 -> ff2,123->ff3,1234->ff4
-"	if the file name is TP_PEGA_NBA_SESSION_SDC3_yyyymmdd.DAT,  in this case TP_PEGA_NBA_SESSION_SDC3_ will be prefix	"Extension of the file
-eg .txt or .csv or .dat"	Time at which file is expected to arrive. Ex. 02:00:00	"frequency of the file arrival (Any one)
-daily or weekly or monthly or hourly or fixed"		"provide timezone if required : Acceptable value will be SQL standard value
-Ex.: UTC or EST or 'America/New York' "	Do we need to monitor all the instance of an hourly/fixed frequency based file. if yes, then set the value to true. By default this value will be false.	Is the file active (Y/N)	"It will help users to provide the early or delayed interval for receiving the files.
-If current_day (07/01/2024) process is expecting a file from next day (07/02/2024), then this interval will be -1. 
-if current_day (07/01/2024) process is expecting a file from previous day (06/30/2024), then this interval will be 1."	"Max time by which the file should be available. acceptable value will be in time format hh:mm:ss
-If the SLA falls next day then 24:00:00 should be added to the time. If the file is expected at 07:00 AM next day, SLA should be metioned as 31:00:00
-eg:05:20:00"	Name of the system who is responsible for sending/generating the said file. (Avoid the space and put NA instead).	Provide the email id of the source team who is the owner/poc of the said file. Try avoiding individual id's. Instead mentioned the email destro. Acceptable value : valid email address	If application team chooses to trigger alert if incase SLA is missed, this will specify the waiting period. The the alert will only be triggered after the waiting period. Acceptable value will be in hh:mm:ss format.	Do we need to notify source team for any failures (Y/N)	Do we need to notify team for any SLA miss(Y/N)	Which channel the alert /incident should be created	VZ-AID-DataOperations,OPSEXC	Do we need to notify team if there is any file exceed the size limit. Acceptable value can be (Y/N)	Percentage/count value to calculate the threshold low limit for size alert. Size alert is on day basis. Acceptable value can be any integer value. Default value will 20 (Unit : percentage)	Percentage/count value to calculate the threshold high limit for size alert. Size alert is on day basis. Acceptable value can be any integer value. Default value will 20 (Unit : percentage)	unit of the threshold limit value based on which threshold calculation will be performed. Acceptable value will be percentage or count	Required for hourly/fixed frequency files to identify how much time should we wait for the from the file scheduled time to map with the instance. Value in Minutes												
-Sample	gk1v_edwpr_udm_neta_na_t160_ld	gcsToBq	vz-it-gk1v-cwlspr-2	1	ACE_IP_yyyymmdd_WPROD.DAT	<bucket_path>/ccra/pos	GCS	GCP_GCS	yyyymmdd	ACE_IP_	.dat	1:00:00	daily	output	UTC	Y	Y		23:59:59	FIT	AID-GCP-Modernization-CJA-UDA@verizon.com	23:59:59	Y	N	Opsgenie	VZ-AID-DataOperations,OPSEXC			  	              	0												
-	gk1v_edwpr_udm_neta_na_t160_ld	bqTransformLoad	vz-it-gk1v-cwlspr-2	1	ACE_IP_yyyymmdd_EPROD.DAT	<bucket_path>/ccra/pos	GCS	GCP_GCS	yyyymmdd	ACE_IP_	.dat	1:00:00	daily	input	UTC	Y	Y		23:59:59	FIT	AID-GCP-Modernization-CJA-UDA@verizon.com	23:59:59	Y	N	Opsgenie 	VZ-AID-DataOperations,OPSEXC					0												
-	gk1v_edwpr_udm_neta_na_t160_ld	sourceFileArchival	vz-it-gk1v-cwlspr-2	1	ACE_IP_yyyymmdd_MPROD.DAT	<bucket_path>/ccra/pos	GCS	GCP_GCS	yyyymmdd	ACE_IP_	.dat	1:00:00	daily	input	UTC	Y	Y		23:59:59	FIT                    	AID-GCP-Modernization-CJA-UDA@verizon.com	23:59:59	Y	N	Opsgenie	VZ-AID-DataOperations,OPSEXC					0												
-	gk1v_edwpr_udm_neta_na_t160_lw	FileSensor	vz-it-gk1v-cwlspr-5	1	ACE_IP_yyyymmdd_SPROD.DAT	<bucket_path>/ccra/pos	GCS	GCP_GCS	yyyymmdd	ACE_IP_	.dat	1:00:00	daily	output	UTC	Y	Y		23:59:59	NA	AID-GCP-Modernization-CJA-UDA@verizon.com	23:59:60	Y	N	Opsgenie	VZ-AID-DataOperations,OPSEXC					0												
+import pandas as pd
+import json
+import re
+import pytz
+import pandas_gbq
+import numpy as np
+from croniter import croniter
+from datetime import datetime, timedelta
+
+data_bytes = '/Users/reddyvu/Desktop/Test/DataX_Master_Metadata.xlsx'
+
+print("Script Started")
+
+files_meta = pd.read_excel(data_bytes, sheet_name="DataX_File_Meta", dtype=str, keep_default_na=False, index_col=None)
+
+# Drop first column
+files_meta = files_meta.iloc[:, 1:]
+
+# Drop row which contains description
+files_meta = files_meta.reset_index(drop=True)
+files_meta = files_meta.drop(index=[0, 1])
+
+files_column_list = ['dag_id', 'step_id', 'file_name', 'file_path', 'landing_server_name', 
+                     'environment_name', 'file_middle_pattern', 'file_prefix', 'file_suffix', 
+                     'schedule_interval', 'frequency', 'timezone', 'is_mandatory', 'is_active', 
+                     'file_arrival_custom_interval', 'sla', 'source_system', 'source_poc', 
+                     'sla_notification_buffer', 'notify_source', 'notify_sla_misses', 
+                     'alert_channel', 'alert_target_team_name', 'notify_file_size', 
+                     'size_threshold_low_limit', 'size_threshold_high_limit', 
+                     'size_threshold_limit_unit', 'interval', 'archive_locaton', 
+                     'failure_location', 'sourceFormat', 'sourceUris', 'fixedWidth', 
+                     'fieldDelimiter', 'skipLeadingRows', 'maxBadRecords', 'nullMarker', 
+                     'allowQuotedNewlines', 'allowJaggedRows', 'ignoreUnknownValues', 
+                     'filesensorretries', 'filesensorretrydelay', 'timeout', 'fileSensor', 
+                     'gcsBucket', 'object']
+
+files_mandatory_column_list = ['dag_id', 'file_name', 'file_path', 'landing_server_name', 
+                               'environment_name', 'file_prefix', 'file_suffix', 
+                               'schedule_interval', 'frequency', 'sla', 'source_system', 
+                               'source_poc', 'alert_channel', 'alert_target_team_name']
+
+files_integer_column = ['step_id', 'file_arrival_custom_interval', 'size_threshold_low_limit', 
+                        'size_threshold_high_limit', 'interval']
+
+files_boolean_column = ['is_mandatory', 'is_active', 'notify_source', 'notify_sla_misses', 
+                        'notify_file_size']
+
+frequency_list = ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]
+flags = [True, False]
+env_list = ["gcp_bq", "unix", "java", "edw_td", "gcp", "edl_hdfs", "gcp_gcs", "onprem_hive", "gcp_hive"]
+time_zone_list = ["UTC", "EST"]
+
+# Column Validation
+metadata_files_columns = list(files_meta.columns.values)
+missed_fle_col = set(files_column_list).difference(metadata_files_columns)
+add_fle_col = set(metadata_files_columns).difference(files_column_list)
+
+if len(missed_fle_col) == 0:
+    missed_fle_col = 'NA'
+if len(add_fle_col) == 0:
+    add_fle_col = 'NA'
+
+print(f"Missing columns: {missed_fle_col}")
+print(f"Additional columns: {add_fle_col}")
+
+# Mandatory Columns Validation
+file_col_check = []
+for mandatory_col in files_mandatory_column_list:
+    if (files_meta[mandatory_col].isna().any() or 
+        (files_meta[mandatory_col].astype(str).str.strip() == '').any() or 
+        (files_meta[mandatory_col].astype(str) == '0').any()):
+        file_col_check.append(mandatory_col)
+
+if len(file_col_check) > 0:
+    raise ValueError("FILE META VALIDATION: Following mandatory columns can't be left empty: " + str(file_col_check))
+
+# Integer Columns Validation
+for col in files_integer_column:
+    files_meta[col] = pd.to_numeric(files_meta[col], errors='coerce').fillna(0).astype(int)
+
+# Boolean Columns Validation
+for col in files_boolean_column:
+    files_meta[col] = files_meta[col].replace('', np.nan).map({'Y': True, 'N': False}).fillna(False)
+
+# Frequency Validation
+invalid_frequencies = files_meta[~files_meta['frequency'].str.lower().isin(frequency_list)]
+if not invalid_frequencies.empty:
+    print(f"Invalid frequencies found: {invalid_frequencies['frequency'].unique()}")
+
+# Email Validation
+invalid_emails = files_meta[~files_meta['source_poc'].str.contains(r'[^@]+@[^@]+\.[^@]+', na=False, case=False)]
+if not invalid_emails.empty:
+    print(f"Invalid email addresses found in source_poc: {invalid_emails['source_poc'].unique()}")
+
+print("Validation completed.")
