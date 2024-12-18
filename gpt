@@ -1,3 +1,7 @@
+files_meta['notify_sla_misses'] = files_meta['notify_sla_misses'].fillna('n').astype(str)
+notify_sla_misses_cnt = len(files_meta.loc[~files_meta['notify_sla_misses'].str.lower().isin(flags)])
+
+
 import pandas as pd
 import json
 import re
