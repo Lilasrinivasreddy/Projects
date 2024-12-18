@@ -1,21 +1,124 @@
-#file_prefix/file_middle_pattern/file_suffix validation
-#file_middle_pattern can be null the condition is file_name = file_prefix + file_middle_pattern + file_suffix
-#file_prefix_cnt = ((files_df['file_middle_pattern'].notna()) & (files_df['file_name'] != files_df['file_prefix'] + files_df['file_middle_pattern'] + files_df['file_suffix'])).sum() + ((files_df['file_middle_pattern'].isna()) & (files_df['file_name'] != files_df['file_prefix'] + files_df['file_suffix'])).sum()
-file_suffix_cnt = file_middle_pattern_cnt = file_prefix_cnt
+#-----------------------FILE_VALIDATION_COLUMNS----------------------------------------------------------------
 
-#notify_sla_misses validation
-notify_sla_misses_cnt = len(files_df['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_df['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+if not files_meta.empty:
+    # Converting empty strings to null values
+    files_meta = files_meta.infer_objects(copy=False).replace(r'^\s*$', np.nan, regex=True)
 
-#notify_file_size validation
-notify_file_size_cnt =len(files_df['notify_file_size'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_df['notify_file_size'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+    # Remove whitespaces
+    files_meta = files_meta.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
+    # Updating the Variables
+    if "dev" in env:
+        files_meta.replace(variable_list, dev_list, inplace=True, regex=True)
+    elif "test" in env:
+        files_meta.replace(variable_list, test_list, inplace=True, regex=True)
+    elif "ple" in env:
+        files_meta.replace(variable_list, ple_list, inplace=True, regex=True)
+    else:
+        files_meta.replace(variable_list, prod_list, inplace=True, regex=True)
 
-#threshold_low validation
-low_null_count = files_df['threshold_low'].replace('',pd.NA,inplace = False).isna().sum()
-low_numeric_count = files_df['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
-f_threshold_low_cnt = total_files_count - low_null_count - low_numeric_count
+    files_meta = files_meta.astype("string")
 
-#threshold_up validation
-up_null_count = files_df['threshold_up'].replace('',pd.NA,inplace = False).isna().sum()
-up_numeric_count = files_df['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
-f_threshold_up_cnt = total_files_count - up_null_count - up_numeric_count
+    # Updating the datatype for Integer Columns
+    for col in files_integer_column:
+        files_meta[col] = files_meta[col].replace('', np.nan).fillna('0').astype(int)
+
+    # Updating the datatype for Boolean Columns
+    for col in files_boolean_column:
+        files_meta[col] = files_meta[col].replace('', np.nan).map({'Y': True, 'N': False}).fillna(False)
+
+    # Validation counters
+    total_files_count = len(files_meta)
+    f_frequency_validation_cnt = total_files_count - files_meta['frequency'].str.lower().isin(frequency_list).sum()
+    f_platform_name_validation_cnt = total_files_count - files_meta['platform_name'].str.lower().isin(platform_list).sum()
+    f_env_name_validation_cnt = total_files_count - files_meta['environment_name'].str.lower().isin(env_list).sum()
+    f_timezone_validation_cnt = total_files_count - files_meta['timezone'].str.lower().isin(["utc", "est"]).sum()
+    f_is_active_validation_cnt = total_files_count - files_meta['is_active'].fillna('n').str.lower().isin(flags).sum()
+
+    # Source POC validation
+    null_source_poc_cnt = files_meta['source_poc'].isnull().sum()
+    source_poc_validation_cnt = total_files_count - files_meta.loc[
+        files_meta['source_poc'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+', case=False), :
+    ].shape[0]
+    source_poc_validation_cnt -= null_source_poc_cnt
+
+    # Process Owner validation
+    null_process_owner_cnt = files_meta['process_owner'].isnull().sum()
+    process_owner_validation_cnt = total_files_count - files_meta.loc[
+        files_meta['process_owner'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+', case=False), :
+    ].shape[0]
+    process_owner_validation_cnt -= null_process_owner_cnt
+
+    # File prefix, middle pattern, and suffix validation
+    file_prefix_cnt = ((files_meta['file_middle_pattern'].notna()) & 
+                       (files_meta['file_name'] != files_meta['file_prefix'] + 
+                                                 files_meta['file_middle_pattern'] + 
+                                                 files_meta['file_suffix'])).sum() + \
+                      ((files_meta['file_middle_pattern'].isna()) & 
+                       (files_meta['file_name'] != files_meta['file_prefix'] + 
+                                                 files_meta['file_suffix'])).sum()
+    file_suffix_cnt = file_middle_pattern_cnt = file_prefix_cnt
+
+    # Notify SLA misses validation
+    notify_sla_misses_cnt = len(files_meta['notify_sla_misses'].fillna('n')
+                                 .replace('', 'n', inplace=False)
+                                 .str.lower().loc[~files_meta['notify_sla_misses']
+                                                  .fillna('n')
+                                                  .replace('', 'n', inplace=False)
+                                                  .str.lower().isin(flags)])
+
+    # Notify file size validation
+    notify_file_size_cnt = len(files_meta['notify_file_size'].fillna('n')
+                               .replace('', 'n', inplace=False)
+                               .str.lower().loc[~files_meta['notify_file_size']
+                                                .fillna('n')
+                                                .replace('', 'n', inplace=False)
+                                                .str.lower().isin(flags)])
+
+    # Threshold low validation
+    low_null_count = files_meta['threshold_low'].replace('', pd.NA, inplace=False).isna().sum()
+    low_numeric_count = files_meta['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+    f_threshold_low_cnt = total_files_count - low_null_count - low_numeric_count
+
+    # Threshold up validation
+    up_null_count = files_meta['threshold_up'].replace('', pd.NA, inplace=False).isna().sum()
+    up_numeric_count = files_meta['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+    f_threshold_up_cnt = total_files_count - up_null_count - up_numeric_count
+
+    # Checking for mandatory columns
+    file_col_check = []
+    for mandatory_col in files_mandatory_column_list:
+        if files_meta[mandatory_col].isna().any() or (files_meta[mandatory_col].astype(str).str.strip() == "").any():
+            file_col_check.append(mandatory_col)
+
+    file_stg = 1
+
+    # Raising validation errors
+    if f_frequency_validation_cnt > 0 or f_platform_name_validation_cnt > 0 or \
+       f_env_name_validation_cnt > 0 or f_timezone_validation_cnt > 0 or \
+       f_is_active_validation_cnt > 0 or len(file_col_check) > 0 or \
+       source_poc_validation_cnt > 0 or process_owner_validation_cnt > 0 or \
+       file_prefix_cnt > 0 or notify_sla_misses_cnt > 0 or \
+       notify_file_size_cnt > 0 or f_threshold_low_cnt > 0 or f_threshold_up_cnt > 0:
+        raise ValueError(
+            f"FILE META VALIDATION FAILED:\n\n"
+            f"Frequency validation failed count: {f_frequency_validation_cnt}\n"
+            f"Platform name validation failed count: {f_platform_name_validation_cnt}\n"
+            f"Environment name validation failed count: {f_env_name_validation_cnt}\n"
+            f"Timezone validation failed count: {f_timezone_validation_cnt}\n"
+            f"Is_active validation failed count: {f_is_active_validation_cnt}\n"
+            f"Source POC validation failed count: {source_poc_validation_cnt}\n"
+            f"Process Owner validation failed count: {process_owner_validation_cnt}\n"
+            f"File prefix validation failed count: {file_prefix_cnt}\n"
+            f"Notify SLA misses validation failed count: {notify_sla_misses_cnt}\n"
+            f"Notify file size validation failed count: {notify_file_size_cnt}\n"
+            f"Threshold low validation failed count: {f_threshold_low_cnt}\n"
+            f"Threshold up validation failed count: {f_threshold_up_cnt}\n"
+            f"Mandatory columns missing: {file_col_check}"
+        )
+    else:
+        load_table(files_meta, files_table_id)
+        print("Data loaded to File staging Table")
+else:
+    print("Files Tab is Empty")
+    file_stg = 0
