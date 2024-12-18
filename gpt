@@ -1,646 +1,81 @@
-import sys
-from google.cloud import bigquery
-from google.cloud import storage
-import pandas as pd
-import numpy as np
-import json
-import pytz
-import pandas_gbq
-import smtplib
-import os
-from email.message import EmailMessage
-from process_activation_status_notification import *
-from reporting_functions import *
-from metadata_functions import *
-
-frequency_list = ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]
-tables_column_list = ["application_name","db_name","table_name","servername","platform_name","env_name","frequency","is_active","run_day","run_hour","sla","table_process_day","threshold_low","threshold_unit","threshold_up","tool_name","create_dt","notify_table_size","table_size_limit","opsgenie_team","table_size_notification_email_list","alert_table_size","variable_list"]
-files_column_list  = ["file_name","file_path","server_name","application_name","platform_name","env_name","comment_text","file_middle_pattern","file_prefix","file_suffix","frequency","instance_ind","is_active","notify_source","run_day","process_owner","sla","source_poc","threshold_low","threshold_unit","threshold_up","create_dt","notify_downstream","downstream_email","interval","file_name_regexp","run_hour","file_arrival_custom_interval","source_system","sla_notification_buffer","notify_sla_misses","opsgenie_team","notify_file_size","file_size_limit","alert_info","timezone","is_mandatory"]
-process_column_list  = ["program_name","application_name","process_name","subprocess_name","frequency","is_active","is_critical","platform_name","env_name","process_poc","run_day","run_hour","scheduler_name","sla","create_dt","source","target","source_type","target_type","source_servername","target_servername","process_seq_num","sub_process_seq_num","source_environment","target_environment","interval","step_id","logs_enabled","is_mandatory","run_date_buffer_interval","timezone","logs_trace_id_enabled","volume_query","reason_is_active_change","duration_threshold_low_value","duration_threshold_high_value","collect_volume","businessunit","vsad","portfolio","application","additional_info","gcp_project_name","obs_poc"]
-realtime_process_column_list  = ["program_name","application_name","process_name","subprocess_name","cloud_service_type","failure_email","frequency","is_active","is_critical","notify_fails","notify_success","platform_name","env_name","process_poc","run_day","run_hour","scheduler_name","sla","success_email","create_dt","source","target","source_type","target_type","source_servername","target_servername","source_environment","target_environment","is_mandatory","timezone","logs_enabled","label_job_name","label_job_type","label_job_mode","cluster_name","project_id","connection_id","region","custom_metrics"]
-process_alert_notification_column_list  = ["application_name","program_name","process_name","platform_name","env_name","sla_buffer","alert_failure","process_failed_alert_priority","alert_sla_misses","process_sla_miss_alert_priority","opsgenie_team","alert_metadata","alert_additional_info","alert_required_columns","notify_success","success_notification_email_list","notify_failure","failure_notification_email_list","notify_sla_miss","sla_miss_notification_email_list","notification_required_columns","notification_additional_info","notify_process_status_change","process_status_change_notification_email_list","dependency_notification","dependency_notification_email_list","alert_pending","process_pending_alert_priority","alert_tool","notification_level","alert_team","retries"]
-config__column_list  = ["variable","dev","test","prod"]
-frequency_list = ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]
-flags = ["y","n"]
-bool_flag = ["true","false"]
-platform_list = ["gcp","unix","aws","teradata","edl","ca7"]
-env_list = ["gcp_bq","unix","java","edw_td","gcp","edl_hdfs","gcp_gcs","onprem_hive","gcp_hive","aws","ca7","vbg_td"]
-scheduler_list = ["airflow","composer","espx","cron","oozie","trigger","mainframe"]
-businessunit_list = ["vbg","network","vcg","corporate"]
-source_type_list = ["pubsub","table","esp","file","kafka","CA"]
-target_type_list = ["file","kafka","pubsub","table","topic","esp","CA"]
-time_zone_list = ["UTC","EST"]
-priority_list = ["P1","P2","P3","P4","P5","critical","high","medium"]
-true_flag = ["y","Y"]
-
-def dof_meta_gcs_bq_trigger_api(event, context):
-    email_poc = "aid-dof-vzi-notify@verizon.com"
-    #email_poc = "nikhila.appidi@verizon.com,vishnu.sarma.konidena@verizon.com,navaneetha.krishnan.radhakrishnan@verizon.com,arun.kumar6@verizon.com"
-    try:
-        client = bigquery.Client()
-        env = "dev"
-
-        #env = os.environ.get("env")
-        print(env)
-        # name of the file which triggers the function
-        file_name = event["name"]
-        print("File Name is: " + file_name)
-        blob_name = file_name
-        storage_client = storage.Client()
-        bucket_name = event["bucket"]
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-        data_bytes = blob.download_as_bytes()
-        process_count = 0
-        d24run_hour_count = w24run_hour_count = m24run_hour_count = 0
-        d24sla_count = w24sla_count = m24sla_count = 0
-        frequency_validation_cnt = total_process_count = is_critical_validation_cnt = 0
-        t_cnt,f_cnt,p_cnt,pa_cnt,rt_cnt,cnt = 0,0,0,0,0,0
-        env_name_validtion_cnt = duration_threshold_low_value_validation_cnt = duration_threshold_high_value_validation_cnt = 0
-        if "tag_file" in file_name.lower():
-            print("File Name is: " + file_name)
-            tag_df = pd.read_excel(data_bytes, sheet_name="Labels", dtype=str)
-            if not tag_df.empty:
-                tag_df.dropna(axis=0, how="all", inplace=True)
-                pandas_gbq.to_gbq(
-                    tag_df,
-                    "dataobservability_tbls.dof_tag_file_stg",
-                    if_exists="replace",
-                )
-                print("Data loaded to Tagging staging Table")
-                tag_sql = """CALL `dataobservability_tbls.dof_insert_into_tags` ()"""
-                load_data(tag_sql)
-                print("Load to Tagging tables completed.")
-        else:
-            config_df = pd.read_excel(data_bytes, sheet_name="Config", dtype=str)
-            config_df.dropna(axis=0, how="all", inplace=True)
-            config_df = config_df.applymap(str)
-            variable_list = list(config_df["variable"])
-            dev_list = list(config_df["dev"])
-            test_list = list(config_df["test"])
-            prod_list = list(config_df["prod"])
-            ple_list =  list(config_df["ple"])
-            print(variable_list)
-            print("-------------------------------------------------")
-            print(dev_list)
-            print("-------------------------------------------------")
-            print(test_list)
-            print("-------------------------------------------------")
-            print(prod_list)
-            print("-------------------------------------------------")
-            print(ple_list)
-            print("-------------------------------------------------")
-
-            if len(variable_list) != len(dev_list):
-                raise ValueError(
-                    "Variable column and dev column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
-                )
-            if len(variable_list) != len(test_list):
-                raise ValueError(
-                    "Variable column and test column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
-                )
-            if len(variable_list) != len(prod_list):
-                raise ValueError(
-                    "Variable column and prod column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
-                )
-            if len(variable_list) != len(ple_list):
-                raise ValueError(
-                    "Variable column and prod column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
-                )
-            # Loading to Table staging
-
-            tables_df = pd.read_excel(data_bytes, sheet_name="Tables", dtype=str)
-            files_df = pd.read_excel(data_bytes, sheet_name="Files", dtype=str)           
-            process_df = pd.read_excel(data_bytes, sheet_name="Process", dtype=str,na_filter = False)
-            process_alert_notification_df = pd.read_excel(data_bytes, sheet_name="Process_alert_and_notification", dtype=str)
-            realtime_process_df = pd.read_excel(data_bytes, sheet_name="Realtime_Process", dtype=str)
-
-            #email_poc = process_df["obs_poc"].iloc[0]
-
-            #----------------------------------------column_validation-----------------------------------------------
-            metadata_tables_columns = list(tables_df.columns.values)
-            metadata_files_columns = list(files_df.columns.values)
-            metadata_process_columns = list(process_df.columns.values)
-            metadata_rt_process_columns = list(realtime_process_df.columns.values)
-            metadata_pa_notification_columns = list(process_alert_notification_df.columns.values)
-
-            missed_tbl_col = (set(tables_column_list).difference(metadata_tables_columns))
-            missed_fle_col = (set(files_column_list).difference(metadata_files_columns))
-            
-            missed_prcs_col = (set(process_column_list).difference(metadata_process_columns))
-            missed_rt_prcs_col = (set(realtime_process_column_list).difference(metadata_rt_process_columns))
-            missed_pa_notify_col = (set(process_alert_notification_column_list).difference(metadata_pa_notification_columns))
-
-            add_tbl_col = (set(metadata_tables_columns).difference(metadata_tables_columns))
-            add_fle_col = (set(metadata_files_columns).difference(metadata_files_columns))
-            add_prcs_col = (set(metadata_process_columns).difference(metadata_process_columns))
-            add_rt_prcs_col = (set(metadata_rt_process_columns).difference(metadata_rt_process_columns))
-            add_pa_notify_col = (set(metadata_pa_notification_columns).difference(metadata_pa_notification_columns))
-
-            missing_column_cnt = len(missed_tbl_col) + len(missed_fle_col) + len(missed_prcs_col) + len(missed_rt_prcs_col) + len(missed_pa_notify_col)
-            additional_column_cnt = len(add_tbl_col) + len(add_fle_col) + len(add_prcs_col) + len(add_rt_prcs_col) + len(add_pa_notify_col)
-            if len(missed_tbl_col)== 0:
-                missed_tbl_col = 'NA'
-            if len(missed_fle_col)== 0:
-                missed_fle_col = 'NA'
-            if len(missed_prcs_col)== 0:
-                missed_prcs_col = 'NA'
-            if len(missed_rt_prcs_col)== 0:
-                missed_rt_prcs_col = 'NA'	
-            if len(missed_pa_notify_col)== 0:
-                missed_pa_notify_col = 'NA'
-            if len(add_tbl_col)== 0:
-                add_tbl_col = 'NA'
-            if len(add_fle_col)== 0:
-                add_fle_col = 'NA'
-            if len(add_prcs_col)== 0:
-                add_prcs_col = 'NA'
-            if len(add_rt_prcs_col)== 0:
-                add_rt_prcs_col = 'NA'	
-            if len(add_pa_notify_col)== 0:
-                add_pa_notify_col = 'NA'	
-                
-#---------------------------------------------------------------------------------------
-            if not tables_df.empty:
-                tables_df.dropna(axis=0, how="all", inplace=True)
-                # Checking the null values in Mandatory Columns
-                tbl_nullval_db_name = tables_df[tables_df["db_name"].isna()]
-                tbl_nullval_table_name = tables_df[tables_df["table_name"].isna()]
-                tbl_nullval_application_name = tables_df[tables_df["application_name"].isna()]
-                tbl_nullval_platform_name = tables_df[tables_df["platform_name"].isna()]
-                tbl_nullval_env_name = tables_df[tables_df["env_name"].isna()]
-                tbl_nullval_servername = tables_df[tables_df["servername"].isna()]
-
-                # Filling the null values in rows as empty
-
-                tables_df = tables_df.fillna("")
-                if "dev" in env:
-                    tables_df.replace(variable_list, dev_list, inplace=True, regex=True)
-                    print(tables_df)
-                elif "test" in env:
-                    tables_df.replace(variable_list, test_list, inplace=True, regex=True)
-                    print(tables_df)
-                elif "ple" in env:
-                    tables_df.replace(variable_list, ple_list, inplace=True, regex=True)
-                    print(tables_df)
-                else:
-                    tables_df.replace(variable_list, prod_list, inplace=True, regex=True)
-                    print(tables_df)
-                
-                tables_df = tables_df.applymap(str)
-                table_stg = 1
-                pandas_gbq.to_gbq(tables_df,"dataobservability_tbls.dof_table_meta_stg",if_exists="replace",)
-                """
-                if len(tbl_nullval_db_name) > 0 or  len(tbl_nullval_table_name) > 0 or len(tbl_nullval_servername) > 0 or len(tbl_nullval_application_name) > 0 or len(tbl_nullval_platform_name) > 0 or len(tbl_nullval_env_name) > 0 :
-                    raise ValueError("TABLE META VALIDATION:\n\n Column validation failed counts : \n\tEmpty DB name  : {0}\n\tEmpty table name  : {1}\n\tEmpty server name  : {2}\n\tEmpty application name  : {3}\n\tEmpty platform name  : {4}\n\tEmpty Env name  : {5}".format(	tbl_nullval_db_name,tbl_nullval_table_name,tbl_nullval_servername,tbl_nullval_application_name,tbl_nullval_platform_name,tbl_nullval_env_name))
-                """
-                #if len(tbl_nullval_db_name) > 0:
-                #    print(tbl_nullval_db_name)
-                #    raise ValueError("DB Name is a mandatory Column in Tables Tab. It can't be left empty.")
-                #if len(tbl_nullval_table_name) > 0:
-                #    print(tbl_nullval_table_name)
-                #    raise ValueError("Table Name is a mandatory Column in Tables Tab. It can't be left empty.")
-                #if len(tbl_nullval_servername) > 0:
-                #    print(tbl_nullval_servername)
-                #    raise ValueError("Server Name is a mandatory Column in Tables Tab. It can't be left empty.")
-                #if len(tbl_nullval_application_name) > 0:
-                #    print(tbl_nullval_application_name)
-                #    raise ValueError("Application Name is a mandatory Column in Tables Tab. It can't be left empty.")
-                #if len(tbl_nullval_platform_name) > 0:
-                #    print(tbl_nullval_platform_name)
-                #    raise ValueError("Platform Name is a mandatory Column in Tables Tab. It can't be left empty.")
-                #if len(tbl_nullval_env_name) > 0:
-                #    print(tbl_nullval_env_name)
-                #    raise ValueError("Env Name is a mandatory Column in Tables Tab. It can't be left empty.")
-                #else:
-                #    pandas_gbq.to_gbq(tables_df,"dataobservability_tbls.dof_table_meta_stg",if_exists="replace",)
-                #    print("Data loaded to Table staging Table")
-            else:
-                print("Tables Tab is Empty")
-                table_stg = 0
-                table_query_job = client.query(""" DELETE from dataobservability_tbls.dof_table_meta_stg where true""")
-                print(table_query_job.result())
-                # -------------------------------------------------------------------------------------------------------------------------------
-
-            if not files_df.empty:
-                files_df.dropna(axis=0, how="all", inplace=True)
-                
-                f_application_name_validation_cnt=file_name_validation_cnt=f_frequency_validation_cnt=f_platform_name_validtion_cnt=f_env_name_validtion_cnt=f_is_active_validation_cnt=file_path_validation_cnt=f_timezone_validation_cnt=source_poc_validation_cnt=file_prefix_cnt=file_middle_pattern_cnt=file_suffix_cnt=notify_sla_misses_cnt=notify_file_size_cnt=file_size_limit_cnt=f_threshold_low_cnt=f_threshold_up_cnt = 0
-                files_df.dropna(axis=0, how="all", inplace=True)
-                total_files_count = files_df.shape[0]
-
-                #application name validation
-                f_application_name_validation_cnt = files_df.loc[files_df['application_name'].str.contains('nan',case=False), :].shape[0]+files_df.loc[files_df['application_name'].str.contains(r'\s',case=False), :].shape[0]
-
-                #file name validation
-                file_name_validation_cnt = files_df['file_name'].isna().sum() +files_df.loc[files_df['file_name'].str.contains(r'\s',case=False), :].shape[0]
-
-                #frequency validation - ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"] case sensitive      
-                f_frequency_validation_cnt = total_files_count - files_df['frequency'].str.lower().isin(frequency_list).sum()
-
-                #platform_name validation -[GCP,Unix,AWS,Teradata,EDL]
-                f_platform_name_validtion_cnt = total_files_count - files_df['platform_name'].str.lower().isin(platform_list).sum()
-
-                #env_name validation -[GCP_BQ,Unix,JAVA,EDW_TD,GCP,EDL_HDFS,GCP_GCS,OnPrem_Hive,GCP_HIVE)]
-                f_env_name_validtion_cnt = total_files_count - files_df['env_name'].str.lower().isin(env_list).sum()
-
-                #timezone validation [utc/est]
-                f_timezone_validation_cnt = total_files_count - files_df['timezone'].str.lower().isin(["utc","est"]).sum()
-
-                #file path validation
-                #file_path_validation_cnt = ((files_df['file_path'].isna()) | (~files_df['file_path'].str.startswith('gs')) | (~files_df['file_path'].str.startswith('/')) | (~files_df['file_path'].str.endswith('/'))).sum()
-
-                #is_active validation
-                f_is_active_validation_cnt =  total_files_count - files_df['is_active'].fillna('n').str.lower().isin(flags).sum()
-
-                #source_poc_validation
-                null_source_poc_cnt = files_df['source_poc'].isnull().sum()
-                source_poc_validation_cnt =  total_files_count -  files_df.loc[files_df['source_poc'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+',case=False), :].shape[0]
-                source_poc_validation_cnt = source_poc_validation_cnt - null_source_poc_cnt
-
-                #process_owner validation
-                null_process_owner_cnt = files_df['process_owner'].isnull().sum()
-                process_owner_validation_cnt =  total_files_count -  files_df.loc[files_df['process_owner'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+',case=False), :].shape[0]
-                process_owner_validation_cnt = process_owner_validation_cnt - null_process_owner_cnt
-                
-                #file_prefix/file_middle_pattern/file_suffix validation
-                #file_middle_pattern can be null the condition is file_name = file_prefix + file_middle_pattern + file_suffix
-                #file_prefix_cnt = ((files_df['file_middle_pattern'].notna()) & (files_df['file_name'] != files_df['file_prefix'] + files_df['file_middle_pattern'] + files_df['file_suffix'])).sum() + ((files_df['file_middle_pattern'].isna()) & (files_df['file_name'] != files_df['file_prefix'] + files_df['file_suffix'])).sum()
-                file_suffix_cnt = file_middle_pattern_cnt = file_prefix_cnt
-                
-                #notify_sla_misses validation
-                notify_sla_misses_cnt = len(files_df['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_df['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
-
-                #notify_file_size validation
-                notify_file_size_cnt =len(files_df['notify_file_size'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_df['notify_file_size'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
-
-                #file_size_limit validation
-                file_size_limit_cnt = len(files_df['file_size_limit'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_df['file_size_limit'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
-
-                #threshold_low validation
-                low_null_count = files_df['threshold_low'].replace('',pd.NA,inplace = False).isna().sum()
-                low_numeric_count = files_df['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
-                f_threshold_low_cnt = total_files_count - low_null_count - low_numeric_count
-
-                #threshold_up validation
-                up_null_count = files_df['threshold_up'].replace('',pd.NA,inplace = False).isna().sum()
-                up_numeric_count = files_df['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
-                f_threshold_up_cnt = total_files_count - up_null_count - up_numeric_count
-
-                if  missing_column_cnt > 0 or additional_column_cnt > 0  or  cnt > 0 or f_application_name_validation_cnt > 0 or file_name_validation_cnt > 0 or f_frequency_validation_cnt > 0 or f_platform_name_validtion_cnt > 0 or f_env_name_validtion_cnt > 0 or f_is_active_validation_cnt > 0 or file_prefix_cnt > 0 or source_poc_validation_cnt > 0 or f_threshold_up_cnt > 0 or f_threshold_low_cnt > 0 or notify_file_size_cnt > 0 or notify_sla_misses_cnt > 0 or file_size_limit_cnt > 0:
-                    raise ValueError("COMMON VALIDATION:\n\n Missing columns in metadata :\n\tFiles:{0} \n\tTables:{1} \n\tProcess:{2} \n\tRT_process:{3} \n\tProcess_alert_notification: {4} \nAdditional columns in metadata :\n\tFiles:{5} \n\tTables:{6} \n\tProcess:{7} \n\tRT_process:{8} \n\tProcess_alert_notification: {9} \nVariables still present in metadata: \n\tFiles:{10} \n\tTables:{11} \n\tProcess:{12} \n\tRT_process:{13} \n\tProcess_alert_notification: {14}\n\n FILE META VALIDATION:\n\n Column validation failed counts : \n\tapplication_name  : {15} \n\tfile_name  : {16} \n\tfrequency  : {17} \n\tplatform_name_validtion  : {18} \n\tenv_name_validtion  : {19} \n\tis_active  : {20} \n\tfile_path_validation : {21} \n\ttimezone_validation : {22}  \n\tsource_poc_validation : {23} \n\tfile_prefix_validation : {24} \n\tfile_middle_validation : {25} \n\tfile_suffix_validation : {26} \n\tnotify_sla_misses_validation : {27} \n\tnotify_file_size_validation : {28} \n\tfile_size_limit_validation : {29} \n\tthreshold_low_validation : {30} \n\tthreshold_up_validation : {31}".format(missed_fle_col,missed_tbl_col,missed_prcs_col,missed_rt_prcs_col,missed_pa_notify_col,add_fle_col,add_tbl_col,add_prcs_col,add_rt_prcs_col,add_pa_notify_col,f_cnt,t_cnt,p_cnt,rt_cnt,pa_cnt,f_application_name_validation_cnt,file_name_validation_cnt,f_frequency_validation_cnt,f_platform_name_validtion_cnt,f_env_name_validtion_cnt,f_is_active_validation_cnt,file_path_validation_cnt,f_timezone_validation_cnt,source_poc_validation_cnt,file_prefix_cnt,file_middle_pattern_cnt,file_suffix_cnt,notify_sla_misses_cnt,notify_file_size_cnt,file_size_limit_cnt,f_threshold_low_cnt,f_threshold_up_cnt))
-                # Checking the null values in Mandatory Columns
-                
-                file_nullval_file_name = files_df[files_df["file_name"].isna()]
-                file_nullval_file_path = files_df[files_df["file_path"].isna()]
-                file_nullval_application_name = files_df[
-                    files_df["application_name"].isna()
-                ]
-                file_nullval_platform_name = files_df[files_df["platform_name"].isna()]
-                file_nullval_env_name = files_df[files_df["env_name"].isna()]
-                file_nullval_server_name = files_df[files_df["server_name"].isna()]
-
-                if "dev" in env:
-                    files_df.replace(variable_list, dev_list, inplace=True, regex=True)
-                    print(files_df)
-                elif "test" in env:
-                    files_df.replace(variable_list, test_list, inplace=True, regex=True)
-                    print(files_df)
-                elif "ple" in env:
-                    process_df.replace(variable_list, ple_list, inplace=True, regex=True)
-                else:
-                    files_df.replace(variable_list, prod_list, inplace=True, regex=True)
-                    print(files_df)
-                files_df["interval"].fillna("0", inplace=True)
-                files_df = files_df.fillna("")
-                files_df = files_df.applymap(str)
-                file_stg = 1
-                if len(file_nullval_file_name) > 0 or len(file_nullval_file_path ) > 0 or len(file_nullval_application_name ) > 0 or len(file_nullval_platform_name ) > 0 or len(file_nullval_env_name ) > 0 or len(file_nullval_server_name ) > 0 :
-                    raise ValueError("FILE META VALIDATION\n\n Column validation failed counts : \n\tEmpty File name  : {0}\n\tEmpty File path  : {1}\n\tEmpty application name  : {2}\n\tEmpty platform name  : {3}\n\tEmpty env name  : {4}\n\tEmpty Server name  : {5}".format(file_nullval_file_name,file_nullval_file_path,file_nullval_application_name ,file_nullval_platform_name,file_nullval_env_name ,file_nullval_server_name))	
-                #if len(file_nullval_file_name) > 0:
-                #    print(file_nullval_file_name)
-                #    raise ValueError("File Name is a mandatory Column in Files Tab. It can't be left empty.")
-                #if len(file_nullval_file_path) > 0:
-                #    print(file_nullval_file_path)
-                #    raise ValueError("File Path is a mandatory Column in Files Tab. It can't be left empty.")
-                #if len(file_nullval_server_name) > 0:
-                #    print(file_nullval_server_name)
-                #    raise ValueError("Server Name is a mandatory Column in Files Tab. It can't be left empty.")
-                #if len(file_nullval_application_name) > 0:
-                #    print(file_nullval_application_name)
-                #    raise ValueError("Application Name is a mandatory Column in Files Tab. It can't be left empty.")
-                #if len(file_nullval_platform_name) > 0:
-                #    print(file_nullval_platform_name)
-                #    raise ValueError("Platform Name is a mandatory Column in Files Tab. It can't be left empty.")
-                #if len(file_nullval_env_name) > 0:
-                #    print(file_nullval_env_name)
-                #    raise ValueError("Env Name is a mandatory Column in Files Tab. It can't be left empty.")
-                else:
-                    pandas_gbq.to_gbq(files_df,"dataobservability_tbls.dof_file_meta_stg",if_exists="replace",)
-                    print("Data loaded to File staging Table")
-            else:
-                print("Files Tab is Empty")
-                file_stg = 0
-                file_query_job = client.query(
-                    """ DELETE from dataobservability_tbls.dof_file_meta_stg where true"""
-                )
-                print(file_query_job.result())
-===================================================
-import pandas as pd
-import sys
-import os
-import re
-import json
-import numpy as np
-import pytz
-import pandas_gbq
-import smtplib
-from google.cloud import bigquery
-from email.message import EmailMessage
-from google.cloud import storage
-# from croniter import croniter
-from datetime import datetime, timedelta
-import config
-from metadata_functions import *
-
-# def load_table(tables_meta,table_id):
-#     job_config=bigquery.LoadJobConfig (autodetect=False,write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE)
-#     job=client.load_table_from_dataframe(tables_meta,table_id,job_config=job_config)
-#     return job.result()
-
-client=bigquery.Client()
-storage_client = storage.Client()
-project_id= config.project_id
-dataset=config.dataset
-bucket_name = config.bucket_name
-process_table_id=f"{project_id}.{dataset}.datax_process_meta_stg"
-task_table_id=f"{project_id}.{dataset}.datax_task_meta_stg"
-files_table_id=f"{project_id}.{dataset}.datax_file_meta_stg"
-tables_table_id=f"{project_id}.{dataset}.datax_table_meta_stg"
-finops_table_id=f"{project_id}.{dataset}.datax_label_meta_stg"
-
-
-def dof_master_meta_gcs_bq_trigger_api(event,context):
-    try:
-        env= "dev"
-        # env = os.environ.get("env")
-        print(env)
-        # name of the file which triggers the function
-        file_name = event["name"]
-        print("File Name is: " + file_name)
-        blob_name = file_name
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-        data_bytes = blob.download_as_bytes()
-        process_count = 0
-
-        tables_meta = pd.read_excel(data_bytes, sheet_name="DataX_Table_Meta",keep_default_na=False,dtype=str,index_col=None)
-        files_meta = pd.read_excel(data_bytes, sheet_name="DataX_File_Meta",keep_default_na=False,dtype=str,index_col=None)
-        process_meta = pd.read_excel(data_bytes, sheet_name="DataX_Process_Meta",keep_default_na=False,dtype=str,index_col=None)
-        task_meta = pd.read_excel(data_bytes, sheet_name="DataX_Task_Meta",keep_default_na=False,dtype=str,index_col=None)
-        finops_meta = pd.read_excel(data_bytes, sheet_name="DataX_Label_Meta",keep_default_na=False,dtype=str,index_col=None)
-
-        # Drop first column
-        tables_meta=tables_meta.iloc[:,1:]
-        files_meta=files_meta.iloc[:,1:]
-        process_meta=process_meta.iloc[:,1:]
-        task_meta=task_meta.iloc[:,1:]
-        finops_meta=finops_meta.iloc[:,1:]
-
-        # Drop row which contains description
-        process_meta=process_meta.reset_index(drop=True)
-        process_meta=process_meta.drop(index=[0,1])
-        task_meta=task_meta.reset_index(drop=True)
-        task_meta=task_meta.drop(index=[0,1])
-        files_meta=files_meta.reset_index(drop=True)
-        files_meta=files_meta.drop(index=[0,1])
-        tables_meta=tables_meta.reset_index(drop=True)
-        tables_meta=tables_meta.drop(index=[0,1])
-        finops_meta=finops_meta.reset_index(drop=True)
-        finops_meta=finops_meta.drop(index=[0,1])
-
-        tables_column_list=['dag_id','task_id','composer_instance_name','step_id','table_name','db_name','server_name','platform_name','environment_name','is_active','notify_table_size','threshold_unit','threshold_low','threshold_up','volume_incident_team_name','table_size_notification_email_list','alert_table_size','volume_alert_channel','volume_query','montior_volume']
-        files_column_list=['dag_id','composer_instance_name','task_id','step_id','file_name','file_path','landing_server_name','direction','environment_name','file_middle_pattern','file_prefix','file_suffix','schedule_interval','frequency','timezone','is_mandatory','is_active','file_arrival_custom_interval','sla','source_system','source_poc','sla_notification_buffer','notify_source','notify_sla_misses','alert_channel','alert_target_team_name','notify_file_size','size_threshold_low_limit','size_threshold_high_limit','size_threshold_limit_unit','interval','archive_locaton','failure_location','sourceFormat','sourceUris','fixedWidth','fieldDelimiter','skipLeadingRows','maxBadRecords','nullMarker','allowQuotedNewlines','allowJaggedRows','ignoreUnknownValues','filesensorretries','filesensorretrydelay','timeout','fileSensor','gcsBucket','object']
-        process_column_list= ['process_name','process_description','dag_id','project_id','composer_instance_name','vsad','project_space','job_type','data_stream','load_type','platform_name','job_url','scheduler_name','timezone','schedule_interval','frequency','max_active_runs','sla','interval','tracex_tags','run_date_buffer_interval','sla_alert_buffer','duration_threshold_high_value','alert_channel','alert_channal_target_name','alert_additional_info','alert_failure_by','alert_priority','alert_failure','alert_slamiss','alert_longrunning','alert_startoverdue','is_critical','logs_trace_id_enabled','sla_type','code_gcs_location','code_git_link','prod_request_number','production_date','notify_email_success','notify_email_failure','notify_email_slamiss','notify_email_longrunning','notify_email_startoverdue','notify_slack_success','notify_slack_failure','notify_slack_slamiss','notify_slack_longrunning','notify_slack_startoverdue','dev_poc','dev_poc_manager','devgroup_email','mod_poc','legacy_esp_application_name','legacy_esp_process_name','runbook_link','logs_enabled','upstream','downstream','additional_details_json']
-        task_column_list=['dag_id','composer_instance_name','task_id','description','step_id','task_type','platform_name','env_name','source_type','source_environment','source_server_name','source','rt_subscription','target_type','target_environment','target_server_name','target','retries','retry_delay','is_active','is_mandatory']
-        finops_column_list=['job_id','instance_name','job_engine','vsad','project_id','lob','sub_lob','portfolio','product_area','product_name','program_name','data_product_name','data_domain','data_sub_domain','use_case_name','is_active','updated_timestamp','inserted_timestamp','modified_by']
-        config__column_list  = ["variable","dev","test","prod"]
-
-        process_integer_column=['duration_threshold_high_value','max_active_runs','run_date_buffer_interval','interval']
-        task_integer_column=['retries','step_id']
-        files_integer_column=['step_id','file_arrival_custom_interval','size_threshold_low_limit','size_threshold_high_limit','interval']
-        table_integer_column=['step_id','threshold_up','threshold_low']
-        finops_integer_column=[]
-        process_boolean_column=['alert_failure','alert_slamiss','is_critical','logs_enabled','logs_trace_id_enabled']
-        table_boolean_column=['notify_table_size','is_active','alert_table_size']
-        task_boolean_column=['is_mandatory','is_active']
-        finops_boolean_column=['is_active']
-        files_boolean_column=['is_mandatory','is_active','notify_source','notify_sla_misses','notify_file_size']
-
-        tables_mandatory_column_list=["dag_id","task_id","step_id","table_name","db_name","server_name","platform_name","is_active"]
-        task_mandatory_column_list=["dag_id","composer_instance_name","task_id","description","task_type","platform_name","env_name","source_type","source_environment","source_server_name"]
-        process_mandatory_column_list=['process_name','process_description','dag_id','project_id','composer_instance_name','vsad','project_space','job_type','data_stream','load_type','platform_name','job_url','scheduler_name','timezone','schedule_interval','frequency','sla','is_critical','sla_type','code_gcs_location','code_git_link','prod_request_number','production_date','dev_poc','dev_poc_manager','devgroup_email','mod_poc','runbook_link']
-        files_mandatory_column_list=['dag_id','composer_instance_name','task_id','file_name','file_path','landing_server_name','environment_name','file_prefix','file_suffix','schedule_interval','frequency','direction','sla','source_system','source_poc','alert_channel','alert_target_team_name']
-        finops_mandatory_column_list=['job_id','instance_name','job_engine', 'vsad','project_id','lob','sub_lob','portfolio','product_area','product_name','program_name']
-
-
-
-        frequency_list = ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]
-        flags = [True,False]
-        bool_flag = ["true","false"]
-        platform_list = ["gcp","unix","aws","teradata","edl"]
-        env_list = ["gcp_bq","unix","java","edw_td","gcp","edl_hdfs","gcp_gcs","onprem_hive","gcp_hive"]
-        scheduler_list = ["airflow","composer","espx","cron","oozie","trigger"]
-        businessunit_list = ["vbg","network","vcg","corporate"]
-        source_type_list = ["pubsub","table","esp","file","kafka"]
-        target_type_list = ["file","kafka","pubsub","table","topic"]
-        config_column_list  = ["variable","dev","test","prod"]
-        time_zone_list = ["UTC","EST"]
-        priority_list = ["P1","P2","P3","P4","P5"]
-        true_flag = ["y","Y"]
-        env="dev"
-
-        config_df = pd.read_excel(data_bytes, sheet_name="Variables", dtype=str)
-        config_df.dropna(axis=0, how="all", inplace=True)
-        config_df = config_df.applymap(str)
-        variable_list = list(config_df["variable"])
-        dev_list = list(config_df["dev"])
-        test_list = list(config_df["test"])
-        prod_list = list(config_df["prod"])
-        ple_list =  list(config_df["ple"])
-        print(variable_list)
-        print("-------------------------------------------------")
-        print(dev_list)
-        print("-------------------------------------------------")
-        print(test_list)
-        print("-------------------------------------------------")
-        print(prod_list)
-        print("-------------------------------------------------")
-        print(ple_list)
-        print("-------------------------------------------------")
-
-        #Check for mismatch between variable list and values provided in columns
-        if len(variable_list) != len(dev_list):
-            raise ValueError(
-                "Variable column and dev column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
-            )
-        if len(variable_list) != len(test_list):
-            raise ValueError(
-                "Variable column and test column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
-            )
-        if len(variable_list) != len(prod_list):
-            raise ValueError(
-                "Variable column and prod column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
-            )
-        if len(variable_list) != len(ple_list):
-            raise ValueError(
-                "Variable column and prod column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
-            )
-
-
-        #----------------------------------------column_validation-----------------------------------------------
-        metadata_tables_columns = list(tables_meta.columns.values)
-        metadata_files_columns = list(files_meta.columns.values)
-        metadata_process_columns = list(process_meta.columns.values)
-        metadata_task_columns = list(task_meta.columns.values)
-        metadata_finops_columns = list(finops_meta.columns.values)
-
-        missed_tbl_col = (set(tables_column_list).difference(metadata_tables_columns))
-        missed_fle_col = (set(files_column_list).difference(metadata_files_columns))
-        missed_prcs_col = (set(process_column_list).difference(metadata_process_columns))
-        missed_tsk_col = (set(task_column_list).difference(metadata_task_columns))
-        missed_fnps_col = (set(finops_column_list).difference(metadata_finops_columns))
-
-        add_tbl_col = (set(metadata_tables_columns).difference(metadata_tables_columns))
-        add_fle_col = (set(metadata_files_columns).difference(metadata_files_columns))
-        add_prcs_col = (set(metadata_process_columns).difference(metadata_process_columns))
-        add_tsk_col = (set(metadata_task_columns).difference(metadata_task_columns))
-        add_fnps_col = (set(metadata_finops_columns).difference(metadata_finops_columns))
-
-        missing_column_cnt = len(missed_tbl_col) + len(missed_fle_col) + len(missed_prcs_col) + len(missed_tsk_col) + len(missed_fnps_col)
-        additional_column_cnt = len(add_tbl_col) + len(add_fle_col) + len(add_prcs_col) + len(add_tsk_col) + len(add_fnps_col)
-        if len(missed_tbl_col)== 0:
-            missed_tbl_col = 'NA'
-        if len(missed_fle_col)== 0:
-            missed_fle_col = 'NA'
-        if len(missed_prcs_col)== 0:
-            missed_prcs_col = 'NA'
-        if len(missed_tsk_col)== 0:
-            missed_tsk_col = 'NA'
-        if len(missed_fnps_col)== 0:
-            missed_fnps_col = 'NA'
-        if len(add_tbl_col)== 0:
-            add_tbl_col = 'NA'
-        if len(add_fle_col)== 0:
-            add_fle_col = 'NA'
-        if len(add_prcs_col)== 0:
-            add_prcs_col = 'NA'
-        if len(add_tsk_col)== 0:
-            add_tsk_col = 'NA'
-        if len(add_fnps_col)== 0:
-            add_fnps_col = 'NA'
-
-        #-----------------------TABLE_VALIDATION_COLUMNS----------------------------------------------------------------
-        if not tables_meta.empty:
-            # Converting empty string to null values
-            tables_meta= tables_meta.infer_objects(copy=False).replace(r'^\s*$',np.nan,regex=True)
-            
-            #Remove whitespaces
-            tables_meta=tables_meta.map(lambda x:x.strip() if isinstance(x,str) else x)
-            #Updating the Variables
-            if "dev" in env:
-                tables_meta.infer_objects(copy=False).replace(variable_list, dev_list,inplace=True,regex=True)
-                print(tables_meta)
-            elif "test" in env:
-                tables_meta.infer_objects(copy=False).replace(variable_list, test_list, inplace=True,regex=True)
-                print(tables_meta)
-            elif "ple" in env:
-                tables_meta.infer_objects(copy=False).replace(variable_list, ple_list, inplace=True,regex=True)
-                print(tables_meta)
-            else:
-                tables_meta.infer_objects(copy=False).replace(variable_list, prod_list, inplace=True,regex=True)
-                print(tables_meta)
-
-            tables_meta = tables_meta.astype("string") 
-            #Updating the datatype for Integer Column
-            for col in table_integer_column:
-                tables_meta[col]=tables_meta[col].replace('',np.nan).fillna('0').astype(int)
-
-             #Updating the datatype for Boolean Column    
-            for col in table_boolean_column:
-                tables_meta[col]=tables_meta[col].replace('',np.nan).map({'Y': True,'N':False}).fillna(False)
-
-            # Checking the null values in Mandatory Columns
-            table_col_check=[]
-            for mandatory_col in tables_mandatory_column_list:
-                if(tables_meta[mandatory_col].isna().any() or (tables_meta[mandatory_col].astype(str).str.strip()=="").any()):
-                    print("checking for mandatory columns")
-                    table_col_check.append(mandatory_col)
-
-            table_stg = 1
-            
-            if len(table_col_check)>0:
-                raise ValueError("TABLE META VALIDATION:\n\n Following are the mandatory column in Table tab and can't be left empty :" + str(table_col_check))
-            else:
-                load_table(tables_meta,tables_table_id)
-                print("Data Loaded Table staging Table")        
-            """
-            if len(tbl_nullval_db_name) > 0 or  len(tbl_nullval_table_name) > 0 or len(tbl_nullval_servername) > 0 or len(tbl_nullval_application_name) > 0 or len(tbl_nullval_platform_name) > 0 or len(tbl_nullval_env_name) > 0 :
-                raise ValueError("TABLE META VALIDATION:\n\n Column validation failed counts : \n\tEmpty DB name  : {0}\n\tEmpty table name  : {1}\n\tEmpty server name  : {2}\n\tEmpty application name  : {3}\n\tEmpty platform name  : {4}\n\tEmpty Env name  : {5}".format(	tbl_nullval_db_name,tbl_nullval_table_name,tbl_nullval_servername,tbl_nullval_application_name,tbl_nullval_platform_name,tbl_nullval_env_name))
-            """
-
-        else:
-            print("Tables Tab is Empty")
-            table_stg = 0
-
-        #-----------------------FILE_VALIDATION_COLUMNS----------------------------------------------------------------
-
-        if not files_meta.empty:
-            # Converting empty string to null values
-            files_meta= files_meta.infer_objects(copy=False).replace(r'^\s*$',np.nan,regex=True)
-            
-            #Remove whitespaces
-            files_meta=files_meta.map(lambda x:x.strip() if isinstance(x,str) else x)
-
-            #Updating the Variables
-            if "dev" in env:
-                files_meta.infer_objects(copy=False).replace(variable_list, dev_list, inplace=True,regex=True)
-                print(files_meta)
-            elif "test" in env:
-                files_meta.infer_objects(copy=False).replace(variable_list, test_list,inplace=True,regex=True)
-                print(files_meta)
-            elif "ple" in env:
-                files_meta.infer_objects(copy=False).replace(variable_list, ple_list,inplace=True,regex=True)
-                print(files_meta)
-            else:
-                files_meta.infer_objects(copy=False).replace(variable_list, prod_list,inplace=True,regex=True)
-                print(files_meta)
-
-            files_meta = files_meta.astype("string")
-            #Updating the datatype for Integer Column 
-            for col in files_integer_column:
-                files_meta[col]=files_meta[col].replace('',np.nan).fillna('0').astype(int)
-
-            #Updating the datatype for Boolean Column     
-            for col in files_boolean_column:
-                files_meta[col]=files_meta[col].replace('',np.nan).map({'Y': True,'N':False}).fillna(False)
-
-            file_col_check=[]
-
-            file_stg=1
-
-            #Checking for mandatory columns
-            for mandatory_col in files_mandatory_column_list:
-                if(files_meta[mandatory_col].isna().any() or (files_meta[mandatory_col].astype(str).str.strip()=="").any()):
-                    print("checking for mandatory columns")
-                    file_col_check.append(mandatory_col)
-
-            if len(file_col_check)>0:
-                raise ValueError("FILE META VALIDATION:\n\n Following are the mandatory column in FILES tab and can't be left empty :" + str(file_col_check))
-            else:
-                load_table(files_meta,files_table_id)
-                print("Data loaded to File staging Table")
-        else:
-            print("Files Tab is Empty")
-            file_stg = 0
-
+#-----------------------FILE_VALIDATION_COLUMNS----------------------------------------------------------------
+
+if not files_meta.empty:
+    # Converting empty strings to null values
+    files_meta = files_meta.infer_objects(copy=False).replace(r'^\s*$', np.nan, regex=True)
+
+    # Remove whitespaces
+    files_meta = files_meta.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # Updating the Variables
+    if "dev" in env:
+        files_meta.replace(variable_list, dev_list, inplace=True, regex=True)
+    elif "test" in env:
+        files_meta.replace(variable_list, test_list, inplace=True, regex=True)
+    elif "ple" in env:
+        files_meta.replace(variable_list, ple_list, inplace=True, regex=True)
+    else:
+        files_meta.replace(variable_list, prod_list, inplace=True, regex=True)
+
+    files_meta = files_meta.astype("string")
+
+    # Updating the datatype for Integer Columns
+    for col in files_integer_column:
+        files_meta[col] = files_meta[col].replace('', np.nan).fillna('0').astype(int)
+
+    # Updating the datatype for Boolean Columns
+    for col in files_boolean_column:
+        files_meta[col] = files_meta[col].replace('', np.nan).map({'Y': True, 'N': False}).fillna(False)
+
+    # Validation counters
+    total_files_count = len(files_meta)
+    f_frequency_validation_cnt = total_files_count - files_meta['frequency'].str.lower().isin(frequency_list).sum()
+    f_platform_name_validation_cnt = total_files_count - files_meta['platform_name'].str.lower().isin(platform_list).sum()
+    f_env_name_validation_cnt = total_files_count - files_meta['environment_name'].str.lower().isin(env_list).sum()
+    f_timezone_validation_cnt = total_files_count - files_meta['timezone'].str.lower().isin(["utc", "est"]).sum()
+    f_is_active_validation_cnt = total_files_count - files_meta['is_active'].fillna('n').str.lower().isin(flags).sum()
+
+    # Source POC validation
+    null_source_poc_cnt = files_meta['source_poc'].isnull().sum()
+    source_poc_validation_cnt = total_files_count - files_meta.loc[
+        files_meta['source_poc'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+', case=False), :
+    ].shape[0]
+    source_poc_validation_cnt -= null_source_poc_cnt
+
+    # Process Owner validation
+    null_process_owner_cnt = files_meta['process_owner'].isnull().sum()
+    process_owner_validation_cnt = total_files_count - files_meta.loc[
+        files_meta['process_owner'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+', case=False), :
+    ].shape[0]
+    process_owner_validation_cnt -= null_process_owner_cnt
+
+    # Checking for mandatory columns
+    file_col_check = []
+    for mandatory_col in files_mandatory_column_list:
+        if files_meta[mandatory_col].isna().any() or (files_meta[mandatory_col].astype(str).str.strip() == "").any():
+            file_col_check.append(mandatory_col)
+
+    file_stg = 1
+
+    # Raising validation errors
+    if f_frequency_validation_cnt > 0 or f_platform_name_validation_cnt > 0 or \
+       f_env_name_validation_cnt > 0 or f_timezone_validation_cnt > 0 or \
+       f_is_active_validation_cnt > 0 or len(file_col_check) > 0 or \
+       source_poc_validation_cnt > 0 or process_owner_validation_cnt > 0:
+        raise ValueError(
+            f"FILE META VALIDATION FAILED:\n\n"
+            f"Frequency validation failed count: {f_frequency_validation_cnt}\n"
+            f"Platform name validation failed count: {f_platform_name_validation_cnt}\n"
+            f"Environment name validation failed count: {f_env_name_validation_cnt}\n"
+            f"Timezone validation failed count: {f_timezone_validation_cnt}\n"
+            f"Is_active validation failed count: {f_is_active_validation_cnt}\n"
+            f"Source POC validation failed count: {source_poc_validation_cnt}\n"
+            f"Process Owner validation failed count: {process_owner_validation_cnt}\n"
+            f"Mandatory columns missing: {file_col_check}"
+        )
+    else:
+        load_table(files_meta, files_table_id)
+        print("Data loaded to File staging Table")
+else:
+    print("Files Tab is Empty")
+    file_stg = 0
