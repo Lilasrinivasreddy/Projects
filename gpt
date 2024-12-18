@@ -1,5 +1,325 @@
-# Ensure all values in 'is_active' are strings
-files_meta['is_active'] = files_meta['is_active'].fillna('n').astype(str)
+import pandas as pd
+import json
+import re
+import pytz
+import pandas_gbq
+import numpy as np
+from croniter import croniter
+from datetime import datetime, timedelta
+data_bytes = '/Users/reddyvu/Desktop/Test/DataX_Master_Metadata.xlsx'
 
-# Perform the validation
-f_is_active_validation_cnt = total_files_count - files_meta['is_active'].str.lower().isin(flags).sum()
+print("Script Started")
+
+# pd.set_option("future.no_silent_downcasting", True)
+tables_meta = pd.read_excel(data_bytes, sheet_name="DataX_Table_Meta",dtype=str,keep_default_na=False,index_col=None)
+files_meta = pd.read_excel(data_bytes, sheet_name="DataX_File_Meta",dtype=str,keep_default_na=False,index_col=None)
+process_meta = pd.read_excel(data_bytes, sheet_name="DataX_Process_Meta",dtype=str,keep_default_na=False,index_col=None)
+task_meta = pd.read_excel(data_bytes, sheet_name="DataX_Task_Meta",dtype=str,keep_default_na=False,index_col=None)
+finops_meta = pd.read_excel(data_bytes, sheet_name="DataX_Label_Meta",dtype=str,keep_default_na=False,index_col=None)
+
+ # Drop first column
+tables_meta=tables_meta.iloc[:,1:]
+files_meta=files_meta.iloc[:,1:]
+process_meta=process_meta.iloc[:,1:]
+task_meta=task_meta.iloc[:,1:]
+finops_meta=finops_meta.iloc[:,1:]
+
+# Drop row which contains description
+process_meta=process_meta.reset_index(drop=True)
+process_meta=process_meta.drop(index=[0,1])
+task_meta=task_meta.reset_index(drop=True)
+task_meta=task_meta.drop(index=[0,1])
+files_meta=files_meta.reset_index(drop=True)
+files_meta=files_meta.drop(index=[0,1])
+tables_meta=tables_meta.reset_index(drop=True)
+tables_meta=tables_meta.drop(index=[0,1])
+finops_meta=finops_meta.reset_index(drop=True)
+finops_meta=finops_meta.drop(index=[0,1])
+
+tables_column_list=['dag_id','task_id','step_id','table_name','db_name','server_name','platform_name','environment_name','is_active','notify_table_size','threshold_unit','threshold_low','threshold_up','volume_incident_team_name','table_size_notification_email_list','alert_table_size','volume_alert_channel','volume_query','montior_volume']
+files_column_list=['dag_id','step_id','file_name','file_path','landing_server_name','environment_name','file_middle_pattern','file_prefix','file_suffix','schedule_interval','frequency','timezone','is_mandatory','is_active','file_arrival_custom_interval','sla','source_system','source_poc','sla_notification_buffer','notify_source','notify_sla_misses','alert_channel','alert_target_team_name','notify_file_size','size_threshold_low_limit','size_threshold_high_limit','size_threshold_limit_unit','interval','archive_locaton','failure_location','sourceFormat','sourceUris','fixedWidth','fieldDelimiter','skipLeadingRows','maxBadRecords','nullMarker','allowQuotedNewlines','allowJaggedRows','ignoreUnknownValues','filesensorretries','filesensorretrydelay','timeout','fileSensor','gcsBucket','object']
+process_column_list= ['process_name','process_description','dag_id','project_id','composer_instance_name','vsad','project_space','job_type','data_stream','load_type','platform_name','job_url','scheduler_name','timezone','schedule_interval','frequency','max_active_runs','sla','interval','tracex_tags','run_date_buffer_interval','sla_alert_buffer','duration_threshold_high_value','alert_channel','alert_channal_target_name','alert_additional_info','alert_failure_by','alert_priority','alert_failure','alert_slamiss','alert_longrunning','alert_startoverdue','is_critical','logs_trace_id_enabled','sla_type','code_gcs_location','code_git_link','prod_request_number','production_date','notify_email_success','notify_email_failure','notify_email_slamiss','notify_email_longrunning','notify_email_startoverdue','notify_slack_success','notify_slack_failure','notify_slack_slamiss','notify_slack_longrunning','notify_slack_startoverdue','dev_poc','dev_poc_manager','devgroup_email','mod_poc','legacy_esp_application_name','legacy_esp_process_name','runbook_link','dof_logs_enabled','upstream','downstream']
+task_column_list=['dag_id','task_id','description','step_id','task_type','platform_name','env_name','source_type','source_environment','source_server_name','source','rt_subscription','target_type','target_environment','target_server_name','target','retries','retry_delay','is_mandatory']
+finops_column_list=['job_id','instance_name','job_engine','vsad','project_id','lob','sub_lob','portfolio','product_area','product_name','program_name','data_product_name','data_domain','data_sub_domain','use_case_name','is_active','updated_timestamp','inserted_timestamp','modified_by']
+config__column_list  = ["variable","dev","test","prod"]
+
+process_integer_column=['duration_threshold_high_value','max_active_runs','run_date_buffer_interval','interval']
+
+
+files_integer_column=['step_id','file_arrival_custom_interval','size_threshold_low_limit','size_threshold_high_limit','interval']
+table_integer_column=['step_id']
+finops_integer_column=[]
+process_boolean_column=['alert_failure','alert_slamiss','is_critical','dof_logs_enabled','logs_trace_id_enabled']
+table_boolean_column=['notify_table_size']
+task_boolean_column=['is_mandatory']
+finops_boolean_column=['is_active']
+files_boolean_column=['is_mandatory','is_active','notify_source','notify_sla_misses','notify_file_size']
+finops_string_column=['dag_id','project_id','composer_instance_name','vsad','lob','sub_lob','portfolio','product_area','product_name','program_name','data_product_name','data_domain','data_sub_domain','use_case_name','updated_timestamp','inserted_timestamp','modified_by']
+
+tables_mandatory_column_list=["dag_id","task_id","step_id","table_name","db_name","server_name","platform_name","is_active"]
+task_mandatory_column_list=["dag_id","task_id","description","task_type","platform_name","env_name","source_type","source_environment","source_server_name"]
+files_mandatory_column_list=['dag_id','file_name','file_path','landing_server_name','environment_name','file_prefix','file_suffix','schedule_interval','frequency','sla','source_system','source_poc','alert_channel','alert_target_team_name']
+finops_mandatory_column_list=['job_id','instance_name', 'job_engine','vsad','project_id','lob','sub_lob','portfolio','product_area','product_name','program_name']
+
+
+
+frequency_list = ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"]
+flags = [True,False]
+bool_flag = ["true","false"]
+platform_list = ["gcp","unix","aws","teradata","edl"]
+env_list = ["gcp_bq","unix","java","edw_td","gcp","edl_hdfs","gcp_gcs","onprem_hive","gcp_hive"]
+scheduler_list = ["airflow","composer","espx","cron","oozie","trigger"]
+businessunit_list = ["vbg","network","vcg","corporate"]
+source_type_list = ["pubsub","table","esp","file","kafka"]
+target_type_list = ["file","kafka","pubsub","table","topic"]
+config_column_list  = ["variable","dev","test","prod"]
+time_zone_list = ["UTC","EST"]
+priority_list = ["P1","P2","P3","P4","P5"]
+true_flag = ["y","Y"]
+env="dev"
+
+config_df = pd.read_excel(data_bytes, sheet_name="Variables", dtype=str)
+config_df.dropna(axis=0, how="all", inplace=True)
+config_df = config_df.applymap(str)
+variable_list = list(config_df["variable"])
+dev_list = list(config_df["dev"])
+test_list = list(config_df["test"])
+prod_list = list(config_df["prod"])
+ple_list =  list(config_df["ple"])
+print(variable_list)
+print("-------------------------------------------------")
+print(dev_list)
+print("-------------------------------------------------")
+print(test_list)
+print("-------------------------------------------------")
+print(prod_list)
+print("-------------------------------------------------")
+print(ple_list)
+print("-------------------------------------------------")
+
+if len(variable_list) != len(dev_list):
+	raise ValueError(
+		"Variable column and dev column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
+	)
+if len(variable_list) != len(test_list):
+	raise ValueError(
+		"Variable column and test column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
+	)
+if len(variable_list) != len(prod_list):
+	raise ValueError(
+		"Variable column and prod column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
+	)
+if len(variable_list) != len(ple_list):
+	raise ValueError(
+		"Variable column and prod column values are not mapping correctly. Length of either of them has issues. Kindly check the config tab"
+	)
+
+
+#----------------------------------------column_validation-----------------------------------------------
+metadata_tables_columns = list(tables_meta.columns.values)
+metadata_files_columns = list(files_meta.columns.values)
+metadata_process_columns = list(process_meta.columns.values)
+metadata_task_columns = list(task_meta.columns.values)
+metadata_finops_columns = list(finops_meta.columns.values)
+
+missed_tbl_col = (set(tables_column_list).difference(metadata_tables_columns))
+missed_fle_col = (set(files_column_list).difference(metadata_files_columns))
+missed_prcs_col = (set(process_column_list).difference(metadata_process_columns))
+missed_tsk_col = (set(task_column_list).difference(metadata_task_columns))
+missed_fnps_col = (set(finops_column_list).difference(metadata_finops_columns))
+
+add_tbl_col = (set(metadata_tables_columns).difference(metadata_tables_columns))
+add_fle_col = (set(metadata_files_columns).difference(metadata_files_columns))
+add_prcs_col = (set(metadata_process_columns).difference(metadata_process_columns))
+add_tsk_col = (set(metadata_task_columns).difference(metadata_task_columns))
+add_fnps_col = (set(metadata_finops_columns).difference(metadata_finops_columns))
+
+missing_column_cnt = len(missed_tbl_col) + len(missed_fle_col) + len(missed_prcs_col) + len(missed_tsk_col) + len(missed_fnps_col)
+additional_column_cnt = len(add_tbl_col) + len(add_fle_col) + len(add_prcs_col) + len(add_tsk_col) + len(add_fnps_col)
+if len(missed_tbl_col)== 0:
+	missed_tbl_col = 'NA'
+if len(missed_fle_col)== 0:
+	missed_fle_col = 'NA'
+if len(missed_prcs_col)== 0:
+	missed_prcs_col = 'NA'
+if len(missed_tsk_col)== 0:
+	missed_tsk_col = 'NA'
+if len(missed_fnps_col)== 0:
+	missed_fnps_col = 'NA'
+if len(add_tbl_col)== 0:
+	add_tbl_col = 'NA'
+if len(add_fle_col)== 0:
+	add_fle_col = 'NA'
+if len(add_prcs_col)== 0:
+	add_prcs_col = 'NA'
+if len(add_tsk_col)== 0:
+	add_tsk_col = 'NA'
+if len(add_fnps_col)== 0:
+	add_fnps_col = 'NA'
+	
+    #-----------------------FILE_VALIDATION_COLUMNS----------------------------------------------------------------
+
+if not files_meta.empty:
+	files_meta=files_meta.infer_objects(copy=False).replace(r'^\s*$',np.nan,regex=True)
+	# print(files_meta['interval'])
+	files_meta=files_meta.map(lambda x:x.strip() if isinstance(x,str) else x)
+	files_meta.dropna(axis=0, how="all", inplace=True)
+
+
+	f_application_name_validation_cnt=file_name_validation_cnt=f_frequency_validation_cnt=f_platform_name_validtion_cnt=f_env_name_validtion_cnt=f_is_active_validation_cnt=file_path_validation_cnt=f_timezone_validation_cnt=source_poc_validation_cnt=file_prefix_cnt=file_middle_pattern_cnt=file_suffix_cnt=notify_sla_misses_cnt=notify_file_size_cnt=file_size_limit_cnt=f_threshold_low_cnt=f_threshold_up_cnt = 0
+	files_meta.dropna(axis=0, how="all", inplace=True)
+	total_files_count = files_meta.shape[0]
+
+	#Updating the Variables
+	if "dev" in env:
+		files_meta.infer_objects(copy=False).replace(variable_list, dev_list, inplace=True,regex=True)
+		print(files_meta)
+	elif "test" in env:
+		files_meta.infer_objects(copy=False).replace(variable_list, test_list,inplace=True,regex=True)
+		print(files_meta)
+	elif "ple" in env:
+		files_meta.infer_objects(copy=False).replace(variable_list, ple_list,inplace=True,regex=True)
+		print(files_meta)
+	else:
+		files_meta.infer_objects(copy=False).replace(variable_list, prod_list,inplace=True,regex=True)
+		print(files_meta)
+
+	files_meta = files_meta.astype("string")
+	
+	#Updating the datatype for Integer Column 
+	for col in files_integer_column:		
+		files_meta[col]=files_meta[col].replace('',np.nan).fillna('0').astype(int)
+	
+	print(files_meta['size_threshold_limit_unit'])
+	#Updating the datatype for Boolean Column     
+	for col in files_boolean_column:
+		files_meta[col]=files_meta[col].replace('',np.nan).map({'Y': True,'N':False}).fillna(False)
+
+	print("validation started")
+	#file name validation
+	file_name_validation_cnt = files_meta['file_name'].isna().sum() +files_meta.loc[files_meta['file_name'].str.contains(r'\s',case=False), :].shape[0]
+
+ 	#env_name validation -[GCP_BQ,Unix,JAVA,EDW_TD,GCP,EDL_HDFS,GCP_GCS,OnPrem_Hive,GCP_HIVE)]
+	f_env_name_validtion_cnt = total_files_count - files_meta['environment_name'].str.lower().isin(env_list).sum()
+
+	#frequency validation - ["real_time", "hourly_custom", "weekly", "monthly", "fixed", "hourly", "daily"] case sensitive      
+	f_frequency_validation_cnt = total_files_count - files_meta['frequency'].str.lower().isin(frequency_list).sum()
+
+    #timezone validation [utc/est]
+	f_timezone_validation_cnt = total_files_count - files_meta['timezone'].str.lower().isin(["utc","est"]).sum()
+
+	print("validation started- 2")
+	#file path validation
+	# file_path_validation_cnt = ((files_meta['file_path'].isna()) | (~files_meta['file_path'].str.startswith('gs')) | (~files_meta['file_path'].str.startswith('/')) | (~files_meta['file_path'].str.endswith('/'))).sum()
+
+	# #is_active validation
+	# f_is_active_validation_cnt =  total_files_count - files_meta['is_active'].fillna('n').str.lower().isin(flags).sum()
+	# files_meta['is_active'] = files_meta['is_active'].fillna('n').astype(str)
+	# f_is_active_validation_cnt = total_files_count - files_meta['is_active'].str.lower().isin(flags).sum()
+
+
+    #source_poc_validation
+	null_source_poc_cnt = files_meta['source_poc'].isnull().sum()
+	source_poc_validation_cnt =  total_files_count -  files_meta.loc[files_meta['source_poc'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+',case=False), :].shape[0]
+	source_poc_validation_cnt = source_poc_validation_cnt - null_source_poc_cnt
+
+    #file_prefix/file_middle_pattern/file_suffix validation
+	#file_middle_pattern can be null the condition is file_name = file_prefix + file_middle_pattern + file_suffix
+	#file_prefix_cnt = ((files_meta['file_middle_pattern'].notna()) & (files_meta['file_name'] != files_meta['file_prefix'] + files_meta['file_middle_pattern'] + files_meta['file_suffix'])).sum() + ((files_meta['file_middle_pattern'].isna()) & (files_meta['file_name'] != files_meta['file_prefix'] + files_meta['file_suffix'])).sum()
+	file_suffix_cnt = file_middle_pattern_cnt = file_prefix_cnt
+
+	print("validation started -3")
+	#notify_sla_misses validation
+	notify_sla_misses_cnt = len(files_meta['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_meta['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+
+	#notify_file_size validation
+	notify_file_size_cnt =len(files_meta['notify_file_size'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_meta['notify_file_size'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+
+	#file_size_limit validation
+	file_size_limit_cnt = len(files_meta['file_size_limit'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_meta['file_size_limit'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+
+	#threshold_low validation
+	low_null_count = files_meta['threshold_low'].replace('',pd.NA,inplace = False).isna().sum()
+	low_numeric_count = files_meta['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+	f_threshold_low_cnt = total_files_count - low_null_count - low_numeric_count
+
+	#threshold_up validation
+	up_null_count = files_meta['threshold_up'].replace('',pd.NA,inplace = False).isna().sum()
+	up_numeric_count = files_meta['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+	f_threshold_up_cnt = total_files_count - up_null_count - up_numeric_count
+
+
+
+
+
+
+
+	file_col_check=[]
+	
+
+	#Checking for mandatory columns
+	for mandatory_col in files_mandatory_column_list:
+		if(files_meta[mandatory_col].isna().any() or (files_meta[mandatory_col].astype(str).str.strip()=='').any() or (files_meta[mandatory_col].astype(str)== '0').any()):
+			# row_number=files_meta[mandatory_col].index.to_list()
+			# print("row_number",row_number)
+			print("checking for mandatory columns")
+			file_col_check.append(mandatory_col)
+	print("testing in file meta",files_meta['size_threshold_limit_unit'])
+
+	if len(file_col_check)>0:
+		raise ValueError("FILE META VALIDATION:\n\n Following are the mandatory column in FILES tab and can't be left empty :" + str(file_col_check))
+	else:
+		# load_table(files_meta,files_table_id)
+		print("Data loaded to File staging Table")
+else:
+	print("Files Tab is Empty")
+	file_stg = 0
+	
+print("end")
+
+============================================================================================
+Script Started
+c:\Users\reddyvu\Desktop\Test\testing.py:83: FutureWarning: DataFrame.applymap has been deprecated. Use DataFrame.map instead.
+  config_df = config_df.applymap(str)
+['<na_t160_failure>', '<na_t160_sla_breach>', '<na_t160success>', '<server_edwpr>', '<server_edwdo>', '<bucket_path>', '<wireless_failure>', '<success_notification_list>', '<failure_notification_list>', '<sla_miss_notification_list>']
+-------------------------------------------------
+['manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'vz-it-np-gk1v-dev-edwpr-0', 'vz-it-np-gk1v-dev-edwdo-0', 'gk1v-dev-edwpr-0-usre-inbound', 'VZ-AID-EDW-SIT', 'OneCorpdata-Dev-Notify-Success@verizon.com', 'OneCorpdata-Dev-Notify-Failure@verizon.com', 'OneCorpdata-Dev-Notify-SLAMiss@verizon.com']
+-------------------------------------------------
+['manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'vz-it-np-gk1v-test-edwpr-0', 'vz-it-np-gk1v-test-edwdo-0', 'gk1v-test-edwpr-0-usre-inbound', 'VZ-AID-EDW-SIT', 'OneCorpdata-Dev-Notify-Success@verizon.com', 'OneCorpdata-Dev-Notify-Failure@verizon.com', 'OneCorpdata-Dev-Notify-SLAMiss@verizon.com']
+-------------------------------------------------
+['manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'manasa.gutlapalli@verizon.com,venkatesh.grandhi@verizon.com,rupali.palekar@verizon.com', 'vz-it-pr-gk1v-edwpr-0', 'vz-it-pr-gk1v-edwdo-0', 'gk1v-prod-edwpr-0-usre-inbound', 'VZ-AID-EDW-Data-Operations', 'OneCorpdata-Prod-Notify-Success@verizon.com', 'OneCorpdata-Prod-Notify-Failure@verizon.com,dof-epdo-notification@verizon.com', 'OneCorpdata-Prod-Notify-SLAMiss@verizon.com']      
+-------------------------------------------------
+['VZW.VCG.Operations.onshore-offshore@verizon.com', 'VZW.VCG.Operations.onshore-offshore@verizon.com', 'VZW.VCG.Operations.onshore-offshore@verizon.com', 'vz-it-pr-gk1v-pleedwpr-0', 'vz-it-pr-gk1v-pleedwdo-0', 'gk1v-ple-edwpr-0-usre-inbound', 'VZ-AID-EDW-PLE', 'nan', 'nan', 'nan']
+-------------------------------------------------
+                           dag_id             task_id composer_instance_name  ... fileSensor gcsBucket object
+2  gk1v_edwpr_udm_neta_na_t160_ld             gcsToBq    vz-it-gk1v-cwlspr-2  ...        NaN       NaN    NaN    
+3  gk1v_edwpr_udm_neta_na_t160_ld     bqTransformLoad    vz-it-gk1v-cwlspr-2  ...        NaN       NaN    NaN    
+4  gk1v_edwpr_udm_neta_na_t160_ld  sourceFileArchival    vz-it-gk1v-cwlspr-2  ...        NaN       NaN    NaN    
+5  gk1v_edwpr_udm_neta_na_t160_lw          FileSensor    vz-it-gk1v-cwlspr-5  ...        NaN       NaN    NaN    
+
+[4 rows x 49 columns]
+2    <NA>
+3    <NA>
+4    <NA>
+5    <NA>
+Name: size_threshold_limit_unit, dtype: string
+validation started
+validation started- 2
+validation started -3
+Traceback (most recent call last):
+  File "c:\Users\reddyvu\Desktop\Test\testing.py", line 233, in <module>
+    notify_sla_misses_cnt = len(files_meta['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().loc[~files_meta['notify_sla_misses'].fillna('n').replace('','n',inplace = False).str.lower().isin(flags)])
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\reddyvu\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\generic.py", line 6204, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\reddyvu\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\accessor.py", line 224, in __get__
+    accessor_obj = self._accessor(obj)
+                   ^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\reddyvu\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\strings\accessor.py", line 190, in __init__
+    self._inferred_dtype = self._validate(data)
+                           ^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\reddyvu\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\strings\accessor.py", line 244, in _validate
+    raise AttributeError("Can only use .str accessor with string values!")
+AttributeError: Can only use .str accessor with string values!. Did you mean: 'std'?
+PS C:\Users\reddyvu\Desktop\Test>
