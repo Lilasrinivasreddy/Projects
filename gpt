@@ -1,97 +1,49 @@
-#-----------------------TABLE_VALIDATION_COLUMNS----------------------------------------------------------------
-if not tables_meta.empty:
-    # Converting empty strings to null values
-    tables_meta = tables_meta.infer_objects(copy=False).replace(r'^\s*$', np.nan, regex=True)
-
-    # Remove whitespaces
-    tables_meta = tables_meta.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-
-    # Updating the Variables
-    if "dev" in env:
-        tables_meta.replace(variable_list, dev_list, inplace=True, regex=True)
-        print(tables_meta)
-    elif "test" in env:
-        tables_meta.replace(variable_list, test_list, inplace=True, regex=True)
-        print(tables_meta)
-    elif "ple" in env:
-        tables_meta.replace(variable_list, ple_list, inplace=True, regex=True)
-        print(tables_meta)
-    else:
-        tables_meta.replace(variable_list, prod_list, inplace=True, regex=True)
-        print(tables_meta)
-
-    tables_meta = tables_meta.astype("string") 
-
-    # Updating the datatype for Integer Columns
-    for col in table_integer_column:
-        tables_meta[col] = tables_meta[col].replace('', np.nan).fillna('0').astype(int)
-
-    # Updating the datatype for Boolean Columns    
-    for col in table_boolean_column:
-        tables_meta[col] = tables_meta[col].replace('', np.nan).map({'Y': True, 'N': False}).fillna(False)
-
-    # Validations
-    total_table_count = len(tables_meta)
-
-    # Environment Name Validation
-    table_env_validation_cnt = total_table_count - tables_meta['environment_name'].str.lower().isin(env_list).sum()
-
-    # Platform Name Validation
-    table_platform_validation_cnt = total_table_count - tables_meta['platform_name'].str.lower().isin(platform_list).sum()
-
-    # Is Active Validation
-    table_is_active_validation_cnt = total_table_count - tables_meta['is_active'].fillna('n').str.upper().isin(['Y', 'N']).sum()
-
-    # Table Name Validation (Mandatory and Non-Empty)
-    table_name_validation_cnt = tables_meta['table_name'].isna().sum() + \
-                                tables_meta['table_name'].astype(str).str.strip().eq('').sum()
-
-    # Threshold Low Validation (Must be Numeric)
-    low_null_count = tables_meta['threshold_low'].replace('', pd.NA).isna().sum()
-    low_numeric_count = tables_meta['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
-    table_threshold_low_validation_cnt = total_table_count - low_null_count - low_numeric_count
-
-    # Threshold High Validation (Must be Numeric)
-    high_null_count = tables_meta['threshold_up'].replace('', pd.NA).isna().sum()
-    high_numeric_count = tables_meta['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
-    table_threshold_high_validation_cnt = total_table_count - high_null_count - high_numeric_count
-
-    # Notify Table Size Validation (Boolean Y/N)
-    notify_table_size_validation_cnt = total_table_count - tables_meta['notify_table_size'].fillna('n').str.upper().isin(['Y', 'N']).sum()
-
-    # Checking the null values in Mandatory Columns
-    table_col_check = []
-    for mandatory_col in tables_mandatory_column_list:
-        if tables_meta[mandatory_col].isna().any() or (tables_meta[mandatory_col].astype(str).str.strip() == "").any():
-            print("Checking for mandatory columns")
-            table_col_check.append(mandatory_col)
-
-    table_stg = 1
-
-    # Raising Validation Errors
-    if table_env_validation_cnt > 0 or \
-       table_platform_validation_cnt > 0 or \
-       table_is_active_validation_cnt > 0 or \
-       table_name_validation_cnt > 0 or \
-       table_threshold_low_validation_cnt > 0 or \
-       table_threshold_high_validation_cnt > 0 or \
-       notify_table_size_validation_cnt > 0 or \
-       len(table_col_check) > 0:
-        raise ValueError(
-            f"TABLE META VALIDATION FAILED:\n\n"
-            f"Environment name validation failed count: {table_env_validation_cnt if table_env_validation_cnt > 0 else 'None'}\n"
-            f"Platform name validation failed count: {table_platform_validation_cnt if table_platform_validation_cnt > 0 else 'None'}\n"
-            f"Is_active validation failed count: {table_is_active_validation_cnt if table_is_active_validation_cnt > 0 else 'None'}\n"
-            f"Table name validation failed count: {table_name_validation_cnt if table_name_validation_cnt > 0 else 'None'}\n"
-            f"Threshold low validation failed count: {table_threshold_low_validation_cnt if table_threshold_low_validation_cnt > 0 else 'None'}\n"
-            f"Threshold high validation failed count: {table_threshold_high_validation_cnt if table_threshold_high_validation_cnt > 0 else 'None'}\n"
-            f"Notify table size validation failed count: {notify_table_size_validation_cnt if notify_table_size_validation_cnt > 0 else 'None'}\n"
-            f"Mandatory columns missing: {table_col_check if len(table_col_check) > 0 else 'None'}"
-        )
-    else:
-        load_table(tables_meta, tables_table_id)
-        print("Data Loaded Table staging Table")
-
-else:
-    print("Tables Tab is Empty")
-    table_stg = 0
+Attribute Name	dag_id	task_id	composer_instance_name	description	step_id	task_type	platform_name	env_name	source_type	source_environment	source_server_name	source	rt_subscription	target_type	target_environment	target_server_name	target	retries	retry_delay	is_active	is_mandatory
+Mandatory	Y	Y	Y	Y	N	Y	Y	Y	Y	Y	Y	Y	N	N	Y	N	N	N	N		N
+Description	dg_${vsad}_${project_space}_${process_name}_(rt for realtime jobs)	task_id		Purpose of the job and target details and data that is holds.	incremental numbers	Update the Type of the Task.	"Platform where the application runs
+GCP,Teradata,Unix"	"Environment where the table available
+GCP_Hive,GCP_BQ,OnPrem_Hive,EDW_TD,AEDW_TD,VBG_TD,Unix,GCP_GCS"	"Mention source is table or file
+eg: File or Table
+Note: In case of RealTime Job please do update the column value as Kafka/Pub Sub"	Source Environment of the task.	"Source servername 
+eg:vz-it-np-gk1v-dev-cwlspr-0"	"Table name incase it is table with project_id.dataset id.table_name
+File name with path if the source is file. NA if not applicable but it should never be blank
+Note: In case of Realtime job you can update Source kafka topic name here."	"Kafka Topic Subscription Name. 
+Note: This is application only for Real Time Jobs"	"Mention target is table or file
+eg: File or Table
+Note: In case of RealTime Job please do update the column value as Kafka/Pub Sub"	Task Target Environment name.	"Target servername 
+eg:vz-it-np-gk1v-dev-cwlspr-0"	"Table name incase it is table with project_id.dataset id.table_name
+File name with path if the source is file
+Note: In case of Realtime job you can update output kafka topic name here."	"Number of retries 
+Default: 0"			This flag indicated if the task is mandatory for every dag instance runs or optional
+Sample	gk1v_edwpr_udm_neta_na_t160_ld	sourceFileSensor	vz-it-gk1v-cwlspr-2	Purpose of the job and target details and data that is holds.	1	FileToBQ	GCP	GCP_BQ	File	GCP_BQ	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
+ACE_IP_yyyymmdd_EPROD.DAT,
+ACE_IP_yyyymmdd_MPROD.DAT,
+ACE_IP_yyyymmdd_SPROD.DAT"	sub-cee-pubsub-mvana		GCP_BQ	<server_edwpr>		0		Y	Y
+	gk1v_edwpr_udm_neta_na_t160_ld	gcsToBq	vz-it-gk1v-cwlspr-2	Purpose of the job and target details and data that is holds.	2	BQToBQ	GCP	GCP_BQ	File	GCP_GCS	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
+ACE_IP_yyyymmdd_EPROD.DAT,
+ACE_IP_yyyymmdd_MPROD.DAT,
+ACE_IP_yyyymmdd_SPROD.DAT"		Table	GCP_BQ	<server_edwpr>	<server_edwpr>.udm_raw_tbls.pos_install_loan	0		Y	Y
+	gk1v_edwpr_udm_neta_na_t160_ld	bqTransformLoad	vz-it-gk1v-cwlspr-2	Purpose of the job and target details and data that is holds.	3	BQToBQ	GCP	GCP_BQ	Table	GCP_BQ	<server_edwpr>	<server_edwpr>.udm_raw_tbls.pos_install_loan		Table	GCP_BQ	<server_edwdo>	<server_edwdo>.udm_prd_tbls.pos_install_loan,,vz-it-pr-gk1v-edwdo-0.udm_prdstg_tbls.pos_install_loan	0		Y	Y
+	gk1v_edwpr_udm_neta_na_t160_ld	sourceFileArchival	vz-it-gk1v-cwlspr-2	Purpose of the job and target details and data that is holds.	4	FileToBQ	GCP	GCP_BQ	File	GCP_BQ	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
+ACE_IP_yyyymmdd_EPROD.DAT,
+ACE_IP_yyyymmdd_MPROD.DAT,
+ACE_IP_yyyymmdd_SPROD.DAT"			GCP_BQ			0		Y	Y
+	gk1v_edwpr_mdr_wkfl_200_bdms_stg_edm_dw	bqTransformLoad	vz-it-gk1v-cwlspr-3	Purpose of the job and target details and data that is holds.	1	BQToBQ	GCP	GCP_BQ	Table	GCP_BQ	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
+ACE_IP_yyyymmdd_EPROD.DAT,
+ACE_IP_yyyymmdd_MPROD.DAT,
+ACE_IP_yyyymmdd_SPROD.DAT"					vz-it-pr-gk1v-edwdo-0.ssp_precur_tbls.bdms_mv_fttp_mdu_wc_addr_stg			Y	
+	gk1v_edwpr_mdr_wkfl_200_bdms_stg_edm_dw	JDBC_to_bq	vz-it-gk1v-cwlspr-3	Purpose of the job and target details and data that is holds.	2	FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
+ACE_IP_yyyymmdd_EPROD.DAT,
+ACE_IP_yyyymmdd_MPROD.DAT,
+ACE_IP_yyyymmdd_SPROD.DAT"					vz-it-pr-gk1v-edwpr-0.ssp_stg.bdms_property_profile_stg			Y	
+	gk1v_edwpr_oars_sabit_trn_fleet_wex	bqTransformLoad	vz-it-gk1v-cwlspr-4	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	vz-it-pr-gk1v-edwpr-2	vz-it-pr-gk1v-edwpr-0.sabit_stg_tbls.stg_fleet_gps_wex_trans_dly		Table	GCP_BQ		vz-it-pr-gk1v-edwdo-0.sabit_tbls.fact_fleet_gps_wex_trans_dly			Y	Y
+	gk1v_edwpr_oars_sabit_trn_fleet_wex	gcsToBq	vz-it-gk1v-cwlspr-4	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_GCS	vz-it-pr-gk1v-edwpr-1	wex/WEX_UPDATES_yyyymm		Table	GCP_BQ		vz-it-pr-gk1v-edwpr-0.sabit_stg_tbls.stg_fleet_gps_wex_trans_dly			Y	Y
+	gk1v_edwpr_udm_neta_na_t160_lw	FileSensor	vz-it-gk1v-cwlspr-5	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	"ACE_IP_yyyymmdd_WPROD.DAT,
+ACE_IP_yyyymmdd_EPROD.DAT,
+ACE_IP_yyyymmdd_MPROD.DAT,
+ACE_IP_yyyymmdd_SPROD.DAT"		file	GCP_BQ					Y	Y
+	gk1v_edwpr_udm_neta_na_t160_lw	bqTransformLoad	vz-it-gk1v-cwlspr-5	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	vz-it-pr-gk1v-edwpr-0.udm_raw_tbls.pos_install_loan		Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	vz-it-pr-gk1v-edwdo-0.udm_prd_tbls.pos_install_loan,,vz-it-pr-gk1v-edwdo-0.udm_prdstg_tbls.pos_install_loan			Y	Y
+	gk1v_edwpr_udm_neta_na_t160_lw	gcsToBq	vz-it-gk1v-cwlspr-5	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	"ACE_IP_yyyymmdd_WPROD.DAT,
+ACE_IP_yyyymmdd_EPROD.DAT,
+ACE_IP_yyyymmdd_MPROD.DAT,
+ACE_IP_yyyymmdd_SPROD.DAT"		Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	vz-it-pr-gk1v-edwpr-0.udm_raw_tbls.pos_install_loan			Y	Y
