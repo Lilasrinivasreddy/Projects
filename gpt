@@ -1,20 +1,54 @@
-Attribute Name	dag_id	task_id	composer_instance_name	step_id	table_name	db_name	server_name	platform_name	environment_name	is_active	notify_table_size	threshold_unit	threshold_low	threshold_up	volume_incident_team_name	table_size_notification_email_list	alert_table_size	volume_alert_channel	volume_query	montior_volume
-Mandatory	Y	Y		Y	Y	Y	Y	Y		Y	N	N	N	N	N	N	N	N	N	N
-Description	Process Name is dag_id . Should be same as Airflow dag.	"subprocess name running under parent process.
-in airflow its like task name under the dag.
-"		step id required if sub process has more then 1 operations to perform.	Table Name	database name (dataset)	"Servername where file landed or table present.
-Either Domain name or IP
-eg:vz-it-np-gk1v-dev-cwlspr-0"	"Platform where the application runs
-GCP,Teradata,Unix"		"falg to indicate dag is up and running
-"	"Flag to specify if email notification should be send on volume issues
-Default: N"	"Unit on which threhsold is calculated 
-Percentage /Count"	Low value of the threshold allowed	High value of the threshold allowed	Opsgenie board name	List of email address which we need to send email in case of any tablesize issues. Multiple emails can be added as comma separated values.	Flag to specify if opgeine alett should be send on volume issues	channel name to alert on volume notifications.	"provide query to be executed for volume and refresh date collection (sample query attached below). 
-user only need to replace the <table_date> with the actual date column available in table. date should be in YYYY-MM-DD format. 
-if date is available in any other format, then cast the date in below query only. in case of multiple target, query should be provided for each target and they will be seperated by comma (,).
+# Total rows count
+total_table_count = len(table_meta_df)
 
-sample query : select <process_id> as process_id, '<qualified_table_name>' as table_name, cast(max(<table_date>) as string) as user_data_date, count(1) as CNT from <qualified_table_name>"""	falg to monitor the volume in dashboard level
-	gk1v_edwpr_udm_neta_na_t160_ld	gcsToBq  	vz-it-gk1v-cwlspr-2	1	pos_install_loan	db_udm_prd_tbls	<server_edwdo>	GCP	GCP_BQ	Y										
-	gk1v_edwpr_udm_neta_na_t160_ld	bqTransformLoad	vz-it-gk1v-cwlspr-2	1	pos_install_loan	db_udm_prdstg_tbls	<server_edwpr>	GCP	GCP_BQ	Y										
-	gk1v_edwpr_udm_neta_na_t160_lw	gcsToBq	vz-it-gk1v-cwlspr-5	1	pos_install_loan	db_udm_precur_tbls	<server_edwdo>	GCP	GCP_BQ	Y										
-	gk1v_edwpr_udm_neta_na_t160_lw	bqTransformLoad	vz-it-gk1v-cwlspr-5	1	pos_install_loan	db_udm_raw_tbls	<server_edwpr>	GCP	GCP_BQ	Y										
-																				
+# Frequency validation
+table_frequency_validation_cnt = total_table_count - table_meta_df['frequency'].str.lower().isin(frequency_list).sum()
+
+# Platform name validation
+table_platform_name_validation_cnt = total_table_count - table_meta_df['platform_name'].str.lower().isin(platform_list).sum()
+
+# Environment name validation
+table_env_name_validation_cnt = total_table_count - table_meta_df['environment_name'].str.lower().isin(env_list).sum()
+
+# Threshold validations
+low_null_count = table_meta_df['threshold_low'].replace('', pd.NA).isna().sum()
+low_numeric_count = table_meta_df['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+table_threshold_low_validation_cnt = total_table_count - low_null_count - low_numeric_count
+
+up_null_count = table_meta_df['threshold_up'].replace('', pd.NA).isna().sum()
+up_numeric_count = table_meta_df['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+table_threshold_up_validation_cnt = total_table_count - up_null_count - up_numeric_count
+
+# Email validation
+null_email_count = table_meta_df['table_size_notification_email_list'].isnull().sum()
+email_validation_count = total_table_count - table_meta_df.loc[
+    table_meta_df['table_size_notification_email_list'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+', case=False), :
+].shape[0]
+email_validation_count -= null_email_count
+
+# Boolean validation
+table_is_active_validation_cnt = total_table_count - table_meta_df['is_active'].fillna('n').str.upper().isin(['Y', 'N']).sum()
+table_notify_table_size_validation_cnt = total_table_count - table_meta_df['notify_table_size'].fillna('n').str.upper().isin(['Y', 'N']).sum()
+
+# Mandatory columns validation
+mandatory_columns = ['dag_id', 'task_id', 'table_name', 'db_name', 'server_name', 'platform_name', 'environment_name']
+missing_mandatory_columns = []
+for col in mandatory_columns:
+    if table_meta_df[col].isna().any() or (table_meta_df[col].astype(str).str.strip() == "").any():
+        missing_mandatory_columns.append(col)
+
+# Raise validation errors if any
+if table_frequency_validation_cnt > 0 or table_platform_name_validation_cnt > 0 or \
+   table_env_name_validation_cnt > 0 or table_threshold_low_validation_cnt > 0 or \
+   table_threshold_up_validation_cnt > 0 or len(missing_mandatory_columns) > 0:
+    raise ValueError(
+        f"TABLE META VALIDATION FAILED:\n\n"
+        f"Frequency validation failed count: {table_frequency_validation_cnt}\n"
+        f"Platform name validation failed count: {table_platform_name_validation_cnt}\n"
+        f"Environment name validation failed count: {table_env_name_validation_cnt}\n"
+        f"Threshold low validation failed count: {table_threshold_low_validation_cnt}\n"
+        f"Threshold up validation failed count: {table_threshold_up_validation_cnt}\n"
+        f"Email validation failed count: {email_validation_count}\n"
+        f"Is_active validation failed count: {table_is_active_validation_cnt}\n"
+        f"Missing mandatory columns: {missing_mandatory_columns}"
+    )
