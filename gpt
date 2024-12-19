@@ -1,49 +1,94 @@
-Attribute Name	dag_id	task_id	composer_instance_name	description	step_id	task_type	platform_name	env_name	source_type	source_environment	source_server_name	source	rt_subscription	target_type	target_environment	target_server_name	target	retries	retry_delay	is_active	is_mandatory
-Mandatory	Y	Y	Y	Y	N	Y	Y	Y	Y	Y	Y	Y	N	N	Y	N	N	N	N		N
-Description	dg_${vsad}_${project_space}_${process_name}_(rt for realtime jobs)	task_id		Purpose of the job and target details and data that is holds.	incremental numbers	Update the Type of the Task.	"Platform where the application runs
-GCP,Teradata,Unix"	"Environment where the table available
-GCP_Hive,GCP_BQ,OnPrem_Hive,EDW_TD,AEDW_TD,VBG_TD,Unix,GCP_GCS"	"Mention source is table or file
-eg: File or Table
-Note: In case of RealTime Job please do update the column value as Kafka/Pub Sub"	Source Environment of the task.	"Source servername 
-eg:vz-it-np-gk1v-dev-cwlspr-0"	"Table name incase it is table with project_id.dataset id.table_name
-File name with path if the source is file. NA if not applicable but it should never be blank
-Note: In case of Realtime job you can update Source kafka topic name here."	"Kafka Topic Subscription Name. 
-Note: This is application only for Real Time Jobs"	"Mention target is table or file
-eg: File or Table
-Note: In case of RealTime Job please do update the column value as Kafka/Pub Sub"	Task Target Environment name.	"Target servername 
-eg:vz-it-np-gk1v-dev-cwlspr-0"	"Table name incase it is table with project_id.dataset id.table_name
-File name with path if the source is file
-Note: In case of Realtime job you can update output kafka topic name here."	"Number of retries 
-Default: 0"			This flag indicated if the task is mandatory for every dag instance runs or optional
-Sample	gk1v_edwpr_udm_neta_na_t160_ld	sourceFileSensor	vz-it-gk1v-cwlspr-2	Purpose of the job and target details and data that is holds.	1	FileToBQ	GCP	GCP_BQ	File	GCP_BQ	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
-ACE_IP_yyyymmdd_EPROD.DAT,
-ACE_IP_yyyymmdd_MPROD.DAT,
-ACE_IP_yyyymmdd_SPROD.DAT"	sub-cee-pubsub-mvana		GCP_BQ	<server_edwpr>		0		Y	Y
-	gk1v_edwpr_udm_neta_na_t160_ld	gcsToBq	vz-it-gk1v-cwlspr-2	Purpose of the job and target details and data that is holds.	2	BQToBQ	GCP	GCP_BQ	File	GCP_GCS	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
-ACE_IP_yyyymmdd_EPROD.DAT,
-ACE_IP_yyyymmdd_MPROD.DAT,
-ACE_IP_yyyymmdd_SPROD.DAT"		Table	GCP_BQ	<server_edwpr>	<server_edwpr>.udm_raw_tbls.pos_install_loan	0		Y	Y
-	gk1v_edwpr_udm_neta_na_t160_ld	bqTransformLoad	vz-it-gk1v-cwlspr-2	Purpose of the job and target details and data that is holds.	3	BQToBQ	GCP	GCP_BQ	Table	GCP_BQ	<server_edwpr>	<server_edwpr>.udm_raw_tbls.pos_install_loan		Table	GCP_BQ	<server_edwdo>	<server_edwdo>.udm_prd_tbls.pos_install_loan,,vz-it-pr-gk1v-edwdo-0.udm_prdstg_tbls.pos_install_loan	0		Y	Y
-	gk1v_edwpr_udm_neta_na_t160_ld	sourceFileArchival	vz-it-gk1v-cwlspr-2	Purpose of the job and target details and data that is holds.	4	FileToBQ	GCP	GCP_BQ	File	GCP_BQ	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
-ACE_IP_yyyymmdd_EPROD.DAT,
-ACE_IP_yyyymmdd_MPROD.DAT,
-ACE_IP_yyyymmdd_SPROD.DAT"			GCP_BQ			0		Y	Y
-	gk1v_edwpr_mdr_wkfl_200_bdms_stg_edm_dw	bqTransformLoad	vz-it-gk1v-cwlspr-3	Purpose of the job and target details and data that is holds.	1	BQToBQ	GCP	GCP_BQ	Table	GCP_BQ	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
-ACE_IP_yyyymmdd_EPROD.DAT,
-ACE_IP_yyyymmdd_MPROD.DAT,
-ACE_IP_yyyymmdd_SPROD.DAT"					vz-it-pr-gk1v-edwdo-0.ssp_precur_tbls.bdms_mv_fttp_mdu_wc_addr_stg			Y	
-	gk1v_edwpr_mdr_wkfl_200_bdms_stg_edm_dw	JDBC_to_bq	vz-it-gk1v-cwlspr-3	Purpose of the job and target details and data that is holds.	2	FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	<server_edwpr>	"ACE_IP_yyyymmdd_WPROD.DAT,
-ACE_IP_yyyymmdd_EPROD.DAT,
-ACE_IP_yyyymmdd_MPROD.DAT,
-ACE_IP_yyyymmdd_SPROD.DAT"					vz-it-pr-gk1v-edwpr-0.ssp_stg.bdms_property_profile_stg			Y	
-	gk1v_edwpr_oars_sabit_trn_fleet_wex	bqTransformLoad	vz-it-gk1v-cwlspr-4	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	vz-it-pr-gk1v-edwpr-2	vz-it-pr-gk1v-edwpr-0.sabit_stg_tbls.stg_fleet_gps_wex_trans_dly		Table	GCP_BQ		vz-it-pr-gk1v-edwdo-0.sabit_tbls.fact_fleet_gps_wex_trans_dly			Y	Y
-	gk1v_edwpr_oars_sabit_trn_fleet_wex	gcsToBq	vz-it-gk1v-cwlspr-4	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_GCS	vz-it-pr-gk1v-edwpr-1	wex/WEX_UPDATES_yyyymm		Table	GCP_BQ		vz-it-pr-gk1v-edwpr-0.sabit_stg_tbls.stg_fleet_gps_wex_trans_dly			Y	Y
-	gk1v_edwpr_udm_neta_na_t160_lw	FileSensor	vz-it-gk1v-cwlspr-5	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	"ACE_IP_yyyymmdd_WPROD.DAT,
-ACE_IP_yyyymmdd_EPROD.DAT,
-ACE_IP_yyyymmdd_MPROD.DAT,
-ACE_IP_yyyymmdd_SPROD.DAT"		file	GCP_BQ					Y	Y
-	gk1v_edwpr_udm_neta_na_t160_lw	bqTransformLoad	vz-it-gk1v-cwlspr-5	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	vz-it-pr-gk1v-edwpr-0.udm_raw_tbls.pos_install_loan		Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	vz-it-pr-gk1v-edwdo-0.udm_prd_tbls.pos_install_loan,,vz-it-pr-gk1v-edwdo-0.udm_prdstg_tbls.pos_install_loan			Y	Y
-	gk1v_edwpr_udm_neta_na_t160_lw	gcsToBq	vz-it-gk1v-cwlspr-5	Purpose of the job and target details and data that is holds.		FileToBQ	GCP	GCP_BQ	Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	"ACE_IP_yyyymmdd_WPROD.DAT,
-ACE_IP_yyyymmdd_EPROD.DAT,
-ACE_IP_yyyymmdd_MPROD.DAT,
-ACE_IP_yyyymmdd_SPROD.DAT"		Table	GCP_BQ	vz-it-pr-gk1v-edwpr-0	vz-it-pr-gk1v-edwpr-0.udm_raw_tbls.pos_install_loan			Y	Y
+#-----------------------TASK_VALIDATION_COLUMNS----------------------------------------------------------------
+if not task_meta.empty:
+    # Converting empty strings to null values
+    task_meta = task_meta.infer_objects(copy=False).replace(r'^\s*$', np.nan, regex=True)
+
+    # Remove whitespaces
+    task_meta = task_meta.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # Updating the Variables
+    if "dev" in env:
+        task_meta.replace(variable_list, dev_list, inplace=True, regex=True)
+        print(task_meta)
+    elif "test" in env:
+        task_meta.replace(variable_list, test_list, inplace=True, regex=True)
+        print(task_meta)
+    elif "ple" in env:
+        task_meta.replace(variable_list, ple_list, inplace=True, regex=True)
+        print(task_meta)
+    else:
+        task_meta.replace(variable_list, prod_list, inplace=True, regex=True)
+        print(task_meta)
+
+    task_meta = task_meta.astype("string") 
+
+    # Updating the datatype for Integer Columns
+    for col in task_integer_column:
+        task_meta[col] = task_meta[col].replace('', np.nan).fillna('0').astype(int)
+
+    # Updating the datatype for Boolean Columns    
+    for col in task_boolean_column:
+        task_meta[col] = task_meta[col].replace('', np.nan).map({'Y': True, 'N': False}).fillna(False)
+
+    # Validations
+    total_task_count = len(task_meta)
+
+    # Platform Name Validation
+    task_platform_validation_cnt = total_task_count - task_meta['platform_name'].str.lower().isin(platform_list).sum()
+
+    # Environment Name Validation
+    task_env_validation_cnt = total_task_count - task_meta['env_name'].str.lower().isin(env_list).sum()
+
+    # Is Active Validation
+    task_is_active_validation_cnt = total_task_count - task_meta['is_active'].fillna('n').str.upper().isin(['Y', 'N']).sum()
+
+    # Task ID Validation (Mandatory and Non-Empty)
+    task_id_validation_cnt = task_meta['task_id'].isna().sum() + \
+                             task_meta['task_id'].astype(str).str.strip().eq('').sum()
+
+    # DAG ID Validation (Mandatory and Non-Empty)
+    dag_id_validation_cnt = task_meta['dag_id'].isna().sum() + \
+                            task_meta['dag_id'].astype(str).str.strip().eq('').sum()
+
+    # Source Type Validation (Must Match Predefined List)
+    source_type_validation_cnt = total_task_count - task_meta['source_type'].str.lower().isin(source_type_list).sum()
+
+    # Target Type Validation (Must Match Predefined List)
+    target_type_validation_cnt = total_task_count - task_meta['target_type'].str.lower().isin(target_type_list).sum()
+
+    # Checking the null values in Mandatory Columns
+    task_col_check = []
+    for mandatory_col in task_mandatory_column_list:
+        if task_meta[mandatory_col].isna().any() or (task_meta[mandatory_col].astype(str).str.strip() == "").any():
+            print("Checking for mandatory columns")
+            task_col_check.append(mandatory_col)
+
+    task_stg = 1
+
+    # Raising Validation Errors
+    if task_platform_validation_cnt > 0 or \
+       task_env_validation_cnt > 0 or \
+       task_is_active_validation_cnt > 0 or \
+       task_id_validation_cnt > 0 or \
+       dag_id_validation_cnt > 0 or \
+       source_type_validation_cnt > 0 or \
+       target_type_validation_cnt > 0 or \
+       len(task_col_check) > 0:
+        raise ValueError(
+            f"TASK META VALIDATION FAILED:\n\n"
+            f"Platform name validation failed count: {task_platform_validation_cnt if task_platform_validation_cnt > 0 else 'None'}\n"
+            f"Environment name validation failed count: {task_env_validation_cnt if task_env_validation_cnt > 0 else 'None'}\n"
+            f"Is_active validation failed count: {task_is_active_validation_cnt if task_is_active_validation_cnt > 0 else 'None'}\n"
+            f"Task ID validation failed count: {task_id_validation_cnt if task_id_validation_cnt > 0 else 'None'}\n"
+            f"DAG ID validation failed count: {dag_id_validation_cnt if dag_id_validation_cnt > 0 else 'None'}\n"
+            f"Source type validation failed count: {source_type_validation_cnt if source_type_validation_cnt > 0 else 'None'}\n"
+            f"Target type validation failed count: {target_type_validation_cnt if target_type_validation_cnt > 0 else 'None'}\n"
+            f"Mandatory columns missing: {task_col_check if len(task_col_check) > 0 else 'None'}"
+        )
+    else:
+        load_table(task_meta, task_table_id)
+        print("Data Loaded Task staging Table")
+
+else:
+    print("Task Meta Tab is Empty")
+    task_stg = 0
