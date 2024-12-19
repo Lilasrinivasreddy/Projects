@@ -4,7 +4,7 @@ if not tables_meta.empty:
     tables_meta = tables_meta.infer_objects(copy=False).replace(r'^\s*$', np.nan, regex=True)
 
     # Remove whitespaces
-    tables_meta = tables_meta.map(lambda x: x.strip() if isinstance(x, str) else x)
+    tables_meta = tables_meta.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
     # Updating the Variables
     if "dev" in env:
@@ -42,6 +42,23 @@ if not tables_meta.empty:
     # Is Active Validation
     table_is_active_validation_cnt = total_table_count - tables_meta['is_active'].fillna('n').str.upper().isin(['Y', 'N']).sum()
 
+    # Table Name Validation (Mandatory and Non-Empty)
+    table_name_validation_cnt = tables_meta['table_name'].isna().sum() + \
+                                tables_meta['table_name'].astype(str).str.strip().eq('').sum()
+
+    # Threshold Low Validation (Must be Numeric)
+    low_null_count = tables_meta['threshold_low'].replace('', pd.NA).isna().sum()
+    low_numeric_count = tables_meta['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+    table_threshold_low_validation_cnt = total_table_count - low_null_count - low_numeric_count
+
+    # Threshold High Validation (Must be Numeric)
+    high_null_count = tables_meta['threshold_up'].replace('', pd.NA).isna().sum()
+    high_numeric_count = tables_meta['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
+    table_threshold_high_validation_cnt = total_table_count - high_null_count - high_numeric_count
+
+    # Notify Table Size Validation (Boolean Y/N)
+    notify_table_size_validation_cnt = total_table_count - tables_meta['notify_table_size'].fillna('n').str.upper().isin(['Y', 'N']).sum()
+
     # Checking the null values in Mandatory Columns
     table_col_check = []
     for mandatory_col in tables_mandatory_column_list:
@@ -55,12 +72,20 @@ if not tables_meta.empty:
     if table_env_validation_cnt > 0 or \
        table_platform_validation_cnt > 0 or \
        table_is_active_validation_cnt > 0 or \
+       table_name_validation_cnt > 0 or \
+       table_threshold_low_validation_cnt > 0 or \
+       table_threshold_high_validation_cnt > 0 or \
+       notify_table_size_validation_cnt > 0 or \
        len(table_col_check) > 0:
         raise ValueError(
             f"TABLE META VALIDATION FAILED:\n\n"
             f"Environment name validation failed count: {table_env_validation_cnt if table_env_validation_cnt > 0 else 'None'}\n"
             f"Platform name validation failed count: {table_platform_validation_cnt if table_platform_validation_cnt > 0 else 'None'}\n"
             f"Is_active validation failed count: {table_is_active_validation_cnt if table_is_active_validation_cnt > 0 else 'None'}\n"
+            f"Table name validation failed count: {table_name_validation_cnt if table_name_validation_cnt > 0 else 'None'}\n"
+            f"Threshold low validation failed count: {table_threshold_low_validation_cnt if table_threshold_low_validation_cnt > 0 else 'None'}\n"
+            f"Threshold high validation failed count: {table_threshold_high_validation_cnt if table_threshold_high_validation_cnt > 0 else 'None'}\n"
+            f"Notify table size validation failed count: {notify_table_size_validation_cnt if notify_table_size_validation_cnt > 0 else 'None'}\n"
             f"Mandatory columns missing: {table_col_check if len(table_col_check) > 0 else 'None'}"
         )
     else:
