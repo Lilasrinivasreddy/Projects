@@ -1,124 +1,20 @@
-#-----------------------FILE_VALIDATION_COLUMNS----------------------------------------------------------------
+Attribute Name	dag_id	task_id	composer_instance_name	step_id	table_name	db_name	server_name	platform_name	environment_name	is_active	notify_table_size	threshold_unit	threshold_low	threshold_up	volume_incident_team_name	table_size_notification_email_list	alert_table_size	volume_alert_channel	volume_query	montior_volume
+Mandatory	Y	Y		Y	Y	Y	Y	Y		Y	N	N	N	N	N	N	N	N	N	N
+Description	Process Name is dag_id . Should be same as Airflow dag.	"subprocess name running under parent process.
+in airflow its like task name under the dag.
+"		step id required if sub process has more then 1 operations to perform.	Table Name	database name (dataset)	"Servername where file landed or table present.
+Either Domain name or IP
+eg:vz-it-np-gk1v-dev-cwlspr-0"	"Platform where the application runs
+GCP,Teradata,Unix"		"falg to indicate dag is up and running
+"	"Flag to specify if email notification should be send on volume issues
+Default: N"	"Unit on which threhsold is calculated 
+Percentage /Count"	Low value of the threshold allowed	High value of the threshold allowed	Opsgenie board name	List of email address which we need to send email in case of any tablesize issues. Multiple emails can be added as comma separated values.	Flag to specify if opgeine alett should be send on volume issues	channel name to alert on volume notifications.	"provide query to be executed for volume and refresh date collection (sample query attached below). 
+user only need to replace the <table_date> with the actual date column available in table. date should be in YYYY-MM-DD format. 
+if date is available in any other format, then cast the date in below query only. in case of multiple target, query should be provided for each target and they will be seperated by comma (,).
 
-if not files_meta.empty:
-    # Converting empty strings to null values
-    files_meta = files_meta.infer_objects(copy=False).replace(r'^\s*$', np.nan, regex=True)
-
-    # Remove whitespaces
-    files_meta = files_meta.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-
-    # Updating the Variables
-    if "dev" in env:
-        files_meta.replace(variable_list, dev_list, inplace=True, regex=True)
-    elif "test" in env:
-        files_meta.replace(variable_list, test_list, inplace=True, regex=True)
-    elif "ple" in env:
-        files_meta.replace(variable_list, ple_list, inplace=True, regex=True)
-    else:
-        files_meta.replace(variable_list, prod_list, inplace=True, regex=True)
-
-    files_meta = files_meta.astype("string")
-
-    # Updating the datatype for Integer Columns
-    for col in files_integer_column:
-        files_meta[col] = files_meta[col].replace('', np.nan).fillna('0').astype(int)
-
-    # Updating the datatype for Boolean Columns
-    for col in files_boolean_column:
-        files_meta[col] = files_meta[col].replace('', np.nan).map({'Y': True, 'N': False}).fillna(False)
-
-    # Validation counters
-    total_files_count = len(files_meta)
-    f_frequency_validation_cnt = total_files_count - files_meta['frequency'].str.lower().isin(frequency_list).sum()
-    f_platform_name_validation_cnt = total_files_count - files_meta['platform_name'].str.lower().isin(platform_list).sum()
-    f_env_name_validation_cnt = total_files_count - files_meta['environment_name'].str.lower().isin(env_list).sum()
-    f_timezone_validation_cnt = total_files_count - files_meta['timezone'].str.lower().isin(["utc", "est"]).sum()
-    f_is_active_validation_cnt = total_files_count - files_meta['is_active'].fillna('n').str.lower().isin(flags).sum()
-
-    # Source POC validation
-    null_source_poc_cnt = files_meta['source_poc'].isnull().sum()
-    source_poc_validation_cnt = total_files_count - files_meta.loc[
-        files_meta['source_poc'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+', case=False), :
-    ].shape[0]
-    source_poc_validation_cnt -= null_source_poc_cnt
-
-    # Process Owner validation
-    null_process_owner_cnt = files_meta['process_owner'].isnull().sum()
-    process_owner_validation_cnt = total_files_count - files_meta.loc[
-        files_meta['process_owner'].fillna('na').str.contains(r'[^@]+@[^@]+\.[^@]+', case=False), :
-    ].shape[0]
-    process_owner_validation_cnt -= null_process_owner_cnt
-
-    # File prefix, middle pattern, and suffix validation
-    file_prefix_cnt = ((files_meta['file_middle_pattern'].notna()) & 
-                       (files_meta['file_name'] != files_meta['file_prefix'] + 
-                                                 files_meta['file_middle_pattern'] + 
-                                                 files_meta['file_suffix'])).sum() + \
-                      ((files_meta['file_middle_pattern'].isna()) & 
-                       (files_meta['file_name'] != files_meta['file_prefix'] + 
-                                                 files_meta['file_suffix'])).sum()
-    file_suffix_cnt = file_middle_pattern_cnt = file_prefix_cnt
-
-    # Notify SLA misses validation
-    notify_sla_misses_cnt = len(files_meta['notify_sla_misses'].fillna('n')
-                                 .replace('', 'n', inplace=False)
-                                 .str.lower().loc[~files_meta['notify_sla_misses']
-                                                  .fillna('n')
-                                                  .replace('', 'n', inplace=False)
-                                                  .str.lower().isin(flags)])
-
-    # Notify file size validation
-    notify_file_size_cnt = len(files_meta['notify_file_size'].fillna('n')
-                               .replace('', 'n', inplace=False)
-                               .str.lower().loc[~files_meta['notify_file_size']
-                                                .fillna('n')
-                                                .replace('', 'n', inplace=False)
-                                                .str.lower().isin(flags)])
-
-    # Threshold low validation
-    low_null_count = files_meta['threshold_low'].replace('', pd.NA, inplace=False).isna().sum()
-    low_numeric_count = files_meta['threshold_low'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
-    f_threshold_low_cnt = total_files_count - low_null_count - low_numeric_count
-
-    # Threshold up validation
-    up_null_count = files_meta['threshold_up'].replace('', pd.NA, inplace=False).isna().sum()
-    up_numeric_count = files_meta['threshold_up'].fillna('').astype(str).apply(lambda x: x.strip().isdigit()).sum()
-    f_threshold_up_cnt = total_files_count - up_null_count - up_numeric_count
-
-    # Checking for mandatory columns
-    file_col_check = []
-    for mandatory_col in files_mandatory_column_list:
-        if files_meta[mandatory_col].isna().any() or (files_meta[mandatory_col].astype(str).str.strip() == "").any():
-            file_col_check.append(mandatory_col)
-
-    file_stg = 1
-
-    # Raising validation errors
-    if f_frequency_validation_cnt > 0 or f_platform_name_validation_cnt > 0 or \
-       f_env_name_validation_cnt > 0 or f_timezone_validation_cnt > 0 or \
-       f_is_active_validation_cnt > 0 or len(file_col_check) > 0 or \
-       source_poc_validation_cnt > 0 or process_owner_validation_cnt > 0 or \
-       file_prefix_cnt > 0 or notify_sla_misses_cnt > 0 or \
-       notify_file_size_cnt > 0 or f_threshold_low_cnt > 0 or f_threshold_up_cnt > 0:
-        raise ValueError(
-            f"FILE META VALIDATION FAILED:\n\n"
-            f"Frequency validation failed count: {f_frequency_validation_cnt}\n"
-            f"Platform name validation failed count: {f_platform_name_validation_cnt}\n"
-            f"Environment name validation failed count: {f_env_name_validation_cnt}\n"
-            f"Timezone validation failed count: {f_timezone_validation_cnt}\n"
-            f"Is_active validation failed count: {f_is_active_validation_cnt}\n"
-            f"Source POC validation failed count: {source_poc_validation_cnt}\n"
-            f"Process Owner validation failed count: {process_owner_validation_cnt}\n"
-            f"File prefix validation failed count: {file_prefix_cnt}\n"
-            f"Notify SLA misses validation failed count: {notify_sla_misses_cnt}\n"
-            f"Notify file size validation failed count: {notify_file_size_cnt}\n"
-            f"Threshold low validation failed count: {f_threshold_low_cnt}\n"
-            f"Threshold up validation failed count: {f_threshold_up_cnt}\n"
-            f"Mandatory columns missing: {file_col_check}"
-        )
-    else:
-        load_table(files_meta, files_table_id)
-        print("Data loaded to File staging Table")
-else:
-    print("Files Tab is Empty")
-    file_stg = 0
+sample query : select <process_id> as process_id, '<qualified_table_name>' as table_name, cast(max(<table_date>) as string) as user_data_date, count(1) as CNT from <qualified_table_name>"""	falg to monitor the volume in dashboard level
+	gk1v_edwpr_udm_neta_na_t160_ld	gcsToBq  	vz-it-gk1v-cwlspr-2	1	pos_install_loan	db_udm_prd_tbls	<server_edwdo>	GCP	GCP_BQ	Y										
+	gk1v_edwpr_udm_neta_na_t160_ld	bqTransformLoad	vz-it-gk1v-cwlspr-2	1	pos_install_loan	db_udm_prdstg_tbls	<server_edwpr>	GCP	GCP_BQ	Y										
+	gk1v_edwpr_udm_neta_na_t160_lw	gcsToBq	vz-it-gk1v-cwlspr-5	1	pos_install_loan	db_udm_precur_tbls	<server_edwdo>	GCP	GCP_BQ	Y										
+	gk1v_edwpr_udm_neta_na_t160_lw	bqTransformLoad	vz-it-gk1v-cwlspr-5	1	pos_install_loan	db_udm_raw_tbls	<server_edwpr>	GCP	GCP_BQ	Y										
+																				
