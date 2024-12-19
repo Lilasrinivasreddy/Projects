@@ -1,52 +1,72 @@
- #-----------------------TABLE_VALIDATION_COLUMNS----------------------------------------------------------------
-        if not tables_meta.empty:
-            # Converting empty string to null values
-            tables_meta= tables_meta.infer_objects(copy=False).replace(r'^\s*$',np.nan,regex=True)
-            
-            #Remove whitespaces
-            tables_meta=tables_meta.map(lambda x:x.strip() if isinstance(x,str) else x)
-            #Updating the Variables
-            if "dev" in env:
-                tables_meta.infer_objects(copy=False).replace(variable_list, dev_list,inplace=True,regex=True)
-                print(tables_meta)
-            elif "test" in env:
-                tables_meta.infer_objects(copy=False).replace(variable_list, test_list, inplace=True,regex=True)
-                print(tables_meta)
-            elif "ple" in env:
-                tables_meta.infer_objects(copy=False).replace(variable_list, ple_list, inplace=True,regex=True)
-                print(tables_meta)
-            else:
-                tables_meta.infer_objects(copy=False).replace(variable_list, prod_list, inplace=True,regex=True)
-                print(tables_meta)
+#-----------------------TABLE_VALIDATION_COLUMNS----------------------------------------------------------------
+if not tables_meta.empty:
+    # Converting empty strings to null values
+    tables_meta = tables_meta.infer_objects(copy=False).replace(r'^\s*$', np.nan, regex=True)
 
-            tables_meta = tables_meta.astype("string") 
-            #Updating the datatype for Integer Column
-            for col in table_integer_column:
-                tables_meta[col]=tables_meta[col].replace('',np.nan).fillna('0').astype(int)
+    # Remove whitespaces
+    tables_meta = tables_meta.map(lambda x: x.strip() if isinstance(x, str) else x)
 
-             #Updating the datatype for Boolean Column    
-            for col in table_boolean_column:
-                tables_meta[col]=tables_meta[col].replace('',np.nan).map({'Y': True,'N':False}).fillna(False)
+    # Updating the Variables
+    if "dev" in env:
+        tables_meta.replace(variable_list, dev_list, inplace=True, regex=True)
+        print(tables_meta)
+    elif "test" in env:
+        tables_meta.replace(variable_list, test_list, inplace=True, regex=True)
+        print(tables_meta)
+    elif "ple" in env:
+        tables_meta.replace(variable_list, ple_list, inplace=True, regex=True)
+        print(tables_meta)
+    else:
+        tables_meta.replace(variable_list, prod_list, inplace=True, regex=True)
+        print(tables_meta)
 
-            # Checking the null values in Mandatory Columns
-            table_col_check=[]
-            for mandatory_col in tables_mandatory_column_list:
-                if(tables_meta[mandatory_col].isna().any() or (tables_meta[mandatory_col].astype(str).str.strip()=="").any()):
-                    print("checking for mandatory columns")
-                    table_col_check.append(mandatory_col)
+    tables_meta = tables_meta.astype("string") 
 
-            table_stg = 1
-            
-            if len(table_col_check)>0:
-                raise ValueError("TABLE META VALIDATION:\n\n Following are the mandatory column in Table tab and can't be left empty :" + str(table_col_check))
-            else:
-                load_table(tables_meta,tables_table_id)
-                print("Data Loaded Table staging Table")        
-            """
-            if len(tbl_nullval_db_name) > 0 or  len(tbl_nullval_table_name) > 0 or len(tbl_nullval_servername) > 0 or len(tbl_nullval_application_name) > 0 or len(tbl_nullval_platform_name) > 0 or len(tbl_nullval_env_name) > 0 :
-                raise ValueError("TABLE META VALIDATION:\n\n Column validation failed counts : \n\tEmpty DB name  : {0}\n\tEmpty table name  : {1}\n\tEmpty server name  : {2}\n\tEmpty application name  : {3}\n\tEmpty platform name  : {4}\n\tEmpty Env name  : {5}".format(	tbl_nullval_db_name,tbl_nullval_table_name,tbl_nullval_servername,tbl_nullval_application_name,tbl_nullval_platform_name,tbl_nullval_env_name))
-            """
+    # Updating the datatype for Integer Columns
+    for col in table_integer_column:
+        tables_meta[col] = tables_meta[col].replace('', np.nan).fillna('0').astype(int)
 
-        else:
-            print("Tables Tab is Empty")
-            table_stg = 0
+    # Updating the datatype for Boolean Columns    
+    for col in table_boolean_column:
+        tables_meta[col] = tables_meta[col].replace('', np.nan).map({'Y': True, 'N': False}).fillna(False)
+
+    # Validations
+    total_table_count = len(tables_meta)
+
+    # Environment Name Validation
+    table_env_validation_cnt = total_table_count - tables_meta['environment_name'].str.lower().isin(env_list).sum()
+
+    # Platform Name Validation
+    table_platform_validation_cnt = total_table_count - tables_meta['platform_name'].str.lower().isin(platform_list).sum()
+
+    # Is Active Validation
+    table_is_active_validation_cnt = total_table_count - tables_meta['is_active'].fillna('n').str.upper().isin(['Y', 'N']).sum()
+
+    # Checking the null values in Mandatory Columns
+    table_col_check = []
+    for mandatory_col in tables_mandatory_column_list:
+        if tables_meta[mandatory_col].isna().any() or (tables_meta[mandatory_col].astype(str).str.strip() == "").any():
+            print("Checking for mandatory columns")
+            table_col_check.append(mandatory_col)
+
+    table_stg = 1
+
+    # Raising Validation Errors
+    if table_env_validation_cnt > 0 or \
+       table_platform_validation_cnt > 0 or \
+       table_is_active_validation_cnt > 0 or \
+       len(table_col_check) > 0:
+        raise ValueError(
+            f"TABLE META VALIDATION FAILED:\n\n"
+            f"Environment name validation failed count: {table_env_validation_cnt if table_env_validation_cnt > 0 else 'None'}\n"
+            f"Platform name validation failed count: {table_platform_validation_cnt if table_platform_validation_cnt > 0 else 'None'}\n"
+            f"Is_active validation failed count: {table_is_active_validation_cnt if table_is_active_validation_cnt > 0 else 'None'}\n"
+            f"Mandatory columns missing: {table_col_check if len(table_col_check) > 0 else 'None'}"
+        )
+    else:
+        load_table(tables_meta, tables_table_id)
+        print("Data Loaded Table staging Table")
+
+else:
+    print("Tables Tab is Empty")
+    table_stg = 0
