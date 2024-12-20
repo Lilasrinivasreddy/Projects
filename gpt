@@ -1,4 +1,85 @@
-Attribute Name	job_id	project_id	instance_name	job_engine	vsad	lob	sub_lob	portfolio	product_area	product_name	program_name	data_product_name	data_domain	data_sub_domain	use_case_name	is_active	updated_timestamp	inserted_timestamp	modified_by
-Mandatory	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	Y	N	N	N	N	N	N	N	N
-Description	dg_${vsad}_${project_space}_${process_name}_(rt for realtime jobs)		Update the production composer Instance of the job where we schedule the job.		Need to the VSAD name from the drop down.	Alert Failure flag. If we need the failure alert we need to update the flag as Y.	Need to fill the sub Line of Business the job belongs to.	Please choose the portfolio from drop down, for any new one please reach out to Operations team	Targeted product area of the job as per placemat	Product Name as per placemat	Update the program name for which it is build for initially, sample (5G/LP Chat,One Profile,Oneex,SOI). Choose from the dropdown for any new ones please add it to the list.	Data product name	SID taxonomy	SID taxonomy		will be updated as false when new records will be inserted	timestamp of update/merge time	timestamp of inserted time	records modified by team
-Sample	dg_gk1v_cwlspr_soi_aggr_accessoriesrec15_bt	vz-it-gk1v-cwlspr-0	vz-it-pr-wdwg-aidcom-0-cc-aidconsumer-2	Composer	gk1v	VCG	Wireless	PCT	Base Management	Mobile and Home	SOI					TRUE			
+#-----------------------LABEL_VALIDATION_COLUMNS----------------------------------------------------------------
+if not label_meta.empty:
+    # Converting empty strings to null values
+    label_meta = label_meta.infer_objects(copy=False).replace(r'^\s*$', np.nan, regex=True)
+
+    # Remove whitespaces
+    label_meta = label_meta.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+    # Updating the Variables
+    if "dev" in env:
+        label_meta.replace(variable_list, dev_list, inplace=True, regex=True)
+        print(label_meta)
+    elif "test" in env:
+        label_meta.replace(variable_list, test_list, inplace=True, regex=True)
+        print(label_meta)
+    elif "ple" in env:
+        label_meta.replace(variable_list, ple_list, inplace=True, regex=True)
+        print(label_meta)
+    else:
+        label_meta.replace(variable_list, prod_list, inplace=True, regex=True)
+        print(label_meta)
+
+    label_meta = label_meta.astype("string") 
+
+    # Updating the datatype for Integer Columns
+    for col in label_integer_column:
+        label_meta[col] = label_meta[col].replace('', np.nan).fillna('0').astype(int)
+
+    # Updating the datatype for Boolean Columns    
+    for col in label_boolean_column:
+        label_meta[col] = label_meta[col].replace('', np.nan).map({'Y': True, 'N': False}).fillna(False)
+
+    # Validations
+    total_label_count = len(label_meta)
+
+    # Job ID Validation (Mandatory and Non-Empty)
+    job_id_validation_cnt = label_meta['job_id'].isna().sum() + \
+                            label_meta['job_id'].astype(str).str.strip().eq('').sum()
+
+    # Instance Name Validation (Mandatory and Non-Empty)
+    instance_name_validation_cnt = label_meta['instance_name'].isna().sum() + \
+                                   label_meta['instance_name'].astype(str).str.strip().eq('').sum()
+
+    # Job Engine Validation (Must Match Predefined List)
+    job_engine_validation_cnt = total_label_count - label_meta['job_engine'].str.lower().isin(job_engine_list).sum()
+
+    # LOB Validation (Mandatory and Non-Empty)
+    lob_validation_cnt = label_meta['lob'].isna().sum() + \
+                         label_meta['lob'].astype(str).str.strip().eq('').sum()
+
+    # Is Active Validation
+    label_is_active_validation_cnt = total_label_count - label_meta['is_active'].fillna('n').str.upper().isin(['Y', 'N']).sum()
+
+    # Checking the null values in Mandatory Columns
+    label_col_check = []
+    for mandatory_col in label_mandatory_column_list:
+        if label_meta[mandatory_col].isna().any() or (label_meta[mandatory_col].astype(str).str.strip() == "").any():
+            print("Checking for mandatory columns")
+            label_col_check.append(mandatory_col)
+
+    label_stg = 1
+
+    # Raising Validation Errors
+    if job_id_validation_cnt > 0 or \
+       instance_name_validation_cnt > 0 or \
+       job_engine_validation_cnt > 0 or \
+       lob_validation_cnt > 0 or \
+       label_is_active_validation_cnt > 0 or \
+       len(label_col_check) > 0:
+        raise ValueError(
+            f"LABEL META VALIDATION FAILED:\n\n"
+            f"Job ID validation failed count: {job_id_validation_cnt if job_id_validation_cnt > 0 else 'None'}\n"
+            f"Instance Name validation failed count: {instance_name_validation_cnt if instance_name_validation_cnt > 0 else 'None'}\n"
+            f"Job Engine validation failed count: {job_engine_validation_cnt if job_engine_validation_cnt > 0 else 'None'}\n"
+            f"LOB validation failed count: {lob_validation_cnt if lob_validation_cnt > 0 else 'None'}\n"
+            f"Is_active validation failed count: {label_is_active_validation_cnt if label_is_active_validation_cnt > 0 else 'None'}\n"
+            f"Mandatory columns missing: {label_col_check if len(label_col_check) > 0 else 'None'}"
+        )
+    else:
+        load_table(label_meta, label_table_id)
+        print("Data Loaded Label staging Table")
+
+else:
+    print("Label Meta Tab is Empty")
+    label_stg = 0
