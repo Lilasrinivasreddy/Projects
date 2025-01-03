@@ -1,34 +1,15 @@
-# ----------------------------- RAISE ERRORS -----------------------------------
-if (
-    process_name_validation_cnt > 0 or
-    frequency_validation_cnt > 0 or
-    is_critical_validation_cnt > 0 or
-    platform_name_validation_cnt > 0 or
-    dev_poc_validation_cnt > 0 or
-    scheduler_name_validation_cnt > 0 or
-    logs_enabled_validation_cnt > 0 or
-    is_mandatory_validation_cnt > 0 or
-    vsad_validation_cnt > 0 or
-    timezone_validation_cnt > 0 or
-    run_date_buffer_interval_validation_cnt > 0 or
-    duration_threshold_low_value_validation_cnt > 0 or
-    duration_threshold_high_value_validation_cnt > 0 or
-    alert_failure_validation_count_a > 0
-):
-    raise ValueError(
-        f"Validation failed with the following counts:\n"
-        f"Invalid Process Names: {process_name_validation_cnt}\n"
-        f"Invalid Frequency Values: {frequency_validation_cnt}\n"
-        f"Invalid Is Critical Values: {is_critical_validation_cnt}\n"
-        f"Invalid Platform Names: {platform_name_validation_cnt}\n"
-        f"Invalid Dev POC Emails: {dev_poc_validation_cnt}\n"
-        f"Invalid Scheduler Names: {scheduler_name_validation_cnt}\n"
-        f"Invalid Logs Enabled Values: {logs_enabled_validation_cnt}\n"
-        f"Invalid Is Mandatory Values: {is_mandatory_validation_cnt}\n"
-        f"Missing VSAD Values: {vsad_validation_cnt}\n"
-        f"Invalid Timezone Values: {timezone_validation_cnt}\n"
-        f"Invalid Run Date Buffer Interval Values: {run_date_buffer_interval_validation_cnt}\n"
-        f"Invalid Duration Threshold Low Values: {duration_threshold_low_value_validation_cnt}\n"
-        f"Invalid Duration Threshold High Values: {duration_threshold_high_value_validation_cnt}\n"
-        f"Invalid Alert Failure By Values: {alert_failure_validation_count_a}"
-    )
+# Define the valid flags for `alert_failure_by` column
+valid_alert_senders = ['application', 'tracex', 'beamx']
+
+# Fill missing values with 'N', convert to lowercase, and validate against valid_alert_senders
+alert_failure_validation_count_a = (
+    total_process_count 
+    - process_meta['alert_failure_by']
+        .fillna('N')                       # Fill NaN values with 'N'
+        .str.lower()                       # Convert all strings to lowercase
+        .isin(valid_alert_senders)         # Check if values are in the valid list
+        .sum()                             # Count valid entries
+)
+
+# Print the number of invalid alert_failure_by entries
+print(f"Number of invalid 'alert_failure_by' entries: {alert_failure_validation_count_a}")
