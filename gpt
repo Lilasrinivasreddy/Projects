@@ -1,30 +1,11 @@
-pip install sqllineage
-sqllineage -e "WITH cte AS (SELECT customer_id, SUM(order_amount) AS total_spent FROM orders WHERE order_date >= '2024-01-01' GROUP BY customer_id) INSERT INTO high_value_customers (customer_id, total_spent) SELECT customer_id, total_spent FROM cte WHERE total_spent > 1000;"
 from sqllineage.runner import LineageRunner
 
-# Sample SQL query
 sql = """
-WITH cte AS (
-    SELECT 
-        customer_id, 
-        SUM(order_amount) AS total_spent
-    FROM orders
-    WHERE order_date >= '2024-01-01'
-    GROUP BY customer_id
-)
-INSERT INTO high_value_customers (customer_id, total_spent)
-SELECT 
-    customer_id, 
-    total_spent
-FROM cte
-WHERE total_spent > 1000;
+INSERT INTO target_table (a, b)
+SELECT a, b
+FROM source_table;
 """
 
-# Run lineage analysis
 lineage = LineageRunner(sql)
-
-# Display results
-print("Source Tables:", lineage.source_tables)
-print("Target Tables:", lineage.target_tables)
-Source Tables: {'orders'}
-Target Tables: {'high_value_customers'}
+print(lineage.source_tables)  # Output: {'source_table'}
+print(lineage.target_tables)  # Output: {'target_table'}
