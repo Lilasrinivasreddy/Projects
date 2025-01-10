@@ -1,11 +1,3 @@
-from sqllineage.runner import LineageRunner
+https://medium.com/@blackhorseya/deploying-opentelemetry-collector-jaeger-and-prometheus-with-docker-compose-for-observability-fedd7c0898b5
 
-sql = """
-INSERT INTO target_table (a, b)
-SELECT a, b
-FROM source_table;
-"""
-
-lineage = LineageRunner(sql)
-print(lineage.source_tables)  # Output: {'source_table'}
-print(lineage.target_tables)  # Output: {'target_table'}
+https://medium.com/debugging-diaries/demystifying-opentelemetry-a-beginners-guide-to-modern-observability-076c5c06d969
