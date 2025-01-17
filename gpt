@@ -1,1 +1,76 @@
-vv
+import pandas as pd
+from datetime import datetime
+import logging
+
+# Initialize Logger
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+logger = logging.getLogger()
+
+# Monitoring DataFrame
+monitoring_df = pd.DataFrame(columns=["Module", "Profile_ID", "Status", "Start_Time", "End_Time", "Run_Time", "Details"])
+
+def start_monitoring(module, profile_id):
+    """
+    Start monitoring for a specific module and profile.
+    """
+    global monitoring_df
+    start_time = datetime.now()
+    new_entry = {
+        "Module": module,
+        "Profile_ID": profile_id,
+        "Status": "Running",
+        "Start_Time": start_time,
+        "End_Time": None,
+        "Run_Time": None,
+        "Details": "Processing started."
+    }
+    monitoring_df = pd.concat([monitoring_df, pd.DataFrame([new_entry])], ignore_index=True)
+    logger.info(f"Monitoring started for Module: {module}, Profile_ID: {profile_id}")
+
+def update_monitoring(module, profile_id, status, details=None):
+    """
+    Update the monitoring status for a specific module and profile.
+    """
+    global monitoring_df
+    end_time = datetime.now()
+    monitoring_df.loc[
+        (monitoring_df["Module"] == module) & (monitoring_df["Profile_ID"] == profile_id), 
+        ["Status", "End_Time", "Details"]
+    ] = [status, end_time, details]
+    
+    # Calculate Run Time
+    start_time = monitoring_df.loc[
+        (monitoring_df["Module"] == module) & (monitoring_df["Profile_ID"] == profile_id), "Start_Time"
+    ].values[0]
+    run_time = pd.to_datetime(end_time) - pd.to_datetime(start_time)
+    monitoring_df.loc[
+        (monitoring_df["Module"] == module) & (monitoring_df["Profile_ID"] == profile_id), "Run_Time"
+    ] = run_time
+    
+    logger.info(f"Monitoring updated for Module: {module}, Profile_ID: {profile_id}, Status: {status}")
+
+def show_monitoring_summary():
+    """
+    Display a summary of monitoring data.
+    """
+    global monitoring_df
+    logger.info("Monitoring Summary:")
+    print(monitoring_df)
+
+# Integration Example
+if __name__ == "__main__":
+    # Example of tracking Table Watcher
+    start_monitoring(module="TableWatcher", profile_id="TW001")
+    # Simulate processing
+    update_monitoring(module="TableWatcher", profile_id="TW001", status="Completed", details="Table check passed.")
+    
+    # Example of AutoProfile
+    start_monitoring(module="AutoProfile", profile_id="AP001")
+    update_monitoring(module="AutoProfile", profile_id="AP001", status="Failed", details="Error: Missing data.")
+
+    # Example of Rule Profiling
+    start_monitoring(module="RuleProfiling", profile_id="RP001")
+    update_monitoring(module="RuleProfiling", profile_id="RP001", status="Completed", details="Rules validated.")
+
+    # Show final summary
+    show_monitoring_summary()
