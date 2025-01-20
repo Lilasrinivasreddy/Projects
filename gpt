@@ -1,3 +1,117 @@
+
+
+def validate_agg_rules(self, df_rules_list=pd.DataFrame(), sub_domain_name: str = ''):
+    self.logger.info('-------------------------------------------------------------------------')
+    self.logger.info('Rule Validation - Initiated')
+    self.logger.info('-------------------------------------------------------------------------')
+    error_list: list = []
+    try:
+        self.logger.info(f'Rules Length: {len(df_rules_list)}')
+        if len(df_rules_list) > 0:
+            df_rules_list['COL_VLD_CNT'] = ""
+            df_rules_list['COL_INVLD_CNT'] = ""
+            df_rules_list['COL_INVLD_PCT'] = ""
+            df_rules_list['COL_NULL_CNT'] = ""
+            df_rules_list['COL_DIST_CNT'] = ""
+            df_rules_list['COL_MIN_VAL'] = ""
+            df_rules_list['COL_MAX_VAL'] = ""
+            df_rules_list['COL_VLD_PCT'] = ""
+            df_rules_list['COL_TOT_CNT'] = ""
+            table_name, rule, rule_sql = "", "", ""
+
+            for idx in df_rules_list.index:
+                valid_count, invalid_count = 0, 0
+                try:
+                    self.logger.info('-------------------------------------------------------------------------')
+                    rule = df_rules_list.loc[idx, 'MEAS_NAME']
+                    rule_id = df_rules_list.loc[idx, 'RULE_ID']
+                    db_name = df_rules_list.loc[idx, 'DB_NAME']
+                    table_name = df_rules_list.loc[idx, 'SRC_TBL']
+                    rule_sql = df_rules_list.loc[idx, 'MEAS_RULE_SQL']
+
+                    self.logger.info(f'index: {idx}, rule_id: {rule_id}, rule: {rule}')
+
+                    # Add TD_AGG condition here
+                    if self.data_src in ["TD", "TD_AGG"]:
+                        result = self.utils.run_teradata_sql(
+                            db_name=db_name,
+                            query=rule_sql,
+                            td_auth=config.src_tbl_db_config
+                        )
+                    else:
+                        result = self.utils.run_bq_sql(
+                            bq_auth=config.dq_gcp_auth_payload,
+                            select_query=rule_sql
+                        )
+
+                    result = result.rename(columns={str(col): str(col).lower() for col in result.columns.to_list()})
+                    self.logger.info(f'result:\n{result}')
+
+                    try:
+                        valid_count = result[result[rule.lower()] == 'VALID']['count']
+                        valid_count = valid_count.iloc[0] if len(valid_count) > 0 else 0
+                    except Exception as err:
+                        self.logger.error(f"Valid Count issue. Error:{err}")
+                        valid_count = 0
+
+                    try:
+                        invalid_count = result[result[rule.lower()] == 'INVALID']['count']
+                        invalid_count = invalid_count.iloc[0] if len(invalid_count) > 0 else 0
+                    except Exception as err:
+                        self.logger.error(f"Invalid Count issue. Error:{err}")
+                        invalid_count = 0
+
+                except Exception as e:
+                    error_list.append({
+                        'table': table_name,
+                        'rules': rule,
+                        'query': rule_sql
+                    })
+                    self.logger.error(f'Error in Rule Engine. Error:{e}')
+                    subject = f'{config.EMAIL_ENV} Rule Failure'
+                    message = f'Rule Failed.<br>Rule: {rule}<br>Query: {rule_sql}'
+
+                total_record_count = int(valid_count) + int(invalid_count)
+
+                try:
+                    valid_percent = float(valid_count / total_record_count)
+                except:
+                    valid_percent = 0.00
+
+                try:
+                    invalid_percent = float(invalid_count / total_record_count)
+                except:
+                    invalid_percent = 0.00
+
+                self.logger.info(f'valid_count:{valid_count}, invalid_count:{invalid_count}')
+                self.logger.info(f'total_record_count:{total_record_count}')
+                self.logger.info(f'valid_percent:{valid_percent}, invalid_percent:{invalid_percent}')
+
+                df_rules_list.loc[idx, 'COL_VLD_PCT'] = valid_percent * 100
+                df_rules_list.loc[idx, 'COL_INVLD_PCT'] = invalid_percent * 100
+                df_rules_list.loc[idx, 'COL_VLD_CNT'] = int(valid_count)
+                df_rules_list.loc[idx, 'COL_INVLD_CNT'] = int(invalid_count)
+                df_rules_list.loc[idx, 'COL_TOT_CNT'] = total_record_count
+                df_rules_list.loc[idx, 'COL_NULL_CNT'] = 0
+                df_rules_list.loc[idx, 'COL_DIST_CNT'] = 0
+                df_rules_list.loc[idx, 'COL_MIN_VAL'] = 0
+                df_rules_list.loc[idx, 'COL_MAX_VAL'] = 0
+
+        else:
+            raise ValueError('No Records found to load in Report Table')
+
+    except ValueError as err:
+        self.logger.error(f'{err}')
+
+    except Exception as e:
+        self.logger.error(f'Error in Retriving Rules List. Error: {e}')
+
+    self.logger.info('-------------------------------------------------------------------------')
+    self.logger.info('Rule Validation - Completed')
+    self.logger.info('-------------------------------------------------------------------------')
+
+    return df_rules_list, error_list
+
 import pandas as pd
 import numpy as np
 import psutil
