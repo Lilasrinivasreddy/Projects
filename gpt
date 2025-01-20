@@ -1,129 +1,35 @@
-import pandas as pd
-import logging
-import argparse
-import sys
-
-## Importing User Defined Modules
-import config_params as config
-from common_handlers import CommonUtils, set_logger
-from sql_rule_profile import RuleProfileEngine
-
-
-## Validating all the crons
-def cron_validation(logger: logging, utils: CommonUtils, df_val: pd.DataFrame):
-    cron_scheduler_list = df_val["RULE_PRFL_SCHD_TS"][~df_val["RULE_PRFL_SCHD_TS"].isna()].unique().tolist()
-    logger.info(f"Scheduler List: {cron_scheduler_list}")
-
-    start_min, end_min = utils.get_minute_range()
-    logger.info('-------------------------------------------------------------')
-    cron_schd_for_curr_run: list = []
-    for cron_schd in cron_scheduler_list:
-
-        cron_trigger_yn = utils.validate_croniter(
-            # logger=logger,
-            cron_schd_format=cron_schd,
-            start_min_range=start_min
-        )
-        
-        if cron_trigger_yn == 'Y':
-            cron_schd_for_curr_run.append(cron_schd)
-        
-        logger.info('-------------------------------------------------------------')
-    
-    return cron_schd_for_curr_run           
-
-
-## Requesting for rule Profile Engine
-def request_rule_profile_engine(logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame):
-    sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
-    logger.info(f'Sub Domain List: {sub_domain_list}')
-    
-    logger.info(f'Request for Rule Profiling Initiated...')
-    ruleProfile = RuleProfileEngine(data_src=data_src)
-    
-    for sub_domain in sub_domain_list:
-        try:
-            logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
-            
-            df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
-            df_tbl_list = df_tbl_list.reset_index(drop=True)
-            
-            logger.info(f'Records Count: {len(df_tbl_list)}')
-            
-            ## Initiating Profile Engine
-            ruleProfile.call_sql_profile(df_metadata=df_tbl_list)
-            logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
-        except Exception as err:
-            logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
-        
-        logger.info('-------------------------------------------------------------')
-    
-    logger.info(f'Request for Rule Profiling got Completed...')
-    logger.info('-------------------------------------------------------------')
-
-
-## Argument Parser - For getting the Data Source
-def get_data_source_details():
-    message = None
-    try:
-        if len(sys.argv[1:]) > 0:
-          parser_args = argparse.ArgumentParser()
-          parser_args.add_argument('--data_src', dest='data_src', type=str, default=None)
-          args = parser_args.parse_args()
-          
-          data_src = args.data_src
-          data_src = data_src.upper()
-          
-          if data_src in config.APPL_DATA_SRC:
-            return data_src
-        
-        message = f"""\n
-        Data Source Not Found for Rule Profile Scheduled Tables
-        Flag                    : --data_src
-        Applicable Data Source  : {config.APPL_DATA_SRC}
-        Example for Teradata    : python3.9 table_watcher_rule_profile_cron --data_src=TD
-        Example for GCP         : python3.9 table_watcher_rule_profile_cron --data_src=GCP
-        
-        ** Data Source is Mandatory
-        """
-    except Exception as err:
-        message = f"Error Occurred in Data Source Argument Flag Validation. Error: {err}"
-        
-    raise Exception(message)
-
-
-## Main Function
 def main():
     try:
-    
+        # Get the data source from command-line arguments
         data_src = get_data_source_details()
-        
-        ## Creating Logger File and Object
+
+        # Create a logger instance
         logger: logging = set_logger(
             logger_path=config.LOGS_DIR,
             log_filename=f'{data_src}_time_based_rule_profile_cron',
             process_name=f'RP-Cron',
-            # date_with_minutes_yn='Y'
         )
         utils: CommonUtils = CommonUtils(logObj=logger)
-    
+
+        # Dynamically generate the query based on data_src
         query = f"""
         select *
         from {config.dqaas_rule_prfl_mtd}
-        WHERE  IS_ACTIVE_FLG = 'Y'
-        AND DATA_SRC = '{data_src}'
+        WHERE IS_ACTIVE_FLG = 'Y'
+        AND DATA_SRC IN {("('TD', 'TD_AGG')" if data_src == 'TD' else f"('{data_src}')")}
         AND (RULE_PRFL_SCHD_TS IS NOT NULL OR RULE_PRFL_SCHD_TS <> '')
         ORDER BY RULE_ID;
         """
 
+        # Execute the query
         df_val = utils.run_bq_sql(
-            # logger=logger,
             bq_auth=config.dq_gcp_auth_payload,
             select_query=query
         )
-        
+
         logger.info(f"Records Found: {len(df_val)}")
-            
+
+        # Validate cron schedules
         cron_schd_for_curr_run = []
         if len(df_val) > 0:
             df_val = df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
@@ -133,25 +39,22 @@ def main():
                 df_val=df_val
             )
 
+            # Filter rules based on valid cron schedules
             if len(cron_schd_for_curr_run) > 0:
                 df_val = df_val[df_val["RULE_PRFL_SCHD_TS"].isin(cron_schd_for_curr_run)]
 
-
+        # If no valid rules are found, exit
         if len(df_val) == 0 or len(cron_schd_for_curr_run) == 0:
             logger.warning("No Tables Scheduled for Current Hour")
             return
-                
-        if len(df_val) > 0:
-            request_rule_profile_engine(
-                logger=logger,
-                utils=utils,
-                data_src=data_src,
-                df_val=df_val
-            )
-    
-    except Exception as err:
-        logger.error(f"Error in Initiating Rule Profile Schduled Tables. \nError: {err}")
-            
 
-if __name__ == "__main__":
-    main()
+        # Pass the rules to the Rule Profile Engine
+        request_rule_profile_engine(
+            logger=logger,
+            utils=utils,
+            data_src=data_src,
+            df_val=df_val
+        )
+
+    except Exception as err:
+        logger.error(f"Error in Initiating Rule Profile Scheduled Tables. \nError: {err}")
