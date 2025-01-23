@@ -1,1 +1,1999 @@
+import base64
+from pathlib import Path
+import requests
+import json
+import os
+import sys
+import numpy as np
+import pandas as pd
+import google.auth
+from requests.exceptions import HTTPError
+from google.cloud import bigquery
+from datetime import datetime, timedelta
+import pandas_gbq
+import time
+import decimal
+from functools import reduce
+# from logger import Logger
+import logging
+from dqaas_opsgenie import Alert
+import traceback
+import math
+
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from utils.send_email import SendEmail
+from config_data import get_config, set_logger
+import scripts.config_params as config
+from scripts.common_handlers import CommonUtils
+from scripts.dqaas_jira import Jira_ticket
+
+
+
+
+"""
+
+Run Types   | Description   
+-----------------------------
+DR          | Daily Run     
+MR          | Monthly Run
+AR          | Adhoc Run
+RR          | Rerun Request
+
+
+Scheduled Types | Description
+-----------------------------------------
+DAILY           | Daily Scheduled Rules
+MONTHLY         | Monthly Scheduled Rules
+ADHOC           | Rules for Adhoc Run
+
+
+"""
+
+class RuleProfile(object):
+    def __init__(self, data_src: str=None):
+        self.config = get_config()
+        self.data_src = data_src
+        if self.data_src not in config.APPL_DATA_SRC:
+            raise Exception(f"Data Source not Provided. Error: Data Source Value is {data_src}")
+            
+        self.log = self.set_rule_profile_logger(
+            process_name="RP-Main",
+            data_src=data_src
+        )
+
+        self.utils = CommonUtils(logObj=self.log)
+        self._set_attributes(self.config)
+        self.run_process_details = ""
+
+    # @staticmethod
+    def set_rule_profile_logger(self, process_name:str, data_src: str):
+        
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        filename = f'{data_src}_rule_profile_{timestamp}'
+        
+        process_id = os.getpid()
+        log: logging = set_logger(
+            logger_path=config.SQL_RULE_PROFILE_LOGS,
+            log_filename=filename,
+            process_name=f'{process_name}-{process_id}',
+            only_date_yn="Y",
+        )
+        
+        return log
+    
+    def __del__(self):
+        self.log.info("Closing the Class Object")
+        
+    def _set_attributes(self, config):
+        bq_cred_dtls = config['gcp_metadata_db']
+        profile_dtls = config['sql_rule_profile']
+        master_mtd_table = config['master_mtd_table']
+        home_path: str = self.config["dir"]["home_dir"]
+        config_path = self.config["dir"]["config_dir"]
+        
+        # self.log_path = os.path.abspath(os.path.join(home_path, "logs"))
+        # self.log_file_path = os.path.abspath(os.path.join(self.log_path, 'rule_based_1corpdata_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'.log'))
+        # self.log = Logger(name='1corpdata', path=self.log_file_path).log
+        # self.log = self._set_logger(logger_path=self.config["dir"]["logs_dir"], filename="rule_based_1corpdata")
+        # self.log: logging = set_logger(logger_path=self.config["dir"]["logs_dir"], log_filename="rule_based_1corpdata")
+        
+        
+        self.email_template = os.path.abspath(os.path.join(self.config["dir"]["template_dir"], r'dq_common_message.html'))
+
+        self.dq_opsgenie_client = Alert(
+            api_key=config["ops_genie"]["dq_ops_genie_api_key"],
+            proxy=bq_cred_dtls['gcp_http_proxy_url']
+        )
+        self.od_opsgenie_client = Alert(
+            api_key=config["ops_genie"]["od_ops_genie_api_key"],
+            proxy=bq_cred_dtls['gcp_http_proxy_url']
+        )
+
+        ##  Data Quality Service Account
+        self.dq_project_id = bq_cred_dtls['dq_project_id']
+        self.dq_auth_payload = {
+            "client_id": bq_cred_dtls['dq_client_id'],
+            "client_secret": bq_cred_dtls['dq_client_secret_key'],
+            "token_url": bq_cred_dtls['gcp_token_url'],
+            "conn_project_id": self.dq_project_id,
+            "sa_json_file_dtls": os.path.abspath(os.path.join(config_path, bq_cred_dtls['dq_sa_json'])),
+            "project_space": os.path.join(config_path, "dq_oidc_token.json")
+        }
+
+        ##  One Corp Data Service Account
+        self.od_conn_project_id = bq_cred_dtls['od_data_project_id']
+        self.od_mtd_project_id = bq_cred_dtls['od_mtd_project_id']
+        self.one_corp_auth_payload = {
+            "client_id": bq_cred_dtls['od_client_id'],
+            "client_secret": bq_cred_dtls['od_client_secret_key'], 
+            "token_url": bq_cred_dtls['gcp_token_url'],
+            "conn_project_id": self.od_conn_project_id,
+            "sa_json_file_dtls": os.path.abspath(os.path.join(config_path, bq_cred_dtls['od_sa_json'])),
+            "project_space": os.path.join(config_path, "od_oidc_token.json")
+            }
+
+        # DQ Space Metadata and Report Table Details
+        # dq_dataset_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name']
+        self.dq_mtd_table_name =  self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + master_mtd_table['dq_metadata_table']
+        self.dq_report_table_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + profile_dtls['dq_rpt_table_name']
+
+        # OneCorp Space Metadata and Report Table Details
+        # od_dataset_name = self.od_mtd_project_id + "." + profile_dtls['od_dataset_name']
+        self.od_report_table_name = self.od_mtd_project_id + "." + profile_dtls['od_dataset_name'] + "." + profile_dtls['od_rpt_table_name']
+        self.od_invalid_table_name = self.od_mtd_project_id + "." + profile_dtls['od_dataset_name'] + "." + profile_dtls['od_invalid_table_name']
+        self.n_days_interval = int(profile_dtls["n_days_limit"])
+
+        ##  Proxy ## Commented on 2024-07-25 
+        # os.environ['http_proxy'] = bq_cred_dtls['gcp_http_proxy_url']
+        # os.environ['https_proxy'] = bq_cred_dtls['gcp_https_proxy_url']
+        # os.environ['no_proxy'] = bq_cred_dtls['gcp_no_proxy_urls']
+
+        ## Mail Distro
+        self.failure_alert_email_group = str(profile_dtls['default_failure_mail_group']).split(',')
+        self.summary_alert_email_group = str(profile_dtls['default_summary_mail_group']).split(',')
+        
+        self.monthly_process_date, self.monthly_process_yn = self.validate_monthly_process(profile_dtls['monthly_process_day'])
+        self.log.info(f'monthly_process_yn:{self.monthly_process_yn}, monthly_process_date:{self.monthly_process_date}')
+
+        self.current_datetime = datetime.now()
+        self.current_date = datetime.strftime(self.current_datetime, '%Y-%m-%d')
+        self.previous_day_date = datetime.strftime((self.current_datetime - timedelta(days=self.n_days_interval)), '%Y-%m-%d %H:%M:%S')
+        
+        ##  Email Configuration
+        self.email = SendEmail(loggerObj=self.log,
+                               smtp=config["email_configuration"]["smtp_server_name"],
+                               mail_from=config["email_configuration"]["sender_email_id"])
+
+    # @staticmethod
+    # def _set_logger(logger_path, filename: str):
+    #     logger_filename = filename+ '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S')+'.log'
+    #     log_file_path = os.path.abspath(os.path.join(logger_path, logger_filename))
+    #     logger_obj  = Logger(name='1corpdata', path=log_file_path).log
+    #     return logger_obj
+    
+    @staticmethod
+    def validate_monthly_process(day: int):
+        current_date = datetime.strftime(datetime.now(), '%Y-%m-%d')
+        monthly_process_date = datetime.strftime(datetime.now(), f'%Y-%m-{day}')
+        monthly_process_yn: str =  "Y" if current_date == monthly_process_date else "N"
+        return monthly_process_date, monthly_process_yn
+    
+        
+    ## Create Ops Genie Ticket
+    def opsgenie_alert(self, alert_type,priority, message, description, details, one_corp_yn: str="N"):
+        try:
+            current_time_stamp = datetime.now().isoformat()
+            env = config.get_config_values('environment', 'env')
+            tags = [current_time_stamp,env,alert_type] 
+            if one_corp_yn.upper() == "Y":
+                # response = f"1Corp Opsgenie Alert.message:{message}, description:{description}, details:{details}, priority:{priority}"
+                response = self.od_opsgenie_client.create_alert(message, description, details, priority,tags)
+            else:
+                # response = f"DQ Opsgenie Alert.message:{message}, description:{description}, details:{details}, priority:{priority}"
+                response = self.dq_opsgenie_client.create_alert(message, description, details, priority,tags) 
+
+            self.log.info(f"Opsgenies Response: {response}")
+        except Exception as err:
+            self.log.error(f"Error Occurred while Ops Genie Alert. Error: {err}")
+
+
+    ## JWT Token Creation
+    @staticmethod
+    def exchange_and_save_oidc_token_for_jwt(self, url: str, client_id: str, client_secret: str, oidc_token_file_name:str) -> None:
+        try:
+            self.log.info('Retrieving JWT from OIDC provider...')
+            payload = {'grant_type': 'client_credentials', 'client_id': client_id,
+                       'client_secret': client_secret, 'scope': 'read'}
+        
+            response = requests.post(url=url, params=payload)
+            response.raise_for_status()
+            token = response.json()
+            self.log.info('Saving token...')
+            # Serializing json
+            # oidc_token_file_name = "oidc_token.json"
+            oidc_token_path = oidc_token_file_name
+            if os.path.isfile(oidc_token_path):
+                os.remove(oidc_token_path)
+                time.sleep(7)
+
+            with open(oidc_token_path, 'w') as f:  # don't change the file name
+                json.dump(token, f)
+        except HTTPError as e:
+            raise HTTPError(f"Http Error. Error:{e}")
+        except Exception as e:
+            raise Exception(f"Error Ocurred in Generating the OIDC Token. Error:{e}")
+
+    def dq_bigquery_client(self, auth: dict):
+        self.log.info(f"Default Auth: {auth}")
+        self.log.debug(f'url={auth["token_url"]}, client_id={auth["client_id"]}, client_secret={auth["client_secret"]}')
+        
+        self.exchange_and_save_oidc_token_for_jwt(self,
+                                            url=auth["token_url"],
+                                            client_id=auth["client_id"],
+                                            client_secret=auth["client_secret"], 
+                                            oidc_token_file_name=auth["project_space"]
+                                            )
+        
+        self.log.info('Setting environment variable...')
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = auth["sa_json_file_dtls"]
+        os.environ['GOOGLE_CLOUD_PROJECT'] = auth["conn_project_id"]
+        
+        credentials, _ = google.auth.default()
+        
+        client = bigquery.Client(credentials=credentials, project=auth["conn_project_id"])
+        self.log.info(f'Connected to {auth["conn_project_id"]} project space')
+        
+        return client, credentials
+    #Used to connect to user mentioned project space dynamically using the json file path from dqaas_product_features_meta table
+    def dq_bigquery_client_dynamic(self,json_folder_path:str=None):
+        json_folder_path='/apps/opt/application/dev_smartdq/dev/dqaas/keys'
+        if not json_folder_path:
+            raise Exception("JSON folder path is required for remote client connection")
+        folder =Path(json_folder_path)
+        if not folder.exists() or not folder.is_dir():
+            raise Exception(f"Invalid path")
+        gcp_creds_file = str(folder / "gcp_creds.json")
+        
+        with open(gcp_creds_file, 'r') as file:
+            gcp_creds_content = json.load(file)
+        oidc_token_file_path = str(folder / "od_oidc_token.json")
+        sa_config_file_path = str(folder / "sa-qa-j0nv-dqaas-oddo-0-oidc-27519-config.json")
+        auth = {
+            "client_id": gcp_creds_content['client_id'],
+            "client_secret": gcp_creds_content['client_secret'], 
+            "token_url": gcp_creds_content['token_url'],
+            "conn_project_id": gcp_creds_content["conn_project_id"],
+            "sa_json_file_dtls": sa_config_file_path,
+            "project_space": oidc_token_file_path
+        }
+        self.log.info(f"Dynamic Auth: {auth}")
+        
+        self.log.debug(f'url={auth["token_url"]}, client_id={auth["client_id"]}, client_secret={auth["client_secret"]}')
+        
+        self.exchange_and_save_oidc_token_for_jwt(self,
+                                            url=auth["token_url"],
+                                            client_id=auth["client_id"],
+                                            client_secret=auth["client_secret"], 
+                                            oidc_token_file_name=auth["project_space"]
+                                            )
+        
+        self.log.info('Setting environment variable...')
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = auth["sa_json_file_dtls"]
+        os.environ['GOOGLE_CLOUD_PROJECT'] = auth["conn_project_id"]
+        
+        credentials, _ = google.auth.default()
+        
+        client = bigquery.Client(credentials=credentials, project=auth["conn_project_id"])
+        self.log.info(f'Connected to {auth["conn_project_id"]} project space')
+        
+        return client, credentials
+        
+    ## Retrieve Max Sequence
+    def get_max_sequence(self, bq_client: bigquery.Client, sq_column: str, bq_tablename: str) -> int:
+        try:
+            if bq_client is None:
+                raise Exception('BQ Client not Found')
+            
+            count = bq_client.query(f"select IFNULL(MAX({sq_column}), 0) from {bq_tablename}").to_dataframe()
+            rpt_max_sequence = count.iloc[0, 0]
+            self.log.info(f'Max Sequence: {rpt_max_sequence}')
+            return rpt_max_sequence
+        except Exception as err:
+            self.log.error(f'Error While Finding Max Sequence for the Table {bq_tablename}. Error: {err}')
+
+        return -1
+        
+    @staticmethod
+    def round_off(val):  
+        d = decimal.Decimal(val)
+        return d.quantize(decimal.Decimal('.01'), decimal.ROUND_DOWN)
+
+    def get_date_details(self, dq_bq_client:bigquery.Client, incr_dt_dict:dict):
+        try:
+            date_interval_query = f"""
+                select  format_date('%Y-%m-%d', date({incr_dt_dict['start_date']})),
+                        format_date('%Y-%m-%d', date({incr_dt_dict['end_date']})),
+                        format_date('%Y%m', date({incr_dt_dict['start_year_month']})),
+                        format_date('%Y%m', date({incr_dt_dict['end_year_month']})),
+                        parse_date('%Y%m%d', format_date('%Y%m%d', date({incr_dt_dict['start_date']}))),
+                        parse_date('%Y%m%d', format_date('%Y%m%d', date({incr_dt_dict['end_date']}))),
+                        parse_date('%Y%m%d', concat(format_date('%Y%m', date({incr_dt_dict['start_year_month']})), '01')),
+                        format_timestamp('%Y-%m-%d %T', timestamp({incr_dt_dict['invld_dt']}));
+            """
+            self.log.info(date_interval_query)
+            
+            result= dq_bq_client.query(date_interval_query).to_dataframe()
+            self.log.info(result)
+            
+            return {
+                'START_DATE': result.iat[0, 0],
+                'END_DATE': result.iat[0, 1],
+                'START_YEAR_MONTH': result.iat[0, 2],
+                'END_YEAR_MONTH': result.iat[0, 3],
+                'START_DATE_SRC_COL_DT_VAL': pd.Timestamp(datetime.strptime(str(result.iat[0, 4]), '%Y-%m-%d')),
+                'END_DATE_SRC_COL_DT_VAL': pd.Timestamp(datetime.strptime(str(result.iat[0, 5]), '%Y-%m-%d')),
+                'START_YEAR_MONTH_SRC_COL_DT_VAL': pd.Timestamp(datetime.strptime(str(result.iat[0, 6]), '%Y-%m-%d')),
+                'INVL_DT': f"timestamp('{result.iat[0, 7]}')"
+            }
+        except Exception as err:
+            raise RuntimeError(f"Error Occurred in Data Interval. Error: {err}")
+
+    @staticmethod
+    def get_run_process_mtd_condition(run_type: str, schd_type:str):
+        if run_type in ("DR", "RR") and schd_type == "DAILY":
+            return f" and upper(is_daily_flg) = 'Y' "
+        elif run_type in ("MR", "RR") and schd_type == "MONTHLY":
+            return f" and upper(is_daily_flg) = 'Y'  and upper(is_monthly_flg) = 'Y' "
+        elif run_type == "AR" and schd_type == "ADHOC":
+            return " and upper(is_adhoc_flg) = 'Y' "      
+        return None
+    
+    @staticmethod
+    def get_run_process_details(run_type: str, schd_type:str):
+        if run_type == "DR" and schd_type == "DAILY":
+            return f"Daily Run Profiling Process"
+        if run_type == "MR" and schd_type == "MONTHLY":
+            return f"Monthly Run Profiling Process"
+        if run_type == "AR" and schd_type == "ADHOC":
+            return "Adhoc Run Profiling Process" 
+        if run_type == "RR" and schd_type == "DAILY":
+            return f"Rerun for Daily Profiling Process"
+        if run_type == "RR" and schd_type == "MONTHLY":
+            return f"Rerun for Monthly Profiling Process"
+          
+        return None
+    
+    
+    # def get_rule_metadata_details(self, dq_bq_client:bigquery.Client, metadata_condition: str) -> pd.DataFrame:
+    def get_rule_metadata_details(self, dq_bq_client:bigquery.Client) -> pd.DataFrame:
+        try:
+            mtd_query = f""" 
+                select *
+                from {self.dq_mtd_table_name}
+                where upper(is_active_flg) = 'Y'
+                --{metadata_condition}
+                order by profile_id;
+            """.replace('[','(').replace(']',')')
+            
+            self.log.info(f"Metadata Query: {mtd_query}")
+            return dq_bq_client.query(mtd_query).to_dataframe()
+        
+        except Exception as e:
+            self.log.error(f"Error: {e}")
+            
+        return pd.DataFrame()
+    def send_failure_status_email(self, table_name: str, rule: str, data_sub_dmn: str='', persona: str=''):
+        try:
+            receipents_email_addr_list = None
+            if len(data_sub_dmn) > 0 and len(persona) > 0:
+                receipents_email_addr_list = self.utils.get_mail_distro(df_val=self.mail_list, sub_dmn=data_sub_dmn, persona=persona)
+            self.log.info(f"Receipents email details - Table: {receipents_email_addr_list}")
+
+            if receipents_email_addr_list is None:
+                receipents_email_addr_list = config.RP_DEFAULT_MAIL_GROUP
+            self.log.info(f"Receipents email details - default: {receipents_email_addr_list}")
+            
+            self.log.info(f'Initiating eMail for failed rule {rule}')
+            self.email.send_rules_error_report(
+                email_template_filepath=config.rp_error_report_email_template,
+                mail_subject=r'Rule Failure Report',
+                receipents_email_id=receipents_email_addr_list,
+                rule_id=rule,
+                table_name=table_name
+            )
+        except Exception as e:
+            self.log.error(f'Error while triggering error status.\n {e}')
+    
+    def run_td_rule_profile_engine(self, df_rule_data, rules_name):
+        df_rule_data['col_vld_cnt'] = ""
+        df_rule_data['col_invld_cnt'] = ""
+        # df_rule_data['VALID_Prcnt'] = ""
+        df_rule_data['col_invld_pct'] = ""
+        df_rule_data['col_null_cnt'] = ""
+        df_rule_data['col_dist_cnt'] = ""
+        df_rule_data['col_min_val'] = ""
+        df_rule_data['col_max_val'] = ""
+        df_rule_data['col_vld_pct'] = ""
+        df_rule_data['col_tot_cnt'] = ""      
+
+        rules_error_list: list = []
+        for count, rule in enumerate(rules_name):        
+            valid_percent = 0.00
+            invalid_percent = 0.00
+            valid_count = 0
+            invalid_count = 0
+            null_records = 0
+            unique_records = 0
+            min = 0
+            max = 0
+            tablename = ''
+            data_sub_dmn = ''
+            rule_sql = ""
+            try:
+                self.log.info(f'Rule:{rule}')
+                rule_id = df_rule_data.loc[count, 'PROFILE_ID']
+                df_rule_data["RULE_ID"] = rule_id
+                dbname = df_rule_data['DATABASE_NAME'][count]
+                rule_sql = df_rule_data['RULE_SQL'][count]  # get the query for respective rule
+                tablename = df_rule_data['TABLE_NAME'][count]
+                data_sub_dmn = df_rule_data['DATA_SUB_DMN'][count]
+                # db_engine = self.get_connection(dbname=dbname, section='profile_database')
+                # df = pd.read_sql(query, db_engine)
+                
+                df = self.utils.run_teradata_sql(
+                    db_name=dbname, 
+                    query=rule_sql, 
+                    td_auth=config.src_tbl_db_config
+                )
+                self.log.info(f"dataframe: {df}")
+                dx = df[rule].value_counts()
+                null_count = int(df.iloc[:, 0].replace(r'^\s*$', np.nan, regex=True).isnull().sum())
+                unique = len(df.iloc[:, 0].replace(r'^\s*$', np.nan, regex=True).unique())
+                try:
+                    valid_percent = float(dx.loc['VALID']/len(df))
+                    self.log.info(f"valid_percent: {valid_percent}")
+                except:
+                    valid_percent = 0.00
+                try:
+                    invalid_percent = float(dx.loc['INVALID']/len(df))
+                    self.log.info(f"invalid_percent: {invalid_percent}")
+                except:
+                    invalid_percent = 0.00
+                try:
+                    valid_count = dx.loc['VALID']
+                    self.log.info(f"valid_count: {valid_count}")
+                except:
+                    valid_count = 0
+                try:
+                    invalid_count = dx.loc['INVALID']
+                    self.log.info(f"invalid_count: {invalid_count}")
+                except:
+                    invalid_count = 0
+                try:
+                    null_records = null_count
+                except:
+                    null_records = 0
+                try:
+                    unique_records = unique
+                except:
+                    unique_records = 0
+                try:
+                    min_val = df.iloc[:, 0].replace(r'^\s*$', 0, regex=True).min()
+                    min = int(min_val)
+                    self.log.info(f'min:{min}')
+                except:
+                    min = 0
+                try:
+                    max_val = df.iloc[:, 0].replace(r'^\s*$', 0, regex=True).max()
+                    max = int(max_val)
+                    self.log.info(f'max:{max}')
+                except:
+                    max = min
+            except Exception as e:
+                self.log.error(f'Error in Validating the Rule({rule}).\nError info:{e}')
+                # eMail Error Report
+                self.send_failure_status_email(tablename, rule)
+                rules_error_list.append({'table':tablename, 'rules': rule , 'query': rule_sql})
+
+            # df_rule_data.loc[count, 'VALID_Prcnt'] = valid_percent*100
+            df_rule_data.loc[count, 'col_vld_pct'] = valid_percent*100  # df_rule_data['VALID_Prcnt']
+            df_rule_data.loc[count, 'col_invld_pct'] = invalid_percent*100
+            df_rule_data.loc[count, 'col_vld_cnt'] = int(valid_count)
+            df_rule_data.loc[count, 'col_invld_cnt'] = int(invalid_count)
+            df_rule_data['col_tot_cnt'] = df_rule_data['col_vld_cnt'] + df_rule_data['col_invld_cnt']
+            df_rule_data.loc[count, 'col_null_cnt'] = int(null_records)
+            df_rule_data.loc[count, 'col_dist_cnt'] = int(unique_records)
+            df_rule_data.loc[count, 'col_min_val'] = min
+            df_rule_data.loc[count, 'col_max_val'] = max
+
+
+        return df_rule_data, rules_error_list
+    
+    def run_gcp_rule_profile_engine(self, df_rules_list: pd.DataFrame, val_to_replace: dict):
+        try:
+            df_rules_list.to_csv("/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/df_rules_list.csv")
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info('Rule Profile Engine - Initiated')
+            self.log.info('-------------------------------------------------------------------------')
+
+            error_list = []
+            df_rules_list['COL_VLD_CNT'] = ""
+            df_rules_list['COL_INVLD_CNT'] = ""
+            df_rules_list['COL_INVLD_PCT'] = ""
+            df_rules_list['COL_NULL_CNT'] = ""
+            df_rules_list['COL_DIST_CNT'] = ""
+            df_rules_list['COL_MIN_VAL'] = ""
+            df_rules_list['COL_MAX_VAL'] = ""
+            df_rules_list['COL_VLD_PCT'] = ""
+            df_rules_list['COL_TOT_CNT'] = "" 
+            
+            for idx in df_rules_list.index:
+                self.log.info('-------------------------------------------------------------------------')
+                is_remote = df_rules_list.iloc[idx]["run_queries_on_remote"].upper()
+                if is_remote.upper() == 'Y':
+                    folder_path = df_rules_list.iloc[0]["WIF_JSON_PATH"]
+                    bq_client, _ = self.dq_bigquery_client_dynamic(folder_path)
+                else:
+                    bq_client, _ = self.dq_bigquery_client(self.dq_auth_payload)
+                rule = df_rules_list.loc[idx, 'RULE_NAME']
+                table_name = df_rules_list.loc[idx, 'TABLE_NAME']
+                rule_sql = df_rules_list.loc[idx, 'RULE_SQL']
+                valid_count, invalid_count = 0, 0
+                try:
+                    rule_id = df_rules_list.loc[idx, 'PROFILE_ID']
+                    df_rules_list["profile_id"] = rule_id
+                    self.log.info(f'index:{idx}, profile_id:{rule_id}, rule_name:{rule}')
+                    
+                    ##  Replacing the placeholder in SQL Query with actual values.
+                    ##  val_to_replace argument is a dict variable which has values to replace in sql
+                    rule_sql = reduce(lambda sql, replace_str: sql.replace(*replace_str), [rule_sql, *list(val_to_replace.items())])
+                    self.log.info(f"RuleSQL:{rule_sql}")
+                    
+                    df_result = bq_client.query(rule_sql).to_dataframe()
+
+                    self.log.info(f'\n{df_result}')
+
+                    try:
+                        valid_count =  df_result[df_result[rule] == 'VALID']['count']
+                        self.log.info(f"valid count1: {valid_count}")
+                        valid_count = valid_count.iloc[0] if len(valid_count) > 0 else 0
+                        self.log.info(f"valid count2: {valid_count}")
+                    except:
+                        valid_count = 0
+
+                    try:
+                        invalid_count =  df_result[df_result[rule] == 'INVALID']['count']
+                        self.log.info(f"invalid count1: {invalid_count}")
+                        invalid_count = invalid_count.iloc[0] if len(invalid_count) > 0 else 0
+                        self.log.info(f"invalid count2: {invalid_count}")
+                    except:
+                        invalid_count = 0
+
+                except Exception as e:
+                    self.log.error(f'Error in executing Rule SQL. Error:{e}')
+
+                    error_list.append({'table': table_name,
+                                        'rules': rule,
+                                        'query': rule_sql})
+                    
+                    self.email.send_common_message(mail_subject='Rule Failure',
+                                                    message=f'Rule Failed.<br>Rule: {rule}<br>Query: {rule_sql}',
+                                                    receipents_email_id=self.failure_alert_email_group,
+                                                    email_template_filepath=self.email_template)
+
+                    self.opsgenie_alert(one_corp_yn="Y",
+                                        priority="P2",
+                                        message='DQ-2.0 Rule Failure',
+                                        description=f'DQ-2.0 Rule Failed.<br>Rule: {rule}<br>Query: {rule_sql}',
+                                        details={'Message': 'DQ-2.0 Rule Failure', 'Rule': rule, 'Query': rule_sql},
+                                        alert_type="Exception")
+                    
+                total_record_count, valid_percent, invalid_percent = 0, 0.0, 0.0
+                total_record_count = int(valid_count) + int(invalid_count)
+                try:
+                    valid_percent = float(valid_count/total_record_count) * 100
+                except:
+                    valid_percent = 0.00
+                try:
+                    invalid_percent = float(invalid_count/total_record_count) * 100
+                except:
+                    invalid_percent = 0.00
+
+                self.log.info(f'valid_count:{valid_count}, invalid_count:{invalid_count}, total_record_count:{total_record_count}')
+                self.log.info(f'valid_percent:{valid_percent}, invalid_percent:{invalid_percent}')
+
+                if valid_percent < 100:
+                    self.opsgenie_alert(one_corp_yn="Y",
+                                priority="P3",
+                                message='DQ-2.0 Score less than 100',
+                                description=f'Rule Score less than 100 <br> Rule: {rule}',
+                                details={'Message': 'DQ-2.0 Score less than 100', 'Rule': rule},
+                                alert_type="Rule failed")
+                
+                df_rules_list.loc[idx, 'COL_VLD_PCT'] = self.round_off(float(valid_percent))
+                df_rules_list.loc[idx, 'COL_INVLD_PCT'] =  self.round_off(float(invalid_percent))
+                df_rules_list.loc[idx, 'COL_VLD_CNT'] = int(valid_count)
+                df_rules_list.loc[idx, 'COL_INVLD_CNT'] = int(invalid_count)
+                df_rules_list.loc[idx, 'COL_TOT_CNT'] = total_record_count
+                df_rules_list.loc[idx, 'COL_NULL_CNT'] = 0
+                df_rules_list.loc[idx, 'COL_DIST_CNT'] = 0
+                df_rules_list.loc[idx, 'COL_MIN_VAL'] = 0
+                df_rules_list.loc[idx, 'COL_MAX_VAL'] = 0
+            df_rules_list.to_csv("/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/out.csv")    
+            return df_rules_list, error_list
+        except Exception as err:
+            self.log.error(f"Error Occurred in Rules Profiling. Error: {err}")
+        
+        return pd.DataFrame(), []
+
+    @staticmethod
+    def critical_type_header_name(flag: str = None):
+        if flag is None:
+            return ""
+        if flag == 'Y':
+            return 'Critical '
+        if flag == 'N':
+            return 'Non Critical '
+        return ""
+    
+    def send_summary_sub_dmn_level_mail(self, sub_domain: str, rules_data=pd.DataFrame(), df_rules_error_list=pd.DataFrame(), critical_flag=None):
+        try:
+            self.log.info('Preparing Overall Summary for Persona Group ------------------')
+            email_cols_list = config.RP_REQD_SUMMARY_COLS
+            df_email_rules_data = rules_data.loc[:, rules_data.columns.isin(email_cols_list)]
+            df_email_rules_data = df_email_rules_data.sort_values(by=['col_vld_pct'])
+            df_email_rules_data['col_vld_pct'] = round(df_email_rules_data['col_vld_pct'].astype(float), 2)
+            # df_email_rules_data['RULE_RUN_DT'] = pd.to_datetime(df_email_rules_data['RULE_RUN_DT']).dt.date
+            self.log.info(f'SQL Profile eMail Columns: {df_email_rules_data.columns.tolist()}')
+            df_email_rules_data = df_email_rules_data[email_cols_list]
+            df_email_rules_data = df_email_rules_data.rename(columns=config.RP_EMAIL_SUMMARY_COL_RENAME)
+            df_email_rules_data = df_email_rules_data.reset_index(drop=True)
+
+            report_header_name = self.critical_type_header_name(flag=critical_flag)
+            data_sub_dmn=sub_domain
+            self.log.info(f'Sub Domain:{data_sub_dmn}')
+            self.mail_list = self.utils.get_email_distros_from_table(data_sub_dmn_list=[sub_domain])
+            
+            email_group = self.utils.get_mail_distro(df_val=self.mail_list, sub_dmn=data_sub_dmn, persona='EMAIL_DISTRO')
+            self.log.info(f'Email Group:{email_group}')
+            
+            if len(email_group ) == 0:
+                email_group = config.RP_DEFAULT_MAIL_GROUP ## receipents_email_id
+                
+            self.email.send_rules_email_message(
+                df_val=df_email_rules_data,
+                df_err_val=df_rules_error_list,
+                email_template_filepath=config.rp_summary_report_email_template,
+                receipents_email_id=email_group, #receipents_email_id,
+                mail_subject=report_header_name + 'Rule Summary for '+ data_sub_dmn,
+                report_header_name=report_header_name + 'Rule Summary for '+ data_sub_dmn
+            )
+            
+        except Exception as e:
+            self.log.error('Error While Initiating Overall Summary Email.\n Error Info:', e)
+
+    def send_summary_table_level_mail(self, df_mail_summary: pd.DataFrame, error_rules_list: list, rule_run_dt,schd_type):
+        try:
+
+            self.log.info(f'Summary Result Len: {len(df_mail_summary)}, Error list : {error_rules_list}')
+            if len(df_mail_summary) > 0:
+                src_table_list = df_mail_summary["table_name"].unique().tolist()
+                self.log.info(f'Source Table List: {src_table_list}')
+                
+                df_rules_error_list = pd.DataFrame.from_records(error_rules_list)
+                df_rules_error_list = df_rules_error_list.reset_index(drop=True)
+                for tbl in src_table_list:
+                    product_name = df_mail_summary[df_mail_summary['table_name']==tbl]['product_name'][0]
+                    data_sub_dmn =df_mail_summary[df_mail_summary['table_name']==tbl]['data_sub_dmn'][0]
+                    self.log.info(f'Product Name: {product_name}')
+                    self.log.info(f'Data Sub Domain: {data_sub_dmn}')
+                    self.log.info(f'Source Table: {tbl}')
+                    try:
+                        self.log.info(f'{schd_type} run: {tbl} Summary Email - DQ-2.0')
+                        if schd_type == "DAILY":
+                            subject = f'Daily run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
+                        elif schd_type== "MONTHLY":
+                            subject = f'Monthly run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
+                        else:
+                            subject = f'Ad-hoc run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
+
+                        message = 'Please find the below summary.<br>'
+                        #here removed data_dmn from the below email_cols_list
+                        email_cols_list = ['rule_run_dt', 'db_name', 'table_name', 'src_col', 'dq_pillar',
+                                        'rule_name', 'col_vld_cnt', 'col_invld_cnt', 'col_vld_pct', 'dq_status']
+
+                        df_email_rules_data: pd.DataFrame = df_mail_summary[email_cols_list][df_mail_summary["table_name"]==tbl]
+                        if len(df_email_rules_data) > 0:
+                            df_email_rules_data = df_email_rules_data.sort_values(by=['col_vld_pct'])
+                            df_email_rules_data['col_vld_pct'] = df_email_rules_data['col_vld_pct'].astype(float).map(self.round_off)
+
+                            self.log.info(f'SQL Profile eMail Columns: {df_email_rules_data.columns.tolist()}')
+                            df_email_rules_data = df_email_rules_data.rename(columns={  
+                                                                                        'db_name': 'Database',
+                                                                                        'table_name': 'Table',
+                                                                                        'src_col': 'Column',
+                                                                                        'dq_pillar': 'DQ Pillar',
+                                                                                        'rule_name': 'Measure',
+                                                                                        'col_vld_cnt': 'Valid Count',
+                                                                                        'col_invld_cnt': 'Invalid Count',
+                                                                                        'col_vld_pct': 'DQ Score',
+                                                                                        'dq_status': 'Indicator',
+                                                                                        # 'data_dmn': 'Domain',
+                                                                                        'rule_run_dt': 'Date'})
+                            df_email_rules_data = df_email_rules_data.reset_index(drop=True)
+
+                        if len(df_rules_error_list) > 0:
+                            df_rules_error_list_email = df_rules_error_list[df_rules_error_list["table"]==tbl]
+                            df_rules_error_list_email = df_rules_error_list_email.reset_index(drop=True)
+                            if len(df_rules_error_list_email) > 0:
+                                addl_msg = f'<br><b>Rule Profile Error List:</b>{df_rules_error_list_email.to_html()}'
+                                message += addl_msg
+
+                        self.email.send_common_message(email_template_filepath=self.email_template,
+                                                       mail_subject=subject,
+                                                       message=message,
+                                                       receipents_email_id=self.summary_alert_email_group,
+                                                       df_val=df_email_rules_data)
+                        self.log.info(f'Successfully Triggered {tbl} Summary Email for DQ-2.0')
+                    except Exception as e:
+                        self.log.error( f'Error Occurred in {tbl} Summary Email for DQ-2.0. Error:{e}')
+                    continue
+
+        except Exception as e:
+            self.log.error( f'Error Occurred in Summary Email for  DQ-2.0. Error:{e}')
+            self.opsgenie_alert(priority="P1",
+                           message='DQ-2.0 - Summary Email Error',
+                           description=f'Failure Occurred while sending summary email',
+                           details={'Message':'DQ-2.0 - Summary Email Error'},
+                           alert_type="Exception")
+
+
+    def execute_invalid_sqls(self, df_invalid_rec:pd.DataFrame, val_to_replace: dict, date_interval: dict, rule_run_dt):
+        try:
+
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info('Invalid SQL Query Execution - Initiated')
+            self.log.info('-------------------------------------------------------------------------')
+            
+            df_invalid_rec = df_invalid_rec[(df_invalid_rec['invalid_records_flag']=='Y') & (df_invalid_rec['col_invld_cnt'] > 0)]
+            df_invalid_rec = df_invalid_rec.reset_index(drop=True)
+            self.log.info(f'Invalid data rules length: {len(df_invalid_rec)}')
+
+            if len(df_invalid_rec) ==  0:
+                self.log.warning("No Records Found for Populating Invalid Records")
+            else:
+                import re
+                od_bq_client, _ = self.dq_bigquery_client(auth=self.one_corp_auth_payload)
+                for idx in df_invalid_rec.index:
+                    self.log.info('-------------------------------------------------------------------------')
+                    rule = df_invalid_rec.loc[idx, 'rule_name']
+                    rule_id = df_invalid_rec.loc[idx, 'profile_id']
+                    #invalid_rec_sql ## Changed
+                    invalid_sql_query = df_invalid_rec.loc[idx, 'invld_rec_sql']
+                    try:
+
+                        invalid_sql_query = reduce(lambda sql, replace_str: sql.replace(*replace_str), [invalid_sql_query, *list(val_to_replace.items())])
+                        self.log.info(f"RuleSQL:{invalid_sql_query}")
+                        
+                        invalid_sql_query = re.sub("CURRENT_TIMESTAMP()", date_interval['INVL_DT'], invalid_sql_query, flags=re.IGNORECASE)
+                        invalid_sql_query = re.sub("CURRENT_TIMESTAMP", date_interval['INVL_DT'], invalid_sql_query, flags=re.IGNORECASE)
+                        
+                        self.log.info(f'Invalid SQL index: {idx}, profile_id: {rule_id}, rule: {rule}')
+                        self.log.info(f"Invalid Records Query: {invalid_sql_query}")   
+                        result = od_bq_client.query(invalid_sql_query)
+                        result.result()
+                        self.log.info(f'result: {result.num_dml_affected_rows}')
+
+
+                    except Exception as e:
+                        self.log.error(f'Error Occurred while validating invalid_rec_sql: {e}')
+                        self.email.send_common_message(mail_subject=f'Invalid SQL Failed',
+                                                message=f'Invalid SQL Failed.<br>Rule: {rule}<br>Invalid SQL: {invalid_sql_query}',
+                                                receipents_email_id=self.failure_alert_email_group,
+                                                email_template_filepath=self.email_template)
+                        self.opsgenie_alert(one_corp_yn="Y",
+                                    priority="P2",
+                                    message='DQ-2.0 Invalid SQL Failure',
+                                    description=f'Invalid SQL Failed.<br>Rule: {rule}<br>Invalid SQL: {invalid_sql_query}',
+                                    details={'Message': 'DQ-2.0 Invalid SQL Failure', "Rule":rule, "Invalid SQL": invalid_sql_query},
+                                    alert_type="Exception")
+                        
+                        continue
+
+        except Exception as err:
+            raise RuntimeError(f"Error Occurred in Invalid SQLs execution block. Error:{err} ")
+
+    def check_threshold_create_opsgenie_JIRA_alert(self,rules_data=pd.DataFrame()):
+        try:
+            opsgenie_alert_info: list = [] 
+            #rules_data  = rules_data[rules_data['IS_OPSGENIE_FLG'] == "Y"]
+            rules_data['max_threshold_limit'] = rules_data['max_threshold_limit'].fillna(config.RP_DEFAULT_MAX_THRSD)
+            rules_data = rules_data.reset_index(drop=True)
+            for idx in rules_data.index:                
+                self.log.info(f"col_vld_pct: {rules_data.loc[idx,'col_vld_pct']}")
+                self.log.info(f"max_threshold_limit: {rules_data.loc[idx,'max_threshold_limit']}")
+                if rules_data.loc[idx,'col_vld_pct'] < rules_data.loc[idx,'max_threshold_limit']:                
+                    if rules_data.get('opsgenie_flag') == 'Y':              
+                        priority = "p3"
+                        alert_type = 'SQL_Rule_failed' 
+                        profile_type = "sql_rule"        
+                        env = config.get_config_values('environment', 'env')                                
+                        api_key = rules_data.loc[idx,'opsgenie_api_key']
+                        #if not api_key:
+                        if api_key in config.EMPTY_STR_LIST or (isinstance(api_key,float) and math.isnan(api_key)) :
+                                # Opsgenie Api Key
+                                api_key = config.get_config_values('opsgenie', 'api_key')
+
+                        # response,request_id,message = self.create_opsgenie_alert(rules_data,idx,alert_type,priority,api_key)
+                        gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL          
+                        opsgenie_client = Alert(api_key=api_key,proxy=gcp_http_proxy_url)
+                        response,request_id,message = opsgenie_client.create_opsgenie_alert(rules_data, 0,alert_type,priority,env ,profile_type)
+                        self.log.info(f"Opsgenie response code: {response}")
+                        self.log.info('Opsgenie alert sent successfully')
+                        self.log.info(f"Alert Message: {message}")
+                    elif rules_data.get('jira_assignee') is not None:  
+                        try:
+                            jira_assignee = rules_data.get('jira_assignee')
+                            lable = "DQaaS"       
+                            table_name = rules_data.get('table_name','')                  
+                            self.log.info(f"Calling Jira Module for: {table_name}")                        
+                            self.log.info(f"No data found for the table: {table_name}")  
+
+                            process_date = f"'{datetime.now().date() - timedelta(days=config.RP_N_DAYS_LIMIT)}'"                                            
+                            
+                            summary = f"LensX|DQ Failure|Table: {table_name} no data found for profiling"
+                            description = f"DQ has failed for Table : {table_name} on Process date : {process_date}."
+                            jira_client = Jira_ticket()
+                            ticket_id=jira_client.create_jira_ticket(jira_assignee,summary, description,lable)
+                            self.log.info(f"Jira Id created: {ticket_id}")
+                        except Exception as err:
+                            self.log.error(f"Error occured while creating JIRA tickets {err}")
+
+                    try:
+                        data_lob = rules_data.loc[idx,'data_lob']
+                        data_bus_elem = rules_data.loc[idx,'data_bus_elem']
+                        data_dmn = rules_data.loc[idx,'data_dmn']
+                        data_sub_dmn = rules_data.loc[idx,'data_sub_dmn']
+
+                        prod_info = self.get_prod_details(data_lob,data_bus_elem,data_dmn,data_sub_dmn)
+                    except Exception as err:
+                        self.log.error(f"Error occured while fetching product details {err}")
+
+                    
+        except Exception as err:
+            
+            self.log.info(f"Error in check_threshold_create_opsgenie_JIRA_alert while rule profile: {err}")
+    def get_prod_details(self,data_lob,data_bus_elem,data_dmn,data_sub_dmn):
+        query = f''' select distinct product_type,product_area,product_name,business_program 
+                    from {config.dqaas_rule_prfl_mtd} mtd
+                    JOIN {config.dqaas_auto_rule_prod_mtd} prd 
+                    ON 
+                    mtd.data_lob = prd.data_lob
+                    AND mtd.data_bus_elem = prd.data_bus_elem
+                    AND mtd.data_dmn = prd.data_dmn
+                    AND mtd.data_sub_dmn = prd.data_sub_dmn
+                    where
+                    mtd.data_lob = '{data_lob}'
+                    AND mtd.data_bus_elem = '{data_bus_elem}'
+                    AND mtd.data_dmn = '{data_dmn}'
+                    AND mtd.data_sub_dmn = '{data_sub_dmn}';
+                '''    
+        try:
+            # metadata_query = f"""
+            #     SELECT * FROM {config.dqaas_rule_prfl_mtd}
+            #     WHERE IS_ACTIVE_FLG = 'Y'    
+            #     {add_condition}
+            #     ORDER BY rule_id;
+            # """
+            ## AND DATA_SRC = 'TD'
+            df_val = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=query
+            )
+            # df_val = df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
+            return df_val
+        except Exception as err:
+            raise Exception(f'Error Occured While Executing the Query to fetch prod details. Error: {err} ')
+    
+    def load_result_to_bq_tables(self, df_rules_list: pd.DataFrame, rules_execution_process_details:dict):
+        try:
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info('Loading Result to Report Table - Initiated')
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info(f"rules_execution_process_details:{rules_execution_process_details}")
+            # df_rules_list['rule_prfl_num'] = ''
+            df_rules_list['prfl_run_dt'] = rules_execution_process_details['rules_execution_date']
+
+            # df_rules_list['src_col_dt_val'] = rules_execution_process_details['business_date']
+            report_reference_key = datetime.now().strftime("%Y%m%d%H%M%S%f")
+            df_rules_list['rpt_ref_key'] = report_reference_key
+
+            df_rules_list['threshold_limit'] = df_rules_list['threshold_limit'].fillna(float(self.config['sql_rule_profile']["default_min_thrsd"])).astype('float64')
+            df_rules_list['max_threshold_limit'] = df_rules_list['max_threshold_limit'].fillna(float(self.config['sql_rule_profile']["default_max_thrsd"])).astype('float64')
+
+            df_rules_list['dq_status'] = ''           
+            df_rules_list['dq_status'] = np.where((df_rules_list['col_vld_pct'] >= df_rules_list['max_threshold_limit']),
+                                               'Good', df_rules_list['dq_status'])
+            df_rules_list['dq_status'] = np.where((df_rules_list['col_vld_pct'] <= df_rules_list['threshold_limit']),
+                                               'Bad', df_rules_list['dq_status'])
+            df_rules_list['dq_status'] = np.where((df_rules_list['col_vld_pct'] < df_rules_list['max_threshold_limit']) &
+                                               (df_rules_list['col_vld_pct'] > df_rules_list['threshold_limit']),
+                                               'Average', df_rules_list['dq_status'])
+            df_rules_list['dq_status'] = np.where((df_rules_list['col_vld_cnt'] == 0) & (df_rules_list['col_invld_cnt'] == 0),
+                                               'No Data', df_rules_list['dq_status'])
+            df_rules_list['col_vld_pct'] = np.where((df_rules_list['col_vld_cnt'] == 0) & (df_rules_list['col_invld_cnt'] == 0),
+                                               np.nan, df_rules_list['col_vld_pct'])
+
+            # df_rules_list['run_type'] = rules_execution_process_details['run_type']
+            # df_rules_list['schd_type'] = rules_execution_process_details['schd_type']
+            
+            ##  Column Details for loading data into Reporting Tables
+            col_list = ['rpt_ref_key', 'profile_id', 'prfl_run_dt', 'dq_pillar','table_name','col_name','col_completeness','col_uniqueness','col_conformity','col_validity','col_integrity', 'col_tot_cnt',
+                        'col_vld_cnt', 'col_invld_cnt', 'col_vld_pct', 'col_invld_pct','profile_type','dq_status']
+            decimal_cols_list = ['col_vld_pct', 'col_invld_pct']
+            int_cols_list = [  'col_tot_cnt', 'col_vld_cnt', 'col_invld_cnt']
+            str_cols_list = [ 'dq_pillar' ,'dq_status']
+
+            try:
+                self.check_threshold_create_opsgenie_JIRA_alert(df_rules_list)
+            except Exception as err:
+                self.log.error(f"Error occured while creating opsgenie alert during rule profiling {err}")
+            
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info('Loading Results into DQ Report Table')
+            self.log.info('-------------------------------------------------------------------------')
+
+            try:
+                
+                
+                # rpt_max_sequence = self.get_max_sequence(bq_client=dq_bq_client,
+                #                                          bq_tablename=self.dq_report_table_name,
+                #                                          sq_column='rule_prfl_num'
+                #                                         )
+                
+                # self.log.info(f"Max Sequence in DQ Space:{rpt_max_sequence}")
+                # if rpt_max_sequence == -1:
+                #     raise RuntimeError("Error Occurred while Identifying the Max Sequence in DQ Space")
+                
+                # dq_df_rules_list = df_rules_list.assign(rule_prfl_num=[rpt_max_sequence +i for i in range(1, len(df_rules_list)+1)])
+                dq_df_rules_list = df_rules_list.copy()
+                for col in decimal_cols_list:
+                    dq_df_rules_list[col] = dq_df_rules_list[col].astype(str).map(decimal.Decimal)
+                for col in int_cols_list:
+                    dq_df_rules_list[col] = dq_df_rules_list[col].astype('int64')
+                for col in str_cols_list:
+                    dq_df_rules_list[col] = dq_df_rules_list[col].astype(str)
+                load_rules_data = dq_df_rules_list.loc[:, dq_df_rules_list.columns.isin(col_list)]
+                load_rules_data = load_rules_data.reset_index(drop=True)
+                load_rules_data = load_rules_data.drop_duplicates()
+                load_rules_data = load_rules_data.loc[:, ~load_rules_data.columns.duplicated()]
+                load_rules_data.to_csv("/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/load_rules_data.csv")
+                
+                self.log.info(f'Report Length:{len(load_rules_data)}, Table: {self.dq_report_table_name} \n{load_rules_data}')
+                dq_bq_client, dq_credentials = self.dq_bigquery_client(self.dq_auth_payload)
+                pandas_gbq.to_gbq(dataframe=load_rules_data,
+                                destination_table=self.dq_report_table_name,
+                                if_exists='append',
+                                credentials=dq_credentials,
+                                project_id=self.dq_project_id,
+                                )
+                self.log.info(f'Data Loaded Successfully to the table({self.dq_report_table_name})')
+            except Exception as e:
+                print(traceback.format_exc())
+                self.log.error(f'Error Occurred While Loading Data into DQ Dataset. Error Info: {e}')
+                self.opsgenie_alert(priority="P1",
+                               message='DQaaS - Failure when Loading summary',
+                               description=f'Rule Summary Loading Failed in DQaaS Project Space.<br>Table Name: {self.dq_report_table_name}',
+                               details={'Message':'Rule Summary Loading Failed in DQaaS Project Space', "Table Name": self.dq_report_table_name},
+                               alert_type="Exception")
+                
+            # Check and load to respective project space if the remote flag is enabled.   
+            self.log.info(f"df_rules_lits :: {df_rules_list.columns}")
+            self.log.info(f"df_rules_lits :: {df_rules_list.to_string()}")
+            df_rules_list_remote = df_rules_list[df_rules_list["run_queries_on_remote"] == 'Y']
+            if len(df_rules_list_remote) > 0:
+                self.log.info('-------------------------------------------------------------------------')
+                self.log.info('Loading Results into One Corp Data Dataset')
+                self.log.info('-------------------------------------------------------------------------')
+                try:
+                    folder_path = df_rules_list.iloc[0]["wif_json_path"]
+                    bq_client, credentials = self.dq_bigquery_client_dynamic(folder_path)
+                    # od_bq_client, od_credentials = self.dq_bigquery_client(self.one_corp_auth_payload)
+                    rpt_max_sequence = self.get_max_sequence(bq_client=bq_client,
+                                                            bq_tablename=self.od_report_table_name,
+                                                            sq_column='rule_prfl_num'
+                                                            )
+
+                    self.log.info(f"Max Sequence in OneCorp Space:{rpt_max_sequence}")
+                    if rpt_max_sequence == -1:
+                        raise RuntimeError("Error Occurred while Identifying the Max Sequence in Onecorp Space")
+                    
+                    od_df_rules_list = df_rules_list.assign(rule_prfl_num=[rpt_max_sequence +i for i in range(1, len(df_rules_list)+1)])
+                    for col in decimal_cols_list:
+                        od_df_rules_list[col] = od_df_rules_list[col].astype(str).map(decimal.Decimal)
+                    for col in int_cols_list:
+                        od_df_rules_list[col] = od_df_rules_list[col].astype('int64')
+                    for col in str_cols_list:
+                        od_df_rules_list[col] = od_df_rules_list[col].astype(str)
+                    load_rules_data = od_df_rules_list.loc[:, od_df_rules_list.columns.isin(col_list)]
+                    load_rules_data = load_rules_data.reset_index(drop=True)
+
+                    self.log.info(f'Report Length:{len(load_rules_data)}, Table: {self.od_report_table_name} \n{load_rules_data}')
+
+                    pandas_gbq.to_gbq(dataframe=load_rules_data,
+                                    destination_table=self.od_report_table_name,
+                                    if_exists='append',
+                                    credentials=credentials,
+                                    project_id=self.od_conn_project_id,
+                                    )
+                    self.log.info(f'Data Loaded Successfully to the table({self.od_report_table_name})')
+                except Exception as e:
+                    self.log.error(f'Error Occurred While Loading Data into One Corp Data Dataset. Error Info: {e}')     
+                    self.opsgenie_alert(priority="P1",
+                                message='DQ-2.0 - Failure when Loading summary',
+                                description=f'Rule Summary Loading Failed in One Corp Project Space.<br>Table Name: {self.od_report_table_name}',
+                                details={'Message':'Rule Summary Loading Failed in One Corp Project Space', "Table Name": self.od_report_table_name},
+                                alert_type="Exception")
+
+        except Exception as e:
+            self.log.error( f'Error Occurred in loading Data. Error:{e}')
+
+        
+    # def get_rule_metrics_details(self, rule_run_dt, metadata_condition:str):
+    def get_rule_metrics_details(self, rule_run_dt):
+        try:
+            
+            # summary_query = f"""
+            #     select  a.*,c.*, col_vld_cnt, col_invld_cnt, col_vld_pct, dq_ind, rule_run_dt
+            #     from    `{self.dq_mtd_table_name}` a,
+            #             `{self.dq_report_table_name}` b,
+            #             vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_product_features_meta c
+            #     where a.profile_id = b.rule_id and a.product_name=c.product_name
+            #     and upper(a.is_active_flg) = 'Y'
+            #     --{metadata_condition}
+            #     and b.rule_run_dt = '{rule_run_dt}'
+            #     order by a.profile_id ;
+            # """
+            summary_query = f"""select  a.*,c.*, col_vld_cnt, col_invld_cnt, col_vld_pct,dq_status, prfl_run_dt
+                from    `vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta` a,
+                        `vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_column_report` b,
+                        vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_taxonomy_meta c
+                where a.profile_id = b.profile_id and a.product_name=c.product_name
+                and upper(a.active_flag) = 'Y'
+                and b.prfl_run_dt = '{rule_run_dt}'
+                order by a.profile_id ;"""
+            
+            self.log.info(f"Metrics Query: {summary_query}")
+            dq_bq_client, _ = self.dq_bigquery_client(self.dq_auth_payload)
+            return dq_bq_client.query(summary_query).to_dataframe()
+        except Exception as err:
+            raise RuntimeError(f"Error Occurred while Identifying the Rule Metrics. Error: {err}")
+
+    def profile_engine(self, df_rules_list:pd.DataFrame, incr_dt_dict:dict, run_type:str, schd_type:str, src_tablename:str = None):
+        exec_status, exec_msg = None, None
+        try:
+            ##  DQ Space BigQuery Client
+            dq_bq_client, _ = self.dq_bigquery_client(self.dq_auth_payload)
+            
+            ##  Get Date Details for Profiling 
+            date_interval = self.get_date_details(dq_bq_client=dq_bq_client,
+                                                  incr_dt_dict=incr_dt_dict)
+            self.log.info(f'Data Interval for Queries: {date_interval}')
+            
+            ## Values for replacing the placeholders in SQL Query
+            val_to_replace_str = {
+                "$start_dt": date_interval['START_DATE'],
+                "$end_dt": date_interval['END_DATE'],
+                "$start_yr_mnth": date_interval['START_YEAR_MONTH'],
+                "$end_yr_mnth": date_interval['END_YEAR_MONTH'],
+                "$incr_col1": self.config['sql_rule_profile']["incr_col1"],
+                "$incr_col2": self.config['sql_rule_profile']["incr_col2"],
+                "$incr_col3": self.config['sql_rule_profile']["incr_col3"],
+                "$incr_col4": self.config['sql_rule_profile']["incr_col4"],
+                "$incr_col5": self.config['sql_rule_profile']["incr_col5"],
+                "$incr_col6": self.config['sql_rule_profile']["incr_col6"],
+            }
+            self.log.info(f'Values to replace in SQL: {val_to_replace_str}')
+            
+            ## Additional Details Like Run Type, Schedule Type, Execution Date and Business Date For Profiling
+            rules_execution_process_details: dict = {
+                "run_type": run_type,
+                "schd_type": schd_type,
+                "rules_execution_date": pd.Timestamp(datetime.now() - timedelta(days=self.n_days_interval)),
+                "business_date": date_interval['START_DATE_SRC_COL_DT_VAL'] if run_type == 'DR' else date_interval['END_DATE_SRC_COL_DT_VAL']
+            }
+            self.log.info(f"Rules Execution Process details :{rules_execution_process_details}")
+            
+            ##  Get Where Clause condition details for Metadata Query. Cannot Be Null
+            # metadata_where_condition: str = self.get_run_process_mtd_condition(run_type=run_type,
+            #                                                               schd_type=schd_type)
+            
+            # if metadata_where_condition is None:
+            #     raise RuntimeError("Run Type or Schedule Type not Found")
+            
+            if src_tablename is not None and run_type in ("AR", "RR"):
+                metadata_where_condition += f" and upper(table_name) = upper('{src_tablename}') "
+                
+            ## Get Metadata Details for Rules Execution
+            # df_rules_list = self.get_rule_metadata_details(dq_bq_client=dq_bq_client,
+            #                                                metadata_condition=metadata_where_condition)
+            
+            self.log.info(f"Rules Length: {len(df_rules_list)}")
+            #df_rules_list.to_csv("/apps/opt/application/smartdq/DQaaS2.0/dqaas/scripts/out.csv")
+            if len(df_rules_list) == 0:
+                raise RuntimeError("No Rules found for profiling")
+            data_src = df_rules_list.loc[0, 'DATA_SRC']
+            # df_rules_list = df_rules_list.head(10)
+            rules_name = df_rules_list['RULE_NAME'].to_list()
+            self.log.info(f"rules_name: {rules_name}")
+            self.log.info(f"data_src : {data_src}")
+            ##  Run Rule Profile Engine based on data source
+            if data_src in config.RP_AGG_RULES_APPL_DATA_SRC:
+                self.log.info(f"Inside GCP Rule Engine")
+                df_rules_list, error_list = self.run_gcp_rule_profile_engine(df_rules_list=df_rules_list,
+                                                                     val_to_replace=val_to_replace_str)
+            
+            if data_src in config.RP_NON_AGG_RULES_APPL_DATA_SRC:
+                self.log.info(f"Inside TD Rule Engine")
+                df_rules_list, error_list = self.run_td_rule_profile_engine(df_rules_list, rules_name)
+                #df_rules_list.to_csv("/apps/opt/application/smartdq/DQaaS2.0/dqaas/scripts/out.csv")
+            ##  Run Rule Profile Engine
+            # df_rules_list, error_list = self.run_rule_profile_engine(df_rules_list=df_rules_list,
+            #                                                          val_to_replace=val_to_replace_str)
+               
+            ##  Loading Results to BQ tables in DQ and OneCorp Space  
+            df_rules_list.columns = df_rules_list.columns.str.lower()  
+            self.load_result_to_bq_tables(df_rules_list,
+                                          rules_execution_process_details)
+            
+            ##  Get Rules Metric Report for Send Summary mail and Run Invalid Rec SQls
+            df_rules_result = self.get_rule_metrics_details(rule_run_dt=rules_execution_process_details["rules_execution_date"])
+                                                            # metadata_condition=metadata_where_condition)
+            
+            self.log.info(f"Rule Summary Length: {len(df_rules_result)}")
+            if len(df_rules_result) == 0:
+                raise Exception(" No Results found for Summary Mail and Run Invalid SQLs.")
+            df_rules_result_tbl_level = df_rules_result[df_rules_result['email_type']== 'TABLE']
+            df_rules_result_sub_dmn_level = df_rules_result[df_rules_result['email_type']== 'SUB_DOMAIN']
+            ##  Send Summary Report Table Level
+            if len(df_rules_result_tbl_level) > 0:
+                self.send_summary_table_level_mail(df_mail_summary=df_rules_result_tbl_level,
+                                       error_rules_list=error_list,
+                                       rule_run_dt=rules_execution_process_details["rules_execution_date"],
+                                       schd_type = schd_type)
+
+            ##  Send Summary Report Sub Domain Level
+            if len(df_rules_result_sub_dmn_level) > 0:
+                sub_domain_list = df_rules_result_sub_dmn_level['data_sub_dmn'].unique().tolist()
+                for domain in sub_domain_list:    
+                    self.send_summary_sub_dmn_level_mail(
+                        sub_domain=domain,
+                        rules_data=df_rules_result_sub_dmn_level,
+                        df_rules_error_list=error_list,
+                        critical_flag=''
+                    )
+
+            if src_tablename is not None and run_type in ("RR"):
+                self.del_invalid_records(tablename=src_tablename,
+                                         start_dt=date_interval['START_DATE'],
+                                         end_dt=date_interval['END_DATE'],
+                                         schd_type=schd_type)
+
+            ##  Invalid Rec SQLs Execution Block
+            self.execute_invalid_sqls(df_invalid_rec=df_rules_result,
+                                      rule_run_dt=rules_execution_process_details["rules_execution_date"],
+                                      date_interval=date_interval,
+                                      val_to_replace=val_to_replace_str)   
+
+            exec_status, exec_msg = "SUCCESS", f"{self.run_process_details} Completed"
+            self.log.info(exec_msg)
+        except RuntimeError as err:
+            exec_status, exec_msg = "ERROR", f"Run Time Error. Error:{err}"
+            self.log.error(exec_msg)
+        except ValueError as err:
+            exec_status, exec_msg = "ERROR", f"Value Error. Error:{err}"
+            self.log.error(exec_msg)
+        except HTTPError as err:
+            exec_status, exec_msg = "ERROR", f"HTTP Error. Error:{err}"
+            self.log.error(exec_msg)
+        except Exception as err:
+            exec_status, exec_msg = "ERROR", f"Exception Occurred in Main Block. Error:{err}"
+            self.log.error(exec_msg)
+
+        #if schd_type == "DAILY"  :
+        #        mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the daily run on ({self.current_date})"
+        #elif schd_type == "MONTHLY":
+        #    mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the monthly run on ({self.current_date})"
+        #else:
+        #    mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the adhoc run on ({self.current_date})"
+        #    
+        ## MJ:
+        #self.email.send_common_message(email_template_filepath=self.email_template,
+        #                               #mail_subject=f"1CorpData Rule Profiling Completed",
+        #                               mail_subject = mail_subject_msg,
+        #                               message="DQ-2.0 rule Profiling Initiation completed",
+        #                               receipents_email_id=self.summary_alert_email_group)
+        
+        return exec_status, exec_msg
+    
+    def del_invalid_records(self, tablename:str, start_dt:str, end_dt: str, schd_type: str):
+        try:
+            del_query = f"""
+                delete
+                from {self.od_invalid_table_name}
+                where incrm_dt_val is not null
+                and upper(db_name) = upper('{tablename}')
+                and incrm_dt_val = '{start_dt}';
+            """
+            ##  and date(dq_rule_run_dt) between '{start_dt}' and '{end_dt}' 
+            od_bq_client, _ = self.dq_bigquery_client(auth=self.one_corp_auth_payload)
+            del_rec_count = od_bq_client.query(del_query)
+            del_rec_count.result()
+            self.log.info(f"Invalid records del count : {del_rec_count.num_dml_affected_rows}")
+        except Exception as err:
+            self.log.info(f"Error occurred while deleting the invalid records for rerun. Error: {err}")
+
+    # Method to Initiate Daily Process 
+    def daily_run_process(self,df_rules_list):
+        try:
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info('Daily Run Process - Initiated')
+            self.log.info('-------------------------------------------------------------------------')
+            
+            incr_dt_dict_val = {'start_date': self.config['sql_rule_profile']['start_date'],
+                                'end_date': self.config['sql_rule_profile']['end_date'],
+                                'start_year_month': self.config['sql_rule_profile']['start_year_month'],
+                                'end_year_month': self.config['sql_rule_profile']['end_year_month'],
+                                'invld_dt': self.config['sql_rule_profile']['invld_dt']
+                                }
+            
+            exec_status, exec_msg = self.profile_engine(df_rules_list,incr_dt_dict=incr_dt_dict_val,
+                                                        run_type="DR",
+                                                        schd_type="DAILY")
+
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info(f"Daily Run. Execution Status:{exec_status}, Message:{exec_msg}")
+            self.log.info('-------------------------------------------------------------------------')
+            return exec_status, exec_msg
+        except Exception as err:
+            exec_msg = f"Error Occurred in Daily Run Process Main block. Error: {err}"
+            self.log.error(exec_msg)
+            return "ERROR", exec_msg
+        
+
+    # Method to Initiate Monthly Process 
+    def monthly_run_process(self,df_rules_list):
+        try:
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info('Monthly Run Process - Initiated')
+            self.log.info('-------------------------------------------------------------------------')
+            incr_dt_dict_val = {'start_date': f"date_trunc(date_sub('{self.monthly_process_date}', interval 1 month), month)",
+                                'end_date': f"last_day(date_sub('{self.monthly_process_date}', interval 1 month), month)",
+                                'start_year_month': f"date_trunc(date_sub('{self.monthly_process_date}', interval 1 month), month)",
+                                'end_year_month': f"last_day(date_sub('{self.monthly_process_date}', interval 1 month), month)",
+                                'invld_dt': self.config['sql_rule_profile']['invld_dt']
+                                }
+
+            exec_status, exec_msg = self.profile_engine(df_rules_list,incr_dt_dict=incr_dt_dict_val,
+                                                        run_type="MR",
+                                                        schd_type="MONTHLY")
+            
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info(f"Monthly Run. Execution Status:{exec_status}, Message:{exec_msg}")
+            self.log.info('-------------------------------------------------------------------------')
+            return exec_status, exec_msg
+        except Exception as err:
+            exec_msg = f"Error Occurred in Monthly Run Process Main block. Error: {err}"
+            self.log.error(exec_msg)
+            return "ERROR", exec_msg
+
+    ##  Adhoc and Rerun Execution Process - Called while receiving the Trigger Files 
+    def adhoc_rerun_process(self, tablename:str, start_dt:str, end_dt: str, schd_type: str, trigger_file: str):
+        try:
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info('Adhoc / Rerun Process - Initiated')
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info(f"Arrived Inputs for Initiating the Process. tablename:{tablename}, start date:{start_dt}, end date: {end_dt}, schedule type: {schd_type}, Trigger File: {trigger_file}")
+            
+            run_type = ""
+            if schd_type == "ADHOC":
+                run_type = "AR"
+            elif schd_type in ("DAILY", "MONTHLY"):
+                run_type = "RR"
+            
+            if len(run_type) == 0:
+                raise ValueError("Rerun or Adhoc Process Not identified")
+            else:
+                incr_dt_dict_val: dict = {'start_date': f"'{start_dt}'",
+                                          'end_date': f"'{end_dt}'",
+                                          'start_year_month': f"'{start_dt}'",
+                                          'end_year_month': f"'{end_dt}'",
+                                          'invld_dt': self.config['sql_rule_profile']['invld_dt']
+                                          }
+
+                exec_status, exec_msg = self.profile_engine(incr_dt_dict=incr_dt_dict_val,
+                                                            run_type=run_type,
+                                                            schd_type=schd_type.upper(),
+                                                            src_tablename=tablename)
+                
+                
+                self.log.info('-------------------------------------------------------------------------')
+                self.log.info(f"Adhoc/Rerun Process. Execution Status:{exec_status}, Message:{exec_msg}")
+                self.log.info('-------------------------------------------------------------------------')
+            
+                return exec_status, exec_msg
+       
+        except ValueError as verr:
+            exec_msg = f"Value Error. Error:{verr}"
+            self.log.error(exec_msg)
+            return "ERROR", exec_msg
+            
+        except Exception as err:
+            exec_msg = f"Error Occurred in Adhoc / Rerun Process Main block. Error: {err}"
+            self.log.error(exec_msg)
+            return "ERROR", exec_msg
+        
+        
+    ## Main Block for Running Daily and Monthly Process
+    def run_regular_process(self,df_rules_list):
+        exec_status, exec_msg, sched_type = None, None, 'DAILY'
+        try:
+            #mail_subject_msg = f"DQ-2.0 Rule Profiling started for the daily run on ({self.current_date})"
+            #if self.monthly_process_yn == "MONTHLY":
+            #    mail_subject_msg = f"DQ-2.0 Rule Profiling started for the monthly run on ({self.current_date})"
+#
+            #self.email.send_common_message(email_template_filepath=self.email_template,
+            #                               mail_subject = mail_subject_msg,
+            #                               message="DQ-2.0 rule profiling have started",
+            #                               receipents_email_id=self.summary_alert_email_group)
+            
+            exec_status, exec_msg = self.daily_run_process(df_rules_list)
+
+            if exec_status == "ERROR":
+                return "ERROR", f"Error in {sched_type} Run Process: {exec_msg}"
+            
+            #Monthly Process Starts
+            if self.monthly_process_yn == "Y":
+                sched_type = 'MONTHLY'
+                exec_status, exec_msg = self.monthly_run_process(df_rules_list)
+                if exec_status == "ERROR":
+                    return "ERROR", f"Error in {sched_type} Run Process: {exec_msg}"
+            
+            #Send Profile Completed Alert
+            #mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the daily run on ({self.current_date})"
+            #if self.monthly_process_yn == "MONTHLY":
+            #    mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the monthly run on ({self.current_date})"
+#
+            #self.email.send_common_message(email_template_filepath=self.email_template,
+            #                               mail_subject = mail_subject_msg,
+            #                               message="DQ-2.0 rule profiling have ended",
+            #                               receipents_email_id=self.summary_alert_email_group)
+            
+            return "SUCCESS", "Rule Profiling Completed"    
+        except Exception as err:
+            exec_msg = f"Error Occurred in Regular Execution Block: {err}"
+            self.log.error(exec_msg)
+            return "ERROR", exec_msg
+
+## Method to initiate the Execution Process for Daily and Monthly
+def daily_monthly_normal_execution_process():
+
+    config = get_config()
+    if config is not None:
+        ruleprofile = RuleProfile()
+        exec_status, exec_msg = ruleprofile.run_regular_process()
+        del ruleprofile
+        
+        
+        
+"""
+def daily_monthly_normal_execution_process():
+    
+    import config_data
+    config = config_data.get_config()
+    
+    if config is not None:
+        ruleprofile = RuleProfile(config_data=config)
+        ruleprofile.run_regular_process()
+        
+        del ruleprofile
+""" 
+    
+if __name__ == "__main__":
+    daily_monthly_normal_execution_process()
+        
+=====================================================================================================
+==================================================================================================================
+import argparse
+import sys
+import os
+import pandas as pd
+import google.auth
+from requests.exceptions import HTTPError
+from google.cloud import bigquery
+from datetime import datetime, timedelta
+import logging
+
+
+## Importing User Defined Modules
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from utils.send_email import SendEmail
+from config_data import get_config, set_logger
+import scripts.config_params as config
+from scripts.common_handlers import CommonUtils, set_logger
+from scripts.auto_profile import AutoProfileEngine
+from scripts.sql_rule_profile_bkp import RuleProfileEngine
+from scripts.sql_rule_profile import RuleProfile
+from scripts.source_chk_avail import SourceCheckAvailability
+from scripts.custom_metrics import CustomeMetrics
+import scripts.custom_common_handlers as apps
+
+
+class DQProcessor(object):
+    def __init__(self, data_src: str=None):
+        self.config = get_config()
+        self.data_src = data_src
+        if self.data_src not in config.APPL_DATA_SRC:
+            raise Exception(f"Data Source not Provided. Error: Data Source Value is {data_src}")
+
+        ## Creating Logger File and Object
+        self.logger: logging = set_logger(
+            logger_path=config.LOGS_DIR,
+            log_filename=f'DQ-PROCESS-Main',
+            process_name=f'DQ-PROCESS-Main',
+            # date_with_minutes_yn='Y'
+        )
+        self.utils: CommonUtils = CommonUtils(logObj=self.logger)
+ 
+
+    def _set_attributes(self, config):
+        bq_cred_dtls = config['gcp_metadata_db']
+        profile_dtls = config['sql_rule_profile']
+        
+        home_path: str = self.config["dir"]["home_dir"]
+        config_path = self.config["dir"]["config_dir"]
+        # self.run_queries_on_remote = self.config["sql_rule_profile"]["run_queries_on_remote"]
+
+        ##  Data Quality Service Account
+        self.dq_project_id = bq_cred_dtls['dq_project_id']
+        self.dq_auth_payload = {
+            "client_id": bq_cred_dtls['dq_client_id'],
+            "client_secret": bq_cred_dtls['dq_client_secret_key'],
+            "token_url": bq_cred_dtls['gcp_token_url'],
+            "conn_project_id": self.dq_project_id,
+            "sa_json_file_dtls": os.path.abspath(os.path.join(config_path, bq_cred_dtls['dq_sa_json'])),
+            "project_space": os.path.join(config_path, "dq_oidc_token.json")
+        }
+
+        # DQ Space Metadata and Report Table Details
+        # dq_dataset_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name']
+        # self.dq_mtd_table_name =  self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + master_mtd_table['dq_metadata_table']
+        # self.dq_report_table_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + profile_dtls['dq_rpt_table_name']
+
+    def request_auto_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame):
+        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
+        # filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]
+        self.logger.info(f'Sub Domain List: {sub_domain_list}')
+        
+        self.logger.info(f'Request for Auto Profiling Initiated...')
+        #need to use filtered_sub_domains_list in below for loop to include load balancing. Else use sub_domain_list
+        for sub_domain in sub_domain_list:
+            try:
+                self.logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
+                
+                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                self.logger.info(f'Records Count: {len(df_tbl_list)}')
+                
+                ## Initiating Profile Engine
+                AutoProfileEngine(data_src=data_src).call_auto_profile_engine(df_input=df_tbl_list)
+                self.logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
+            except Exception as err:
+                self.logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
+            
+            self.logger.info('-------------------------------------------------------------')
+        
+        self.logger.info(f'Request for Auto Profiling got Completed...')
+        self.logger.info('-------------------------------------------------------------')
+
+    ## Requesting for rule Profile Engine
+    def request_rule_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame,assigned_subdomains = []):
+        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
+        filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]   
+        logger.info(f'Sub Domain List: {sub_domain_list}')   
+        logger.info(f'Request for Rule Profiling Initiated...')
+        ruleprofile = RuleProfile(data_src=data_src)
+        mail_subject_msg = f"DQ-2.0 Rule Profiling started for the daily run on ({ruleprofile.current_date})"
+        if ruleprofile.monthly_process_yn == "MONTHLY":
+            mail_subject_msg = f"DQ-2.0 Rule Profiling started for the monthly run on ({ruleprofile.current_date})"
+
+        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
+                                        mail_subject = mail_subject_msg,
+                                        message="DQ-2.0 rule profiling have started",
+                                        receipents_email_id=ruleprofile.summary_alert_email_group)
+        for sub_domain in sub_domain_list:
+            try:
+                logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
+                
+                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                logger.info(f'Records Count: {len(df_tbl_list)}') 
+                # ruleProfile.call_sql_profile(df_metadata=df_tbl_list)
+                # daily_run_process(logger=logger,df_rules_list=df_tbl_list)
+
+                ## Initiating Profile Engine
+                ruleprofile.run_regular_process(df_rules_list=df_tbl_list)
+                logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
+            except Exception as err:
+                logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
+            
+            logger.info('-------------------------------------------------------------')
+        #Send Profile Completed Alert
+        mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the daily run on ({ruleprofile.current_date})"
+        print("mail_subject_msg",mail_subject_msg)
+        if ruleprofile.monthly_process_yn == "MONTHLY":
+            mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the monthly run on ({ruleprofile.current_date})"
+        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
+                                    mail_subject = mail_subject_msg,
+                                    message="DQ-2.0 rule profiling have ended",
+                                    receipents_email_id=ruleprofile.summary_alert_email_group)
+        logger.info(f'Request for Rule Profiling got Completed...')
+        logger.info('-------------------------------------------------------------')
+
+    def request_custom_profile_engine(self,logger: logging, df_val: pd.DataFrame):
+    
+        df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
+        df_val["comparison_type"] = df_val["comparison_type"].fillna("WEEKDAYS")
+        df_val["run_frequency"] = df_val["run_frequency"].fillna("N")
+        dfGroupList = df_val[["data_sub_dmn", "comparison_type", "run_frequency"]].drop_duplicates()
+        process_date = "current_date-1"
+        business_date = "current_date-1"
+        cmObj = CustomeMetrics()
+        
+        logger.info(f'Request for Rule - Custom Profiling Initiated...\nTotal Records: {len(df_val)}\n{dfGroupList}')
+        
+        
+        logger.info("---------------------------------------------------------------------")
+        for row in dfGroupList.itertuples():
+            try:
+                logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type}, Hourly: {row.run_frequency} Initiating Profiling')
+                
+                df_tbl_list = df_val[
+                    (df_val["data_sub_dmn"] == row.data_sub_dmn) & 
+                    (df_val["comparison_type"] == row.comparison_type) &
+                    (df_val["run_frequency"] == row.run_frequency)
+                ]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                logger.info(f'Records Count: {len(df_tbl_list)}')
+                
+                # Initiating Profile Engine
+                cmObj.main_metrics_execution(
+                    df_mtd=df_tbl_list,
+                    sub_domain=row.data_sub_dmn,
+                    start_date=business_date,
+                end_date=process_date
+
+                )
+                
+                logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type} - Rule - Custom Profiling Completed')
+            except Exception as err:
+                logger.error(f"""Error While Profiling the Table of Sub Domain({row.data_sub_dmn}, Comparison : {row.comparison_type}) and Hourly: {row.run_frequency}. Error: {err}""")
+            
+            logger.info("---------------------------------------------------------------------")
+
+    def read_metadata(self):
+        
+        query = f"""select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T1.email_type, T2.product_name,T2.product_area,T2.product_type,T3.table_id, T3.server_name,T3.run_status,T3.data_availability_indicator
+            from {config.dqaas_mtd} T1 join
+            {config.dqaas_taxonomy} T2 on
+            T1.product_name = T2.product_name AND T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND T1.data_sub_dmn = T2.l2_label AND T1.data_lob = T2.lob join
+            {config.dqaas_src_chk_avail} T3 on
+            T2.database_name = T3.database_name AND T2.table_name = T3.table_name AND T2.l2_label = T3.data_sub_dmn 
+            WHERE  T3.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T3.run_status in ('Ready','RR')
+            ORDER BY T3.table_id;"""
+        mtd_data = self.utils.run_bq_sql(
+                    bq_auth=config.dq_gcp_auth_payload,
+                    select_query=query
+                    )
+        self.logger.info(f"read meta data query: {query}")
+        self.logger.info(f"Count Result: {len(mtd_data)}")
+        return mtd_data
+    
+    def check_cross_project_enable(self, df):
+        # vsad = df["vsad"].unique() 
+        # cross_project_enabled = True
+        # no_cross_project_enabled_df = df[df["vsad"].isin(self.run_queries_on_remote)]
+        # cross_project_enabled_df = df[~df["vsad"].isin(self.run_queries_on_remote)]
+        df['run_queries_on_remote'] = df['VSAD'].apply(lambda x: 'N' if x == 'izcv' else 'Y')
+        return df
+    
+    def split_metadata_based_on_profile_type(self,df):
+        profile_type_df = {ptype: pdata for ptype, pdata in df.groupby("profile_type")}
+        for ptype,pdata in profile_type_df.items():
+            print(f"Profile Type: {ptype} has recor length of {len(pdata)}")
+        return profile_type_df
+    
+    def call_respective_profile_engine(self,profile_type, df,data_src):
+        df = df.rename(columns={col: str(col).upper() for col in df.columns.tolist()})
+        if profile_type == "auto":
+            print("inside auto")
+            self.request_auto_profile_engine(logger=self.logger,
+                utils=self.utils,
+                data_src=data_src,
+                df_val=df)            
+        elif profile_type == "rule":
+            df = self.check_cross_project_enable(df)
+            self.request_rule_profile_engine(
+                logger=self.logger,
+                utils=self.utils,
+                data_src=data_src,
+                df_val=df
+            )
+        elif len(df) > 0 and profile_type == 'rule_custom':
+            logger: logging = None
+            try:
+                logger: logging = apps.set_logger(
+                    logger_path=config.LOGS_DIR,
+                    log_filename=f'custom_rules_table_watcher',
+                    process_name=f'CRCron',
+                    date_with_hourly_yn="Y"
+                )
+                logger.info("---------------------------------------------------------------------")
+                # args = apps.get_args_parser(parse_val=sys.argv)
+                
+                watcher = apps.TableWatcher(
+                    logObj=logger,
+                    config=config
+                )
+                
+
+                # df_mtd = watcher.get_metadata(profile_type='RULE_CUSTOM')
+                df_mtd = df
+                
+                df_val = watcher.runner(
+                    df_mtd=df_mtd,
+                    cron_schd_col='PROFILE_SCHEDULE_TS'
+                )
+                
+                if len(df_val) == 0:
+                    logger.warning("No Tables Scheduled for Current Hour")
+                    logger.info("---------------------------------------------------------------------")
+                    return
+                
+                self.request_custom_profile_engine(
+                    df_val=df_val,
+                    logger=logger
+                )
+                
+                logger.info(f'Request for Rule Profiling got Completed...')
+                logger.info("---------------------------------------------------------------------")
+                
+            except ValueError as verr:
+                logger.error(verr)
+            except Exception as err:
+                logger.error(f"Error in Custom Metrics Table Watcher.\nError: {err}")
+            logger.info("---------------------------------------------------------------------")
+
+    
+    def process_main(self):
+        metadata_df = self.read_metadata()
+        profile_type_dfs = self.split_metadata_based_on_profile_type(metadata_df)
+        for profile_type, df in profile_type_dfs.items():            
+            self.call_respective_profile_engine(profile_type, df,self.data_src)
+        table_ids_to_update = metadata_df[metadata_df["run_status"].isin( ['Ready','RR'])]["table_id"].tolist()
+        if table_ids_to_update:
+            table_ids_str = ', '.join(f"{str(table_id)}" for table_id in table_ids_to_update) 
+            update_query = f"""UPDATE `{config.dqaas_src_chk_avail}`
+            SET  run_status = CASE 
+            WHEN run_status = 'Ready' THEN 'Completed' 
+            WHEN run_status = 'RR' THEN 'RC' 
+            ELSE run_status
+            END
+            WHERE table_id in ({table_ids_str}) AND run_status in ('Ready','RR')"""
+            update_ct_table_with_status = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=update_query
+            )
+            self.logger.info(f"{update_ct_table_with_status.to_string()}")
+            self.logger.info(f"Run Status updated in control table")
+
+def get_profile_input_details():
+    message = None
+    try:
+        if len(sys.argv[1:]) > 0:
+            parser_args = argparse.ArgumentParser()
+            parser_args.add_argument('--data_src', dest='data_src', type=str, required=True, help="Data Source is Mandatory")
+            args = parser_args.parse_args()
+            
+            data_src = args.data_src
+            data_src = data_src.upper()
+
+            
+            if data_src in config.APPL_DATA_SRC:
+                return data_src
+            processor = DQProcessor(data_src)
+            processor.process_main()
+            
+            message = f"""\n
+            Data Source Not Found for Auto/Rule Profile Scheduled Tables
+            Flag                    : --data_src
+            Applicable Data Source  : {config.APPL_DATA_SRC}
+            Example for Teradata    : python3.9 table_watcher_auto_profile_cron --data_src=TD
+            Example for GCP         : python3.9 table_watcher_auto_profile_cron --data_src=GCP
+            
+            ** Data Source is Mandatory
+            """
+    except Exception as err:
+        message = f"Error Occurred in  Argument Flag Validation. Error: {err}"
+        
+    raise Exception(message)
+
+
+
+if __name__ == "__main__":
+    data_src = get_profile_input_details()
+    processor = DQProcessor(data_src)
+    processor.process_main()
+====================================================================================================
+==========================================================================================================
+[environment]
+env = dev
+[dir]
+base_dir=/apps/opt/application/dev_smartdq/dev/dqaas/
+home_dir=%(base_dir)s/dqaas/
+#base_dir=/apps/opt/application/smartdq/1corpdata/
+config_dir=%(base_dir)s/keys/
+resource_dir=%(home_dir)s/resources/
+source_dir=%(resource_dir)s/src/
+archive_dir=%(resource_dir)s/archive/
+temp_dir=%(resource_dir)s/temp/
+scripts_dir=%(home_dir)s/scripts/
+util_dir=%(home_dir)s/utils/
+logs_dir=%(base_dir)s/logs/
+src_chk_avail_dir=%(logs_dir)s/src_chk_logs/
+template_dir=%(home_dir)s/templates/
+sql_rule_profile_logs=%(logs_dir)s/sql_rule/
+auto_profile_logs=%(logs_dir)s/auto_prof/
+synch_up_logs=%(logs_dir)s/synchup/
+
+[master_mtd_table]
+dq_project_id=vz-it-np-izcv-dev-idmcdo-0
+dq_dataset_name=dga_dq_tbls
+dq_metadata_table=dqaas_meta
+dq_taxonomy_metadata=dqaas_taxonomy_meta
+
+[generic_tables]
+source_check_avail=dqaas_control_table
+
+[sql_rule_profile]
+dq_dataset_name=dga_dq_tbls
+dq_rpt_table_name=dqaas_column_report
+od_dataset_name=od_dq
+od_rpt_table_name=dqaas_onecorp_rule_prfl_rpt
+od_invalid_table_name=dqaas_onecorp_invalid_details
+default_min_thrsd=80.0
+default_max_thrsd=90.0
+#default_summary_mail_group=DQ-PROCESS-ALERTS@verizon.com, adbhutha.kathi@verizon.com,aman.gupta@verizon.com
+default_summary_mail_group=DQ-PROCESS-ALERTS@verizon.com
+#default_failure_mail_group=DQ-PROCESS-ALERTS@verizon.com, adbhutha.kathi@verizon.com, aman.gupta@verizon.com
+default_failure_mail_group=DQ-PROCESS-ALERTS@verizon.com
+monthly_process_day=15
+#The Following Parameters can/needs to be changes upon each execution STARTS
+n_days_limit=0
+#start_date={START_DATE_PARAM}
+; start_date=current_date-1
+start_date='2023-07-01'
+#end_date={END_DATE_PARAM}
+; end_date=current_date-1
+end_date='2024-08-31'
+#start_year_month={START_YEAR_MONTH_PARAM}
+start_year_month='2024-07-01'
+#end_year_month={END_YEAR_MONTH_PARAM}
+end_year_month='2024-08-31'
+#invld_dt=timestamp_sub(current_timestamp, interval {INVLD_DT_INTERVAL} day)
+invld_dt=timestamp_sub(current_timestamp, interval 0 day)
+#The Following Parameters can/needs to be changes upon each execution ENDS
+start_yr_month_dmn=acdocu
+sub_dmn_list=1CORP,WORKDAY
+#,WORKDAY
+incr_col1=date(ETL_LOAD_TS)
+incr_col2=source_period
+incr_col3=period
+incr_col4=substr(file_commit_timestamp,0,8)
+incr_col5=year
+incr_col6=period
+###timestamp_sub(current_timestamp, interval 0 day)
+## Above format used for invalid date
+#DQaaS
+; metadata_table=dqaas_rule_prfl_mtd
+; rpt_table_name=dqaas_rule_prfl_rpt
+mail_distro_table=dqaas_bus_elem_mtd
+;n_days_limit=0
+score_check_pct=90
+;default_min_thrsd=80.0
+;default_max_thrsd=90.0
+default_mail_group=dq-process-alerts@verizon.com
+
+
+
+[email_configuration]
+#smtp_server_name=tpaapd1kva109.verizon.com
+#sender_email_id=DEV_DQaaS_Support@verizon.com
+smtp_server_name=vzsmtp.verizon.com
+sender_email_id=donotreply@verizon.com
+
+#DQaas ops genie key
+[ops_genie]
+#dq_ops_genie_api_key=fe5d16b1-71b2-4eda-9fa4-0ecbaa8704a2
+#od_ops_genie_api_key=fe5d16b1-71b2-4eda-9fa4-0ecbaa8704a2
+#ops_genie_api_key=965c8018-02d0-4369-8e3b-cadf1396e0ff
+dq_ops_genie_api_key=fe5d16b1-71b2-4eda-9fa4-0ecbaa8704a2
+od_ops_genie_api_key=fe5d16b1-71b2-4eda-9fa4-0ecbaa8704a2
+ops_genie_api_key=965c8018-02d0-4369-8e3b-cadf1396e0ff
+
+[jira_details]
+jira_url =  https://onejira.verizon.com/rest/api/2
+jira_username = vadapad
+jira_password = 
+project_key = DQOPS
+issue_type = VZAgile Story
+priority = Medium
+labels = DQaaS
+component = Data Quality
+
+[gcp_metadata_db]
+; gcp_token_url=https://ssologinuat.verizon.com/ngauth/oauth2/realms/root/realms/employee/access_token
+; gcp_http_proxy_url=http://proxy.ebiz.verizon.com:80/
+; gcp_https_proxy_url=http://proxy.ebiz.verizon.com:80/
+; gcp_no_proxy_urls=http://proxy.ebiz.verizon.com:80/
+; dq_sa_json=sa-dev-izcv-app-idmcdo-0-oidc-27472-config.json
+; dq_project_id=vz-it-np-izcv-dev-idmcdo-0
+; dq_client_id=27472_izcv_gcp_gz_oauth2client
+; dq_client_secret_key=27472IZCV
+; od_client_id=sa-qa-j0nv-dqaas-oddo-0_384768854235_27519_gcp_gz_oauth2client
+; od_client_secret_key=27519J0NV
+; od_sa_json=sa-qa-j0nv-dqaas-oddo-0-oidc-27519-config.json
+; od_data_project_id=vz-it-np-j0nv-qa-oddo-0
+; od_mtd_project_id=vz-it-np-j0nv-dev-oddo-0
+
+gcp_token_url=https://ssologinuat.verizon.com/ngauth/oauth2/realms/root/realms/employee/access_token
+gcp_http_proxy_url=http://proxy.ebiz.verizon.com:80/
+gcp_https_proxy_url=http://proxy.ebiz.verizon.com:80/
+gcp_no_proxy_urls=http://proxy.ebiz.verizon.com:80/
+dq_sa_json=sa-dev-izcv-app-idmcdo-0-oidc-27472-config.json
+dq_project_id=vz-it-np-izcv-dev-idmcdo-0
+dq_client_id=27472_izcv_gcp_gz_oauth2client
+dq_client_secret_key=27472IZCV
+od_client_id=sa-qa-j0nv-dqaas-oddo-0_384768854235_27519_gcp_gz_oauth2client
+od_client_secret_key=27519J0NV
+od_sa_json=sa-qa-j0nv-dqaas-oddo-0-oidc-27519-config.json
+od_data_project_id=vz-it-np-j0nv-qa-oddo-0
+od_mtd_project_id=vz-it-np-j0nv-dev-oddo-0
+
+[src_rpt_database]
+DRIVER_NAME = 'Teradata Database ODBC Driver 16.20'
+hostname = vztdev1.ebiz.verizon.com
+pwd = ENCRYPTED_PASSWORD(file:/apps/opt/application/smartdq/config/PassKeyDev.properties,file:/apps/opt/application/smartdq/config/EncPassDev.properties)
+uid = IDQPRDLD
+db_name=DGA_DQ_TBLS
+
+[profile_database]
+DRIVER_NAME = 'Teradata Database ODBC Driver 16.20'
+hostname = vztdev1.ebiz.verizon.com
+pwd = ENCRYPTED_PASSWORD(file:/apps/opt/application/smartdq/config/PassKeyDev.properties,file:/apps/opt/application/smartdq/config/EncPassDev.properties)
+uid = IDQPRDLD
+db_name=DGA_DQ_TBLS
+
+[trgt_rpt_database]
+DRIVER_NAME = 'Teradata Database ODBC Driver 16.20'
+hostname = vztdev1.ebiz.verizon.com
+pwd = ENCRYPTED_PASSWORD(file:/apps/opt/application/smartdq/config/PassKeyDev.properties,file:/apps/opt/application/smartdq/config/EncPassDev.properties)
+uid = IDQPRDLD
+db_name=DGA_DQ_TBLS
+
+
+[auto_profile]
+metadata_table=dqaas_auto_prfl_mtd
+prod_metadata_table=dqaas_auto_rule_prfl_product_mtd
+table_report=dqaas_table_report
+column_report=dqaas_column_report
+mail_distro_table=dqaas_bus_elem_mtd
+n_days_limit=0
+data_limit=500000
+score_check_pct=90
+pooling_size=5
+default_mail_group=dq-process-alerts@verizon.com
+consistency_variation_perc=10
+
+
+# Watcher Configs
+[file_watcher]
+python=python
+auto_profile_script_path=auto_profile_file_watcher.py
+rule_based_script_path=sql_rule_profile_file_watcher.py
+default_mail_group=dq-process-alerts@verizon.com
+
+
+[sla_watcher]
+trigger_file_prefix=TRADEIN
+default_mail_group=dq-process-alerts@verizon.com
+
+
+; [email_configuration]
+; smtp_server_name=tpaapd1kva109.verizon.com
+; sender_email_id=donotreply@verizon.com
+
+
+[gcp_proxy]
+gcp_token_url=https://ssologinuat.verizon.com/ngauth/oauth2/realms/root/realms/employee/access_token
+gcp_http_proxy_url=http://proxy.ebiz.verizon.com:80/
+gcp_https_proxy_url=http://proxy.ebiz.verizon.com:80/
+gcp_no_proxy_urls=http://proxy.ebiz.verizon.com:80/
+
+
+[dqaas_gcp]
+dq_client_id=27472_izcv_gcp_gz_oauth2client
+dq_client_secret_key=27472IZCV
+dq_sa_json=sa-dev-izcv-app-idmcdo-0-oidc-27472-config.json
+dqaas_oidc_token=dq_oidc_token.json
+dq_gcp_conn_project_id=vz-it-np-izcv-dev-idmcdo-0
+dq_gcp_data_project_id=vz-it-np-izcv-dev-idmcdo-0
+dq_bq_dataset=dga_dq_tbls
+
+
+[micro_segment]
+metadata_table=dqaas_micro_segment_mtd
+report_table=dqaas_micro_segment_rpt
+
+[opsgenie]
+api_key=965c8018-02d0-4369-8e3b-cadf1396e0ff
+opsgenie_alert_table_name=dqaas_opsgenie_ui_mtd
+
+[weekly_report]
+taxonomy_metadata=dqaas_label_taxonomy_mtd
+default_mail_group=dq-process-alerts@verizon.com
+poppler_path=/apps/opt/application/smartdq/Poppler
+
+[dqaas_api]
+weekly_report_url=https://tdclpizcva002.verizon.com:8001/self_serve2/WeeklyReportest/
+pdf_conversion_url=https://tdclpizcva002.verizon.com:9001/dqapi/convert
+
+[custom_metrics]
+report_table=dqaas_consistency_report
+
+
+
+[dqaas_default_params]
+default_mail_group=dq-process-alerts@verizon.com
+cust_min_thresh = 80
+cust_max_thresh = 120
+
+[dqaas_common_tables]
+dqaas_mtd=dqaas_meta
+dqaas_profile_mtd=dqaas_profile_mtd
+dqaas_profile_rpt=dqaas_profile_rpt
+dqaas_auto_rule_prfl_product_mtd=dqaas_auto_rule_prfl_product_mtd
+dqaas_bus_elem_mtd=dqaas_bus_elem_mtd
+
+[rerun_profile_info]
+# trigger file env should be gcp or server
+base_dir=/apps/opt/application/dev_smartdq/dev/dqaas/
+home_dir=%(base_dir)s/dqaas/
+trigger_file_env = server
+trigger_file_path = %(home_dir)s/trigger_file_folder/
+trigger_file_name = profile_rerun_meta_info.txt
+gcp_bucket_name =
+
+
+Fwd: [E] Opsgenie Alert: LensX|dev|Auto_Rule_Failed |DQ2.1 Auto |vbg_ftl_bgco_daily_forecast|vzw_wkf_prd_tbls_rd_v|2025-01-23 07:37:43.150503 EST
+    
+
+
+
+
+        
+
 
