@@ -1,29 +1,61 @@
-def request_auto_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame):
-        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
-        # filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]
-        self.logger.info(f'Sub Domain List: {sub_domain_list}')
-        
-        self.logger.info(f'Request for Auto Profiling Initiated...')
-        #need to use filtered_sub_domains_list in below for loop to include load balancing. Else use sub_domain_list
-        for sub_domain in sub_domain_list:
-            try:
-                self.logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
-                
-                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
-                df_tbl_list = df_tbl_list.reset_index(drop=True)
-                
-                self.logger.info(f'Records Count: {len(df_tbl_list)}')
-                
-                ## Initiating Profile Engine
-                AutoProfileEngine(data_src=data_src).call_auto_profile_engine(df_input=df_tbl_list)
-                self.logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
-            except Exception as err:
-                self.logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
+def request_auto_profile_engine(self, logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame):
+    # Fetch environment dynamically from the config.ini file and format it as "Dev", "Prod", etc.
+    environment = self.config.get('environment', 'env').capitalize()
+
+    sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
+    self.logger.info(f'Sub Domain List: {sub_domain_list}')
+    
+    self.logger.info(f'Request for Auto Profiling Initiated...')
+
+    # Initialize email subject
+    mail_subject_msg = f"LensX|{environment}|Auto_Profiling_Started|DQ2.0|{data_src}|{datetime.now().strftime('%Y-%m-%d %H:%M:%S %Z')}"
+
+    try:
+        # Send an email notification for the start of the profiling process
+        utils.email.send_common_message(
+            email_template_filepath=self.config['dir']['template_dir'] + 'dq_common_message.html',
+            mail_subject=mail_subject_msg,
+            message="DQ-2.0 auto profiling has started",
+            receipents_email_id=self.config['sql_rule_profile']['default_summary_mail_group']
+        )
+        self.logger.info(f'Email sent with subject: {mail_subject_msg}')
+    except Exception as email_err:
+        self.logger.error(f"Error while sending start notification email: {email_err}")
+
+    # Perform Auto Profiling for each sub-domain
+    for sub_domain in sub_domain_list:
+        try:
+            self.logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
             
-            self.logger.info('-------------------------------------------------------------')
+            df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
+            df_tbl_list = df_tbl_list.reset_index(drop=True)
+            
+            self.logger.info(f'Records Count: {len(df_tbl_list)}')
+            
+            # Initiating Profile Engine
+            AutoProfileEngine(data_src=data_src).call_auto_profile_engine(df_input=df_tbl_list)
+            self.logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
+        except Exception as err:
+            self.logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
         
-        self.logger.info(f'Request for Auto Profiling got Completed...')
         self.logger.info('-------------------------------------------------------------')
+    
+    # Email notification for profiling completion
+    mail_subject_msg = f"LensX|{environment}|Auto_Profiling_Completed|DQ2.0|{data_src}|{datetime.now().strftime('%Y-%m-%d %H:%M:%S %Z')}"
+    try:
+        utils.email.send_common_message(
+            email_template_filepath=self.config['dir']['template_dir'] + 'dq_common_message.html',
+            mail_subject=mail_subject_msg,
+            message="DQ-2.0 auto profiling has completed successfully",
+            receipents_email_id=self.config['sql_rule_profile']['default_summary_mail_group']
+        )
+        self.logger.info(f'Completion email sent with subject: {mail_subject_msg}')
+    except Exception as email_err:
+        self.logger.error(f"Error while sending completion notification email: {email_err}")
+
+    self.logger.info(f'Request for Auto Profiling got Completed...')
+    self.logger.info('-------------------------------------------------------------')
+--------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------
 
 def request_custom_profile_engine(self,logger: logging, df_val: pd.DataFrame):
@@ -68,3 +100,80 @@ def request_custom_profile_engine(self,logger: logging, df_val: pd.DataFrame):
             
             logger.info("---------------------------------------------------------------------")
 -----------------------------------------------------------------------------------------------------
+
+
+def request_custom_profile_engine(self, logger: logging, df_val: pd.DataFrame):
+    # Fetch and format environment dynamically from the config.ini file
+    environment = self.config.get('environment', 'env').capitalize()
+
+    df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
+    df_val["comparison_type"] = df_val["comparison_type"].fillna("WEEKDAYS")
+    df_val["run_frequency"] = df_val["run_frequency"].fillna("N")
+    dfGroupList = df_val[["data_sub_dmn", "comparison_type", "run_frequency"]].drop_duplicates()
+    process_date = "current_date-1"
+    business_date = "current_date-1"
+    cmObj = CustomeMetrics()
+    
+    logger.info(f'Request for Rule - Custom Profiling Initiated...\nTotal Records: {len(df_val)}\n{dfGroupList}')
+
+    # Initialize email subject for the start of the process
+    mail_subject_msg = f"LensX|{environment}|Custom_Profiling_Started|DQ2.0|{datetime.now().strftime('%Y-%m-%d %H:%M:%S %Z')}"
+
+    # Send email notification for the start of profiling
+    try:
+        self.utils.email.send_common_message(
+            email_template_filepath=self.config['dir']['template_dir'] + 'dq_common_message.html',
+            mail_subject=mail_subject_msg,
+            message="DQ-2.0 custom profiling has started",
+            receipents_email_id=self.config['sql_rule_profile']['default_summary_mail_group']
+        )
+        logger.info(f'Start email sent with subject: {mail_subject_msg}')
+    except Exception as email_err:
+        logger.error(f"Error while sending start notification email: {email_err}")
+
+    logger.info("---------------------------------------------------------------------")
+    for row in dfGroupList.itertuples():
+        try:
+            logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type}, Hourly: {row.run_frequency} Initiating Profiling')
+            
+            df_tbl_list = df_val[
+                (df_val["data_sub_dmn"] == row.data_sub_dmn) & 
+                (df_val["comparison_type"] == row.comparison_type) &
+                (df_val["run_frequency"] == row.run_frequency)
+            ]
+            df_tbl_list = df_tbl_list.reset_index(drop=True)
+            
+            logger.info(f'Records Count: {len(df_tbl_list)}')
+            
+            # Initiating Profile Engine
+            cmObj.main_metrics_execution(
+                df_mtd=df_tbl_list,
+                sub_domain=row.data_sub_dmn,
+                start_date=business_date,
+                end_date=process_date
+            )
+            
+            logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type} - Rule - Custom Profiling Completed')
+        except Exception as err:
+            logger.error(f"""Error While Profiling the Table of Sub Domain({row.data_sub_dmn}, Comparison : {row.comparison_type}) and Hourly: {row.run_frequency}. Error: {err}""")
+        
+        logger.info("---------------------------------------------------------------------")
+
+    # Initialize email subject for the completion of the process
+    mail_subject_msg = f"LensX|{environment}|Custom_Profiling_Completed|DQ2.0|{datetime.now().strftime('%Y-%m-%d %H:%M:%S %Z')}"
+
+    # Send email notification for the completion of profiling
+    try:
+        self.utils.email.send_common_message(
+            email_template_filepath=self.config['dir']['template_dir'] + 'dq_common_message.html',
+            mail_subject=mail_subject_msg,
+            message="DQ-2.0 custom profiling has completed successfully",
+            receipents_email_id=self.config['sql_rule_profile']['default_summary_mail_group']
+        )
+        logger.info(f'Completion email sent with subject: {mail_subject_msg}')
+    except Exception as email_err:
+        logger.error(f"Error while sending completion notification email: {email_err}")
+
+    logger.info(f'Request for Custom Profiling got Completed...')
+    logger.info("---------------------------------------------------------------------")
+
