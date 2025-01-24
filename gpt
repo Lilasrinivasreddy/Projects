@@ -1,75 +1,224 @@
-def request_custom_profile_engine(self, logger: logging, df_val: pd.DataFrame):
-    # Fetch and format environment dynamically from the config.ini file
-    environment = self.config.get('environment', 'env').capitalize()
-
-    df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
-    df_val["comparison_type"] = df_val["comparison_type"].fillna("WEEKDAYS")
-    df_val["run_frequency"] = df_val["run_frequency"].fillna("N")
-    dfGroupList = df_val[["data_sub_dmn", "comparison_type", "run_frequency"]].drop_duplicates()
-    process_date = "current_date-1"
-    business_date = "current_date-1"
-    cmObj = CustomeMetrics()
-    
-    logger.info(f'Request for Rule - Custom Profiling Initiated...\nTotal Records: {len(df_val)}\n{dfGroupList}')
-
-    # Initialize email subject for the start of the process
-    mail_subject_msg = f"LensX|{environment}|Custom_Profiling_Started|DQ2.0|{datetime.now().strftime('%Y-%m-%d %H:%M:%S %Z')}"
-
-    # Send email notification for the start of profiling
-    try:
-        self.utils.email.send_common_message(
-            email_template_filepath=self.config['dir']['template_dir'] + 'dq_common_message.html',
-            mail_subject=mail_subject_msg,
-            message="DQ-2.0 custom profiling has started",
-            receipents_email_id=self.config['sql_rule_profile']['default_summary_mail_group']
-        )
-        logger.info(f'Start email sent with subject: {mail_subject_msg}')
-    except Exception as email_err:
-        logger.error(f"Error while sending start notification email: {email_err}")
-
-    logger.info("---------------------------------------------------------------------")
-    for row in dfGroupList.itertuples():
+ def send_summary_table_level_mail(self, df_mail_summary: pd.DataFrame, error_rules_list: list, rule_run_dt,schd_type):
         try:
-            logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type}, Hourly: {row.run_frequency} Initiating Profiling')
+
+            self.log.info(f'Summary Result Len: {len(df_mail_summary)}, Error list : {error_rules_list}')
+            if len(df_mail_summary) > 0:
+                src_table_list = df_mail_summary["table_name"].unique().tolist()
+                self.log.info(f'Source Table List: {src_table_list}')
+                
+                df_rules_error_list = pd.DataFrame.from_records(error_rules_list)
+                df_rules_error_list = df_rules_error_list.reset_index(drop=True)
+                for tbl in src_table_list:
+                    product_name = df_mail_summary[df_mail_summary['table_name']==tbl]['product_name'][0]
+                    data_sub_dmn =df_mail_summary[df_mail_summary['table_name']==tbl]['data_sub_dmn'][0]
+                    self.log.info(f'Product Name: {product_name}')
+                    self.log.info(f'Data Sub Domain: {data_sub_dmn}')
+                    self.log.info(f'Source Table: {tbl}')
+                    try:
+                        self.log.info(f'{schd_type} run: {tbl} Summary Email - DQ-2.0')
+                        if schd_type == "DAILY":
+                            subject = f'Daily run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
+                        elif schd_type== "MONTHLY":
+                            subject = f'Monthly run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
+                        else:
+                            subject = f'Ad-hoc run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
+
+                        message = 'Please find the below summary.<br>'
+                        #here removed data_dmn from the below email_cols_list
+                        email_cols_list = ['rule_run_dt', 'db_name', 'table_name', 'src_col', 'dq_pillar',
+                                        'rule_name', 'col_vld_cnt', 'col_invld_cnt', 'col_vld_pct', 'dq_status']
+
+                        df_email_rules_data: pd.DataFrame = df_mail_summary[email_cols_list][df_mail_summary["table_name"]==tbl]
+                        if len(df_email_rules_data) > 0:
+                            df_email_rules_data = df_email_rules_data.sort_values(by=['col_vld_pct'])
+                            df_email_rules_data['col_vld_pct'] = df_email_rules_data['col_vld_pct'].astype(float).map(self.round_off)
+
+                            self.log.info(f'SQL Profile eMail Columns: {df_email_rules_data.columns.tolist()}')
+                            df_email_rules_data = df_email_rules_data.rename(columns={  
+                                                                                        'db_name': 'Database',
+                                                                                        'table_name': 'Table',
+                                                                                        'src_col': 'Column',
+                                                                                        'dq_pillar': 'DQ Pillar',
+                                                                                        'rule_name': 'Measure',
+                                                                                        'col_vld_cnt': 'Valid Count',
+                                                                                        'col_invld_cnt': 'Invalid Count',
+                                                                                        'col_vld_pct': 'DQ Score',
+                                                                                        'dq_status': 'Indicator',
+                                                                                        # 'data_dmn': 'Domain',
+                                                                                        'rule_run_dt': 'Date'})
+                            df_email_rules_data = df_email_rules_data.reset_index(drop=True)
+
+                        if len(df_rules_error_list) > 0:
+                            df_rules_error_list_email = df_rules_error_list[df_rules_error_list["table"]==tbl]
+                            df_rules_error_list_email = df_rules_error_list_email.reset_index(drop=True)
+                            if len(df_rules_error_list_email) > 0:
+                                addl_msg = f'<br><b>Rule Profile Error List:</b>{df_rules_error_list_email.to_html()}'
+                                message += addl_msg
+
+                        self.email.send_common_message(email_template_filepath=self.email_template,
+                                                       mail_subject=subject,
+                                                       message=message,
+                                                       receipents_email_id=self.summary_alert_email_group,
+                                                       df_val=df_email_rules_data)
+                        self.log.info(f'Successfully Triggered {tbl} Summary Email for DQ-2.0')
+                    except Exception as e:
+                        self.log.error( f'Error Occurred in {tbl} Summary Email for DQ-2.0. Error:{e}')
+                    continue
+
+        except Exception as e:
+            self.log.error( f'Error Occurred in Summary Email for  DQ-2.0. Error:{e}')
+            self.opsgenie_alert(priority="P1",
+                           message='DQ-2.0 - Summary Email Error',
+                           description=f'Failure Occurred while sending summary email',
+                           details={'Message':'DQ-2.0 - Summary Email Error'},
+                           alert_type="Exception")
+
+
+====================================================================================
+
+    def profile_engine(self, df_rules_list:pd.DataFrame, incr_dt_dict:dict, run_type:str, schd_type:str, src_tablename:str = None):
+        exec_status, exec_msg = None, None
+        try:
+            ##  DQ Space BigQuery Client
+            dq_bq_client, _ = self.dq_bigquery_client(self.dq_auth_payload)
             
-            df_tbl_list = df_val[
-                (df_val["data_sub_dmn"] == row.data_sub_dmn) & 
-                (df_val["comparison_type"] == row.comparison_type) &
-                (df_val["run_frequency"] == row.run_frequency)
-            ]
-            df_tbl_list = df_tbl_list.reset_index(drop=True)
+            ##  Get Date Details for Profiling 
+            date_interval = self.get_date_details(dq_bq_client=dq_bq_client,
+                                                  incr_dt_dict=incr_dt_dict)
+            self.log.info(f'Data Interval for Queries: {date_interval}')
             
-            logger.info(f'Records Count: {len(df_tbl_list)}')
+            ## Values for replacing the placeholders in SQL Query
+            val_to_replace_str = {
+                "$start_dt": date_interval['START_DATE'],
+                "$end_dt": date_interval['END_DATE'],
+                "$start_yr_mnth": date_interval['START_YEAR_MONTH'],
+                "$end_yr_mnth": date_interval['END_YEAR_MONTH'],
+                "$incr_col1": self.config['sql_rule_profile']["incr_col1"],
+                "$incr_col2": self.config['sql_rule_profile']["incr_col2"],
+                "$incr_col3": self.config['sql_rule_profile']["incr_col3"],
+                "$incr_col4": self.config['sql_rule_profile']["incr_col4"],
+                "$incr_col5": self.config['sql_rule_profile']["incr_col5"],
+                "$incr_col6": self.config['sql_rule_profile']["incr_col6"],
+            }
+            self.log.info(f'Values to replace in SQL: {val_to_replace_str}')
             
-            # Initiating Profile Engine
-            cmObj.main_metrics_execution(
-                df_mtd=df_tbl_list,
-                sub_domain=row.data_sub_dmn,
-                start_date=business_date,
-                end_date=process_date
-            )
+            ## Additional Details Like Run Type, Schedule Type, Execution Date and Business Date For Profiling
+            rules_execution_process_details: dict = {
+                "run_type": run_type,
+                "schd_type": schd_type,
+                "rules_execution_date": pd.Timestamp(datetime.now() - timedelta(days=self.n_days_interval)),
+                "business_date": date_interval['START_DATE_SRC_COL_DT_VAL'] if run_type == 'DR' else date_interval['END_DATE_SRC_COL_DT_VAL']
+            }
+            self.log.info(f"Rules Execution Process details :{rules_execution_process_details}")
             
-            logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type} - Rule - Custom Profiling Completed')
+            ##  Get Where Clause condition details for Metadata Query. Cannot Be Null
+            # metadata_where_condition: str = self.get_run_process_mtd_condition(run_type=run_type,
+            #                                                               schd_type=schd_type)
+            
+            # if metadata_where_condition is None:
+            #     raise RuntimeError("Run Type or Schedule Type not Found")
+            
+            if src_tablename is not None and run_type in ("AR", "RR"):
+                metadata_where_condition += f" and upper(table_name) = upper('{src_tablename}') "
+                
+            ## Get Metadata Details for Rules Execution
+            # df_rules_list = self.get_rule_metadata_details(dq_bq_client=dq_bq_client,
+            #                                                metadata_condition=metadata_where_condition)
+            
+            self.log.info(f"Rules Length: {len(df_rules_list)}")
+            #df_rules_list.to_csv("/apps/opt/application/smartdq/DQaaS2.0/dqaas/scripts/out.csv")
+            if len(df_rules_list) == 0:
+                raise RuntimeError("No Rules found for profiling")
+            data_src = df_rules_list.loc[0, 'DATA_SRC']
+            # df_rules_list = df_rules_list.head(10)
+            rules_name = df_rules_list['RULE_NAME'].to_list()
+            self.log.info(f"rules_name: {rules_name}")
+            self.log.info(f"data_src : {data_src}")
+            ##  Run Rule Profile Engine based on data source
+            if data_src in config.RP_AGG_RULES_APPL_DATA_SRC:
+                self.log.info(f"Inside GCP Rule Engine")
+                df_rules_list, error_list = self.run_gcp_rule_profile_engine(df_rules_list=df_rules_list,
+                                                                     val_to_replace=val_to_replace_str)
+            
+            if data_src in config.RP_NON_AGG_RULES_APPL_DATA_SRC:
+                self.log.info(f"Inside TD Rule Engine")
+                df_rules_list, error_list = self.run_td_rule_profile_engine(df_rules_list, rules_name)
+                #df_rules_list.to_csv("/apps/opt/application/smartdq/DQaaS2.0/dqaas/scripts/out.csv")
+            ##  Run Rule Profile Engine
+            # df_rules_list, error_list = self.run_rule_profile_engine(df_rules_list=df_rules_list,
+            #                                                          val_to_replace=val_to_replace_str)
+               
+            ##  Loading Results to BQ tables in DQ and OneCorp Space  
+            df_rules_list.columns = df_rules_list.columns.str.lower()  
+            self.load_result_to_bq_tables(df_rules_list,
+                                          rules_execution_process_details)
+            
+            ##  Get Rules Metric Report for Send Summary mail and Run Invalid Rec SQls
+            df_rules_result = self.get_rule_metrics_details(rule_run_dt=rules_execution_process_details["rules_execution_date"])
+                                                            # metadata_condition=metadata_where_condition)
+            
+            self.log.info(f"Rule Summary Length: {len(df_rules_result)}")
+            if len(df_rules_result) == 0:
+                raise Exception(" No Results found for Summary Mail and Run Invalid SQLs.")
+            df_rules_result_tbl_level = df_rules_result[df_rules_result['email_alert_level']== 'TABLE']
+            df_rules_result_sub_dmn_level = df_rules_result[(df_rules_result['email_alert_level']== 'SUB_DOMAIN') | (df_rules_result['email_alert_level']== '')]
+            ##  Send Summary Report Table Level
+            if len(df_rules_result_tbl_level) > 0:
+                self.send_summary_table_level_mail(df_mail_summary=df_rules_result_tbl_level,
+                                       error_rules_list=error_list,
+                                       rule_run_dt=rules_execution_process_details["rules_execution_date"],
+                                       schd_type = schd_type)
+
+            ##  Send Summary Report Sub Domain Level
+            if len(df_rules_result_sub_dmn_level) > 0:
+                sub_domain_list = df_rules_result_sub_dmn_level['data_sub_dmn'].unique().tolist()
+                for domain in sub_domain_list:    
+                    self.send_summary_sub_dmn_level_mail(
+                        sub_domain=domain,
+                        rules_data=df_rules_result_sub_dmn_level,
+                        df_rules_error_list=error_list,
+                        critical_flag=''
+                    )
+
+            if src_tablename is not None and run_type in ("RR"):
+                self.del_invalid_records(tablename=src_tablename,
+                                         start_dt=date_interval['START_DATE'],
+                                         end_dt=date_interval['END_DATE'],
+                                         schd_type=schd_type)
+
+            ##  Invalid Rec SQLs Execution Block
+            self.execute_invalid_sqls(df_invalid_rec=df_rules_result,
+                                      rule_run_dt=rules_execution_process_details["rules_execution_date"],
+                                      date_interval=date_interval,
+                                      val_to_replace=val_to_replace_str)   
+
+            exec_status, exec_msg = "SUCCESS", f"{self.run_process_details} Completed"
+            self.log.info(exec_msg)
+        except RuntimeError as err:
+            exec_status, exec_msg = "ERROR", f"Run Time Error. Error:{err}"
+            self.log.error(exec_msg)
+        except ValueError as err:
+            exec_status, exec_msg = "ERROR", f"Value Error. Error:{err}"
+            self.log.error(exec_msg)
+        except HTTPError as err:
+            exec_status, exec_msg = "ERROR", f"HTTP Error. Error:{err}"
+            self.log.error(exec_msg)
         except Exception as err:
-            logger.error(f"""Error While Profiling the Table of Sub Domain({row.data_sub_dmn}, Comparison : {row.comparison_type}) and Hourly: {row.run_frequency}. Error: {err}""")
+            exec_status, exec_msg = "ERROR", f"Exception Occurred in Main Block. Error:{err}"
+            self.log.error(exec_msg)
+
+        #if schd_type == "DAILY"  :
+        #        mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the daily run on ({self.current_date})"
+        #elif schd_type == "MONTHLY":
+        #    mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the monthly run on ({self.current_date})"
+        #else:
+        #    mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the adhoc run on ({self.current_date})"
+        #    
+        ## MJ:
+        #self.email.send_common_message(email_template_filepath=self.email_template,
+        #                               #mail_subject=f"1CorpData Rule Profiling Completed",
+        #                               mail_subject = mail_subject_msg,
+        #                               message="DQ-2.0 rule Profiling Initiation completed",
+        #                               receipents_email_id=self.summary_alert_email_group)
         
-        logger.info("---------------------------------------------------------------------")
-
-    # Initialize email subject for the completion of the process
-    mail_subject_msg = f"LensX|{environment}|Custom_Profiling_Completed|DQ2.0|{datetime.now().strftime('%Y-%m-%d %H:%M:%S %Z')}"
-
-    # Send email notification for the completion of profiling
-    try:
-        self.utils.email.send_common_message(
-            email_template_filepath=self.config['dir']['template_dir'] + 'dq_common_message.html',
-            mail_subject=mail_subject_msg,
-            message="DQ-2.0 custom profiling has completed successfully",
-            receipents_email_id=self.config['sql_rule_profile']['default_summary_mail_group']
-        )
-        logger.info(f'Completion email sent with subject: {mail_subject_msg}')
-    except Exception as email_err:
-        logger.error(f"Error while sending completion notification email: {email_err}")
-
-    logger.info(f'Request for Custom Profiling got Completed...')
-    logger.info("---------------------------------------------------------------------")
-
+        return exec_status, exec_msg
