@@ -12,10 +12,9 @@ sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.pat
 import scripts.config_params as config
 from scripts.common_handlers import CommonUtils, set_logger
 from scripts.auto_profile import AutoProfileEngine
-# from scripts.sql_rule_profile_bkp import RuleProfileEngine
+from scripts.sql_rule_profile_bkp import RuleProfileEngine
 from scripts.sql_rule_profile import RuleProfile
 from scripts.source_chk_avail import SourceCheckAvailability
-from scripts import config_params
 
 
 
@@ -136,7 +135,7 @@ def main(run_type:str, schd_type:str):
         #metadata_where_condition: str = get_run_process_mtd_condition(run_type=run_type, schd_type=schd_type)
         query = f"""
         select *
-        from {config.dqaas_mtd} T1 Left join 
+        from {config.dqaas_mtd} T1 join 
         {config.dqaas_taxonomy} T2 on
         T1.product_name = T2.product_name and T1.database_name=T2.database_name and T1.table_name=T2.table_name
         WHERE  active_flag = 'Y'
