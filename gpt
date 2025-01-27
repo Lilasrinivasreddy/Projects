@@ -1,224 +1,207 @@
- def send_summary_table_level_mail(self, df_mail_summary: pd.DataFrame, error_rules_list: list, rule_run_dt,schd_type):
+from datetime import datetime, timedelta
+import pandas as pd
+import sys
+import os
+import logging
+import concurrent.futures
+import pandas_gbq
+import numpy as np
+from zoneinfo import ZoneInfo
+
+## Importing User Defined Modules
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from scripts.common_handlers import CommonUtils, set_logger, get_args_parser
+from utils.send_email import SendEmail
+import scripts.config_params as config
+
+class SourceCheckAvailability():
+
+    def __init__(self, data_src: str, df_val: pd.DataFrame) -> None:
+        self.df = df_val
+        self.MAX_THREADS = config.SOURCE_CHECK_THREADS
+        self.logger = self.set_src_chk_logger(
+            process_name="Src-Chk-Avail",
+            data_src=data_src
+        )
+        self.utils = CommonUtils(logObj=self.logger)
+        self.email = SendEmail(
+            loggerObj=self.logger,
+            mail_from=config.SENDER_EMAIL_ID,
+            smtp=config.SMTP_SERVER_NAME
+        )
+        self.dbclient, self.db_creds = self.utils.bigquery_client(auth=config.dq_gcp_auth_payload)
+
+    # @staticmethod
+    def set_src_chk_logger(self, process_name:str, data_src: str):
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        filename = f'{data_src}_src_chk_avail_{timestamp}'
+        process_id = os.getpid()
+        log: logging = set_logger(
+            logger_path=config.SRC_CHK_AVAIL_LOGS,
+            log_filename=filename,
+            process_name=f'{process_name}-{process_id}',
+            no_date_yn="Y",
+        )
+        return log
+    
+    def src_chk_run_query(self, input_row: dict):
+        result: dict = {}
+        result['table_id'] = input_row.get('PROFILE_ID','')
+        result['project_name'] = input_row.get('PROJECT_NAME','')
+        result['database_name'] = input_row.get('DATABASE_NAME','')
+        result['table_name'] = input_row.get('TABLE_NAME','')
+        result['data_sub_dmn'] = input_row.get('DATA_SUB_DMN','')
         try:
-
-            self.log.info(f'Summary Result Len: {len(df_mail_summary)}, Error list : {error_rules_list}')
-            if len(df_mail_summary) > 0:
-                src_table_list = df_mail_summary["table_name"].unique().tolist()
-                self.log.info(f'Source Table List: {src_table_list}')
-                
-                df_rules_error_list = pd.DataFrame.from_records(error_rules_list)
-                df_rules_error_list = df_rules_error_list.reset_index(drop=True)
-                for tbl in src_table_list:
-                    product_name = df_mail_summary[df_mail_summary['table_name']==tbl]['product_name'][0]
-                    data_sub_dmn =df_mail_summary[df_mail_summary['table_name']==tbl]['data_sub_dmn'][0]
-                    self.log.info(f'Product Name: {product_name}')
-                    self.log.info(f'Data Sub Domain: {data_sub_dmn}')
-                    self.log.info(f'Source Table: {tbl}')
-                    try:
-                        self.log.info(f'{schd_type} run: {tbl} Summary Email - DQ-2.0')
-                        if schd_type == "DAILY":
-                            subject = f'Daily run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
-                        elif schd_type== "MONTHLY":
-                            subject = f'Monthly run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
-                        else:
-                            subject = f'Ad-hoc run: DQ-2.0 - {product_name}|{data_sub_dmn}|{tbl} Summary Mail - {datetime.strftime(rule_run_dt, "%Y-%m-%d")}'
-
-                        message = 'Please find the below summary.<br>'
-                        #here removed data_dmn from the below email_cols_list
-                        email_cols_list = ['rule_run_dt', 'db_name', 'table_name', 'src_col', 'dq_pillar',
-                                        'rule_name', 'col_vld_cnt', 'col_invld_cnt', 'col_vld_pct', 'dq_status']
-
-                        df_email_rules_data: pd.DataFrame = df_mail_summary[email_cols_list][df_mail_summary["table_name"]==tbl]
-                        if len(df_email_rules_data) > 0:
-                            df_email_rules_data = df_email_rules_data.sort_values(by=['col_vld_pct'])
-                            df_email_rules_data['col_vld_pct'] = df_email_rules_data['col_vld_pct'].astype(float).map(self.round_off)
-
-                            self.log.info(f'SQL Profile eMail Columns: {df_email_rules_data.columns.tolist()}')
-                            df_email_rules_data = df_email_rules_data.rename(columns={  
-                                                                                        'db_name': 'Database',
-                                                                                        'table_name': 'Table',
-                                                                                        'src_col': 'Column',
-                                                                                        'dq_pillar': 'DQ Pillar',
-                                                                                        'rule_name': 'Measure',
-                                                                                        'col_vld_cnt': 'Valid Count',
-                                                                                        'col_invld_cnt': 'Invalid Count',
-                                                                                        'col_vld_pct': 'DQ Score',
-                                                                                        'dq_status': 'Indicator',
-                                                                                        # 'data_dmn': 'Domain',
-                                                                                        'rule_run_dt': 'Date'})
-                            df_email_rules_data = df_email_rules_data.reset_index(drop=True)
-
-                        if len(df_rules_error_list) > 0:
-                            df_rules_error_list_email = df_rules_error_list[df_rules_error_list["table"]==tbl]
-                            df_rules_error_list_email = df_rules_error_list_email.reset_index(drop=True)
-                            if len(df_rules_error_list_email) > 0:
-                                addl_msg = f'<br><b>Rule Profile Error List:</b>{df_rules_error_list_email.to_html()}'
-                                message += addl_msg
-
-                        self.email.send_common_message(email_template_filepath=self.email_template,
-                                                       mail_subject=subject,
-                                                       message=message,
-                                                       receipents_email_id=self.summary_alert_email_group,
-                                                       df_val=df_email_rules_data)
-                        self.log.info(f'Successfully Triggered {tbl} Summary Email for DQ-2.0')
-                    except Exception as e:
-                        self.log.error( f'Error Occurred in {tbl} Summary Email for DQ-2.0. Error:{e}')
-                    continue
-
+            if self.data_src == 'GCP':
+                if input_row.get('INCR_DATE_COL','') in config.EMPTY_STR_LIST:
+                    count_query = f"select count(*) as counts from {result['project_name']}.{result['database_name']}.{result['table_name']}"
+                else:
+                    count_query = f"select count(*) as counts from {result['project_name']}.{result['database_name']}.{result['table_name']} where {input_row.get('INCR_DATE_COL','')} >= date(current_timestamp(),'US/Eastern') - {input_row.get('INCR_DATE_COND') if input_row.get('INCR_DATE_COND') not in config.EMPTY_STR_LIST else '1'}"
+            elif self.data_src == 'TD':
+                if input_row.get('INCR_DATE_COL','') in config.EMPTY_STR_LIST:
+                    count_query = f"select count(*) as counts from {result['database_name']}.{result['table_name']}"
+                else:
+                    count_query = f"select count(*) as counts from {result['database_name']}.{result['table_name']} where {input_row.get('INCR_DATE_COL','')} >= date(current_timestamp(),'US/Eastern') - {input_row.get('INCR_DATE_COND') if input_row.get('INCR_DATE_COND') not in config.EMPTY_STR_LIST else '1'}"
+            self.logger.info(f"Count Query :: {count_query}")
+            result['count_query'] = count_query
+            if self.data_src == 'GCP':
+                result['count'] = self.dbclient.query(count_query).to_dataframe()['counts'][0] 
+            else:
+                td_result_df = self.utils.get_query_data(data_src=self.data_src, dbname=result['database_name'], select_query=count_query)
+                self.logger.info(f"td df:{td_result_df}")
+                result['count'] = td_result_df['counts'][0]
+            result['data_availability_indicator'] = 'Y' if result['count'] > 0 else 'N'
+            result['message'] = "Count Fetched Successfully"
         except Exception as e:
-            self.log.error( f'Error Occurred in Summary Email for  DQ-2.0. Error:{e}')
-            self.opsgenie_alert(priority="P1",
-                           message='DQ-2.0 - Summary Email Error',
-                           description=f'Failure Occurred while sending summary email',
-                           details={'Message':'DQ-2.0 - Summary Email Error'},
-                           alert_type="Exception")
-
-
-====================================================================================
-
-    def profile_engine(self, df_rules_list:pd.DataFrame, incr_dt_dict:dict, run_type:str, schd_type:str, src_tablename:str = None):
-        exec_status, exec_msg = None, None
+            #traceback.print_exc()
+            self.logger.error(f"Error in src_chk_run_query() Method. Error: {e}")
+            result['data_availability_indicator'] = 'E'
+            result['count'] = 0
+            result['message'] = "Error Occurred"
+        self.logger.info(result)
+        return result
+    
+    #Summary and Other Mails
+    def send_email_alert(
+        self, vsad_name: str = '', message: str = None, subject: str = None,
+        df_val=pd.DataFrame(), receipents_email_group: list = None):
+        self.logger.info('-------------------------------------------------------------------------')
+        self.logger.info('Email Initiated')
+        self.logger.info('-------------------------------------------------------------------------')
         try:
-            ##  DQ Space BigQuery Client
-            dq_bq_client, _ = self.dq_bigquery_client(self.dq_auth_payload)
-            
-            ##  Get Date Details for Profiling 
-            date_interval = self.get_date_details(dq_bq_client=dq_bq_client,
-                                                  incr_dt_dict=incr_dt_dict)
-            self.log.info(f'Data Interval for Queries: {date_interval}')
-            
-            ## Values for replacing the placeholders in SQL Query
-            val_to_replace_str = {
-                "$start_dt": date_interval['START_DATE'],
-                "$end_dt": date_interval['END_DATE'],
-                "$start_yr_mnth": date_interval['START_YEAR_MONTH'],
-                "$end_yr_mnth": date_interval['END_YEAR_MONTH'],
-                "$incr_col1": self.config['sql_rule_profile']["incr_col1"],
-                "$incr_col2": self.config['sql_rule_profile']["incr_col2"],
-                "$incr_col3": self.config['sql_rule_profile']["incr_col3"],
-                "$incr_col4": self.config['sql_rule_profile']["incr_col4"],
-                "$incr_col5": self.config['sql_rule_profile']["incr_col5"],
-                "$incr_col6": self.config['sql_rule_profile']["incr_col6"],
-            }
-            self.log.info(f'Values to replace in SQL: {val_to_replace_str}')
-            
-            ## Additional Details Like Run Type, Schedule Type, Execution Date and Business Date For Profiling
-            rules_execution_process_details: dict = {
-                "run_type": run_type,
-                "schd_type": schd_type,
-                "rules_execution_date": pd.Timestamp(datetime.now() - timedelta(days=self.n_days_interval)),
-                "business_date": date_interval['START_DATE_SRC_COL_DT_VAL'] if run_type == 'DR' else date_interval['END_DATE_SRC_COL_DT_VAL']
-            }
-            self.log.info(f"Rules Execution Process details :{rules_execution_process_details}")
-            
-            ##  Get Where Clause condition details for Metadata Query. Cannot Be Null
-            # metadata_where_condition: str = self.get_run_process_mtd_condition(run_type=run_type,
-            #                                                               schd_type=schd_type)
-            
-            # if metadata_where_condition is None:
-            #     raise RuntimeError("Run Type or Schedule Type not Found")
-            
-            if src_tablename is not None and run_type in ("AR", "RR"):
-                metadata_where_condition += f" and upper(table_name) = upper('{src_tablename}') "
+            df_val = df_val.drop(['update_made_ts','insert_made_ts'], axis=1)
+            subject = f'DEV - DQaaS 2.0 - Source Check Availability' if subject in config.EMPTY_STR_LIST else subject
+            message = f'Please find the below Source Check Summary for current run' if message in config.EMPTY_STR_LIST else message
+
+            receipents_email_addr_list: list = None
+            receipents_email_addr_list: list = receipents_email_group if receipents_email_group not in config.EMPTY_STR_LIST else  []
+
+            if len(receipents_email_addr_list) == 0:
+                self.logger.info(f"Email ID not Found in the Mail Distro Table. Assigning Default mail distro({config.SLA_WATCHER_DEFAULT_MAIL_GROUP})")
+
+            receipents_email_addr_list = receipents_email_addr_list + config.SLA_WATCHER_DEFAULT_MAIL_GROUP
+
+            self.logger.info(f"Receipents e-Mail Group:{receipents_email_addr_list}")
+
+            self.email.send_common_message(
+                email_template_filepath=config.common_email_template,
+                mail_subject=subject,
+                message=message,
+                df_val=df_val,
+                receipents_email_id=receipents_email_addr_list
+            )
+
+            self.logger.info('Email Send Successfully')
+        except Exception as e:
+            self.logger.error(f"Error Occured in email trigger :: {e}")
+
+    def main(self,data_src, profile_type):
+        try:
+            count_results = []
+            #self.logger.info(self.df.to_string())
+            self.data_src = data_src
+            self.df_unique = self.df.drop_duplicates(subset=["PROJECT_NAME","DATABASE_NAME", "TABLE_NAME"])
+            #self.df_unique = self.df_unique.iloc[:5]
+            self.input_rows = self.df_unique.to_dict('records')
+            self.logger.info(f"Input Rows :: {len(self.input_rows)}")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.MAX_THREADS) as executor:
+                result_futures = executor.map(self.src_chk_run_query, self.input_rows)
+                for future in result_futures:
+                    count_results.append(future)
+
+            if len(count_results) > 0:
+                count_results_df = pd.DataFrame(count_results)
+                count_results_df['retry_count'] = 0
+                count_results_df['profile_type'] = profile_type
+                count_results_df['server_name'] = np.nan
+                count_results_df['run_status'] = 'Ready'
+                count_results_df['run_dt'] = np.datetime64(datetime.now(ZoneInfo("US/Eastern")).date())
+                count_results_df['update_made_ts'] = np.datetime64(datetime.now(ZoneInfo("US/Eastern")))
+                count_results_df['insert_made_ts'] = np.datetime64(datetime.now(ZoneInfo("US/Eastern")))
+                self.logger.info(f"Count Results Length {len(count_results_df)}")
+                self.logger.info(f"Count Results {count_results_df.head}")
+                #count_results_df['count'] = count_results_df['count'].fillna(np.nan).astype('float64')
+                #self.logger.info(count_results_df.info())
+
+                self.logger.info(count_results_df.head())
                 
-            ## Get Metadata Details for Rules Execution
-            # df_rules_list = self.get_rule_metadata_details(dq_bq_client=dq_bq_client,
-            #                                                metadata_condition=metadata_where_condition)
-            
-            self.log.info(f"Rules Length: {len(df_rules_list)}")
-            #df_rules_list.to_csv("/apps/opt/application/smartdq/DQaaS2.0/dqaas/scripts/out.csv")
-            if len(df_rules_list) == 0:
-                raise RuntimeError("No Rules found for profiling")
-            data_src = df_rules_list.loc[0, 'DATA_SRC']
-            # df_rules_list = df_rules_list.head(10)
-            rules_name = df_rules_list['RULE_NAME'].to_list()
-            self.log.info(f"rules_name: {rules_name}")
-            self.log.info(f"data_src : {data_src}")
-            ##  Run Rule Profile Engine based on data source
-            if data_src in config.RP_AGG_RULES_APPL_DATA_SRC:
-                self.log.info(f"Inside GCP Rule Engine")
-                df_rules_list, error_list = self.run_gcp_rule_profile_engine(df_rules_list=df_rules_list,
-                                                                     val_to_replace=val_to_replace_str)
-            
-            if data_src in config.RP_NON_AGG_RULES_APPL_DATA_SRC:
-                self.log.info(f"Inside TD Rule Engine")
-                df_rules_list, error_list = self.run_td_rule_profile_engine(df_rules_list, rules_name)
-                #df_rules_list.to_csv("/apps/opt/application/smartdq/DQaaS2.0/dqaas/scripts/out.csv")
-            ##  Run Rule Profile Engine
-            # df_rules_list, error_list = self.run_rule_profile_engine(df_rules_list=df_rules_list,
-            #                                                          val_to_replace=val_to_replace_str)
-               
-            ##  Loading Results to BQ tables in DQ and OneCorp Space  
-            df_rules_list.columns = df_rules_list.columns.str.lower()  
-            self.load_result_to_bq_tables(df_rules_list,
-                                          rules_execution_process_details)
-            
-            ##  Get Rules Metric Report for Send Summary mail and Run Invalid Rec SQls
-            df_rules_result = self.get_rule_metrics_details(rule_run_dt=rules_execution_process_details["rules_execution_date"])
-                                                            # metadata_condition=metadata_where_condition)
-            
-            self.log.info(f"Rule Summary Length: {len(df_rules_result)}")
-            if len(df_rules_result) == 0:
-                raise Exception(" No Results found for Summary Mail and Run Invalid SQLs.")
-            df_rules_result_tbl_level = df_rules_result[df_rules_result['email_alert_level']== 'TABLE']
-            df_rules_result_sub_dmn_level = df_rules_result[(df_rules_result['email_alert_level']== 'SUB_DOMAIN') | (df_rules_result['email_alert_level']== '')]
-            ##  Send Summary Report Table Level
-            if len(df_rules_result_tbl_level) > 0:
-                self.send_summary_table_level_mail(df_mail_summary=df_rules_result_tbl_level,
-                                       error_rules_list=error_list,
-                                       rule_run_dt=rules_execution_process_details["rules_execution_date"],
-                                       schd_type = schd_type)
+                #Split Existing and New tables in control table
+                fetch_full_ctrl_tbl = f"""select * from {config.dqaas_src_chk_avail} where cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern') and profile_type='{profile_type}'"""
+                full_ctrl_tbl = self.utils.run_bq_sql(
+                    bq_auth=config.dq_gcp_auth_payload,
+                    select_query=fetch_full_ctrl_tbl
+                )
+                ctrl_tbl_n = full_ctrl_tbl[full_ctrl_tbl['data_availability_indicator']=='N']
+                if len(full_ctrl_tbl) > 0:
+                    index_cols = ['project_name','database_name','table_name'] if data_src=='GCP' else ['database_name','table_name']
+                    #Splitting New and Old Records
+                    count_results_df.set_index(index_cols, inplace=True)
+                    ctrl_tbl_n.set_index(index_cols, inplace=True)
+                    full_ctrl_tbl.set_index(index_cols, inplace=True)
+                    new_records = count_results_df[~count_results_df.index.isin(full_ctrl_tbl.index)].reset_index()
+                    old_records = count_results_df[count_results_df.index.isin(ctrl_tbl_n.index)].reset_index()
 
-            ##  Send Summary Report Sub Domain Level
-            if len(df_rules_result_sub_dmn_level) > 0:
-                sub_domain_list = df_rules_result_sub_dmn_level['data_sub_dmn'].unique().tolist()
-                for domain in sub_domain_list:    
-                    self.send_summary_sub_dmn_level_mail(
-                        sub_domain=domain,
-                        rules_data=df_rules_result_sub_dmn_level,
-                        df_rules_error_list=error_list,
-                        critical_flag=''
-                    )
+                    #Splitting data availability indicator Y/N
+                    data_avail_ind_y = old_records[old_records['data_availability_indicator']=='Y']
+                    data_avail_ind_n = old_records[old_records['data_availability_indicator']=='N']
+                    self.logger.info(f"Data Availability of Existing Data :: Yes Length :: {len(data_avail_ind_y)}, No Length :: {len(data_avail_ind_n)}")
+                    #Updating retry_count and data availability indicator for old records
+                    if len(data_avail_ind_y) > 0:
+                        upd_ctrl_tbl_src_chk_y = f"""update {config.dqaas_src_chk_avail} set data_availability_indicator='Y',retry_count=retry_count+1,update_made_ts=current_timestamp() where cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern') and profile_type='{profile_type}' and concat(project_name,'.',database_name,'.',table_name) in ({','.join([f"'{p}.{d}.{t}'" for p,d,t in zip(data_avail_ind_y['project_name'],data_avail_ind_y['database_name'],data_avail_ind_y['table_name'])])})"""
+                        upd_ctrl_tbl_y = self.utils.run_bq_sql(
+                            bq_auth=config.dq_gcp_auth_payload,
+                            select_query=upd_ctrl_tbl_src_chk_y
+                        )
+                        self.logger.info(f"{upd_ctrl_tbl_y.to_string()}")
+                    if len(data_avail_ind_n) > 0:
+                        upd_ctrl_tbl_src_chk_n = f"""update {config.dqaas_src_chk_avail} set retry_count=retry_count+1,update_made_ts=current_timestamp() where cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern') and profile_type='{profile_type}' and concat(project_name,'.',database_name,'.',table_name) in ({','.join([f"'{p}.{d}.{t}'" for p,d,t in zip(data_avail_ind_n['project_name'],data_avail_ind_n['database_name'],data_avail_ind_n['table_name'])])})"""
+                        upd_ctrl_tbl_n = self.utils.run_bq_sql(
+                            bq_auth=config.dq_gcp_auth_payload,
+                            select_query=upd_ctrl_tbl_src_chk_n
+                        )
+                        self.logger.info(f"{upd_ctrl_tbl_n.to_string()}")
+                else: new_records = count_results_df
 
-            if src_tablename is not None and run_type in ("RR"):
-                self.del_invalid_records(tablename=src_tablename,
-                                         start_dt=date_interval['START_DATE'],
-                                         end_dt=date_interval['END_DATE'],
-                                         schd_type=schd_type)
-
-            ##  Invalid Rec SQLs Execution Block
-            self.execute_invalid_sqls(df_invalid_rec=df_rules_result,
-                                      rule_run_dt=rules_execution_process_details["rules_execution_date"],
-                                      date_interval=date_interval,
-                                      val_to_replace=val_to_replace_str)   
-
-            exec_status, exec_msg = "SUCCESS", f"{self.run_process_details} Completed"
-            self.log.info(exec_msg)
-        except RuntimeError as err:
-            exec_status, exec_msg = "ERROR", f"Run Time Error. Error:{err}"
-            self.log.error(exec_msg)
-        except ValueError as err:
-            exec_status, exec_msg = "ERROR", f"Value Error. Error:{err}"
-            self.log.error(exec_msg)
-        except HTTPError as err:
-            exec_status, exec_msg = "ERROR", f"HTTP Error. Error:{err}"
-            self.log.error(exec_msg)
-        except Exception as err:
-            exec_status, exec_msg = "ERROR", f"Exception Occurred in Main Block. Error:{err}"
-            self.log.error(exec_msg)
-
-        #if schd_type == "DAILY"  :
-        #        mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the daily run on ({self.current_date})"
-        #elif schd_type == "MONTHLY":
-        #    mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the monthly run on ({self.current_date})"
-        #else:
-        #    mail_subject_msg = f"DQ-2.0 Rule Profiling completed for the adhoc run on ({self.current_date})"
-        #    
-        ## MJ:
-        #self.email.send_common_message(email_template_filepath=self.email_template,
-        #                               #mail_subject=f"1CorpData Rule Profiling Completed",
-        #                               mail_subject = mail_subject_msg,
-        #                               message="DQ-2.0 rule Profiling Initiation completed",
-        #                               receipents_email_id=self.summary_alert_email_group)
-        
-        return exec_status, exec_msg
+                new_records = new_records.drop(['count'], axis=1)
+                #Loading New Records into Control Table
+                pandas_gbq.to_gbq(
+                    dataframe=new_records,
+                    destination_table=config.dqaas_src_chk_avail,
+                    if_exists='append',
+                    credentials=self.db_creds,
+                    project_id=config.DQ_GCP_CONN_PROJECT_ID,
+                )
+                self.logger.info("Source Check Availability Control table loaded successfully")
+                #Summary Email of Source Check Availability
+                fetch_ctrl_tbl = f"""select * from {config.dqaas_src_chk_avail} where cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern') and profile_type='{profile_type}'"""
+                full_ctrl_tbl = self.utils.run_bq_sql(
+                    bq_auth=config.dq_gcp_auth_payload,
+                    select_query=fetch_ctrl_tbl
+                )
+                full_ctrl_tbl.set_index(index_cols, inplace=True)
+                email_df = full_ctrl_tbl[full_ctrl_tbl.index.isin(count_results_df.index)].reset_index()
+                self.send_email_alert(df_val=email_df, receipents_email_group=config.SLA_WATCHER_DEFAULT_MAIL_GROUP)
+                
+        except Exception as e:
+            self.logger.error(f"Error in main method of Source Check Availability Process. Error: {e}")
+            raise f"Error in main method of Source Check Availability Process. Error: {e}"
