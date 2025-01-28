@@ -1,168 +1,155 @@
-def send_summary_table_level_mail(self, df_mail_summary: pd.DataFrame, error_rules_list: list, rule_run_dt, schd_type, profile_type="Rule"):
-    try:
-        # Fetch environment dynamically and capitalize it (e.g., Dev, Prod)
-        environment = self.config.get('environment', 'env').capitalize()
+def run_gcp_rule_profile_engine(self, df_rules_list: pd.DataFrame, val_to_replace: dict):
+        try:
+            self.log.info('-------------------------------------------------------------------------')
+            self.log.info('Rule Profile Engine - Initiated')
+            self.log.info('-------------------------------------------------------------------------')
 
-        self.log.info(f'Summary Result Len: {len(df_mail_summary)}, Error list : {error_rules_list}')
-        if len(df_mail_summary) > 0:
-            src_table_list = df_mail_summary["table_name"].unique().tolist()
-            self.log.info(f'Source Table List: {src_table_list}')
+            error_list = []
+            df_rules_list['COL_VLD_CNT'] = ""
+            df_rules_list['COL_INVLD_CNT'] = ""
+            df_rules_list['COL_INVLD_PCT'] = ""
+            df_rules_list['COL_NULL_CNT'] = ""
+            df_rules_list['COL_DIST_CNT'] = ""
+            df_rules_list['COL_MIN_VAL'] = ""
+            df_rules_list['COL_MAX_VAL'] = ""
+            df_rules_list['COL_VLD_PCT'] = ""
+            df_rules_list['COL_TOT_CNT'] = "" 
             
-            df_rules_error_list = pd.DataFrame.from_records(error_rules_list)
-            df_rules_error_list = df_rules_error_list.reset_index(drop=True)
-            for tbl in src_table_list:
-                product_name = df_mail_summary[df_mail_summary['table_name'] == tbl]['product_name'][0]
-                data_sub_dmn = df_mail_summary[df_mail_summary['table_name'] == tbl]['data_sub_dmn'][0]
-                self.log.info(f'Product Name: {product_name}')
-                self.log.info(f'Data Sub Domain: {data_sub_dmn}')
-                self.log.info(f'Source Table: {tbl}')
-                try:
-                    # Generate dynamic email subject based on schedule type and profile type
-                    if schd_type == "DAILY":
-                        subject = f'{profile_type.capitalize()} Profiling|{environment}|Daily_Summary|DQ2.0|{rule_run_dt}'
-                    elif schd_type == "MONTHLY":
-                        subject = f'{profile_type.capitalize()} Profiling|{environment}|Monthly_Summary|DQ2.0|{rule_run_dt}'
+            remote_clients = {}
+            local_bq_client, _ = self.dq_bigquery_client(self.dq_auth_payload)
+            for idx in df_rules_list.index:
+                self.log.info('-------------------------------------------------------------------------')
+                is_remote = df_rules_list.loc[idx,"run_queries_on_remote"].upper()
+                if is_remote.upper() == 'Y':
+                    project_space = df_rules_list.loc[idx,"VSAD"]
+                    if project_space not in remote_clients:
+                        remote_client, _ = self.dq_bigquery_client_dynamic(project_space)
+                        remote_clients[project_space] = remote_client
                     else:
-                        subject = f'{profile_type.capitalize()} Profiling|{environment}|Adhoc_Summary|DQ2.0|{rule_run_dt}'
-
-                    self.log.info(f'Email Subject: {subject}')
-
-                    # Prepare the email body
-                    message = 'Please find the below summary.<br>'
-                    email_cols_list = ['rule_run_dt', 'db_name', 'table_name', 'src_col', 'dq_pillar',
-                                       'rule_name', 'col_vld_cnt', 'col_invld_cnt', 'col_vld_pct', 'dq_status']
-
-                    df_email_rules_data: pd.DataFrame = df_mail_summary[email_cols_list][df_mail_summary["table_name"] == tbl]
-                    if len(df_email_rules_data) > 0:
-                        df_email_rules_data = df_email_rules_data.sort_values(by=['col_vld_pct'])
-                        df_email_rules_data['col_vld_pct'] = df_email_rules_data['col_vld_pct'].astype(float).map(self.round_off)
-
-                        self.log.info(f'SQL Profile eMail Columns: {df_email_rules_data.columns.tolist()}')
-                        df_email_rules_data = df_email_rules_data.rename(columns={  
-                                                                                'db_name': 'Database',
-                                                                                'table_name': 'Table',
-                                                                                'src_col': 'Column',
-                                                                                'dq_pillar': 'DQ Pillar',
-                                                                                'rule_name': 'Measure',
-                                                                                'col_vld_cnt': 'Valid Count',
-                                                                                'col_invld_cnt': 'Invalid Count',
-                                                                                'col_vld_pct': 'DQ Score',
-                                                                                'dq_status': 'Indicator',
-                                                                                'rule_run_dt': 'Date'})
-                        df_email_rules_data = df_email_rules_data.reset_index(drop=True)
-
-                    # Add error rules to the email body, if any
-                    if len(df_rules_error_list) > 0:
-                        df_rules_error_list_email = df_rules_error_list[df_rules_error_list["table"] == tbl]
-                        df_rules_error_list_email = df_rules_error_list_email.reset_index(drop=True)
-                        if len(df_rules_error_list_email) > 0:
-                            addl_msg = f'<br><b>Rule Profile Error List:</b>{df_rules_error_list_email.to_html()}'
-                            message += addl_msg
-
-                    # Send the email
-                    self.email.send_common_message(
-                        email_template_filepath=self.email_template,
-                        mail_subject=subject,
-                        message=message,
-                        receipents_email_id=self.summary_alert_email_group,
-                        df_val=df_email_rules_data
-                    )
-                    self.log.info(f'Successfully Triggered {tbl} Summary Email for DQ-2.0')
-                except Exception as e:
-                    self.log.error(f'Error Occurred in {tbl} Summary Email for DQ-2.0. Error:{e}')
-                continue
-
-    except Exception as e:
-        self.log.error(f'Error Occurred in Summary Email for DQ-2.0. Error:{e}')
-        self.opsgenie_alert(priority="P1",
-                            message='DQ-2.0 - Summary Email Error',
-                            description=f'Failure Occurred while sending summary email',
-                            details={'Message': 'DQ-2.0 - Summary Email Error'},
-                            alert_type="Exception")
-
-≈===========
-
-
-def send_summary_table_level_mail(self, df_mail_summary: pd.DataFrame, error_rules_list: list, rule_run_dt, schd_type, profile_type="Rule"):
-    try:
-        self.log.info(f'Summary Result Len: {len(df_mail_summary)}, Error list : {error_rules_list}')
-        
-        # Fetch environment dynamically and capitalize it (e.g., "Dev", "Prod")
-        environment = self.config.get('environment', 'env').capitalize()
-
-        if len(df_mail_summary) > 0:
-            src_table_list = df_mail_summary["table_name"].unique().tolist()
-            self.log.info(f'Source Table List: {src_table_list}')
-            
-            df_rules_error_list = pd.DataFrame.from_records(error_rules_list)
-            df_rules_error_list = df_rules_error_list.reset_index(drop=True)
-            for tbl in src_table_list:
-                product_name = df_mail_summary[df_mail_summary['table_name'] == tbl]['product_name'].iloc[0]
-                data_sub_dmn = df_mail_summary[df_mail_summary['table_name'] == tbl]['data_sub_dmn'].iloc[0]
-                self.log.info(f'Product Name: {product_name}')
-                self.log.info(f'Data Sub Domain: {data_sub_dmn}')
-                self.log.info(f'Source Table: {tbl}')
+                        remote_client = remote_clients[project_space]
+                    bq_client = remote_client
+                else:
+                    bq_client = local_bq_client
+                rule = df_rules_list.loc[idx, 'RULE_NAME']
+                table_name = df_rules_list.loc[idx, 'TABLE_NAME']
+                rule_sql = df_rules_list.loc[idx, 'RULE_SQL']
+                valid_count, invalid_count = 0, 0
                 try:
-                    # Dynamic email subject for Rule, Auto, or Custom profiling
-                    if schd_type == "DAILY":
-                        subject = f'{profile_type.capitalize()} Profiling|{environment}|Daily_Summary|DQ2.0|{rule_run_dt}'
-                    elif schd_type == "MONTHLY":
-                        subject = f'{profile_type.capitalize()} Profiling|{environment}|Monthly_Summary|DQ2.0|{rule_run_dt}'
-                    else:
-                        subject = f'{profile_type.capitalize()} Profiling|{environment}|Adhoc_Summary|DQ2.0|{rule_run_dt}'
+                    rule_id = df_rules_list.loc[idx, 'PROFILE_ID']
+                    df_rules_list["profile_id"] = rule_id
+                    self.log.info(f'index:{idx}, profile_id:{rule_id}, rule_name:{rule}')
+                    
+                    ##  Replacing the placeholder in SQL Query with actual values.
+                    ##  val_to_replace argument is a dict variable which has values to replace in sql
+                    rule_sql = reduce(lambda sql, replace_str: sql.replace(*replace_str), [rule_sql, *list(val_to_replace.items())])
+                    self.log.info(f"RuleSQL:{rule_sql}")
+                    
+                    df_result = bq_client.query(rule_sql).to_dataframe()
 
-                    self.log.info(f'Email Subject: {subject}')
+                    self.log.info(f'\n{df_result}')
 
-                    # Prepare the email body
-                    message = 'Please find the below summary.<br>'
-                    email_cols_list = ['rule_run_dt', 'db_name', 'table_name', 'src_col', 'dq_pillar',
-                                       'rule_name', 'col_vld_cnt', 'col_invld_cnt', 'col_vld_pct', 'dq_status']
+                    try:
+                        valid_count =  df_result[df_result[rule] == 'VALID']['count']
+                        self.log.info(f"valid count1: {valid_count}")
+                        valid_count = valid_count.iloc[0] if len(valid_count) > 0 else 0
+                        self.log.info(f"valid count2: {valid_count}")
+                    except:
+                        valid_count = 0
 
-                    df_email_rules_data: pd.DataFrame = df_mail_summary[email_cols_list][df_mail_summary["table_name"] == tbl]
-                    if len(df_email_rules_data) > 0:
-                        df_email_rules_data = df_email_rules_data.sort_values(by=['col_vld_pct'])
-                        df_email_rules_data['col_vld_pct'] = df_email_rules_data['col_vld_pct'].astype(float).map(self.round_off)
+                    try:
+                        invalid_count =  df_result[df_result[rule] == 'INVALID']['count']
+                        self.log.info(f"invalid count1: {invalid_count}")
+                        invalid_count = invalid_count.iloc[0] if len(invalid_count) > 0 else 0
+                        self.log.info(f"invalid count2: {invalid_count}")
+                    except:
+                        invalid_count = 0
 
-                        self.log.info(f'SQL Profile Email Columns: {df_email_rules_data.columns.tolist()}')
-                        df_email_rules_data = df_email_rules_data.rename(columns={  
-                            'db_name': 'Database',
-                            'table_name': 'Table',
-                            'src_col': 'Column',
-                            'dq_pillar': 'DQ Pillar',
-                            'rule_name': 'Measure',
-                            'col_vld_cnt': 'Valid Count',
-                            'col_invld_cnt': 'Invalid Count',
-                            'col_vld_pct': 'DQ Score',
-                            'dq_status': 'Indicator',
-                            'rule_run_dt': 'Date'
-                        })
-                        df_email_rules_data = df_email_rules_data.reset_index(drop=True)
-
-                    # Add error rules to the email body, if any
-                    if len(df_rules_error_list) > 0:
-                        df_rules_error_list_email = df_rules_error_list[df_rules_error_list["table"] == tbl]
-                        df_rules_error_list_email = df_rules_error_list_email.reset_index(drop=True)
-                        if len(df_rules_error_list_email) > 0:
-                            addl_msg = f'<br><b>Rule Profile Error List:</b>{df_rules_error_list_email.to_html()}'
-                            message += addl_msg
-
-                    # Send the email
-                    self.email.send_common_message(
-                        email_template_filepath=self.email_template,
-                        mail_subject=subject,
-                        message=message,
-                        receipents_email_id=self.summary_alert_email_group,
-                        df_val=df_email_rules_data
-                    )
-                    self.log.info(f'Successfully Triggered {tbl} Summary Email for DQ-2.0')
                 except Exception as e:
-                    self.log.error(f'Error Occurred in {tbl} Summary Email for DQ-2.0. Error:{e}')
-                continue
+                    self.log.error(f'Error in executing Rule SQL. Error:{e}')
 
-    except Exception as e:
-        self.log.error(f'Error Occurred in Summary Email for DQ-2.0. Error:{e}')
-        self.opsgenie_alert(priority="P1",
-                            message='DQ-2.0 - Summary Email Error',
-                            description=f'Failure Occurred while sending summary email',
-                            details={'Message': 'DQ-2.0 - Summary Email Error'},
-                            alert_type="Exception")
+                    error_list.append({'table': table_name,
+                                        'rules': rule,
+                                        'query': rule_sql})
+                    
+                    self.email.send_common_message(mail_subject='Rule Failure',
+                                                    message=f'Rule Failed.<br>Rule: {rule}<br>Query: {rule_sql}',
+                                                    receipents_email_id=self.failure_alert_email_group,
+                                                    email_template_filepath=self.email_template)
+
+                    self.opsgenie_alert(one_corp_yn="Y",
+                                        priority="P2",
+                                        message='DQ-2.0 Rule Failure',
+                                        description=f'DQ-2.0 Rule Failed.<br>Rule: {rule}<br>Query: {rule_sql}',
+                                        details={'Message': 'DQ-2.0 Rule Failure', 'Rule': rule, 'Query': rule_sql},
+                                        alert_type="Exception")
+                    
+                total_record_count, valid_percent, invalid_percent = 0, 0.0, 0.0
+                total_record_count = int(valid_count) + int(invalid_count)
+                try:
+                    valid_percent = float(valid_count/total_record_count) * 100
+                except:
+                    valid_percent = 0.00
+                try:
+                    invalid_percent = float(invalid_count/total_record_count) * 100
+                except:
+                    invalid_percent = 0.00
+
+                self.log.info(f'valid_count:{valid_count}, invalid_count:{invalid_count}, total_record_count:{total_record_count}')
+                self.log.info(f'valid_percent:{valid_percent}, invalid_percent:{invalid_percent}')
+
+                if valid_percent < 100:
+                    if df_rules_list.loc[idx, 'OPSGENIE_FLAG'] == 'Y':
+                        env = config.get_config_values('environment', 'env')
+                        prod_name = df_rules_list.loc[idx, 'PRODUCT_NAME']
+                        db_name = df_rules_list.loc[idx, 'DATABASE_NAME']
+                        alert_type = "SQL_Rule_failed"
+                        run_date = datetime.now().isoformat()
+                        self.opsgenie_alert(one_corp_yn="Y",
+                                    priority="P3",
+                                    message=f"Lensx|{env}|{alert_type}|{prod_name}|{db_name}| Rule Score less than 100|{run_date}",
+                                    description=f'Rule Score less than 100 <br> Rule: {rule}',
+                                    details={'Message': 'DQ-2.0 Score less than 100', 'Rule': rule},
+                                    alert_type="Rule failed")
+                    elif df_rules_list.loc[idx, 'JIRA_ASSIGNEE'] is not None:  
+                        try:
+                            jira_assignee = df_rules_list.loc[idx, 'JIRA_ASSIGNEE']
+                            lable = "DQaaS"       
+                            table_name = df_rules_list.loc[idx, 'TABLE_NAME']                  
+                            self.log.info(f"Calling Jira Module for: {table_name}")                        
+                            self.log.info(f"No data found for the table: {table_name}")  
+
+                            process_date = f"'{datetime.now().date() - timedelta(days=config.RP_N_DAYS_LIMIT)}'"                                            
+                            
+                            summary = f"LensX|DQ Failure|Table: {table_name} no data found for profiling"
+                            description = f"DQ has failed for Table : {table_name} on Process date : {process_date}."
+                            jira_client = Jira_ticket()
+                            ticket_id=jira_client.create_jira_ticket(jira_assignee,summary, description,lable)
+                            self.log.info(f"Jira Id created: {ticket_id}")
+                        except Exception as err:
+                            self.log.error(f"Error occured while creating JIRA tickets {err}")
+
+                
+                df_rules_list.loc[idx, 'COL_VLD_PCT'] = self.round_off(float(valid_percent))
+                df_rules_list.loc[idx, 'COL_INVLD_PCT'] =  self.round_off(float(invalid_percent))
+                df_rules_list.loc[idx, 'COL_VLD_CNT'] = int(valid_count)
+                df_rules_list.loc[idx, 'COL_INVLD_CNT'] = int(invalid_count)
+                df_rules_list.loc[idx, 'COL_TOT_CNT'] = total_record_count
+                df_rules_list.loc[idx, 'COL_NULL_CNT'] = 0
+                df_rules_list.loc[idx, 'COL_DIST_CNT'] = 0
+                df_rules_list.loc[idx, 'COL_MIN_VAL'] = 0
+                df_rules_list.loc[idx, 'COL_MAX_VAL'] = 0   
+            return df_rules_list, error_list
+        except Exception as err:
+            self.log.error(f"Error Occurred in Rules Profiling. Error: {err}")
+            print(traceback.format_exc())
+        return pd.DataFrame(), []
+
+    @staticmethod
+    def critical_type_header_name(flag: str = None):
+        if flag is None:
+            return ""
+        if flag == 'Y':
+            return 'Critical '
+        if flag == 'N':
+            return 'Non Critical '
+        return ""
