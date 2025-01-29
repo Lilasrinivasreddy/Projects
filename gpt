@@ -1,3 +1,26 @@
+ ###############     Monitoring and failure reports logging  ##################
+    def log_monitor_table(self, job_id, job_name, job_start_ts, job_end_ts, entry_ts, step_code, comments):
+        """
+        Log the job step into the monitor table.
+        """
+        #job_end_ts = datetime.now()
+        #entry_ts = datetime.now()
+        if (str(job_end_ts).lower() == 'null'):
+            query = f"""
+            INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table} (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
+            VALUES ({job_id}, '{job_name}', '{job_start_ts}', timestamp({job_end_ts}), '{entry_ts}', '{self.user_id}', '{step_code}', '{comments}')"""
+        else :
+            query = f"""
+            INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table} (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
+            VALUES ({job_id}, '{job_name}', '{job_start_ts}', timestamp('{job_end_ts}'), '{entry_ts}', '{self.user_id}', '{step_code}', '{comments}')"""
+        self.logger.info(query)
+        try:
+            self.client.query(query).result()
+            self.logger.info(f"Inserted into monitor table: {comments}")
+        except Exception as e:
+            self.logger.error(f"Error logging to monitor table: {str(e)}")
+            raise
+        
     def log_failure(self, table_id, table_name, run_count, data_date, error_message):
         """
         Log any failures into the failure report table.
