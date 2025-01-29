@@ -1,155 +1,17 @@
-def run_gcp_rule_profile_engine(self, df_rules_list: pd.DataFrame, val_to_replace: dict):
+    def log_failure(self, table_id, table_name, run_count, data_date, error_message):
+        """
+        Log any failures into the failure report table.
+        """
+        run_ts = datetime.now()
+        run_status = 'Failure'
+        query = f"""
+            INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.failure_rpt_table} (table_id, table_name, run_ts, data_date, run_count, run_status, error_msg)
+            VALUES ({table_id}, '{table_name}', '{run_ts}', '{data_date}', {run_count}, '{run_status}' , '{error_message}')
+        """
+        self.logger.info(query)
         try:
-            self.log.info('-------------------------------------------------------------------------')
-            self.log.info('Rule Profile Engine - Initiated')
-            self.log.info('-------------------------------------------------------------------------')
-
-            error_list = []
-            df_rules_list['COL_VLD_CNT'] = ""
-            df_rules_list['COL_INVLD_CNT'] = ""
-            df_rules_list['COL_INVLD_PCT'] = ""
-            df_rules_list['COL_NULL_CNT'] = ""
-            df_rules_list['COL_DIST_CNT'] = ""
-            df_rules_list['COL_MIN_VAL'] = ""
-            df_rules_list['COL_MAX_VAL'] = ""
-            df_rules_list['COL_VLD_PCT'] = ""
-            df_rules_list['COL_TOT_CNT'] = "" 
-            
-            remote_clients = {}
-            local_bq_client, _ = self.dq_bigquery_client(self.dq_auth_payload)
-            for idx in df_rules_list.index:
-                self.log.info('-------------------------------------------------------------------------')
-                is_remote = df_rules_list.loc[idx,"run_queries_on_remote"].upper()
-                if is_remote.upper() == 'Y':
-                    project_space = df_rules_list.loc[idx,"VSAD"]
-                    if project_space not in remote_clients:
-                        remote_client, _ = self.dq_bigquery_client_dynamic(project_space)
-                        remote_clients[project_space] = remote_client
-                    else:
-                        remote_client = remote_clients[project_space]
-                    bq_client = remote_client
-                else:
-                    bq_client = local_bq_client
-                rule = df_rules_list.loc[idx, 'RULE_NAME']
-                table_name = df_rules_list.loc[idx, 'TABLE_NAME']
-                rule_sql = df_rules_list.loc[idx, 'RULE_SQL']
-                valid_count, invalid_count = 0, 0
-                try:
-                    rule_id = df_rules_list.loc[idx, 'PROFILE_ID']
-                    df_rules_list["profile_id"] = rule_id
-                    self.log.info(f'index:{idx}, profile_id:{rule_id}, rule_name:{rule}')
-                    
-                    ##  Replacing the placeholder in SQL Query with actual values.
-                    ##  val_to_replace argument is a dict variable which has values to replace in sql
-                    rule_sql = reduce(lambda sql, replace_str: sql.replace(*replace_str), [rule_sql, *list(val_to_replace.items())])
-                    self.log.info(f"RuleSQL:{rule_sql}")
-                    
-                    df_result = bq_client.query(rule_sql).to_dataframe()
-
-                    self.log.info(f'\n{df_result}')
-
-                    try:
-                        valid_count =  df_result[df_result[rule] == 'VALID']['count']
-                        self.log.info(f"valid count1: {valid_count}")
-                        valid_count = valid_count.iloc[0] if len(valid_count) > 0 else 0
-                        self.log.info(f"valid count2: {valid_count}")
-                    except:
-                        valid_count = 0
-
-                    try:
-                        invalid_count =  df_result[df_result[rule] == 'INVALID']['count']
-                        self.log.info(f"invalid count1: {invalid_count}")
-                        invalid_count = invalid_count.iloc[0] if len(invalid_count) > 0 else 0
-                        self.log.info(f"invalid count2: {invalid_count}")
-                    except:
-                        invalid_count = 0
-
-                except Exception as e:
-                    self.log.error(f'Error in executing Rule SQL. Error:{e}')
-
-                    error_list.append({'table': table_name,
-                                        'rules': rule,
-                                        'query': rule_sql})
-                    
-                    self.email.send_common_message(mail_subject='Rule Failure',
-                                                    message=f'Rule Failed.<br>Rule: {rule}<br>Query: {rule_sql}',
-                                                    receipents_email_id=self.failure_alert_email_group,
-                                                    email_template_filepath=self.email_template)
-
-                    self.opsgenie_alert(one_corp_yn="Y",
-                                        priority="P2",
-                                        message='DQ-2.0 Rule Failure',
-                                        description=f'DQ-2.0 Rule Failed.<br>Rule: {rule}<br>Query: {rule_sql}',
-                                        details={'Message': 'DQ-2.0 Rule Failure', 'Rule': rule, 'Query': rule_sql},
-                                        alert_type="Exception")
-                    
-                total_record_count, valid_percent, invalid_percent = 0, 0.0, 0.0
-                total_record_count = int(valid_count) + int(invalid_count)
-                try:
-                    valid_percent = float(valid_count/total_record_count) * 100
-                except:
-                    valid_percent = 0.00
-                try:
-                    invalid_percent = float(invalid_count/total_record_count) * 100
-                except:
-                    invalid_percent = 0.00
-
-                self.log.info(f'valid_count:{valid_count}, invalid_count:{invalid_count}, total_record_count:{total_record_count}')
-                self.log.info(f'valid_percent:{valid_percent}, invalid_percent:{invalid_percent}')
-
-                if valid_percent < 100:
-                    if df_rules_list.loc[idx, 'OPSGENIE_FLAG'] == 'Y':
-                        env = config.get_config_values('environment', 'env')
-                        prod_name = df_rules_list.loc[idx, 'PRODUCT_NAME']
-                        db_name = df_rules_list.loc[idx, 'DATABASE_NAME']
-                        alert_type = "SQL_Rule_failed"
-                        run_date = datetime.now().isoformat()
-                        self.opsgenie_alert(one_corp_yn="Y",
-                                    priority="P3",
-                                    message=f"Lensx|{env}|{alert_type}|{prod_name}|{db_name}| Rule Score less than 100|{run_date}",
-                                    description=f'Rule Score less than 100 <br> Rule: {rule}',
-                                    details={'Message': 'DQ-2.0 Score less than 100', 'Rule': rule},
-                                    alert_type="Rule failed")
-                    elif df_rules_list.loc[idx, 'JIRA_ASSIGNEE'] is not None:  
-                        try:
-                            jira_assignee = df_rules_list.loc[idx, 'JIRA_ASSIGNEE']
-                            lable = "DQaaS"       
-                            table_name = df_rules_list.loc[idx, 'TABLE_NAME']                  
-                            self.log.info(f"Calling Jira Module for: {table_name}")                        
-                            self.log.info(f"No data found for the table: {table_name}")  
-
-                            process_date = f"'{datetime.now().date() - timedelta(days=config.RP_N_DAYS_LIMIT)}'"                                            
-                            
-                            summary = f"LensX|DQ Failure|Table: {table_name} no data found for profiling"
-                            description = f"DQ has failed for Table : {table_name} on Process date : {process_date}."
-                            jira_client = Jira_ticket()
-                            ticket_id=jira_client.create_jira_ticket(jira_assignee,summary, description,lable)
-                            self.log.info(f"Jira Id created: {ticket_id}")
-                        except Exception as err:
-                            self.log.error(f"Error occured while creating JIRA tickets {err}")
-
-                
-                df_rules_list.loc[idx, 'COL_VLD_PCT'] = self.round_off(float(valid_percent))
-                df_rules_list.loc[idx, 'COL_INVLD_PCT'] =  self.round_off(float(invalid_percent))
-                df_rules_list.loc[idx, 'COL_VLD_CNT'] = int(valid_count)
-                df_rules_list.loc[idx, 'COL_INVLD_CNT'] = int(invalid_count)
-                df_rules_list.loc[idx, 'COL_TOT_CNT'] = total_record_count
-                df_rules_list.loc[idx, 'COL_NULL_CNT'] = 0
-                df_rules_list.loc[idx, 'COL_DIST_CNT'] = 0
-                df_rules_list.loc[idx, 'COL_MIN_VAL'] = 0
-                df_rules_list.loc[idx, 'COL_MAX_VAL'] = 0   
-            return df_rules_list, error_list
-        except Exception as err:
-            self.log.error(f"Error Occurred in Rules Profiling. Error: {err}")
-            print(traceback.format_exc())
-        return pd.DataFrame(), []
-
-    @staticmethod
-    def critical_type_header_name(flag: str = None):
-        if flag is None:
-            return ""
-        if flag == 'Y':
-            return 'Critical '
-        if flag == 'N':
-            return 'Non Critical '
-        return ""
+            self.client.query(query).result()
+            self.logger.info(f"Inserted failure record for table {table_name}")
+        except Exception as e:
+            self.logger.error(f"Error logging to failure report table: {str(e)}")
+            raise
