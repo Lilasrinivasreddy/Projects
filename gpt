@@ -1,4 +1,46 @@
- ###############     Monitoring and failure reports logging  ##################
+field name	mode	type	description	
+profile_id		INTEGER		
+table_name		STRING		
+run_ts		TIMESTAMP		
+run_status		STRING		
+profile_date		DATE		
+comments		STRING		
+				
+Start of the day	Insert all meta data records into this table (having active_flag='Y')			
+	profile_id	223		
+	table_name	outlet_v		
+	run_ts	2025-01-26 0:00:00		
+	run_status	Not Started	NS	
+	profile_date	null		
+	comments			
+				
+After execution	Update the corresponding profile_id			
+	profile_id	223		
+	table_name	outlet_v		
+	run_ts	2025-01-26 16:22:00		
+	run_status	Successful/failure	C/F/ND	
+	profile_date	1/25/2025		
+	comments	error msg/any other msg		
+
+Create a function to collect logs for every function and dump them into a table.
+Consider the tables: job monitor table and job monitor report table.
+Assign a job ID to each job/script.
+Print error messages in the comments column for failed functions.
+Populate the tables with metadata records.
+Update the run status and comments after execution.
+Create another table for each rule with entries for every profile ID.
+Capture error messages in the comments column.
+
+
+The meeting discussed the need to create a function for collecting and storing logs in a table, with emphasis on important tables and assigning unique job IDs and script names.
+A function needs to be created to collect logs for each function and dump them into a table.
+The job monitor table and job monitor report table are important tables to consider.
+Each job should be assigned a unique job ID, and the job name should be the script name.
+
+
+
+
+###############     Monitoring and failure reports logging  ##################
     def log_monitor_table(self, job_id, job_name, job_start_ts, job_end_ts, entry_ts, step_code, comments):
         """
         Log the job step into the monitor table.
