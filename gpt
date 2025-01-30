@@ -1,1 +1,2481 @@
+#common handlers
+from datetime import datetime, timedelta
+import pandas as pd
+import numpy as np
+import psutil
+import os
+import sys
+import logging
+import croniter
+import getpass
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+## Added on 2024-03-26 for Connection issues
+import argparse
+from sqlalchemy import create_engine
+import decimal
+
+## GCP Connection
+from google.cloud import bigquery
+import requests
+from requests.exceptions import HTTPError
+import json
+import google.auth
+import time
+import base64
+import pandas_gbq
+from configparser import ConfigParser
+
+## Global Variables
+__ROOT_DIR = os.path.dirname(__file__) + os.sep + os.pardir
+
+sys.path.insert(1,os.path.abspath(os.path.dirname(__file__)))
+## Importing User Defined Modules
+from logger import Logger
+
+## get the instance of the config parser
+def get_config():
+    config = ConfigParser()
+    config.file = os.path.join(__ROOT_DIR, 'config', 'config.ini')
+    print(config.file)
+    if os.path.exists(config.file):
+        config.read(config.file)
+        return config
+    print("config.ini file not found")
+    return None
+
+
+__config = get_config()
+
+def get_config_values(section: str, params: str):
+    try:
+        return __config.get(section, params)
+    except Exception as e:
+        print(f"Section/Key Not Found in config. Section: {section}, Param: {params}. Error: {e}")
+
+## Set the logger instance
+def set_logger(
+    logger_path: str, log_filename: str, process_name: str, no_date_yn: str = 'N',
+    only_date_yn: str = "N", date_with_minutes_yn: str = "N", date_with_hourly_yn: str = "N"
+    ):
+
+    date_format = '%Y-%m-%d-%H-%M-%S'
+
+    if only_date_yn == 'Y':
+        date_format = '%Y-%m-%d'
+        
+    if date_with_minutes_yn == 'Y':
+        date_format = '%Y-%m-%d-%H-%M'
+
+    if date_with_hourly_yn == 'Y':
+        date_format = '%Y-%m-%d-%H-%M'
+
+    logger_filename = f"{log_filename}_{datetime.now().strftime(date_format)}.log"
+    if no_date_yn == 'Y':
+        logger_filename = f"{log_filename}.log"    
+        
+    # logger_filename = f"{log_filename}_{datetime.now().strftime(date_format)}.log"
+    log_file_path =  os.path.join(logger_path, logger_filename)
+    logger_obj  = Logger(name=process_name, path=log_file_path).log
+
+    # self.logger = logger_obj
+    return logger_obj
+
+## Set Logger
+# @staticmethod
+def set_logger_obj(process_name:str, data_src: str=None, log_filename: str=None):
+
+    if log_filename is not None and data_src is not None:
+        filename = data_src + '_' + log_filename
+    
+    print(f"Printing Logger Filename for DQ Lightweight: {filename} ")
+    process_id = os.getpid()
+    log: logging = set_logger(
+        logger_path=get_config_values("dir", "profiler_logs"),
+        log_filename=filename,
+        process_name=f'{process_name}-{process_id}',
+        no_date_yn="Y",
+    )
+    return log
+        
+def get_args_parser(parse_val):
+    if len(parse_val) > 0:
+        parser_args = argparse.ArgumentParser()
+        parser_args.add_argument('--csv_flag', dest='csv_flag', type=str, default='N')
+        parser_args.add_argument('--critical', dest='critical_flag_value', type=str, default=None)
+        parser_args.add_argument('--input_filepath', dest='input_filepath', type=str, default=None)
+        parser_args.add_argument('--data_sub_dmn', dest='data_sub_dmn', type=str, default=None)
+        parser_args.add_argument('--data_dmn', dest='data_dmn', type=str, default=None)
+        parser_args.add_argument('--data_bus_elem', dest='data_bus_elem', type=str, default=None)
+        parser_args.add_argument('--data_lob', dest='data_lob', type=str, default=None)
+        parser_args.add_argument('--data_src', dest='data_src', type=str, default=None)
+        parser_args.add_argument('--rule_id', dest='rule_id', type=str, default=None)
+        parser_args.add_argument('--prfl_tbl_id', dest='prfl_tbl_id', type=str, default=None)
+        return parser_args.parse_args()
+    return None
+
+class CommonUtils(object):
+    def __init__(self, logObj:logging = None):
+        self.logger: logging = logObj
+        self.EMPTY_STR_LIST = ("None", None, "NONE", "none", "", " ", np.nan, np.NaN, 'nan', 'NAN', 'NaN', 'NaT', '<NA>', 'NA', 'na')
+        self.dq_gcp_data_project_id = get_config_values("dqaas_gcp", "dq_gcp_data_project_id")
+        self.dq_bq_dataset  =  get_config_values("dqaas_gcp", "dq_bq_dataset")
+        self.dq_lw_mtd_tbl = get_config_values("bigquery", "metadata_table")
+        self.monitor_table = get_config_values("bigquery", "monitor_table")
+        self.failure_rpt_table = get_config_values("bigquery", "failure_rpt_table")
+        self.dq_gcp_conn_project_id  =  get_config_values("dqaas_gcp", "dq_gcp_conn_project_id")
+        self.user_id = getpass.getuser()
+        ## Auto Profile - Table Report
+        self.AUTO_PRFL_TBL_RPT = {
+            "DATETIME": ["run_ts"] ,
+            "DATE" : ["data_date"],
+            "INT64": ["table_id","table_row_count","src_table_row_count"] ,
+            "NUMERIC": ["tbl_completeness_dq_score","tbl_timeliness_dq_score",
+                        "tbl_historical_avg_count","tbl_count_change_pct",
+                        "tbl_consistency_dq_score","tbl_count_match_dq_score",] ,
+            "STRING": ["table_name"] ,
+        }
+        self.AUTO_PRFL_COL_RPT = {
+            "DATETIME": ["run_ts"] ,
+            "DATE" : ["data_date"],
+            "INT64": ["table_id", "total_rows","total_nulls"] ,
+            "NUMERIC": ["column_completeness_dq_score"] ,
+            "STRING": ["table_name", "column_name",] ,    
+        }
+        self.dq_gcp_auth_payload = {
+            "token_url": get_config_values("gcp_proxy", "gcp_token_url"),
+            "client_id": get_config_values("dqaas_gcp", "dq_client_id"),
+            "client_secret": get_config_values("dqaas_gcp", "dq_client_secret_key"),
+            "conn_project_id": get_config_values("dqaas_gcp", "dq_gcp_conn_project_id"),
+            "sa_json_file_dtls": os.path.join(get_config_values("dir", "pass_keys_dir"), get_config_values("dqaas_gcp", "dq_sa_json")),
+            "oidc_token": os.path.join( get_config_values("dir", "pass_keys_dir"), get_config_values("dqaas_gcp", "dqaas_oidc_token")),
+        }
+        self.client, _ = self.bigquery_client( auth=self.dq_gcp_auth_payload )
+   
+    ##  Round off to 2 decimal points
+    @staticmethod
+    def round_off(val):  
+        d = decimal.Decimal(val)
+        return d.quantize(decimal.Decimal('.01'), decimal.ROUND_DOWN)
+
+
+    ## Converts Decimal val with null to Zero
+    def zero_if_null(self, val):
+        return self.round_off(val) if val not in self.EMPTY_STR_LIST else 0
+
+    ## Wrapper / Decorator For Process Time and Usage
+    def function_execution_time(self, func):
+        def wrapper(*args, **kwargs):
+            process_id = os.getpid()
+            start_mem = psutil.Process(process_id).memory_full_info().uss
+            start_time = datetime.now()
+            self.logger.info(f'''
+            ==================================================================
+            #### Initiating Rule Profile Engine
+            Process ID      :   {process_id}
+            Requested Time  :   {start_time}
+            ==================================================================
+            ''')
+    
+            ## Wrapper Function
+            wrapper_result = func(*args, **kwargs)
+            
+            end_mem = psutil.Process(process_id).memory_full_info().uss
+            end_time = datetime.now()
+            
+            self.logger.info(f"""
+            ======================================================================================
+            Job Process Details:
+                Process ID              :   {process_id}
+                Started at              :   {start_time}
+                Ended by                :   {end_time}
+                Total Time Taken        :   {(end_time-start_time)}
+                Memory consumed (in MB) :   {(end_mem - start_mem) / (1024 * 1024 * 1024)}
+            ======================================================================================
+            """)
+            
+            return wrapper_result
+        return wrapper
+
+
+    ## GCP connection - Token Acitve / Expiry Verification
+    def isTokenExpired(self, path) -> bool:
+        try:
+            self.logger.info(f"Token file Path is {path}")
+            if(os.path.exists(path)):
+                self.logger.info("Token File Available")
+                with open(path,'r') as f:
+                    old_access_token = json.load(f)['access_token'].split('.')[1]
+                    old_access_token += '=' * (-len(old_access_token) % 4)
+                    old_token_json_decoded = json.loads(base64.b64decode(old_access_token).decode('utf8').replace("'",'"'))
+                    auth_time = old_token_json_decoded['auth_time']
+                    expires_in = old_token_json_decoded['expires_in']
+                    curr_epoch_time = int(time.time())
+                    if curr_epoch_time - auth_time < expires_in - 120:
+                        self.logger.info("Access Token is Valid")
+                        return False
+                    else:
+                        self.logger.info("Access Token is Invalid")
+            return True
+        except Exception as e:
+            raise e
+        
+
+    ##  GCP connection - Token Generation
+    def exchange_and_save_oidc_token_for_jwt(self, url: str, client_id: str, client_secret: str, oidc_token_file_name:str) -> None:
+        try:
+            self.logger.info('Retrieving JWT from OIDC provider...')
+            payload = {'grant_type': 'client_credentials', 'client_id': client_id,
+                        'client_secret': client_secret, 'scope': 'read'}
+        
+            response = requests.post(url=url, params=payload)
+            response.raise_for_status()
+            token = response.json()
+            self.logger.info('Saving token...')
+            # Serializing json
+            # oidc_token_file_name = "oidc_token.json"
+            oidc_token_path = oidc_token_file_name
+            if os.path.isfile(oidc_token_path):
+                os.remove(oidc_token_path)
+                time.sleep(7)
+
+            with open(oidc_token_path, 'w') as f:  # don't change the file name
+                json.dump(token, f)
+        except HTTPError as e:
+            raise HTTPError(f"Http Error. Error:{e}")
+        except Exception as e:
+            raise Exception(f"Error Ocurred in Generating the OIDC Token. Error:{e}")
+
+
+    ##  GCP connection - BigQuery Client Connection - Main GCP Connection - Returns Client and Credentials
+    def bigquery_client(self, auth: dict):
+        self.logger.debug(f'url={auth["token_url"]}, client_id={auth["client_id"]}, client_secret={auth["client_secret"]}')
+        
+        token_path = auth["oidc_token"]
+        if self.isTokenExpired(token_path):
+            self.exchange_and_save_oidc_token_for_jwt (
+                url=auth["token_url"],
+                client_id=auth["client_id"],
+                client_secret=auth["client_secret"],
+                oidc_token_file_name = token_path
+            )
+        self.logger.info('Setting environment variable...')
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = auth["sa_json_file_dtls"]
+        os.environ['GOOGLE_CLOUD_PROJECT'] = auth["conn_project_id"]
+        
+        credentials, _ = google.auth.default()
+        
+        client = bigquery.Client(credentials=credentials, project=auth["conn_project_id"])
+        self.logger.info(f'Connected to {auth["conn_project_id"]} project space')
+        
+        return client, credentials
+    
+    
+    ##  GCP connection - Execute BigQuery Select SQL
+    def run_bq_sql(self, bq_auth: dict, select_query: str, thread_id=None):
+        try:
+            self.logger.info(f"\nBQ Select Query: {select_query}")
+            bq_client, _ = self.bigquery_client( auth=bq_auth )
+
+            result = bq_client.query(select_query).result(timeout=300).to_dataframe()
+            self.logger.info(result)
+            return result
+            
+        except Exception as e:
+            self.logger.error(f" {thread_id} :: Error While executing the BigQuery SQL. Error: {e}")
+            raise e
+            
+    ##  GCP connection - Execute BigQuery Update SQL
+    def run_bq_update_sql(self, bq_auth: dict, update_query: str):
+        try:
+            self.logger.info(f"\nBQ Update Query: {update_query}")
+            bq_client, _ = self.bigquery_client( auth=bq_auth )
+
+            result = bq_client.query(update_query).result()
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error While executing Update BigQuery SQL. Error: {e}")
+            
+        return pd.DataFrame()
+    
+    ## Teradata Client Connection - Return DB Engine
+    def teradata_client(self, auth: dict, td_db_name):
+        try:
+            connect = f'teradatasql://{auth["uid"]}:{auth["pwd"]}@{auth["hostname"]}/{td_db_name}?encryptdata=true'
+            dbclient = create_engine(connect)
+            return dbclient
+        except Exception as err:
+            self.logger.error(f"Error while connecting to database ({td_db_name}). error:{err}")
+        
+        return None
+
+
+    ## Execute Teradata Select SQL
+    def run_teradata_sql(self, td_auth:dict, db_name, query: str):
+        try:
+
+            td_engine = self.teradata_client(
+                auth=td_auth,
+                td_db_name=db_name
+            )
+            
+            td_engine.dispose()
+            
+            self.logger.info(f"Teradata DB: {db_name}, \nQuery: {query}")
+            with td_engine.connect() as td_conn:
+                result = pd.read_sql(query, td_conn)
+                return result
+            
+        except Exception as e:
+            self.logger.error(f"Error While executing the Teradata SQL. Error: {e}")
+            
+        return pd.DataFrame()  
+
+
+    ## Execute Teradata / BigQuery Select SQL - Data Source
+    def get_query_data(self, data_src: str, select_query:str, thread_id=None):
+        #if data_src.upper() == 'TD':
+        #    dfval = self.run_teradata_sql(
+        #        td_auth=self.src_tbl_db_config,
+        #        db_name=dbname,
+        #        query=select_query
+        #    ) 
+        #    return dfval
+        
+        if data_src.upper() in ('GCP', 'BQ'):
+            dfval = self.run_bq_sql(
+                bq_auth=self.dq_gcp_auth_payload,
+                select_query=select_query,
+                thread_id=thread_id
+            ) 
+            return dfval
+        
+        return pd.DataFrame()
+        
+
+    ## Write DF to CSV - File path, Filename and dataframe is requried
+    @staticmethod
+    def write_df_to_csv(filepath: str, filename: str, df_val: pd.DataFrame) -> str:
+        # temp_csv_filename = os.path.join(config.TEMP_DIR, f"{filename}.csv")
+        temp_csv_filename = os.path.join(filepath, f"{filename}.csv")
+        df_val.to_csv(temp_csv_filename)
+        return temp_csv_filename
+
+            
+    ## Remove CSV - Filename and path to be given
+    @staticmethod
+    def remove_temp_csv(filepath: str, filename: str) -> str:
+        # temp_csv_filename = os.path.join(config.TEMP_DIR, f"{filename}.csv")
+        temp_csv_filename = os.path.join(filepath, f"{filename}.csv")
+        if os.path.isfile(temp_csv_filename):
+            os.remove(temp_csv_filename)
+            
+            
+    ## Get MAX sequence for the give table
+    def get_bq_max_sequence(self, bq_client: bigquery.Client, sq_column: str, bq_tablename: str) -> int:
+        self.logger.info(f"sq_column: {sq_column} \n bq_tablename : {bq_tablename}")
+        try:
+            if bq_client is None:
+                raise Exception("BQ Client not Found")
+            
+            bq_query = f"select IFNULL(MAX({sq_column}), 0) from {bq_tablename}"
+            self.logger.info(f"BQ query: {bq_query}")
+            
+            count = bq_client.query(bq_query).to_dataframe()
+            self.logger.info(f"count: {count}")
+            
+            rpt_max_sequence = 0
+            if len(count) > 0 :
+                rpt_max_sequence = count.iloc[0, 0]
+                
+            self.logger.info(f'Max Sequence: {rpt_max_sequence}')
+            
+            return rpt_max_sequence
+        except Exception as err:
+            self.logger.error(f'Error While Finding Max Sequence for the Table {bq_tablename}. Error: {err}')
+        return -1
+
+    ## Load Results to BigQuery Report Table
+    def load_result_to_bq_report_table(
+        self, dq_report_table_name:str, dq_credentials,
+        df_load_data: pd.DataFrame, column_details: dict
+    ) -> None:
+        try:
+            
+            self.logger.info(f"""
+            ======================================================================================            
+            Load Result Started for Table : {dq_report_table_name}
+            Records Length: {len(df_load_data)}
+            Report Columns: {df_load_data.columns}
+            ======================================================================================       
+            """)
+            df_column_list = df_load_data.columns.to_list()
+            
+            required_columns: list[str] = []
+            for col_type in column_details:
+                if len(column_details[col_type]) > 0:
+                    required_columns.extend([colname for colname in column_details[col_type] if colname in df_column_list])
+                    
+            self.logger.info(f"""
+            Dataframe Columns:{df_column_list}
+            Requried Columns: {required_columns}
+            """)
+                
+            # required_columns = column_details.get('STRING', []) + column_details.get('NUMERIC', []) + column_details.get('INTEGER', []) + column_details.get('DATETIME', [])
+            # print(required_columns)
+            df_load_data = df_load_data.loc[:, df_load_data.columns.isin(required_columns)]
+            self.logger.info(f"Columns for : {required_columns}")
+            
+            # print(df_load_data)
+            
+            self.logger.info(df_load_data.info())
+            
+            self.logger.info("String.................")
+            for col in column_details.get('STRING', []):
+                # print(col)
+                if col in df_column_list:
+                    # df_load_data[col] = df_load_data[col].fillna(np.nan).astype(str).replace('nan',np.nan).replace('<NA>',np.nan)
+                    df_load_data[col] = df_load_data[col].fillna(np.nan).astype(str).replace('nan',np.nan).replace('<NA>',np.nan)
+                
+            # df_load_data = df_load_data.drop(columns=column_details.get('STRING', []), axis=1, errors='ignore')
+            
+            self.logger.info("Numeric................")
+            for col in column_details.get('NUMERIC', []):
+                # print(col)
+                if col in df_column_list:
+                    df_load_data[col] = df_load_data[col].fillna(np.nan).astype('float64').map(self.round_off)
+            
+            # df_load_data = df_load_data.drop(columns=column_details.get('NUMERIC', []), axis=1, errors='ignore')
+            
+            self.logger.info("Integer................")
+            for col in column_details.get('INT64', []):
+                # print(col)
+                if col in df_column_list:
+                    # df_load_data[col] = df_load_data[col].fillna(np.nan).astype('float64').map(int)
+                    df_load_data[col] = df_load_data[col].fillna(np.nan).map(float).map(int)
+                
+            # df_load_data = df_load_data.drop(columns=column_details.get('INTEGER', []), axis=1, errors='ignore')
+            
+            self.logger.info("Datetime...............")
+            for col in column_details.get('DATETIME', []):
+                # print(col)
+                if col in df_column_list:
+                    df_load_data[col] = df_load_data[col].astype("datetime64[ns]")
+                    # df_load_data[col] = pd.to_datetime(arg=df_load_data[col], format='%Y-%m-%d').dt.strftime('%Y-%m-%d %H:%M:%S')
+                    
+            self.logger.info("TIMESTAMP...............")
+            for col in column_details.get('TIMESTAMP', []):
+                # print(col)
+                if col in df_column_list:
+                    df_load_data[col] = df_load_data[col].astype("datetime64[ns]")
+                    # df_load_data[col] = pd.to_datetime(arg=df_load_data[col], format='%Y-%m-%d').dt.strftime('%Y-%m-%d %H:%M:%S')
+            
+            # df_load_data = df_load_data.drop(columns=column_details.get('DATETIME', []), axis=1, errors='ignore')  
+            self.logger.info("Completed..............")
+            self.logger.info(df_load_data.info())
+            # print(df_load_data)
+            
+            # df_load_data.to_csv(os.path.join(config.TEMP_DIR, f"{dq_report_table_name}_{datetime.now().date()}.csv"))
+            pandas_gbq.to_gbq(
+                dataframe=df_load_data,
+                destination_table=dq_report_table_name,
+                if_exists='append',
+                credentials=dq_credentials,
+                project_id=self.dq_gcp_conn_project_id,
+            )
+            self.logger.info(f"Loaded Result to {dq_report_table_name}")
+        except Exception as err:
+            self.logger.error(f"Error Occurred while loading Results to BigQuery Table. Error: {err}")
+            self.logger.info(f"Load Result Error {dq_report_table_name} table")
+
+    ## Get Email Distros from the table
+    def get_email_distros_from_table(self) -> pd.DataFrame:
+        try:
+            mail_distro_query = f"""
+            select SPLIT(project_name,'-')[SAFE_OFFSET(4)] as vsad,email_distro from {self.dq_gcp_data_project_id+ "." +self.dq_bq_dataset+ "." +get_config_values("bigquery", "metadata_table")} group by vsad,email_distro
+            """
+            df_val = self.run_bq_sql(
+                bq_auth=self.dq_gcp_auth_payload,
+                select_query=mail_distro_query
+            )
+            
+            df_val = df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
+            self.logger.info(f"Distro Details:{len(df_val)}\n {df_val}")
+            return df_val
+        except Exception as err:
+            self.logger.errror(f"Error Occurred in Email Distro Retrieval Block. Error: {err}")
+        
+        return pd.DataFrame()
+
+    def convert_str_to_list(self,val: str) -> list:         
+        return list(set([
+            str(col).strip()
+            for col in str(val).split(',')
+            if str(col) not in self.EMPTY_STR_LIST
+        ]))
+
+    ## Convert Mail distro into list - Retrieve Persona Mails from the Dataframe
+    def get_mail_distro(self, df_val:pd.DataFrame, sub_dmn:str, persona: str) -> list:
+        try:
+            self.logger.info(f"Sub Domain: {sub_dmn}, Persona: {persona}")
+            self.logger.info(f"Mail Distro Dataframe: \n{df_val}")
+            
+            mail_distro_str = df_val.query(f"DATA_BUS_ELEM == '{sub_dmn}'")[persona].tolist()
+            
+            self.logger.info(f"Mail Distro: {mail_distro_str}")
+            if len(mail_distro_str) > 0:
+                return self.convert_str_to_list(mail_distro_str[0]) 
+            
+        except Exception as err:
+            self.logger.error(f"Error Occured while getting the Mail Distro. Error:{err}")
+
+        return [] 
+        
+
+    ## Get Start Date Range for Cron Validation
+    def get_minute_range(self):
+        current_time = datetime.now()
+        current_minute = current_time.strftime('%M')
+        # minute_range = [[0, 14], [15, 29], [30, 44], [45, 59]]
+        minute_range = [(0,29), (30,59)]
+        self.logger.info(f'Current Time: {current_time}, Current Minute: {current_minute}')
+        start_range = end_range = 0
+        for i in range(0, len(minute_range)):
+            if minute_range[i][0] <= int(current_minute) <= minute_range[i][1]:
+                start_range, end_range = minute_range[i][0], minute_range[i][1]
+                
+        # if start_range == 0:
+        #     start_range = '00'
+        self.logger.info(f'Start Range: {start_range}, End Range: {end_range}')
+        return start_range, end_range
+    
+
+    ## Validate Cron Formatter
+    def validate_croniter(self, cron_schd_format: str, start_min_range: int):
+        cron_trigger_yn = "N"
+        try:
+            self.logger.info(f"Scheduled Cron: {cron_schd_format}")
+            
+            current_time = datetime.strptime(datetime.now().strftime(f"%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M")
+            current_time = current_time.replace(minute=start_min_range, second=0, microsecond=0)
+            
+            buffer_time = current_time + timedelta(minutes=29)
+            buffer_time = buffer_time.replace(second=59, microsecond=0)
+            
+            cron = croniter.croniter(cron_schd_format, current_time)
+            next_run = cron.get_next(datetime)
+            
+            self.logger.info(f"Current Time:{current_time}, Buffer Time: {buffer_time}, Next Run: {next_run}")
+            
+            if current_time <= next_run <= buffer_time:
+                cron_trigger_yn = "Y"
+
+            self.logger.info(f"Scheduled Run: {next_run}, Trigger YN: {cron_trigger_yn}")
+        except Exception as err:
+            cron_trigger_yn = "E"
+            self.logger.error(f"Error occurred in Cron Validator. Error: {err}")
+            
+        return cron_trigger_yn
+    
+    ###############     Monitoring and failure reports logging  ##################
+    def log_monitor_table(self, job_id, job_name, job_start_ts, job_end_ts, entry_ts, step_code, comments):
+        """
+        Log the job step into the monitor table.
+        """
+        #job_end_ts = datetime.now()
+        #entry_ts = datetime.now()
+        if (str(job_end_ts).lower() == 'null'):
+            query = f"""
+            INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table} (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
+            VALUES ({job_id}, '{job_name}', '{job_start_ts}', timestamp({job_end_ts}), '{entry_ts}', '{self.user_id}', '{step_code}', '{comments}')"""
+        else :
+            query = f"""
+            INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table} (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
+            VALUES ({job_id}, '{job_name}', '{job_start_ts}', timestamp('{job_end_ts}'), '{entry_ts}', '{self.user_id}', '{step_code}', '{comments}')"""
+        self.logger.info(query)
+        try:
+            self.client.query(query).result()
+            self.logger.info(f"Inserted into monitor table: {comments}")
+        except Exception as e:
+            self.logger.error(f"Error logging to monitor table: {str(e)}")
+            raise
+        
+    def log_failure(self, table_id, table_name, run_count, data_date, error_message):
+        """
+        Log any failures into the failure report table.
+        """
+        run_ts = datetime.now()
+        run_status = 'Failure'
+        query = f"""
+            INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.failure_rpt_table} (table_id, table_name, run_ts, data_date, run_count, run_status, error_msg)
+            VALUES ({table_id}, '{table_name}', '{run_ts}', '{data_date}', {run_count}, '{run_status}' , '{error_message}')
+        """
+        self.logger.info(query)
+        try:
+            self.client.query(query).result()
+            self.logger.info(f"Inserted failure record for table {table_name}")
+        except Exception as e:
+            self.logger.error(f"Error logging to failure report table: {str(e)}")
+            raise
+======================================================================
+#logger
+import logging
+
+class Logger:
+    def __init__(self, name='', path=''):
+        self.log = self.logger_config(name, path)
+    
+    @staticmethod
+    def logger_config(name, path):
+        print('name:{}, path:{}'.format(name, path))
+        logger = logging.getLogger(name)
+        formatter = logging.Formatter('%(asctime)s:(%(name)s::%(funcName)s):%(levelname)s: %(message)s','%Y-%m-%d %H:%M:%S')
+        file_handler = logging.FileHandler(path, mode='a')
+        file_handler.setFormatter(formatter)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.INFO)
+        stream_handler.setFormatter(formatter)
+        logger.handlers.clear()
+        logger.setLevel(logging.INFO)
+        logger.addHandler(file_handler)
+        logger.addHandler(stream_handler)
+        return logging.getLogger(name)
+===================================================================================
+import smtplib
+import pandas as pd
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.application import MIMEApplication
+from email import encoders
+import os
+import time
+from utils.common_handlers import *
+
+class SendEmail:
+    def __init__(self, smtp: str, mail_from, loggerObj=None, loggerPath=None):
+        print('---------------- Email Object Constructor ----------------')
+        self.log = loggerObj
+        self._smtp = smtp
+        self.mail_from = mail_from
+        self.cc = r'dq-process-alerts@verizon.com'
+        self.default_style_format_dict = 'df_tab'
+        self.utils = CommonUtils(logObj=self.log)
+
+        if loggerObj:
+            self.log = loggerObj
+        else:
+            from utils.logger import Logger
+            self.log = Logger(path=loggerPath).log
+
+    def send_email(self, request_params, html_template, mail_subject, receipents_email_id: list = None, attachment_files_list: list = None):
+        try:
+            self.log.info(f'Receipents: {receipents_email_id}')
+            
+            if self._smtp is None:
+                raise Exception("SMTP details not provided. Kindly Check the Configuration")
+            
+            if self.mail_from is None:
+                raise Exception("Sender Mail ID not provided. Kindly Check the Configuration")
+
+            if receipents_email_id is None:
+                raise Exception("Receipents Mail ID not provided. Kindly Check the Configuration")
+                receipents_email_id = []
+            
+            email_template = self.get_email_template(request_params,
+                                                    receipents_email_id,
+                                                    mail_subject,
+                                                    html_template)
+            
+            if attachment_files_list is not None:
+                email_template = self.add_email_attachments(email_template_object=email_template, 
+                                                            attachment_files_list=attachment_files_list)
+            
+            # self.log.info('template: {}'.format(email_template.as_string()))
+            self.log.info('Requesting for eMail Notification........')
+            with smtplib.SMTP(self._smtp) as mail_server:
+                mail_server.sendmail(self.mail_from , receipents_email_id, email_template.as_string())
+                mail_server.quit()
+                self.log.info('e-Mail Triggered Successfully to Receipents Address({})'.format(receipents_email_id))
+        except Exception as e:
+            self.log.error('Error in smpt connection. Error info:\n' + str(e))
+
+    def get_email_template(self, request, receipents_email_id, mail_subject, html_template = None):
+        # print(f'Email- {mail_subject}')
+        mail_to = ', '.join(receipents_email_id)
+        #Replacing the placeholders
+        if 'placeholders' in request:
+            if request.get('placeholders').items() is not None:
+                for placeholder, value in request.get('placeholders').items():
+                    html_template = html_template.replace(f'{{{placeholder}}}', value)
+
+        #Creating MIME object for setting the values
+        email_template = MIMEMultipart()
+        email_template['Subject'] = mail_subject
+        email_template['From'] = self.mail_from
+        email_template['To'] = mail_to
+        email_template['cc'] = self.cc
+        #Attaching the email template
+        email_template.attach(MIMEText(html_template,'html'))
+        # self.log.info('e-Mail Template:\n {}'.format(email_template.as_string()))
+        return email_template
+
+    def add_email_attachments(self, email_template_object=MIMEMultipart(), attachment_files_list: list = None):
+        self.log.info('Attach Files to email')
+
+        try:
+            self.log.info(f'attachment_files_list: {attachment_files_list}')
+            for file in attachment_files_list:
+                if os.path.isfile(file):
+                    file_name = os.path.basename(file)
+                    # file_mime_base = MIMEBase('application', 'octet-stream')
+                    # file_mime_base.set_payload(open(file, 'rb').read())
+                    self.log.info(f'Filename : {file_name}')
+                    # file_mime_base.add_header('Content-disposition', 'attachment', filename=('utf-8', '', file))
+                    file_mime_base = MIMEApplication(open(file,"rb").read())
+                    file_mime_base.add_header('Content-Disposition','attachment', filename=file_name)
+        
+                    encoders.encode_base64(file_mime_base)
+                    email_template_object.attach(file_mime_base)
+                    # time.sleep(20)
+            
+        except Exception as e:
+            self.log.error('Error Occurred While Email Attachement')
+        
+        return email_template_object
+
+    @staticmethod
+    def cell_bg_font_setter(df_val, stype_format_table_id, _bg_subset_columns, _bg_subset_values, bg_postive_row_val):
+        ph_bg_pass, ph_bg_fail = [], []
+        col_details = lambda col_name : df_val.columns.get_loc(col_name)
+        row_details = lambda col_name,row_val: df_val.index[df_val[col_name] == row_val].tolist()
+        _id_name = lambda row_num, col_name: "#T_{}_row{}_col{}".format(stype_format_table_id,str(row_num),str(col_details(col_name)))
+        for col_name in _bg_subset_columns:
+            for row_val in _bg_subset_values:
+                for row_num in row_details(col_name,row_val):
+                    ph_bg_pass.append(_id_name(row_num,col_name)) if row_val == bg_postive_row_val else ph_bg_fail.append(_id_name(row_num,col_name))           
+        return ph_bg_pass, ph_bg_fail
+
+    def read_email_template(self, email_template_filepath):
+        try:
+            with open(email_template_filepath, 'r') as email_template:
+                return email_template.read()
+        except Exception as e:
+            self.log.error('Email Template({}) not Found'.format(email_template_filepath))
+            return None
+
+    @staticmethod
+    def df_to_html(df):
+        if len(df) > 0:
+            return df.to_html()
+        return ''
+    
+    ## Email Alert               
+    def email_alert(self, message: str, df=pd.DataFrame(), subject: str='', receipents_email_dtls: list=None, attachment_files: list = None) -> None:
+        try:
+            self.log.info('Email Alert Initiated')
+            self.log.info(f"Mail Group: {receipents_email_dtls}")
+            if len(subject) == 0:
+                subject = f"""{get_config_values("email", "email_env")} - DQaaS Lite"""
+            
+            if receipents_email_dtls is None:
+                receipents_email_dtls = [] #dbconnection.get_mail_id(persona='PERSONA_3')
+            
+            ## If mail distro not found in mail distro table, then default Mail Distro is assigned
+            if len(receipents_email_dtls) == 0:
+                self.log.info(f"""Email ID not Found in the Mail Distro Table. Assigning Default mail distro({self.utils.convert_str_to_list(get_config_values("profiler", "default_mail_group"))})""")
+                receipents_email_dtls = self.utils.convert_str_to_list(get_config_values("profiler", "default_mail_group")) ##receipents_email_id #dbconnection.get_mail_id(persona='PERSONA_3')
+                
+            self.send_common_message(
+                email_template_filepath=os.path.join(get_config_values("dir", "template_dir"), 'dq_common_message.html'),
+                mail_subject=subject,
+                message=message,
+                df_val=df,
+                receipents_email_id=receipents_email_dtls,
+                attachment_files_list=attachment_files
+            )
+            
+        except Exception as e:
+            self.log.error('Error while triggering email.\n {}'.format(e))
+            self.log.info('Error while triggering email.\n {}'.format(e))
+
+    #Truecaller and Date Variance with amount
+    def send_email_message(self, mail_subject, email_template_filepath, df_val=pd.DataFrame(), report_header_name='', receipents_email_id=[],
+                      style_format_dict=None, bg_subset_columns=[], bg_subset_values=[], bg_postive_row_val=None):
+        
+        _html_template = self.read_email_template(email_template_filepath)
+
+        if _html_template:
+            ph_bg_pass, ph_bg_fail, ph_summary_table= [], [], ''
+            if not df_val.empty:
+                stype_format_table_id = r'df_tab'
+                ph_bg_pass, ph_bg_fail = self.cell_bg_font_setter(df_val, stype_format_table_id,
+                                                                  bg_subset_columns,
+                                                                  bg_subset_values,
+                                                                  bg_postive_row_val)
+                ph_bg_pass = ', '.join(ph_bg_pass)
+                ph_bg_fail = ', '.join(ph_bg_fail)
+
+                if style_format_dict:
+                    df_val = df_val.style.format(style_format_dict)
+                    df_val.set_uuid(stype_format_table_id)
+
+                ph_summary_table = df_val.to_html()
+                    
+            from datetime import datetime
+            ph_current_date = datetime.now().strftime("%m-%d-%y")
+            ph_hours = datetime.now().strftime("X%I %p").replace('X0','').replace('X','').lower()
+
+            request_params = {
+                "placeholders" :{
+                                "ph_current_date":ph_current_date,
+                                "ph_summary_table":ph_summary_table if len(ph_summary_table) > 0 else '',
+                                "ph_report_header_name":report_header_name if len(report_header_name) > 0 else '',
+                                "ph_bg_pass":ph_bg_pass if len(ph_bg_pass) > 0 else '',
+                                "ph_bg_fail":ph_bg_fail if len(ph_bg_fail) > 0 else '',
+                                "ph_hours":ph_hours}
+            }
+            self.send_email(request_params, _html_template, mail_subject, receipents_email_id)
+        else:
+            return
+
+    # SQL Rule Based Profile
+    def send_rules_email_message(self, mail_subject, email_template_filepath, receipents_email_id=[],
+                                 df_val=pd.DataFrame(), df_err_val=pd.DataFrame(), report_header_name=''):
+        
+        _html_template = self.read_email_template(email_template_filepath)
+
+        if _html_template:
+            ph_summary_table = self.df_to_html(df_val)
+            ph_error_summary = self.df_to_html(df_err_val)
+
+            from datetime import datetime
+            ph_current_date = datetime.now().strftime("%m-%d-%y")
+            ph_hours = datetime.now().strftime("X%I %p").replace('X0','').replace('X','').lower()
+            request_params = {
+                "placeholders" :{
+                                "ph_current_date":ph_current_date,
+                                "ph_hours":ph_hours,
+                                "ph_summary_table":ph_summary_table if len(ph_summary_table) > 0 else '',
+                                "ph_error_summary_header": 'Rule Error list' if len(ph_error_summary) > 0 else '',
+                                "ph_error_summary":ph_error_summary if len(ph_error_summary) > 0 else '',
+                                "ph_report_header_name":report_header_name if len(report_header_name) > 0 else ''
+                                }
+            }
+            self.send_email(request_params, _html_template, mail_subject, receipents_email_id)
+        else:
+            return
+    
+    # SQL Rule Based Profile
+    def send_rules_error_report(self, mail_subject, email_template_filepath, rule_id, table_name, receipents_email_id=[]):
+        try:
+            _html_template = self.read_email_template(email_template_filepath)
+
+            if not _html_template:
+                return
+            
+            from datetime import datetime
+            ph_current_date = datetime.now().strftime("%m-%d-%y")
+            ph_hours = datetime.now().strftime("X%I %p").replace('X0','').replace('X','').lower()
+            request_params = {
+                "placeholders" :{
+                                "ph_current_date":ph_current_date,
+                                "ph_hours":ph_hours,
+                                "ph_rule_id":rule_id if len(rule_id) > 0 else '',
+                                "ph_table_name":table_name if len(table_name) > 0 else ''
+                                }
+            }
+            self.send_email(request_params, _html_template, mail_subject, receipents_email_id)
+        except:
+            self.log.error( 'Error Occurred while Triggering Error Report eMail')
+            return
+    
+    # Auto Profile
+    def send_auto_profile_error_report(self, mail_subject, email_template_filepath, message, df_val=pd.DataFrame(), receipents_email_id=[]):
+        try:
+            _html_template = self.read_email_template(email_template_filepath)
+
+            if not _html_template:
+                return
+            
+            ph_autoprofile_summary = self.df_to_html(df_val)
+
+            request_params = {
+                "placeholders" :{"ph_message":message if len(message) > 0 else '',
+                                 "ph_autoprofile_summary": ph_autoprofile_summary if len(ph_autoprofile_summary) > 0 else ''
+                                }
+            }
+            self.send_email(request_params, _html_template, mail_subject, receipents_email_id)
+        except Exception as e:
+            self.log.error( 'Error Occurred while Triggering Error Report eMail.\n Error Info: {}'.format(e))
+            return
+    
+    # SQL Rule Based Profile
+    def send_common_message(self, mail_subject, email_template_filepath, message, df_val=pd.DataFrame(), receipents_email_id=[], attachment_files_list: list = None):
+        try:
+            _html_template = self.read_email_template(email_template_filepath)
+
+            if not _html_template:
+                return
+            
+            ph_summary =''
+            if _html_template:
+                ph_summary = self.df_to_html(df_val)
+
+            request_params = {
+                "placeholders" :{"ph_message":message if len(message) > 0 else '',
+                                 "ph_summary": ph_summary if len(ph_summary) > 0 else ''
+                                }
+            }
+            self.send_email(request_params, _html_template, mail_subject, receipents_email_id, attachment_files_list)
+        except Exception as e:
+            self.log.error( 'Error Occurred while Triggering Error Report eMail.\n Error Info: {}'.format(e))
+            return
+
+
+    def send_auto_profile_email_message(self, mail_subject, email_template_filepath, df_val=pd.DataFrame(), report_header_name='', receipents_email_id=[],
+                                        message='', validation_col='', validation_score=0, style_format_dict=dict()):
+        
+        try:
+            _html_template = self.read_email_template(email_template_filepath)
+            # print(_html_template)
+            if not _html_template:
+                    return
+            
+            stype_format_table_id = r'df_tab'
+            df_val = df_val.drop(['Unnamed: 0'], axis=1, errors='ignore')
+            
+            df_postive = df_val[df_val[validation_col] >= validation_score]
+            df_postive = df_postive.reset_index(drop=True)
+            df_negative = df_val[df_val[validation_col] < validation_score]
+            df_negative = df_negative.reset_index(drop=True)
+
+            
+            if len(df_postive) > 0:
+                # df_postive = df_postive.rename(columns={'Overall Score': r'Score% (Out of 100)', 'Previous Score': r'Previous Score% (Out of 100)'})
+                df_postive = df_postive.style.format(style_format_dict)
+                df_postive.set_uuid(stype_format_table_id)
+                ph_autoprofile_summary = df_postive.to_html()
+                request_params = {
+                    "placeholders": {"ph_message": message if len(message) > 0 else '',
+                                    "ph_autoprofile_summary": ph_autoprofile_summary if len(ph_autoprofile_summary) > 0 else '',
+                                    "ph_bg_td_color": 'green' if len(ph_autoprofile_summary) > 0 else 'white',
+                                    "ph_report_header_name":report_header_name if len(report_header_name) > 0 else ''
+                                    }
+                }
+                self.send_email(request_params, _html_template, mail_subject, receipents_email_id)
+
+            if len(df_negative) > 0:
+                # df_negative = df_negative.rename(columns={'Overall Score': r'Score% (Out of 100)', 'Previous Score': r'Previous Score% (Out of 100)'})
+                df_negative = df_negative.style.format(style_format_dict)
+                df_negative.set_uuid(stype_format_table_id)
+                ph_autoprofile_summary = df_negative.to_html()
+                request_params = {
+                    "placeholders": {"ph_message": message if len(message) > 0 else '',
+                                    "ph_autoprofile_summary": ph_autoprofile_summary if len(ph_autoprofile_summary) > 0 else '',
+                                    "ph_bg_td_color": 'red' if len(ph_autoprofile_summary) > 0 else 'white',
+                                    "ph_report_header_name":report_header_name if len(report_header_name) > 0 else ''
+                                    }
+                }
+                self.send_email(request_params, _html_template, mail_subject, receipents_email_id)
+        except Exception as e:
+            self.log.error( 'Error Occurred while Triggering Error Report eMail.\n Error Info: {}'.format(e))
+            return
+
+    def row_font_highlights(self, df_val=pd.DataFrame(), validate_column: str = None, style_details_dict: dict = None):
+        try:
+            if validate_column is not None and style_details_dict is not None:
+                id_tags: dict = {}
+                for k in style_details_dict.keys():
+                    row_list = df_val.index[df_val[validate_column].str.lower() == k].to_list()
+                    if len(row_list) > 0:
+                        id_tags[k] = [f'.row{row_id}' for row_id in row_list]
+
+                style_id_tags: str = ''
+                for k in id_tags.keys():
+                    style_id_tags += '\n' + ','.join(id_tags.get(k)) + str(style_details_dict.get(k))
+
+                return style_id_tags
+        except Exception as e:
+            self.log.error(f'Error Occurred Row Font Setter.\n Error Info: {e}')
+
+        return ''
+
+    def send_summary_with_highlights(self, email_template_filepath, mail_subject, message, 
+                                     df_val=pd.DataFrame(), receipents_email_id=[], style_format: dict={},
+                                     style_details_dict: dict = None, validate_column: str = None):
+        """
+        Template: dq_summary_report_template_with_highlights.html
+        Sample style_details_dict = 
+            {
+                'pass': '{background-color:#4caf50;color:#000000;font-weight:bold;}',
+                'fail': '{background-color:#f44336;color:#000000;font-weight:bold;}',
+                'high': '{background-color:#f6ff00f9;color:#000000;font-weight:bold;}'
+            }
+        """
+        try:
+            _html_template = self.read_email_template(email_template_filepath)
+
+            if not _html_template:
+                return
+            
+            ph_summary =''
+            style_id_tags = ''
+            if _html_template:
+                ph_summary = df_val.style.format(style_format).hide(axis="index").set_uuid(self.default_style_format_dict)
+                ph_summary = ph_summary.to_html()
+                style_id_tags = self.row_font_highlights(df_val=df_val, validate_column=validate_column, style_details_dict=style_details_dict)
+
+            request_params = {
+                "placeholders": {"ph_message": message if len(message) > 0 else '',
+                                 "ph_summary": ph_summary if len(ph_summary) > 0 else '',
+                                 "ph_style_id_highlights": style_id_tags if len(style_id_tags) > 0 else ''
+                                 }
+            }
+            self.send_email(request_params, _html_template, mail_subject, receipents_email_id)
+        except Exception as e:
+            self.log.error( 'Error Occurred while Triggering Error Report eMail.\n Error Info: {}'.format(e))
+            return
+=======================================================
+#count match
+import os
+import getpass
+import sys
+from concurrent.futures import ThreadPoolExecutor
+import teradatasql
+import teradatasql
+from datetime import datetime
+
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from utils.common_handlers import *
+from utils.send_email import *
+
+class TableCountChecker:
+    def __init__(self, log_filename: str=None, data_src: str=None, step_code: str=None):
+        ## Get job_id and job_name
+        self.job_id = get_config_values('job_id_details','count_match_job_id')
+        self.job_name = get_config_values('job_names','count_match_job_name')
+        self.start_ts = datetime.now()
+        self.user_id = getpass.getuser()
+        self.step_code = step_code
+
+        self.logger = set_logger_obj(
+            process_name="LW-DQ",
+            data_src=data_src,
+            log_filename=log_filename
+        )
+        self.utils = CommonUtils(logObj=self.logger)
+        self.email = SendEmail(
+            loggerObj=self.logger,
+            mail_from=get_config_values("email", "sender_email_id"),
+            smtp=get_config_values("email", "smtp_server")
+        )
+        self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Count Match for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''Count Match Process started for {datetime.now().strftime("%m-%d-%y")} at {datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()}.''')
+        self.logger.info(f"Logger Filename: {log_filename}")
+        self.logger.info(f"Initiated execution for count match : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+        self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), self.step_code, 'Initiated execution for count match')
+
+        ## Replace with actual configurations
+        self.PROJECT_ID = get_config_values('bigquery','project_id')
+        self.DATASET = get_config_values('bigquery','dataset')
+        self.METADATA_TABLE = f'{self.PROJECT_ID}.{self.DATASET}.{get_config_values("bigquery","metadata_table")}'
+        self.REPORT_TABLE = f'{self.PROJECT_ID}.{self.DATASET}.{get_config_values("bigquery","report_table")}'
+        self.MONITOR_TABLE = f'{self.PROJECT_ID}.{self.DATASET}.{get_config_values("bigquery","monitor_table")}'
+        self.FAILURE_RPT_TABLE = f'{self.PROJECT_ID}.{self.DATASET}.{get_config_values("bigquery","failure_rpt_table")}'
+
+        ## Connection details for Teradata
+        self.TERADATA_HOST = get_config_values('teradata','host')
+        self.TERADATA_USER = get_config_values('teradata','user')
+        self.TERADATA_PASS = get_config_values('teradata','password')
+
+    def fetch_row_count(self, table_id, target_table_name, source_db_name, source_table_name, source_type):
+        ## Fetch row count from the specified table.Supports BigQuery and Teradata.
+        self.logger.info("Starting fetch_row_count...")
+        # self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'FETCH_ROW_COUNT', f"FETCH_ROW_COUNT started")
+        self.logger.info(f"Fetching row count for {source_db_name}.{source_table_name} of type {source_type}")
+
+        try:
+            if source_type.upper() == 'GCP':
+                # Metadata table should have project_id.data_set in db_name column for GCP tables
+                query = f"SELECT COUNT(*) as row_count FROM `{source_db_name}.{source_table_name}`"
+                result = self.utils.client.query(query).result()
+                row_count = [row.row_count for row in result][0]
+                self.logger.info(f"Row count for {source_table_name} (BigQuery): {row_count}")
+                return row_count
+            elif source_type.upper() == 'TD':
+                with teradatasql.connect(host=self.TERADATA_HOST, user=self.TERADATA_USER, password=self.TERADATA_PASS) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(f"SELECT COUNT(*) FROM {source_db_name}.{source_table_name}")
+                        row_count = cur.fetchone()[0]
+                        self.logger.info(f"Row count for {source_db_name}.{source_table_name} (Teradata): {row_count}")
+                        return row_count
+            # self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'FETCH_ROW_COUNT', f"FETCH_ROW_COUNT ended")
+            self.logger.info(f"Fetching row count for {source_db_name}.{source_table_name} of type {source_type} Completed")
+        except Exception as e:
+            self.logger.error(f"Table id : {table_id} - Error fetching row count for {source_db_name}.{source_table_name} ({source_type}): {str(e)}")
+            '''
+            self.utils.log_failure(table_id, target_table_name, 1 , data_date, f"Error : Unable to access Source table {source_table_name} ({source_type}) or not found for the table_id: {table_id} and target_table_name: {target_table_name}")
+            '''
+            return None
+
+    def update_report_table(self, table_id, source_row_count, matching, score):
+        self.logger.info(f"Updating report table for table_id: {table_id}")
+        try:
+            if source_row_count is not None:
+                self.logger.info(f"Updated report table for table_id: {table_id}")
+                query = f"""UPDATE {self.REPORT_TABLE}
+                    SET src_table_row_count = {source_row_count},
+                    --matching = '{matching}',
+                    tbl_count_match_dq_score = {score}
+                    WHERE table_id = {table_id}"""
+                self.logger.info(query)
+                self.utils.client.query(query).result()
+                self.logger.info(f"Updated report table for table_id: {table_id}")
+            else:
+                self.logger.info(f"Source row count not found for table_id: {table_id}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error updating report table: {str(e)}")
+            # self.logger.error(f"Unable to access Source table or Source table not found for table_id: {table_id}")
+            return False
+
+    def process_table(self, metadata, job_name):
+        table_id = metadata['table_id']
+        source_table_name = metadata['src_table_name']
+        source_db_name = metadata['src_db_name']
+        source_type = metadata['src_env_name']
+        target_table_name = metadata['table_name']
+        self.logger.info(f"*******    Table id = {table_id}, source table name = {source_table_name}   ********")
+
+        ## Fetch the data date and table row count of target BQ table from the report table
+        data_date_query = f"""SELECT data_date, table_row_count FROM {self.REPORT_TABLE} WHERE table_id = {table_id} AND DATE(run_ts) = CURRENT_DATE()"""
+        self.logger.info(data_date_query)
+
+        query_result = self.utils.client.query(data_date_query).result().to_dataframe().iloc[0]
+        data_date, target_table_row_count = query_result['data_date'],query_result['table_row_count']
+        self.logger.info(data_date)
+        self.logger.info(target_table_row_count)
+        run_count = 1
+
+        try:
+
+            ## Fetch source row count
+            source_row_count = self.fetch_row_count(table_id, target_table_name, source_db_name, source_table_name, source_type)
+            '''
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'START', f"Processing table {source_db_name}.{source_table_name}")
+            if source_row_count is not None:
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'FETCH_{source_type}_SOURCE_COUNT', f"{source_type} Source row count: {source_row_count} for {source_table_name}")
+            else:
+                self.utils.log_failure(table_id, target_table_name, run_count, data_date, f"Error : Unable to access Source table {source_table_name} ({source_type}) or not found for table_id: {table_id}, Source row count: {source_row_count}")
+            '''
+            if source_row_count is None:
+                self.utils.log_failure(table_id, target_table_name, run_count, data_date, f"Error : Unable to access Source table {source_table_name} ({source_type}) or not found for table_id: {table_id}, Source row count: {source_row_count}")
+                '''
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'FETCH_{source_type}_SOURCE_COUNT', f"Error : Unable to access Source table {source_table_name} or Source table not found for table_id: {table_id}, Source row count: {source_row_count}")
+                '''
+            ## Compare counts and determine matching status
+            if source_row_count == target_table_row_count:
+                matching = 'PASS'
+                score = 100
+            else:
+                matching = 'FAIL'
+                score = 0
+            ## Update report table
+            self.update_report_table(table_id, source_row_count, matching, score)
+            '''
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'UPDATE_REPORT_TABLE', f"Processed table {source_db_name}.{source_table_name}")
+            ## Log completion in monitor table
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'COMPLETE', f"Completed processing for table {source_db_name}.{source_table_name}")
+            '''
+        except Exception as e:
+            error_message = f"Error in {e.__traceback__.tb_frame.f_code.co_name}: {str(e)}"
+            self.logger.error(f"Error Message: {error_message}")
+            error_message = str(e).split("\n")[0]
+            error_message = error_message.replace('\n','.').replace("'",'"')
+            self.utils.log_failure(table_id, target_table_name, run_count, data_date, error_message)
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'FAILED', f"Failed processing for table {source_db_name}.{source_table_name}: {error_message}")
+
+    def sequential_process(self, job_name):
+        """
+        Process tables sequentially.
+        """
+        try:
+            self.logger.info("Starting sequential processing.")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'SEQUENTIAL_PROCESS', f"Sequential process started")
+            query = f"""SELECT * FROM {self.METADATA_TABLE}
+            WHERE count_match_flag = 'Y' and
+            table_id in
+            (SELECT table_id FROM {self.REPORT_TABLE} WHERE DATE(run_ts) = CURRENT_DATE())
+            order by table_id ;
+            """
+            self.logger.info(f"Metadata records query: {query}")
+            metadata_records = self.utils.client.query(query).result()
+            self.logger.info(f"Metadata records: {metadata_records}")
+            # self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'PROCESS_TABLE', f"Process table function started")
+            for metadata in metadata_records:
+                self.process_table(metadata, job_name)
+
+            self.logger.info(f"Sequential processing completed")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, datetime.now(), datetime.now(), 'PROCESS_TABLE', f"Process table function completed.")
+            self.logger.info("Count match process completed and updated the source row count and count match score for all the tables having source row counts.")
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Count Match for {datetime.now().strftime("%Y-%m-%d")}""", message=f"""Count Match Sequential Process Ended for {datetime.now().strftime("%m-%d-%y")} at {datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()}.""", attachment_files=[self.logger.handlers[0].baseFilename])
+
+        except Exception as e:
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, datetime.now(), datetime.now(), 'SEQUENTIAL_PROCESS', f"Sequential process failed due to {e}")
+            self.logger.error(f"Sequential processing failed")
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Count Match for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''<p>Error Occured in main block of count match sequential class.<br><b>Error:</b>{e}</p>''')
+
+    def parallel_process(self, job_name):
+        """
+        Process tables in parallel using ThreadPoolExecutor.
+        """
+        try:
+            self.logger.info("Starting parallel processing.")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'null', datetime.now(), 'PARALLEL_PROCESS', f"Parallel process started")
+            query = f"""SELECT * FROM {self.METADATA_TABLE}
+            WHERE count_match_flag = 'Y' and
+            table_id in
+            (SELECT table_id FROM {self.REPORT_TABLE} WHERE DATE(run_ts) = CURRENT_DATE())
+            order by table_id
+            """
+            metadata_records = self.utils.client.query(query).result()
+            self.logger.info(f"Metadata records: {metadata_records}")
+            with ThreadPoolExecutor(max_workers=get_config_values("profiler", "count_match_max_threads")) as executor:
+                futures = []
+                for metadata in metadata_records:
+                    futures.append(executor.submit(self.process_table, metadata, job_name))
+                for future in futures:
+                    future.result()
+                self.logger.info(" Count match process completed and updated the source row count and count match score for all the tables having source row counts.")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, datetime.now(), datetime.now(), 'PROCESS_TABLE', f"Process table function completed.")
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Count Match for {datetime.now().strftime("%Y-%m-%d")}""", message=f"""Count Match Parallel Process Ended for {datetime.now().strftime("%m-%d-%y")} at {datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()}.""", attachment_files=[self.logger.handlers[0].baseFilename])
+        except Exception as e:
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, datetime.now(), datetime.now(), 'PARALLEL_PROCESS', f"Parallel process failed due to {e}")
+            self.logger.error(f"Parallel processing failed")
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Count Match for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''<p>Error Occured in main block of count match parallel class.<br><b>Error:</b>{e}</p>''')
+
+#if __name__ == '__main__':
+def main():
+    try:
+        log_filename = 'count_match_log_'+str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+        checker = TableCountChecker(log_filename, "GCP", "COUNT_MATCH")
+        processing_type = get_config_values('processing','mode').lower()
+        job_name = get_config_values('job_names','count_match_job_name')
+        if processing_type == 'sequential':
+            checker.sequential_process(job_name)
+        else:
+            checker.parallel_process(job_name)
+    except:
+        raise
+
+====================================
+#dqaas script
+from datetime import datetime, timedelta, date
+import pandas as pd
+import psutil
+import os
+import sys
+import concurrent.futures
+
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+
+from utils.send_email import *
+from utils.common_handlers import *
+import metadata_loader
+import profiler_info_schema
+import count_match
+from profiler_ml_describe import Profiler
+
+class DqaasLite:
+    def __init__(self, data_src: str=None, log_filename: str=None):
+        self.log_filename = log_filename
+        self.data_src = data_src
+        self.job_start_ts = datetime.now()
+        if self.data_src not in ('GCP', 'BQ'):
+            raise Exception(f"Data Source not Provided. Error: Data Source Value is {data_src}")
+        self.logger = set_logger_obj(
+            process_name="LW-ML",
+            data_src=data_src,
+            log_filename=log_filename
+        )
+        self.logger.info(f"Logger Filename: {self.log_filename}")
+        self.utils = CommonUtils(logObj=self.logger)
+        self.email = SendEmail(
+            loggerObj=self.logger,
+            mail_from=get_config_values("email", "sender_email_id"),
+            smtp=get_config_values("email", "smtp_server")
+        )
+        self.job_id = get_config_values("job_id_details", "dqaaslite_job_id")
+        self.job_name = get_config_values("job_names", "dqaaslite_job_name")
+        self.AUTO_PRFL_TBL_RPT = self.utils.AUTO_PRFL_TBL_RPT
+
+    #Summary and Other Mails
+    def send_email_alert(
+        self, vsad_name: str = '', message: str = None, subject: str = None,
+        df_val=pd.DataFrame(), receipents_email_group: list = None):
+        self.logger.info('-------------------------------------------------------------------------')
+        self.logger.info('Email Initiated')
+        self.logger.info('-------------------------------------------------------------------------')
+        try:
+            addl_info = f'for {vsad_name}' if len(vsad_name) > 0 else ''
+            subject = f'DQLite Summary for VSAD - {addl_info}' if subject in self.utils.EMPTY_STR_LIST else subject
+            message = f'Please find the below DQLite Profiling Summary {addl_info}' if message in self.utils.EMPTY_STR_LIST else message
+
+            receipents_email_addr_list: list = None
+            receipents_email_addr_list: list = receipents_email_group if receipents_email_group not in self.utils.EMPTY_STR_LIST else  []
+
+            if len(receipents_email_addr_list) == 0:
+                self.logger.info(f"Email ID not Found in the Mail Distro Table. Assigning Default mail distro({get_config_values('profiler','default_mail_group')})")
+
+            receipents_email_addr_list = receipents_email_addr_list + get_config_values('profiler','default_mail_group').split(",")
+
+            self.logger.info(f"Receipents e-Mail Group:{receipents_email_addr_list}")
+
+            self.email.send_common_message(
+                email_template_filepath=os.path.join(get_config_values('dir','template_dir'), 'dq_common_message.html'),
+                mail_subject=subject,
+                message=message,
+                df_val=df_val,
+                receipents_email_id=receipents_email_addr_list
+            )
+
+            self.logger.info('Email Send Successfully')
+        except Exception as e:
+            self.logger.error(f"Error Occured in email trigger :: {e}")
+
+    def send_overall_summary_email(self):
+        try:
+            ## Mail Distro Details
+            self.df_mail_distros = self.utils.get_email_distros_from_table()
+            ## Get DQ LW overall summary
+            get_summary = f"""
+select * from (
+select a.project_name,a.table_name,run_ts,data_date,table_row_count,tbl_completeness_dq_score,tbl_timeliness_dq_score,tbl_historical_avg_count,tbl_count_change_pct,tbl_consistency_dq_score,src_table_row_count,tbl_count_match_dq_score,SPLIT(project_name,'-')[SAFE_OFFSET(4)] as vsad from {self.utils.dq_gcp_data_project_id}.{self.utils.dq_bq_dataset}.{get_config_values('bigquery','metadata_table')} a inner join {self.utils.dq_gcp_data_project_id}.{self.utils.dq_bq_dataset}.{get_config_values('bigquery','auto_prof_tbl_rpt')} b on a.table_id=b.table_id where date(run_ts) = current_date() group by a.project_name,a.table_name,run_ts,data_date,table_row_count,tbl_completeness_dq_score,tbl_timeliness_dq_score,tbl_historical_avg_count,tbl_count_change_pct,tbl_consistency_dq_score,src_table_row_count,tbl_count_match_dq_score,vsad);
+            """
+            df_all_val = self.utils.run_bq_sql(
+                bq_auth=self.utils.dq_gcp_auth_payload,
+                select_query=get_summary
+            )
+            ##Round Off Numeric Columns to 2 digits.
+            for col in self.AUTO_PRFL_TBL_RPT.get('NUMERIC'):
+                if col in (df_all_val.columns).to_list():
+                    df_all_val[col] = df_all_val[col].fillna(np.nan).astype(float)
+                    df_all_val[col] = np.where(df_all_val[col]>=0, round(df_all_val[col], 2), np.nan)
+
+            for i,row in self.df_mail_distros.iterrows():
+                vsad = row['VSAD']
+                email_distro = row['EMAIL_DISTRO']
+                df_val = df_all_val[df_all_val['vsad']==vsad].reset_index(drop=True)
+                ## Send Email Summary
+                self.send_email_alert(
+                    df_val=df_val,
+                    vsad_name=vsad,
+                    receipents_email_group=email_distro
+                )
+        except Exception as e:
+            self.logger.error(f'Error While Sending Overall Email. Error: {e}')
+
+    def main(self, **kwargs):
+        try:
+
+            try:
+                self.logger.info(f"Calling metadata_loader.main : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+                ##metadata_loader Flow
+                metadata_loader.main()
+                meta_flag = True
+                self.logger.info(f"Finished metadata_loader.main : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+            except Exception as e:
+                self.logger.info(f"Exception occurred in info schema process :: {e}")
+                pass
+
+            flag = False
+            try:
+                self.logger.info(f"Calling profiler_info_schema.main : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+                ##Information Schema Flow as completeness is N
+                profiler_info_schema.main()
+                flag = True
+                self.logger.info(f"Finished profiler_info_schema.main : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+            except Exception as e:
+                self.logger.info(f"Exception occurred in info schema process :: {e}")
+                pass
+
+            try:
+                self.logger.info(f"Calling profiler_ml_describe.main : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+                ##Information Schema Flow as completeness is N
+                Profiler('GCP','profiler_ml_log_'+str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))).main()
+                flag = True
+                self.logger.info(f"Finished profiler_ml_describe.main : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+            except Exception as e:
+                self.logger.info(f"Exception occurred in profiler_ml_describe process :: {e}")
+                pass
+
+            ##Count Match Flow
+            if flag:
+                self.logger.info(f"Calling count_match.main : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+                count_match.main()
+                self.logger.info(f"Finished count_match.main : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+
+            ## Send Overall Summary with Failure List and Complete Summary List
+            self.send_overall_summary_email()
+        except Exception as err:
+            self.logger.error(f"Error in Main Block Execution. Error: {err}")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'main', f"Error : Error in Main Block of DqaasLite.py")
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - DqaasLite for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''<p>Error Occured in main block of DqaasLite class.<br><b>Error:</b>{err}</p>''',attachment_files=[self.logger.handlers[0].baseFilename])
+
+DqaasLite('GCP','DqaasLite_'+str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))).main()
+====================================
+#metadata loader
+import re
+import os
+from datetime import datetime, timedelta
+import pandas as pd
+import numpy as np
+import time
+import sys
+
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from utils.common_handlers import *
+from utils.send_email import *
+
+class MetadataLoader:
+
+    def __init__(self, log_filename: str=None, data_src: str=None, step_code: str=None):
+        #Getting config values
+        self.job_id = get_config_values('job_id_details','metadata_loader_job_id')
+        self.job_name = get_config_values('job_names','metadata_loader_job_name')
+        self.start_ts = datetime.now()
+        self.user_id = 'SmartDQ'
+        self.step_code = step_code
+
+        #Setting logger object & importing common functions
+        self.logger = set_logger_obj(
+            process_name="LW-MetadataLoader",
+            data_src=data_src,
+            log_filename=log_filename
+        )
+        self.utils = CommonUtils(logObj=self.logger)
+        self.email = SendEmail(
+            loggerObj=self.logger,
+            mail_from=get_config_values("email", "sender_email_id"),
+            smtp=get_config_values("email", "smtp_server")
+        )
+        self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Metadata Loader for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''Metadata Loader Process started for {datetime.now().strftime("%m-%d-%y")} at {datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()}.''')
+
+        self.logger.info(f"Logger Filename: {log_filename}")
+        self.logger.info(f"Initiated execution for MetadataLoader : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+        self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'Null', datetime.now(), self.step_code, 'Initiated execution for MetadataLoader')
+
+        self.project = get_config_values('platform','project')
+        self.dataset = get_config_values('platform','dataset')
+        self.table = get_config_values('platform','table')
+
+        self.dq_project_id = get_config_values('bigquery','project_id')
+        self.dq_dataset = get_config_values('bigquery','dataset')
+        self.dq_metadata_table = get_config_values('bigquery','metadata_table')
+
+        self.classified_project = get_config_values('classified','project')
+        self.classified_dataset = get_config_values('classified','dataset')
+        self.classified_table = get_config_values('classified','data_classifications_all')
+
+    def newTableIdentification(self):
+        #Fetching new tables classified & inserting them into dq light metadata table
+        #Newly classifed table onboarded into GCP will be add here
+
+        try:
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'Null', datetime.now(), self.step_code, 'Executing MetadataLoader SQL')
+            self.logger.info(f"Executing MetadataLoader SQL : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+
+            #SQL for fetching new tables onboarded into GCP
+            mt_query = f"""INSERT INTO {self.dq_project_id}.{self.dq_dataset}.{self.dq_metadata_table}
+            select ROW_NUMBER() OVER() + (SELECT IFNULL(MAX(table_id),0)
+            from {self.dq_project_id}.{self.dq_dataset}.{self.dq_metadata_table} mt) as table_id,
+            table_catalog, table_schema, table_name, 'GCP', '2', 'N', 'N', '', '', '', '', '', '', 'N', 'Y', '', insert_ts, timestamp(null)
+            from (
+            select distinct rc.table_catalog, rc.table_schema, rc.table_name, timestamp(current_datetime("America/New_York")) as insert_ts
+            from {self.classified_project}.{self.classified_dataset}.{self.classified_table} dc
+            join {self.project}.{self.dataset}.{self.table} rc
+            on rc.table_catalog = dc.project_space and rc.table_schema = dc.physical_nm and rc.table_name = dc.element_nm
+            left join {self.dq_project_id}.{self.dq_dataset}.{self.dq_metadata_table} mt
+            on rc.table_catalog = mt.project_name and rc.table_schema = mt.dataset_name and rc.table_name = mt.table_name
+            where mt.table_name is null)"""
+
+            job = self.utils.client.query(mt_query)
+
+            time.sleep(5)
+
+            self.logger.info("SQL status details : ")
+            self.logger.info(job.result())
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'Null', datetime.now(), self.step_code, 'MetadataLoader SQL successful')
+            self.logger.info("MetadataLoader SQL successful!!")
+
+            self.logger.info("Metadata updated!!")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, datetime.now(), datetime.now(), self.step_code, 'Exited execution of MetadataLoader')
+            self.logger.info(f"Exited execution of MetadataLoader : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Metadata Loader for {datetime.now().strftime("%Y-%m-%d")}""", message=f"""Metadata Loader Process Ended for {datetime.now().strftime("%m-%d-%y")} at {datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()}.""", attachment_files=[self.logger.handlers[0].baseFilename])
+
+        except Exception as e:
+            error_msg=str(e).split("\n")[0]
+            self.logger.error(f"Error Identified: {e}")
+            self.logger.error(f"Error Message: {error_msg}")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, datetime.now(), datetime.now(), self.step_code, 'Metadata Failed : '+str(error_msg))
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Metadata Loader for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''<p>Error Occured in main block of Metadata Loader Process class.<br><b>Error:</b>{e}</p>''',attachment_files=[self.logger.handlers[0].baseFilename])
+
+#if __name__ == "__main__":
+def main():
+    try:
+        log_filename = 'MetadataLoader_log_'+str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+        ML = MetadataLoader(log_filename, "GCP", "MetadataLoader")
+        
+        #Calling the MetadataLoader function
+        ML.newTableIdentification()
+    except:
+        raise
+========================================
+#profile info schema
+from datetime import datetime
+import os
+import time
+import sys
+
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from utils.common_handlers import *
+from utils.send_email import *
+
+class ProfilerDQ:
+
+    def __init__(self, log_filename: str=None, data_src: str=None, step_code: str=None):
+        #Getting config values
+        self.job_id = get_config_values('job_id_details','inf_schema_job_id')
+        self.job_name = get_config_values('job_names','inf_schema_job_name')
+        self.start_ts = datetime.now()
+        self.user_id = 'SmartDQ'
+        self.step_code = step_code
+
+        #Setting logger object & importing common functions
+        self.logger = set_logger_obj(
+            process_name="LW-DQ",
+            data_src=data_src,
+            log_filename=log_filename
+        )
+        self.utils = CommonUtils(logObj=self.logger)
+        self.email = SendEmail(
+            loggerObj=self.logger,
+            mail_from=get_config_values("email", "sender_email_id"),
+            smtp=get_config_values("email", "smtp_server")
+        )
+        self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Profiler (Info Schema) for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''Profiler Info Schema Process started for {datetime.now().strftime("%m-%d-%y")} at {datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()}.''')
+
+        self.logger.info(f"Logger Filename: {log_filename}")
+        self.logger.info(f"Initiated execution for profilerDQ : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+        self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'Null', datetime.now(), self.step_code, 'Initiated execution for profilerDQ')
+
+        self.project = get_config_values('platform','project')
+        self.dataset = get_config_values('platform','dataset')
+        self.table = get_config_values('platform','table')
+
+        self.dq_project_id = get_config_values('bigquery','project_id')
+        self.dq_dataset = get_config_values('bigquery','dataset')
+
+        self.dq_metadata_table = get_config_values('bigquery','metadata_table')
+        self.dq_auto_prof_tbl_rpt = get_config_values('bigquery','auto_prof_tbl_rpt')
+
+        self.classified_project = get_config_values('classified','project')
+        self.classified_dataset = get_config_values('classified','dataset')
+        self.classified_table = get_config_values('classified','data_classifications_all')
+
+    def profilerDQ(self):
+        #Calculating DQ score for all the active assets in the DQ light metadata table
+        # Once the scores are ready - inserting them into dq light report table
+
+        try:
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'Null', datetime.now(), self.step_code, 'Executing DQ SQL')
+            self.logger.info(f"Executing DQ SQL : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+
+            #SQL for fetching DQ scores for all the active assets in Metadata
+            DQ_query = f"""
+            insert into {self.dq_project_id}.{self.dq_dataset}.{self.dq_auto_prof_tbl_rpt}
+            WITH
+            all_tables AS (
+            SELECT mt.table_id,rc.* from {self.project}.{self.dataset}.{self.table} rc
+            JOIN {self.dq_project_id}.{self.dq_dataset}.{self.dq_metadata_table} mt
+            ON mt.project_name = rc.table_catalog
+            AND mt.dataset_name = rc.table_schema
+            AND mt.table_name = rc.table_name
+            WHERE upper(completeness_flag) = 'N' and upper(active_flag) = 'Y'),
+
+            weekday_counts AS (
+            SELECT table_id, table_catalog, table_schema, table_name, total_rows, EXTRACT(DAYOFWEEK FROM date(log_date)) AS weekday,
+            date(log_date) as log_date FROM all_tables
+            WHERE date(log_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 92 DAY)),
+
+            latest_count AS (
+            SELECT table_id, wc.table_catalog, wc.table_schema, wc.table_name, wc.total_rows AS latest_count, wc.log_date AS latest_date
+            FROM (
+            SELECT table_id, table_catalog, table_schema, table_name, total_rows, log_date,
+            ROW_NUMBER() OVER (PARTITION BY table_catalog, table_schema, table_name ORDER BY log_date DESC) AS row_num
+            FROM weekday_counts) wc
+            WHERE row_num = 1 ),
+
+            historical_stats AS (
+            SELECT
+            wc.table_id, wc.table_catalog, wc.table_schema, wc.table_name,
+            AVG(wc.total_rows) AS avg_historical_count,
+            STDDEV(wc.total_rows) AS stddev_historical_count,
+            VARIANCE(wc.total_rows) AS variance_historical_count,
+            COUNT(*) AS count_days
+            FROM weekday_counts wc
+            JOIN latest_count lc
+            ON wc.table_catalog = lc.table_catalog
+            AND wc.table_schema = lc.table_schema
+            AND wc.table_name = lc.table_name
+            WHERE EXTRACT(DAYOFWEEK FROM wc.log_date) = EXTRACT(DAYOFWEEK FROM lc.latest_date)
+            AND wc.log_date < lc.latest_date
+            GROUP BY wc.table_id, wc.table_catalog, wc.table_schema, wc.table_name
+            ), 
+			
+            previous_run_count AS (
+            select * from ( select table_id, table_name, table_row_count, 
+            row_number() over(partition by table_id, table_name order by run_ts, data_date) as rk 
+            from {self.dq_project_id}.{self.dq_dataset}.{self.dq_auto_prof_tbl_rpt})
+            where rk = 1)
+
+            SELECT
+            lc.table_id as table_id, lc.table_name as table_name, timestamp(current_datetime("America/New_York")) as run_ts, lc.latest_date as data_date,
+            lc.latest_count as table_row_count, null as tbl_completeness_dq_score, case when lc.latest_count > pc.table_row_count then 100 else 0 end as tbl_timeliness_dq_score,
+            cast(hs.avg_historical_count as NUMERIC) as tbl_historical_avg_count,
+            cast(ROUND(SAFE_DIVIDE((lc.latest_count - hs.avg_historical_count) , hs.avg_historical_count) * 100, 2) as NUMERIC) AS tbl_count_change_pct,
+            case when ROUND(SAFE_DIVIDE((lc.latest_count - hs.avg_historical_count) , hs.avg_historical_count) * 100, 2) between -10 and 10 then 100 else 0 end as
+            tbl_consistency_dq_score,
+            null as src_table_row_count,
+            null as tbl_count_match_dq_score
+            FROM latest_count lc
+            JOIN historical_stats hs
+            ON hs.table_catalog = lc.table_catalog
+            AND hs.table_schema = lc.table_schema
+            AND hs.table_name = lc.table_name
+            left JOIN previous_run_count pc
+            ON pc.table_id = lc.table_id
+            AND pc.table_name = lc.table_name"""
+
+            job = self.utils.client.query(DQ_query)
+            self.logger.info(job.result())
+
+            time.sleep(25)
+
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, 'Null', datetime.now(), self.step_code, 'ProfilerDQ scores updated')
+            self.logger.info("profilerDQ scores updated!!")
+
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, datetime.now(), datetime.now(), self.step_code, 'Exited execution of profilerDQ')
+            self.logger.info(f"Exited execution of profilerDQ : {datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Profiler (Info Schema) for {datetime.now().strftime("%Y-%m-%d")}""", message=f"""Profiler Info Schema Process Ended for {datetime.now().strftime("%m-%d-%y")} at {datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()}.""", attachment_files=[self.logger.handlers[0].baseFilename])
+        except Exception as e:
+            error_msg=str(e).split("\n")(0)
+            self.logger.error(f"Error Identified: {e}")
+            self.logger.error(f"Error Message: {error_msg}")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.start_ts, datetime.now(), datetime.now(), self.step_code, 'ProfilerDQ Failed : '+str(error_msg))
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Profiler (Info Schema) for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''<p>Error Occured in main block of Profiler Info Schema Process class.<br><b>Error:</b>{e}</p>''',attachment_files=[self.logger.handlers[0].baseFilename])
+
+#if __name__ == "__main__":
+def main():
+    try:
+        log_filename = 'Profiler_DQ_log_'+str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+        DQ = ProfilerDQ(log_filename, "GCP", "ProfilerDQ")
+
+        #Calling the profilerDQ function
+        DQ.profilerDQ()
+    except:
+        raise
+
+================================================
+#profile ml describe
+from datetime import datetime, timedelta, date
+import pandas as pd
+import psutil
+import os
+import sys
+import concurrent.futures
+
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+
+from utils.send_email import *
+from utils.common_handlers import *
+import profiler_info_schema
+import count_match
+
+class Profiler(object):
+    def __init__(self, data_src: str=None, log_filename: str=None):
+        self.log_filename = log_filename
+        self.data_src = data_src
+        self.job_start_ts = datetime.now()
+        if self.data_src not in ('GCP', 'BQ'):
+            raise Exception(f"Data Source not Provided. Error: Data Source Value is {data_src}")
+        self.logger = set_logger_obj(
+            process_name="LW-ML",
+            data_src=data_src,
+            log_filename=log_filename
+        )
+        self.logger.info(f"Logger Filename: {self.log_filename}")
+        self.utils = CommonUtils(logObj=self.logger)
+        self.email = SendEmail(
+            loggerObj=self.logger,
+            mail_from=get_config_values("email", "sender_email_id"),
+            smtp=get_config_values("email", "smtp_server")
+        )
+        self.AUTO_PRFL_TBL_RPT = self.utils.AUTO_PRFL_TBL_RPT
+        self.AUTO_PRFL_COL_RPT = self.utils.AUTO_PRFL_COL_RPT
+        self.MAX_THREADS=get_config_values("profiler", "max_threads")
+        self.job_id = get_config_values("job_id_details", "ml_profiler_job_id")
+        self.job_name = get_config_values("job_names", "ml_profiler_job_name")
+
+    ## Get the Metadata from table - DataFrame
+    def get_metadata(self) -> pd.DataFrame:
+        try:
+            metadata_query = f"""
+                SELECT * FROM {self.utils.dq_gcp_data_project_id}.{self.utils.dq_bq_dataset}.{self.utils.dq_lw_mtd_tbl}
+                WHERE env_name = '{self.data_src}' and upper(active_flag)='Y'
+                ORDER BY table_id;
+            """
+            df_val = self.utils.run_bq_sql(
+                bq_auth=self.utils.dq_gcp_auth_payload,
+                select_query=metadata_query
+            )
+            return df_val
+        except Exception as err:
+            error_msg=str(err).split("\n")(0)
+            self.logger.error(f'Error Occured While Executing the Metadata Query. Error: {err} ')
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'get_metadata', f"Error Occured While Executing the Metadata Query : {error_msg}")
+        return pd.DataFrame()
+
+    ## Stats Profile Engine
+    def fetch_stats(self, input_dict: dict):
+        process_id = os.getpid()
+        report_reference_key = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        overall_reference_key = datetime.now().strftime("%f")
+        self.logger.info(f"******** Process Started. Process ID: {process_id} , Thread ID: {overall_reference_key}")
+        start_mem = psutil.Process(process_id).memory_full_info().uss
+        start_time = datetime.now()
+
+        filename: str = ""
+        source_tablename: str =""
+        failed_tables: dict = {}
+        table_level_score: dict = {}
+        table_row_count: int = 0
+
+        try:
+            execution_date = datetime.now()
+            proj_id = input_dict.get('project_name','')
+            db_name = input_dict.get('dataset_name','')
+            table = input_dict.get('table_name','')
+            source_tablename = f"{proj_id}.{db_name}.{table}"
+            PRFL_TBL_ID = input_dict.get('table_id','')
+            data_src = input_dict['env_name']
+            incremental_date_column = self.utils.convert_str_to_list(str(input_dict.get('incremental_date_column','')))
+            inc_dt_cond = input_dict.get('incremental_date_condition',0) if str(input_dict.get('incremental_date_condition',0)) not in self.utils.EMPTY_STR_LIST else 0
+            self.logger.info(f""" fetch_stats() :: Fetching Stats for : table :: {source_tablename}""")
+            process_date = f"""{datetime.now().date() - timedelta(days=int(get_config_values("profiler", "n_days_limit")))}"""
+
+            profile_columns = "*"
+            self.logger.info(f"""{overall_reference_key} ::
+            ------------------------------------------------------------------
+            Table ID                 : {PRFL_TBL_ID}
+            Execution Date              : {execution_date}
+            Table                       : {source_tablename}
+            Incremental Date Column     : {incremental_date_column}
+            Process Date                : {process_date}
+            Columns For Profiling       : {profile_columns}
+            Reference Key               : {report_reference_key}
+            Log Thread ID               : {overall_reference_key}
+            Process ID                  : {process_id}
+            Start at                    : {start_time}
+            ------------------------------------------------------------------
+            """)
+            #data_query = f"select {TD_data_limit_clause} {profile_columns} from {source_tablename} {where_clause} {BQ_data_limit_clause}"
+            if len(incremental_date_column)==0:
+                self.utils.log_failure(PRFL_TBL_ID, source_tablename, 0, process_date, f"Incremental Date Column Not Available")
+                return {"thread_id": overall_reference_key,"error": "Incremental Date Column Not Available"}
+
+            data_query = f"select '{source_tablename}' AS src_tbl,name as column_name, num_rows, num_nulls FROM ML.DESCRIBE_DATA((select * from {source_tablename} where {incremental_date_column[0]} >= current_date - {inc_dt_cond}))"
+            self.logger.info(f""" fetch_stats() :: ML Describe Query :: {data_query}""")
+
+            ## Data Retreival for profiling
+            data = pd.DataFrame()
+            try:
+                data = self.utils.get_query_data(
+                    data_src=data_src,
+                    select_query=data_query,
+                    thread_id=overall_reference_key
+                )
+            except Exception as err:
+                message = f"""Error Occurred While Executing the ML Describe Query. Kindly Check the Query :: Table: {source_tablename} :: Error: \n{err}"""
+                failed_tables = {'Table': source_tablename, 'Query': data_query}
+                self.utils.log_failure(PRFL_TBL_ID, source_tablename, 0, process_date, f"Exception occurred while running ML Describe Query {''.join(message.splitlines())}")
+                return {"error": "Unable to fetch stats", "failed_tables": failed_tables}
+
+            self.logger.info(f"""{overall_reference_key} ::
+            Data Retreival Length: {len(data)}
+            """)
+            #Columns: {data.columns}
+            #""")
+            if len(data)>0:
+                column_level_score: list = []
+                consistency_score: list = []
+                for index in data.index:
+                    #Column Level Completeness Score Calculation
+                    col_name = data.loc[index,'column_name']
+                    #Calculate Total table rows using incremental date column
+                    if str(col_name).lower() in [str(x).lower() for x in incremental_date_column]:
+                        table_row_count = data.loc[index,'num_rows']
+                    col_completeness = (100 - (data.loc[index,'num_nulls'] / data.loc[index,'num_rows'] * 100)).round(2)
+                    consistency_score.append({
+                        'col_consistency': data.loc[index,'num_rows'],
+                    })
+                    column_level_score.append({
+                        'table_id' : PRFL_TBL_ID,
+                        'table_name' : table,
+                        'column_name': data.loc[index,'column_name'],
+                        'run_ts' : datetime.now(),
+                        'data_date' : execution_date,
+                        'total_rows' : data.loc[index,'num_rows'],
+                        'total_nulls' : data.loc[index,'num_nulls'],
+                        'column_completeness_dq_score': col_completeness,
+                    })
+
+                df_column_details = pd.DataFrame.from_records(column_level_score)
+                df_column_details = df_column_details.reset_index(drop=True)
+
+                df_consistency_score = pd.DataFrame.from_records(consistency_score)
+                df_consistency_score = df_consistency_score.reset_index(drop=True)
+
+                #Table Level Timeliness Score
+                TIMELINESS = 100 if len(data) > 0 else 0
+                COMPLETENESS = self.utils.round_off(df_column_details['column_completeness_dq_score'].mean())
+
+                #Consistency Pillar Score
+                avg_hist_count = self.get_average_history_count(
+                    auto_prfl_tbl_rpt=self.utils.dq_gcp_data_project_id+"."+self.utils.dq_bq_dataset+"."+get_config_values("bigquery", "auto_prof_tbl_rpt"),
+                    src_table=table,
+                    table_id=PRFL_TBL_ID,
+                    thread_id=overall_reference_key
+                )
+                variation_perc = 0
+                ACTUAL_RECORD_COUNT = self.utils.round_off(df_consistency_score['col_consistency'].mean())
+                if avg_hist_count > 0 :
+                    variation_perc = ((float(ACTUAL_RECORD_COUNT) - float(avg_hist_count)) / float(avg_hist_count)) * 100
+                CONSISTENCY = 100 if variation_perc < int(get_config_values("profiler", "consistency_variation_perc")) else 0
+                self.logger.info(f""" fetch_stats() :: Avg Hist Count:: {avg_hist_count}, Actual Record Count :: {ACTUAL_RECORD_COUNT}, Consistency ::{CONSISTENCY}""")
+
+                self.logger.info(f"""
+                ************************************************************
+                Reference Key               : {report_reference_key}
+                Process ID                  : {process_id}
+                Completeness                : {COMPLETENESS}
+                Timeliness                  : {TIMELINESS}
+                Consistency                 : {CONSISTENCY}
+                ************************************************************
+                """)
+                table_level_score: dict = {
+                'table_id' : PRFL_TBL_ID,
+                'table_name' : table,
+                'run_ts': datetime.now(),
+                'data_date' : execution_date,
+                'table_row_count' : table_row_count,
+                'tbl_completeness_dq_score': COMPLETENESS,
+                'tbl_timeliness_dq_score': TIMELINESS,
+                'tbl_historical_avg_count': avg_hist_count,
+                'tbl_count_change_pct' : variation_perc,
+                'tbl_consistency_dq_score': CONSISTENCY,
+                'src_table_row_count' : 0,
+                'tbl_count_match_dq_score' : 0,
+                }
+
+                df_table_details = pd.DataFrame.from_records([table_level_score])
+                df_table_details = df_table_details.reset_index(drop=True)
+            else:
+                self.logger.info(f"{overall_reference_key} :: Access exist, but No Data Found :\n{data_query}")
+                self.utils.log_failure(PRFL_TBL_ID, source_tablename, 0, process_date, f"Access exist, but No Data Found {source_tablename}")
+                return {"thread_id": overall_reference_key,"error": "Access exist, But No Data Found"}
+
+            end_mem = psutil.Process(process_id).memory_full_info().uss
+            end_time = datetime.now()
+
+            self.logger.info(f"""{overall_reference_key} ::
+            ======================================================================================
+            Execution Details:
+                Reference Key           :   {report_reference_key}
+                Process ID              :   {process_id}
+                Started at              :   {start_time}
+                Ended by                :   {end_time}
+                Total Time Taken        :   {(end_time-start_time)}
+                Memory consumed (in MB) :   {(end_mem - start_mem) / (1024 * 1024 * 1024)} (in MB)
+            ======================================================================================
+            ******** Execution Completed
+            ======================================================================================
+            """)
+            self.logger.info(f"{overall_reference_key} :: Data Fetched Successfully")
+            self.logger.info(f""" fetch_stats() :: Data Fetched Successfully :: TABLE DETAILS :: {len(df_table_details)}, COLUMN DETAILS :: {len(df_column_details)}""")
+            return {"df_table_details": df_table_details, "df_column_details": df_column_details}
+        except Exception as e :
+            #self.logger.error(f"{overall_reference_key} ::Error Occured While Profiling the Table({source_tablename})\nError info: {e}")
+            self.logger.info(f"{overall_reference_key} ::Error Occured While Profiling the Table({source_tablename})\nError info: {e}")
+            self.utils.log_failure(PRFL_TBL_ID, source_tablename, 0, process_date, f"Error Occured While Profiling the Table {source_tablename}")
+            return {"thread_id": overall_reference_key,"error": "Unable to fetch stats", "failed_tables": failed_tables}
+
+    def get_average_history_count(self, auto_prfl_tbl_rpt: str, src_table: str, table_id: int, thread_id=None):
+        try:
+            avg_count = f"""
+                with top_8_records as
+                (select *,row_number() over (partition by table_id order by run_ts desc) as row_num
+                from {auto_prfl_tbl_rpt} where table_id = {table_id} and
+                upper(table_name)=upper('{src_table}') and
+                extract(dayofweek from run_ts) = extract(dayofweek from current_date)
+                order by run_ts desc)
+                select ifnull(avg(ifnull(table_row_count, 0)), 0) as avg_count from top_8_records where row_num>1 and row_num<=8
+            """
+            #self.logger.info(f"Average Historical Query: {avg_count}")
+            df_count = self.utils.run_bq_sql(
+                bq_auth=self.utils.dq_gcp_auth_payload,
+                select_query=avg_count
+                )
+            #self.logger.info(f"Count Result: {df_count}")
+
+            if len(df_count) > 0:
+                avg_hist_count = df_count.iloc[0, 0]
+                #self.logger.info(f"Average Hist Count: {avg_hist_count}")
+                return avg_hist_count
+
+            return 0
+        except Exception as err:
+            error_msg=str(err).split("\n")(0)
+            self.utils.log_failure(table_id, src_table, 0, date.today(), f"Error occurred in getting Average Historical Count {error_msg}")
+            raise Exception(f"{thread_id} :: Error occurred in getting Average Historical Count ")
+
+    ## Load Auto Profile Results to BQ Report Tables
+    def load_auto_profile_results(self, table_report: pd.DataFrame, column_report: pd.DataFrame):
+        try:
+            ## BigQuery Client Connection
+            dbclient, db_creds = self.utils.bigquery_client(
+                auth=self.utils.dq_gcp_auth_payload
+            )
+
+            table_report = table_report.rename(columns={col: str(col).lower() for col in table_report.columns.tolist()})
+            column_report = column_report.rename(columns={col: str(col).lower() for col in column_report.columns.tolist()})
+
+            ## Loading Table Level Report
+            self.utils.load_result_to_bq_report_table(
+                dq_credentials=db_creds,
+                dq_report_table_name=self.utils.dq_gcp_data_project_id+"."+self.utils.dq_bq_dataset+"."+get_config_values("bigquery", "auto_prof_tbl_rpt"),
+                df_load_data=table_report,
+                column_details=self.AUTO_PRFL_TBL_RPT
+            )
+
+            ## Loading Column Level Report
+            self.utils.load_result_to_bq_report_table(
+                dq_credentials=db_creds,
+                dq_report_table_name=self.utils.dq_gcp_data_project_id+"."+self.utils.dq_bq_dataset+"."+get_config_values("bigquery", "auto_prof_col_rpt"),
+                df_load_data=column_report,
+                column_details=self.AUTO_PRFL_COL_RPT
+            )
+        except Exception as err:
+            error_msg=str(err).split("\n")(0)
+            self.logger.error(f"Error While Loading the results to BigQuery Report Table. Error: {err}")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'load_auto_profile_results', f"Error While Loading the results to BigQuery Report Table. Error: {error_msg}""")
+            raise f"Error While Loading the results to BigQuery Report Table. Error: {err}"
+
+    ## Calls stats Engine
+    def stats_engine (self, df_mtd: pd.DataFrame):
+        try:
+            input_val = df_mtd.to_dict('records')
+            df_table_details = pd.DataFrame()
+            df_column_details = pd.DataFrame()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.MAX_THREADS)) as executor:
+                result_futures = executor.map(self.fetch_stats, input_val)
+                for future in result_futures:
+                    try:
+                        #self.logger.info(f"Result is :: {future}")
+                        if all(k in future for k in ("df_table_details","df_column_details")):
+                            #self.logger.info(f"Inside Success Data :: {future['stats_data']}")
+                            df_table_details = pd.concat([df_table_details,future['df_table_details']], ignore_index=True)
+                            df_column_details = pd.concat([df_column_details,future['df_column_details']], ignore_index=True)
+                    except Exception as e:
+                        self.logger.info(f"Exception is :: {e}")
+                        self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'stats_engine', f"Exception occurred in fetching future results iteration in stats engine method")
+            self.logger.info(f"df table result :: {df_table_details}, length :: {len(df_table_details)}")
+            self.logger.info(f"df column result :: {df_column_details}, length :: {len(df_column_details)}")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'stats_engine', f"Table and Column results counts :  table result :: {len(df_table_details)}, col result :: {len(df_column_details)}")
+            ## Load Auto Profile Results to Respective Report Tables
+            if len(df_table_details) > 0 or len(df_column_details) > 0:
+                self.load_auto_profile_results(
+                    table_report=df_table_details,
+                    column_report=df_column_details
+                    )
+            else:
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'stats_engine', f"Result Dataframes Empty in stats engine method")
+            self.logger.info(f"stats result :: Data Loaded into reporting tables")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'stats_engine', f"stats result :: Data Loaded into reporting tables")
+            return df_table_details
+        except Exception as err:
+            self.logger.error(f'Error Occured. Proceeding with next Iteration.\n Error Info: {err}')
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'stats_engine', f"Exception occurred in stats_engine()")
+
+        return pd.DataFrame()
+
+    ## stats - Initiation Block - Pre-Requisite
+    def initiate_stats(self, tables_csv_stats=pd.DataFrame()):
+        try:
+            tables_csv_stats = tables_csv_stats.drop(columns=['Unnamed: 0'], axis=1, errors='ignore')
+            tables_csv_stats = tables_csv_stats.reset_index(drop=True)
+            self.logger.info(f'No of Active Tables for stats is {len(tables_csv_stats)}')
+
+            tables = tables_csv_stats['table_name'].to_list()
+            no_of_tables = len(tables)
+            if int(no_of_tables) <= 0:
+                self.logger.info('Tables Not found for DQLW Profiling')
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'initiate_stats', f"Tables Not found for DQLW Profiling")
+                #self.email.email_alert(message='Tables Not found for DQLW Profiling')
+            else:
+                self.logger.info('No of tables required for DQLW Profiling is {}'.format(len(tables_csv_stats)))
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'initiate_stats', f"Number of tables required for Profiling : {len(tables_csv_stats)}")
+
+                ##Calling Stats Engine
+                get_results_list = self.stats_engine(df_mtd=tables_csv_stats)
+                self.logger.info(f"Stats Loading completed for {len(get_results_list)} tables")
+
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'initiate_stats', f"Stats Loading completed : {len(get_results_list) if get_results_list is not None else 0}")
+                #failure_list, success_list = self.retieve_resulte_from_dict(results=get_results_list)
+                #self.logger.info(f"Failure Table List Count: {len(failure_list)}, Compelete Summary Count: {len(success_list)}")
+
+        except Exception as e:
+            self.logger.error(f'Tables Not found for DQLW Profiling.\n Error Info:{e}')
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'initiate_stats', f"Exception occurred in initiate_stats()")
+            #self.email.email_alert(message='Tables Not found for DQLW Profiling')
+
+    ## Call the stats Engine - Used in Main Block and Scheduler
+    def call_stats_engine(self, df_input: pd.DataFrame):
+        """Called inside Table Watcher for Initiating stats Engine"""
+
+        process_id = os.getpid()
+        start_mem = psutil.Process(process_id).memory_full_info().uss
+        start_time = datetime.now()
+        self.logger.info(f'''
+        ==================================================================
+        #### Initiating stats Engine
+        Process ID      :   {process_id}
+        Requested Time  :   {start_time}
+        ==================================================================
+        ''')
+
+        try:
+            self.logger.info(f'Total Records Found Profiling: {len(df_input)}')
+            #self.logger.info(f'Total Records Found Profiling: {df_input.to_string()}')
+            if len(df_input) > 0 :
+                self.logger.info('Requesting for DQLW Profiling............')
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'call_stats_engine', f"Completeness==Y Input DF Counts : {len(df_input)}")
+                summary_run_date = datetime.now().strftime("%m-%d-%y")
+                summary_run_time = datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()
+                self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Profiler (ML Describe) for {datetime.now().strftime("%Y-%m-%d")}""", message=f'DQLW Profiling started for {summary_run_date} at {summary_run_time}.')
+
+                self.initiate_stats(
+                    tables_csv_stats=df_input,
+                )
+                summary_run_date = datetime.now().strftime("%m-%d-%y")
+                summary_run_time = datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()
+                self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Profiler (ML Describe) for {datetime.now().strftime("%Y-%m-%d")}""", message=f'DQLW Profiling Ended for {summary_run_date} at {summary_run_time}.', attachment_files=[self.logger.handlers[0].baseFilename])
+            else:
+                self.logger.error('Tables Not found for DQLW Profiling at the scheduled hour')
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'call_stats_engine', f"Tables Not found for DQLW Profiling at the scheduled hour")
+                #self.email.email_alert(message='Tables Not found for DQLW Profiling at the scheduled hour')
+
+        except Exception as e:
+            error_msg=str(e).split("\n")(0)
+            self.logger.error('Failied to Initiate stats Engine.\n Error Info: '+ str(e))
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'call_stats_engine', f"Failied to Initiate stats Engine :: {error_msg}""")
+            #self.email.email_alert(message='File not Found in the server')
+
+        end_mem = psutil.Process(process_id).memory_full_info().uss
+        end_time = datetime.now()
+
+        self.logger.info(f"""
+        ======================================================================================
+        Job Process Details:
+            Process ID              :   {process_id}
+            Started at              :   {start_time}
+            Ended by                :   {end_time}
+            Total Time Taken        :   {(end_time-start_time)}
+            Memory consumed (in MB) :   {(end_mem - start_mem) / (1024 * 1024 * 1024)}
+        ======================================================================================
+        """)
+
+    def main(self, **kwargs):
+        try:
+            entry_ts = datetime.now()
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', entry_ts, 'main', f"DQaaS Lite Profiler Started")
+            self.logger.info(f"""\nData Source: {self.data_src}""")
+            all_meta = self.get_metadata()
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', entry_ts, 'main', f"Total Input DF Counts : {len(all_meta)}")
+            df_compleness_y = all_meta[all_meta['completeness_flag'].isin(['Y','y'])]
+
+            try:
+                ##ML Describe Flow as completeness is Y
+                self.call_stats_engine(df_input=df_compleness_y)
+                self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', entry_ts, 'main', f"DQaaS Lite Profiler Ended")
+                flag = True
+            except:
+                pass
+
+        except Exception as err:
+            self.logger.error(f"Error in Main Block Execution. Error: {err}")
+            self.utils.log_monitor_table(self.job_id, self.job_name, self.job_start_ts, 'null', datetime.now(), 'main', f"Error : Error in Main Block of profiler_ml_describe.py")
+            self.email.email_alert(subject = f"""{get_config_values("email", "email_env")} DQaaS Lite - Profiler (ML Describe) for {datetime.now().strftime("%Y-%m-%d")}""", message=f'''<p>Error Occured in main block of Profiler class.<br><b>Error:</b>{err}</p>''',attachment_files=[self.logger.handlers[0].baseFilename])
+
+#Profiler('GCP','profiler_ml_log_'+str(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))).main()
+=====================================================================
+#dq_processor
+import argparse
+import sys
+import os
+import pandas as pd
+import google.auth
+from requests.exceptions import HTTPError
+from google.cloud import bigquery
+from datetime import datetime, timedelta
+import logging
+
+
+## Importing User Defined Modules
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from utils.send_email import SendEmail
+from config_data import get_config, set_logger
+import scripts.config_params as config
+from scripts.common_handlers import CommonUtils, set_logger
+from scripts.auto_profile import AutoProfileEngine
+from scripts.sql_rule_profile_bkp import RuleProfileEngine
+from scripts.sql_rule_profile import RuleProfile
+from scripts.source_chk_avail import SourceCheckAvailability
+from scripts.custom_metrics import CustomeMetrics
+import scripts.custom_common_handlers as apps
+
+
+class DQProcessor(object):
+    def __init__(self, data_src: str=None):
+        self.config = get_config()
+        self.data_src = data_src
+        if self.data_src not in config.APPL_DATA_SRC:
+            raise Exception(f"Data Source not Provided. Error: Data Source Value is {data_src}")
+
+        ## Creating Logger File and Object
+        self.logger: logging = set_logger(
+            logger_path=config.LOGS_DIR,
+            log_filename=f'DQ-PROCESS-Main',
+            process_name=f'DQ-PROCESS-Main',
+            # date_with_minutes_yn='Y'
+        )
+        self.utils: CommonUtils = CommonUtils(logObj=self.logger)
+ 
+
+    def _set_attributes(self, config):
+        bq_cred_dtls = config['gcp_metadata_db']
+        profile_dtls = config['sql_rule_profile']
+        
+        home_path: str = self.config["dir"]["home_dir"]
+        config_path = self.config["dir"]["config_dir"]
+        # self.run_queries_on_remote = self.config["sql_rule_profile"]["run_queries_on_remote"]
+
+        ##  Data Quality Service Account
+        self.dq_project_id = bq_cred_dtls['dq_project_id']
+        self.dq_auth_payload = {
+            "client_id": bq_cred_dtls['dq_client_id'],
+            "client_secret": bq_cred_dtls['dq_client_secret_key'],
+            "token_url": bq_cred_dtls['gcp_token_url'],
+            "conn_project_id": self.dq_project_id,
+            "sa_json_file_dtls": os.path.abspath(os.path.join(config_path, bq_cred_dtls['dq_sa_json'])),
+            "project_space": os.path.join(config_path, "dq_oidc_token.json")
+        }
+
+        # DQ Space Metadata and Report Table Details
+        # dq_dataset_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name']
+        # self.dq_mtd_table_name =  self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + master_mtd_table['dq_metadata_table']
+        # self.dq_report_table_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + profile_dtls['dq_rpt_table_name']
+
+    def request_auto_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame):
+        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
+        # filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]
+        self.logger.info(f'Sub Domain List: {sub_domain_list}')
+        
+        self.logger.info(f'Request for Auto Profiling Initiated...')
+        #need to use filtered_sub_domains_list in below for loop to include load balancing. Else use sub_domain_list
+        for sub_domain in sub_domain_list:
+            try:
+                self.logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
+                
+                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                self.logger.info(f'Records Count: {len(df_tbl_list)}')
+                
+                ## Initiating Profile Engine
+                AutoProfileEngine(data_src=data_src).call_auto_profile_engine(df_input=df_tbl_list)
+                self.logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
+            except Exception as err:
+                self.logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
+            
+            self.logger.info('-------------------------------------------------------------')
+        
+        self.logger.info(f'Request for Auto Profiling got Completed...')
+        self.logger.info('-------------------------------------------------------------')
+
+    ## Requesting for rule Profile Engine
+    def request_rule_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame,assigned_subdomains = []):
+        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
+        filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]   
+        logger.info(f'Sub Domain List: {sub_domain_list}')   
+        logger.info(f'Request for Rule Profiling Initiated...')
+        ruleprofile = RuleProfile(data_src=data_src)
+        ruleprofile.current_date = datetime.now()
+        environment = self.config.get('environment','env')
+        # mail_subject_msg = f"DQ-2.0 Rule Profiling started for the daily run on ({ruleprofile.current_date})"
+        mail_subject_msg = f"LensX|{environment}|Rule Profiling started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+        if ruleprofile.monthly_process_yn == "MONTHLY":
+            mail_subject_msg = f"LensX|{environment}|Monthly_Rule_Profiling_Started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+
+        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
+                                        mail_subject = mail_subject_msg,
+                                        message="DQ-2.0 rule profiling have started",
+                                        receipents_email_id=ruleprofile.summary_alert_email_group)
+        for sub_domain in sub_domain_list:
+            try:
+                logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
+                
+                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                logger.info(f'Records Count: {len(df_tbl_list)}') 
+                # ruleProfile.call_sql_profile(df_metadata=df_tbl_list)
+                # daily_run_process(logger=logger,df_rules_list=df_tbl_list)
+
+                ## Initiating Profile Engine
+                ruleprofile.run_regular_process(df_rules_list=df_tbl_list)
+                logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
+            except Exception as err:
+                logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
+            
+            logger.info('-------------------------------------------------------------')
+        #Send Profile Completed Alert
+        # mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the daily run on ({ruleprofile.current_date})"
+        mail_subject_msg = f"LensX|{environment}|Rule_Profiling_Ended|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+        print("mail_subject_msg",mail_subject_msg)
+        if ruleprofile.monthly_process_yn == "MONTHLY":
+            mail_subject_msg = f"LensX|{environment}|Rule_Profiling_Ended|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
+                                    mail_subject = mail_subject_msg,
+                                    message="DQ-2.0 rule profiling have ended",
+                                    receipents_email_id=ruleprofile.summary_alert_email_group)
+        logger.info(f'Request for Rule Profiling got Completed...')
+        logger.info('-------------------------------------------------------------')
+
+    def request_custom_profile_engine(self,logger: logging, df_val: pd.DataFrame):
+    
+        df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
+        df_val["comparison_type"] = df_val["comparison_type"].fillna("WEEKDAYS")
+        df_val["run_frequency"] = df_val["run_frequency"].fillna("N")
+        dfGroupList = df_val[["data_sub_dmn", "comparison_type", "run_frequency"]].drop_duplicates()
+        process_date = "current_date-1"
+        business_date = "current_date-1"
+        cmObj = CustomeMetrics()
+        
+        logger.info(f'Request for Rule - Custom Profiling Initiated...\nTotal Records: {len(df_val)}\n{dfGroupList}')
+        
+        
+        logger.info("---------------------------------------------------------------------")
+        for row in dfGroupList.itertuples():
+            try:
+                logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type}, Hourly: {row.run_frequency} Initiating Profiling')
+                
+                df_tbl_list = df_val[
+                    (df_val["data_sub_dmn"] == row.data_sub_dmn) & 
+                    (df_val["comparison_type"] == row.comparison_type) &
+                    (df_val["run_frequency"] == row.run_frequency)
+                ]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                logger.info(f'Records Count: {len(df_tbl_list)}')
+                
+                # Initiating Profile Engine
+                cmObj.main_metrics_execution(
+                    df_mtd=df_tbl_list,
+                    sub_domain=row.data_sub_dmn,
+                    start_date=business_date,
+                end_date=process_date
+
+                )
+                
+                logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type} - Rule - Custom Profiling Completed')
+            except Exception as err:
+                logger.error(f"""Error While Profiling the Table of Sub Domain({row.data_sub_dmn}, Comparison : {row.comparison_type}) and Hourly: {row.run_frequency}. Error: {err}""")
+            
+            logger.info("---------------------------------------------------------------------")
+
+    def read_metadata(self):
+        
+        query = f"""select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.jira_assignee,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T2.email_alert_level, T2.product_name,T2.product_area,T2.product_type,T3.table_id, T3.server_name,T3.run_status,T3.data_availability_indicator
+            from {config.dqaas_mtd} T1 join
+            {config.dqaas_taxonomy} T2 on
+            T1.product_name = T2.product_name AND T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND T1.data_sub_dmn = T2.l2_label AND T1.data_lob = T2.lob join
+            {config.dqaas_src_chk_avail} T3 on
+            T2.database_name = T3.database_name AND T2.table_name = T3.table_name AND T2.l2_label = T3.data_sub_dmn and T1.profile_id = T3.table_id
+            WHERE  T3.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T3.run_status in ('Ready') AND T1.data_src = '{self.data_src}' AND cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern')
+            ORDER BY T3.table_id;"""
+        mtd_data = self.utils.run_bq_sql(
+                    bq_auth=config.dq_gcp_auth_payload,
+                    select_query=query
+                    )
+        self.logger.info(f"read meta data query: {query}")
+        self.logger.info(f"Count Result: {len(mtd_data)}")
+        return mtd_data
+    
+    def check_cross_project_enable(self, df):
+        # vsad = df["vsad"].unique() 
+        # cross_project_enabled = True
+        # no_cross_project_enabled_df = df[df["vsad"].isin(self.run_queries_on_remote)]
+        # cross_project_enabled_df = df[~df["vsad"].isin(self.run_queries_on_remote)]
+        df['run_queries_on_remote'] = df['VSAD'].apply(lambda x: 'N' if x == 'izcv' else 'Y')
+        return df
+    
+    def split_metadata_based_on_profile_type(self,df):
+        profile_type_df = {ptype: pdata for ptype, pdata in df.groupby("profile_type")}
+        for ptype,pdata in profile_type_df.items():
+            print(f"Profile Type: {ptype} has recor length of {len(pdata)}")
+        return profile_type_df
+    
+    def call_respective_profile_engine(self,profile_type, df,data_src):
+        df = df.rename(columns={col: str(col).upper() for col in df.columns.tolist()})
+        if profile_type == "auto":
+            print("inside auto")
+            self.request_auto_profile_engine(logger=self.logger,
+                utils=self.utils,
+                data_src=data_src,
+                df_val=df)            
+        elif profile_type == "rule":
+            df = self.check_cross_project_enable(df)
+            self.request_rule_profile_engine(
+                logger=self.logger,
+                utils=self.utils,
+                data_src=data_src,
+                df_val=df
+            )
+        elif len(df) > 0 and profile_type == 'rule_custom':
+            logger: logging = None
+            try:
+                logger: logging = apps.set_logger(
+                    logger_path=config.LOGS_DIR,
+                    log_filename=f'custom_rules_table_watcher',
+                    process_name=f'CRCron',
+                    date_with_hourly_yn="Y"
+                )
+                logger.info("---------------------------------------------------------------------")
+                # args = apps.get_args_parser(parse_val=sys.argv)
+                
+                watcher = apps.TableWatcher(
+                    logObj=logger,
+                    config=config
+                )
+                
+
+                # df_mtd = watcher.get_metadata(profile_type='RULE_CUSTOM')
+                df_mtd = df
+                
+                df_val = watcher.runner(
+                    df_mtd=df_mtd,
+                    cron_schd_col='PROFILE_SCHEDULE_TS'
+                )
+                
+                if len(df_val) == 0:
+                    logger.warning("No Tables Scheduled for Current Hour")
+                    logger.info("---------------------------------------------------------------------")
+                    return
+                
+                self.request_custom_profile_engine(
+                    df_val=df_val,
+                    logger=logger
+                )
+                
+                logger.info(f'Request for Rule Profiling got Completed...')
+                logger.info("---------------------------------------------------------------------")
+                
+            except ValueError as verr:
+                logger.error(verr)
+            except Exception as err:
+                logger.error(f"Error in Custom Metrics Table Watcher.\nError: {err}")
+            logger.info("---------------------------------------------------------------------")
+
+    
+    def process_main(self):
+        try:
+            metadata_df = self.read_metadata()
+            profile_type_dfs = self.split_metadata_based_on_profile_type(metadata_df)
+            for profile_type, df in profile_type_dfs.items(): 
+                try:           
+                    self.call_respective_profile_engine(profile_type, df,self.data_src)
+                    table_ids_to_update = metadata_df[metadata_df["run_status"].isin( ['Ready'])]["table_id"].tolist()
+                except Exception as e: 
+                    self.logger.info(f"Error pocessing profile type: {profile_type} with error : {str(e)}")           
+                if table_ids_to_update:
+                    table_ids_str = ', '.join(f"{str(table_id)}" for table_id in table_ids_to_update) 
+                    update_query = f"""UPDATE `{config.dqaas_src_chk_avail}`
+                    SET  run_status = CASE 
+                    WHEN run_status = 'Ready' THEN 'Completed' 
+                    WHEN run_status = 'RR' THEN 'RC' 
+                    ELSE run_status
+                    END
+                    WHERE table_id in ({table_ids_str}) AND run_status in ('Ready') and profile_type = '{profile_type}'"""
+                    update_ct_table_with_status = self.utils.run_bq_sql(
+                        bq_auth=config.dq_gcp_auth_payload,
+                        select_query=update_query
+                    )
+                    
+                    self.logger.info(f"Run Status updated in control table")
+        except Exception as e:
+            self.logger.info(f"Error occured in main processor function: {str(e)}")
+
+def get_profile_input_details():
+    message = None
+    try:
+        if len(sys.argv[1:]) > 0:
+            parser_args = argparse.ArgumentParser()
+            parser_args.add_argument('--data_src', dest='data_src', type=str, required=True, help="Data Source is Mandatory")
+            args = parser_args.parse_args()
+            
+            data_src = args.data_src
+            data_src = data_src.upper()
+
+            
+            if data_src in config.APPL_DATA_SRC:
+                return data_src
+            
+            
+            message = f"""\n
+            Data Source Not Found for Auto/Rule Profile Scheduled Tables
+            Flag                    : --data_src
+            Applicable Data Source  : {config.APPL_DATA_SRC}
+            Example for Teradata    : python3.9 table_watcher_auto_profile_cron --data_src=TD
+            Example for GCP         : python3.9 table_watcher_auto_profile_cron --data_src=GCP
+            
+            ** Data Source is Mandatory
+            """
+    except Exception as err:
+        message = f"Error Occurred in  Argument Flag Validation. Error: {err}"
+        
+    raise Exception(message)
+
+
+
+if __name__ == "__main__":
+    data_src = get_profile_input_details()
+    processor = DQProcessor(data_src)
+    processor.process_main()
+
+==================================================
+
+
 
