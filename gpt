@@ -1,432 +1,111 @@
- ## Requesting for rule Profile Engine
-    def request_rule_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame,assigned_subdomains = []):
-        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
-        filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]   
-        logger.info(f'Sub Domain List: {sub_domain_list}')
-        if self.run_type == "RR":
-               logger.info(f'Request for Rule Rerun Profiling Initiated...')
-        else:
-               logger.info(f'Request for Rule Profiling Initiated...')
-        ruleprofile = RuleProfile(data_src=data_src)
-        ruleprofile.current_date = datetime.now()
-        environment = self.config.get('environment','env')
-        if self.run_type == "RR":
-            mail_subject_msg = f"LensX|{environment}|Rule Rerun Profiling started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
-        else:
-            mail_subject_msg = f"LensX|{environment}|Rule Profiling started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
-        if ruleprofile.monthly_process_yn == "MONTHLY":
-            mail_subject_msg = f"LensX|{environment}|Monthly_Rule_Profiling_Started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+def request_auto_profile_engine(self, logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame):
+    sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
+    self.logger.info(f'Sub Domain List: {sub_domain_list}')
+    
+    environment = self.config.get('environment', 'env')
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
-                                        mail_subject = mail_subject_msg,
-                                        message="DQ-2.0 rule profiling have started",
-                                        receipents_email_id=ruleprofile.summary_alert_email_group)
-        for sub_domain in sub_domain_list:
-            try:
-                logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
-                
-                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
-                df_tbl_list = df_tbl_list.reset_index(drop=True)
-                
-                logger.info(f'Records Count: {len(df_tbl_list)}') 
-                # ruleProfile.call_sql_profile(df_metadata=df_tbl_list)
-                # daily_run_process(logger=logger,df_rules_list=df_tbl_list)
+    if self.run_type == "RR":
+        mail_subject_msg = f"LensX|{environment}|Auto Rerun Profiling Started|DQ2.0|{current_time}"
+    else:
+        mail_subject_msg = f"LensX|{environment}|Auto Profiling Started|DQ2.0|{current_time}"
+    
+    email_obj = SendEmail()
+    email_obj.send_common_message(
+        email_template_filepath="auto_profile_template.html",
+        mail_subject=mail_subject_msg,
+        message="DQ-2.0 Auto Profiling has started",
+        receipents_email_id=config.auto_profile_email_group
+    )
 
-                ## Initiating Profile Engine
-                if self.run_type == "RR": 
-                    for idx,row in df_tbl_list.iterrows():
-                        df_table = pd.DataFrame([row])
-                        df_table = df_table.rename(columns={col: str(col).upper() for col in df_table.columns.tolist()})
-                        ruleprofile.run_regular_process(df_rules_list=df_table,run_type=self.run_type)
-                else:
-                    ruleprofile.run_regular_process(df_rules_list=df_tbl_list,run_type=self.run_type)
-                logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
-            except Exception as err:
-                logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
-            
-            logger.info('-------------------------------------------------------------')
-        #Send Profile Completed Alert
-        # mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the daily run on ({ruleprofile.current_date})"
-        mail_subject_msg = f"LensX|{environment}|Rule_Profiling_Ended|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
-        print("mail_subject_msg",mail_subject_msg)
-        if ruleprofile.monthly_process_yn == "MONTHLY":
-            # mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the monthly run on ({ruleprofile.current_date})"
-            mail_subject_msg = f"LensX|{environment}|Rule_Profiling_Ended|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
-        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
-                                    mail_subject = mail_subject_msg,
-                                    message="DQ-2.0 rule profiling have ended",
-                                    receipents_email_id=ruleprofile.summary_alert_email_group)
-        logger.info(f'Request for Rule Profiling got Completed...')
-        logger.info('-------------------------------------------------------------')
-===========================================================================================================================================
--------------------------------------------------------------------------------
+    for sub_domain in sub_domain_list:
+        try:
+            self.logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
+            df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain].reset_index(drop=True)
+            self.logger.info(f'Records Count: {len(df_tbl_list)}')
 
+            # Initiating Auto Profile Engine
+            AutoProfileEngine(data_src=data_src).call_auto_profile_engine(df_input=df_tbl_list, run_type=self.run_type)
+            self.logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
 
-import argparse
-import sys
-import os
-import pandas as pd
-import google.auth
-from requests.exceptions import HTTPError
-from google.cloud import bigquery
-from datetime import datetime, timedelta
-import logging
+        except Exception as err:
+            self.logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
 
-
-## Importing User Defined Modules
-sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
-from utils.send_email import SendEmail
-from config_data import get_config, set_logger
-import scripts.config_params as config
-from scripts.common_handlers import CommonUtils, set_logger
-from scripts.auto_profile import AutoProfileEngine
-from scripts.sql_rule_profile_bkp import RuleProfileEngine
-from scripts.sql_rule_profile import RuleProfile
-from scripts.source_chk_avail import SourceCheckAvailability
-from scripts.custom_metrics import CustomeMetrics
-import scripts.custom_common_handlers as apps
-
-
-class DQProcessor(object):
-    def __init__(self, data_src: str=None,run_type=None):
-        self.config = get_config()
-        self.data_src = data_src
-        self.run_type = run_type
-        if self.data_src not in config.APPL_DATA_SRC:
-            raise Exception(f"Data Source not Provided. Error: Data Source Value is {data_src}")
-
-        ## Creating Logger File and Object
-        self.logger: logging = set_logger(
-            logger_path=config.LOGS_DIR,
-            log_filename=f'DQ-PROCESS-Main',
-            process_name=f'DQ-PROCESS-Main',
-            # date_with_minutes_yn='Y'
-        )
-        self.utils: CommonUtils = CommonUtils(logObj=self.logger)
- 
-
-    def _set_attributes(self, config):
-        bq_cred_dtls = config['gcp_metadata_db']
-        profile_dtls = config['sql_rule_profile']
-        
-        home_path: str = self.config["dir"]["home_dir"]
-        config_path = self.config["dir"]["config_dir"]
-        # self.run_queries_on_remote = self.config["sql_rule_profile"]["run_queries_on_remote"]
-
-        ##  Data Quality Service Account
-        self.dq_project_id = bq_cred_dtls['dq_project_id']
-        self.dq_auth_payload = {
-            "client_id": bq_cred_dtls['dq_client_id'],
-            "client_secret": bq_cred_dtls['dq_client_secret_key'],
-            "token_url": bq_cred_dtls['gcp_token_url'],
-            "conn_project_id": self.dq_project_id,
-            "sa_json_file_dtls": os.path.abspath(os.path.join(config_path, bq_cred_dtls['dq_sa_json'])),
-            "project_space": os.path.join(config_path, "dq_oidc_token.json")
-        }
-
-        # DQ Space Metadata and Report Table Details
-        # dq_dataset_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name']
-        # self.dq_mtd_table_name =  self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + master_mtd_table['dq_metadata_table']
-        # self.dq_report_table_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + profile_dtls['dq_rpt_table_name']
-
-    def request_auto_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame):
-        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
-        # filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]
-        self.logger.info(f'Sub Domain List: {sub_domain_list}')
-        if self.run_type == "RR":
-            self.logger.info(f'Request for Auto Rerun Profiling Initiated...')
-        else:
-            self.logger.info(f'Request for Auto Profiling Initiated...')
-        #need to use filtered_sub_domains_list in below for loop to include load balancing. Else use sub_domain_list
-        for sub_domain in sub_domain_list:
-            try:
-                self.logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
-                
-                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
-                df_tbl_list = df_tbl_list.reset_index(drop=True)
-                
-                self.logger.info(f'Records Count: {len(df_tbl_list)}')
-                
-                ## Initiating Profile Engine
-                AutoProfileEngine(data_src=data_src).call_auto_profile_engine(df_input=df_tbl_list,run_type=self.run_type)
-                self.logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
-            except Exception as err:
-                self.logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
-            
-            self.logger.info('-------------------------------------------------------------')
-        
-        self.logger.info(f'Request for Auto Profiling got Completed...')
         self.logger.info('-------------------------------------------------------------')
 
-    ## Requesting for rule Profile Engine
-    def request_rule_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame,assigned_subdomains = []):
-        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
-        filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]   
-        logger.info(f'Sub Domain List: {sub_domain_list}')
-        if self.run_type == "RR":
-               logger.info(f'Request for Rule Rerun Profiling Initiated...')
-        else:
-               logger.info(f'Request for Rule Profiling Initiated...')
-        ruleprofile = RuleProfile(data_src=data_src)
-        ruleprofile.current_date = datetime.now()
-        environment = self.config.get('environment','env')
-        if self.run_type == "RR":
-            mail_subject_msg = f"LensX|{environment}|Rule Rerun Profiling started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
-        else:
-            mail_subject_msg = f"LensX|{environment}|Rule Profiling started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
-        if ruleprofile.monthly_process_yn == "MONTHLY":
-            mail_subject_msg = f"LensX|{environment}|Monthly_Rule_Profiling_Started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+    # Send Completion Email
+    mail_subject_msg = f"LensX|{environment}|Auto Profiling Ended|DQ2.0|{current_time}"
+    email_obj.send_common_message(
+        email_template_filepath="auto_profile_template.html",
+        mail_subject=mail_subject_msg,
+        message="DQ-2.0 Auto Profiling has ended",
+        receipents_email_id=config.auto_profile_email_group
+    )
 
-        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
-                                        mail_subject = mail_subject_msg,
-                                        message="DQ-2.0 rule profiling have started",
-                                        receipents_email_id=ruleprofile.summary_alert_email_group)
-        for sub_domain in sub_domain_list:
-            try:
-                logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
-                
-                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
-                df_tbl_list = df_tbl_list.reset_index(drop=True)
-                
-                logger.info(f'Records Count: {len(df_tbl_list)}') 
-                # ruleProfile.call_sql_profile(df_metadata=df_tbl_list)
-                # daily_run_process(logger=logger,df_rules_list=df_tbl_list)
+    self.logger.info(f'Request for Auto Profiling Completed...')
+    self.logger.info('-------------------------------------------------------------')
+==================================================
 
-                ## Initiating Profile Engine
-                if self.run_type == "RR": 
-                    for idx,row in df_tbl_list.iterrows():
-                        df_table = pd.DataFrame([row])
-                        df_table = df_table.rename(columns={col: str(col).upper() for col in df_table.columns.tolist()})
-                        ruleprofile.run_regular_process(df_rules_list=df_table,run_type=self.run_type)
-                else:
-                    ruleprofile.run_regular_process(df_rules_list=df_tbl_list,run_type=self.run_type)
-                logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
-            except Exception as err:
-                logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
-            
-            logger.info('-------------------------------------------------------------')
-        #Send Profile Completed Alert
-        # mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the daily run on ({ruleprofile.current_date})"
-        mail_subject_msg = f"LensX|{environment}|Rule_Profiling_Ended|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
-        print("mail_subject_msg",mail_subject_msg)
-        if ruleprofile.monthly_process_yn == "MONTHLY":
-            # mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the monthly run on ({ruleprofile.current_date})"
-            mail_subject_msg = f"LensX|{environment}|Rule_Profiling_Ended|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
-        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
-                                    mail_subject = mail_subject_msg,
-                                    message="DQ-2.0 rule profiling have ended",
-                                    receipents_email_id=ruleprofile.summary_alert_email_group)
-        logger.info(f'Request for Rule Profiling got Completed...')
-        logger.info('-------------------------------------------------------------')
+def request_custom_profile_engine(self, logger: logging, df_val: pd.DataFrame):
+    environment = self.config.get('environment', 'env')
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    def request_custom_profile_engine(self,logger: logging, df_val: pd.DataFrame):
+    mail_subject_msg = f"LensX|{environment}|Custom Profiling Started|DQ2.0|{current_time}"
     
-        df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
-        df_val["comparison_type"] = df_val["comparison_type"].fillna("WEEKDAYS")
-        df_val["run_frequency"] = df_val["run_frequency"].fillna("N")
-        dfGroupList = df_val[["data_sub_dmn", "comparison_type", "run_frequency"]].drop_duplicates()
-        process_date = "current_date-1"
-        business_date = "current_date-1"
-        cmObj = CustomeMetrics()
-        
-        logger.info(f'Request for Rule - Custom Profiling Initiated...\nTotal Records: {len(df_val)}\n{dfGroupList}')
-        
-        
-        logger.info("---------------------------------------------------------------------")
-        for row in dfGroupList.itertuples():
-            try:
-                logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type}, Hourly: {row.run_frequency} Initiating Profiling')
-                
-                df_tbl_list = df_val[
-                    (df_val["data_sub_dmn"] == row.data_sub_dmn) & 
-                    (df_val["comparison_type"] == row.comparison_type) &
-                    (df_val["run_frequency"] == row.run_frequency)
-                ]
-                df_tbl_list = df_tbl_list.reset_index(drop=True)
-                
-                logger.info(f'Records Count: {len(df_tbl_list)}')
-                
-                # Initiating Profile Engine
-                cmObj.main_metrics_execution(
-                    df_mtd=df_tbl_list,
-                    sub_domain=row.data_sub_dmn,
-                    start_date=business_date,
-                end_date=process_date
+    email_obj = SendEmail()
+    email_obj.send_common_message(
+        email_template_filepath="custom_profile_template.html",
+        mail_subject=mail_subject_msg,
+        message="DQ-2.0 Custom Profiling has started",
+        receipents_email_id=config.custom_profile_email_group
+    )
 
-                )
-                
-                logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type} - Rule - Custom Profiling Completed')
-            except Exception as err:
-                logger.error(f"""Error While Profiling the Table of Sub Domain({row.data_sub_dmn}, Comparison : {row.comparison_type}) and Hourly: {row.run_frequency}. Error: {err}""")
-            
-            logger.info("---------------------------------------------------------------------")
+    df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
+    df_val["comparison_type"] = df_val["comparison_type"].fillna("WEEKDAYS")
+    df_val["run_frequency"] = df_val["run_frequency"].fillna("N")
+    dfGroupList = df_val[["data_sub_dmn", "comparison_type", "run_frequency"]].drop_duplicates()
+    process_date = "current_date-1"
+    business_date = "current_date-1"
+    cmObj = CustomeMetrics()
 
-    def read_metadata(self):
-        
-        # query = f"""select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.jira_assignee,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T2.email_alert_level, T2.product_name,T2.product_area,T2.product_type,T3.table_id, T3.server_name,T3.run_status,T3.data_availability_indicator
-        #     from {config.dqaas_mtd} T1 join
-        #     {config.dqaas_taxonomy} T2 on
-        #     T1.product_name = T2.product_name AND T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND T1.data_sub_dmn = T2.l2_label AND T1.data_lob = T2.lob join
-        #     {config.dqaas_src_chk_avail} T3 on
-        #     T2.database_name = T3.database_name AND T2.table_name = T3.table_name AND T2.l2_label = T3.data_sub_dmn and T1.profile_id = T3.table_id
-        #     WHERE  T3.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T3.run_status in ('Ready') AND T1.data_src = '{self.data_src}' AND cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern')
-        #     ORDER BY T3.table_id;"""
-        query =f"""select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.email_type,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.jira_assignee,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T2.table_id, T2.server_name,T2.run_status,T2.data_availability_indicator,T2.run_dt
-            from {config.dqaas_mtd} T1 join
-            {config.dqaas_src_chk_avail} T2 on  
-            T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND  T1.profile_id = T2.table_id
-            WHERE  T2.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T2.run_status in ('Ready','RR') AND T1.data_src = '{self.data_src}' --AND cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern')"""
-        mtd_data = self.utils.run_bq_sql(
-                    bq_auth=config.dq_gcp_auth_payload,
-                    select_query=query
-                    )
-        self.logger.info(f"read meta data query: {query}")
-        self.logger.info(f"Count Result: {len(mtd_data)}")
-        return mtd_data
-    
-    def check_cross_project_enable(self, df):
-        df['run_queries_on_remote'] = df['VSAD'].apply(lambda x: 'N' if pd.isna(x) or x == 'izcv' else 'Y')
-        return df
-    
-    def split_metadata_based_on_profile_type(self,df):
-        profile_type_df = {ptype: pdata for ptype, pdata in df.groupby("profile_type")}
-        for ptype,pdata in profile_type_df.items():
-            print(f"Profile Type: {ptype} has recor length of {len(pdata)}")
-        return profile_type_df
-    
-    def call_respective_profile_engine(self,profile_type, df,data_src):
-        df = df.rename(columns={col: str(col).upper() for col in df.columns.tolist()})
-        if profile_type == "auto":
-            print("inside auto")
-            self.request_auto_profile_engine(logger=self.logger,
-                utils=self.utils,
-                data_src=data_src,
-                df_val=df)            
-        elif profile_type == "rule":
-            df = self.check_cross_project_enable(df)
-            self.request_rule_profile_engine(
-                logger=self.logger,
-                utils=self.utils,
-                data_src=data_src,
-                df_val=df
-            )
-        elif len(df) > 0 and profile_type == 'rule_custom':
-            logger: logging = None
-            try:
-                logger: logging = apps.set_logger(
-                    logger_path=config.LOGS_DIR,
-                    log_filename=f'custom_rules_table_watcher',
-                    process_name=f'CRCron',
-                    date_with_hourly_yn="Y"
-                )
-                logger.info("---------------------------------------------------------------------")
-                # args = apps.get_args_parser(parse_val=sys.argv)
-                
-                watcher = apps.TableWatcher(
-                    logObj=logger,
-                    config=config
-                )
-                
+    logger.info(f'Request for Custom Profiling Initiated...\nTotal Records: {len(df_val)}\n{dfGroupList}')
+    logger.info("---------------------------------------------------------------------")
 
-                # df_mtd = watcher.get_metadata(profile_type='RULE_CUSTOM')
-                df_mtd = df
-                
-                df_val = watcher.runner(
-                    df_mtd=df_mtd,
-                    cron_schd_col='PROFILE_SCHEDULE_TS'
-                )
-                
-                if len(df_val) == 0:
-                    logger.warning("No Tables Scheduled for Current Hour")
-                    logger.info("---------------------------------------------------------------------")
-                    return
-                
-                self.request_custom_profile_engine(
-                    df_val=df_val,
-                    logger=logger
-                )
-                
-                logger.info(f'Request for Rule Profiling got Completed...')
-                logger.info("---------------------------------------------------------------------")
-                
-            except ValueError as verr:
-                logger.error(verr)
-            except Exception as err:
-                logger.error(f"Error in Custom Metrics Table Watcher.\nError: {err}")
-            logger.info("---------------------------------------------------------------------")
-
-    
-    def process_main(self):
+    for row in dfGroupList.itertuples():
         try:
-            metadata_df = self.read_metadata()
-            self.logger.info(f"metadata_df: {metadata_df}")
-            profile_type_dfs = self.split_metadata_based_on_profile_type(metadata_df)
-            for profile_type, df in profile_type_dfs.items(): 
-                try:           
-                    self.call_respective_profile_engine(profile_type, df,self.data_src)
-                    table_ids_to_update = metadata_df[metadata_df["run_status"].isin( ['Ready','RR'])]["table_id"].tolist()
-                except Exception as e: 
-                    self.logger.info(f"Error pocessing profile type: {profile_type} with error : {str(e)}")           
-                if table_ids_to_update:
-                    table_ids_str = ', '.join(f"{str(table_id)}" for table_id in table_ids_to_update) 
-                    update_query = f"""UPDATE `{config.dqaas_src_chk_avail}`
-                    SET  run_status = CASE 
-                    WHEN run_status = 'Ready' THEN 'Completed' 
-                    WHEN run_status = 'RR' THEN 'RC' 
-                    ELSE run_status
-                    END
-                    WHERE table_id in ({table_ids_str}) AND run_status in ('Ready','RR') and profile_type = '{profile_type}'"""
-                    update_ct_table_with_status = self.utils.run_bq_sql(
-                        bq_auth=config.dq_gcp_auth_payload,
-                        select_query=update_query
-                    )
-                    
-                    self.logger.info(f"Run Status updated in control table")
-        except Exception as e:
-            self.logger.info(f"Error occured in main processor function: {str(e)}")
+            logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type}, Hourly: {row.run_frequency} Initiating Profiling')
 
-def get_profile_input_details():
-    message = None
-    try:
-        if len(sys.argv[1:]) > 0:
-            parser_args = argparse.ArgumentParser()
-            parser_args.add_argument('--data_src', dest='data_src', type=str, required=True, help="Data Source is Mandatory")
-            args = parser_args.parse_args()
-            
-            data_src = args.data_src
-            data_src = data_src.upper()
+            df_tbl_list = df_val[
+                (df_val["data_sub_dmn"] == row.data_sub_dmn) & 
+                (df_val["comparison_type"] == row.comparison_type) &
+                (df_val["run_frequency"] == row.run_frequency)
+            ].reset_index(drop=True)
 
-            
-            if data_src in config.APPL_DATA_SRC:
-                return data_src
-            
-            
-            message = f"""\n
-            Data Source Not Found for Auto/Rule Profile Scheduled Tables
-            Flag                    : --data_src
-            Applicable Data Source  : {config.APPL_DATA_SRC}
-            Example for Teradata    : python3.9 table_watcher_auto_profile_cron --data_src=TD
-            Example for GCP         : python3.9 table_watcher_auto_profile_cron --data_src=GCP
-            
-            ** Data Source is Mandatory
-            """
-    except Exception as err:
-        message = f"Error Occurred in  Argument Flag Validation. Error: {err}"
-        
-    raise Exception(message)
+            logger.info(f'Records Count: {len(df_tbl_list)}')
 
+            # Initiating Custom Profile Engine
+            cmObj.main_metrics_execution(
+                df_mtd=df_tbl_list,
+                sub_domain=row.data_sub_dmn,
+                start_date=business_date,
+                end_date=process_date
+            )
 
+            logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type} - Custom Profiling Completed')
 
-if __name__ == "__main__":
-    data_src = get_profile_input_details()
-    processor = DQProcessor(data_src)
-    processor.process_main()
+        except Exception as err:
+            logger.error(f"Error While Profiling the Table of Sub Domain({row.data_sub_dmn}, Comparison : {row.comparison_type}) and Hourly: {row.run_frequency}. Error: {err}")
 
-    
+        logger.info("---------------------------------------------------------------------")
 
+    # Send Completion Email
+    mail_subject_msg = f"LensX|{environment}|Custom Profiling Ended|DQ2.0|{current_time}"
+    email_obj.send_common_message(
+        email_template_filepath="custom_profile_template.html",
+        mail_subject=mail_subject_msg,
+        message="DQ-2.0 Custom Profiling has ended",
+        receipents_email_id=config.custom_profile_email_group
+    )
 
-
-
-        
-
-
+    logger.info(f'Request for Custom Profiling Completed...')
+    logger.info('-------------------------------------------------------------')
