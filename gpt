@@ -1,5 +1,84 @@
-#count match
-import os
+from datetime import datetime
+from google.cloud import bigquery
+import traceback
+
+class LogMonitor:
+    def __init__(self, project_id, dataset_name, monitor_table, failure_table):
+        self.client = bigquery.Client()
+        self.project_id = project_id
+        self.dataset_name = dataset_name
+        self.monitor_table = monitor_table
+        self.failure_table = failure_table
+
+    def log_monitor_table(self, profile_id, table_name, run_status, profile_date, comments=""):
+        """
+        Insert or update log monitoring table with job execution metadata.
+        """
+        run_ts = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        
+        query = f"""
+        INSERT INTO `{self.project_id}.{self.dataset_name}.{self.monitor_table}`
+        (profile_id, table_name, run_ts, run_status, profile_date, comments)
+        VALUES ({profile_id}, '{table_name}', '{run_ts}', '{run_status}', '{profile_date}', '{comments}')
+        ON DUPLICATE KEY UPDATE 
+        run_ts = '{run_ts}', run_status = '{run_status}', comments = '{comments}';
+        """
+
+        try:
+            self.client.query(query).result()
+            print(f"Inserted/Updated log for profile_id: {profile_id}, table_name: {table_name}")
+        except Exception as e:
+            print(f"Error logging to monitor table: {e}")
+            self.log_failure(profile_id, table_name, "Failure", profile_date, str(e))
+
+    def log_failure(self, profile_id, table_name, run_status, profile_date, error_message):
+        """
+        Log failures in the failure report table.
+        """
+        run_ts = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+
+        query = f"""
+        INSERT INTO `{self.project_id}.{self.dataset_name}.{self.failure_table}`
+        (profile_id, table_name, run_ts, run_status, profile_date, error_message)
+        VALUES ({profile_id}, '{table_name}', '{run_ts}', '{run_status}', '{profile_date}', '{error_message}');
+        """
+
+        try:
+            self.client.query(query).result()
+            print(f"Failure logged for profile_id: {profile_id}, table_name: {table_name}")
+        except Exception as e:
+            print(f"Error logging to failure table: {e}")
+
+
+# Integration with dq_processor.py
+def process_data():
+    """
+    Simulating data processing from dq_processor.py with error handling.
+    """
+    log_monitor = LogMonitor("your-gcp-project-id", "your_dataset", "monitoring_table", "failure_table")
+
+    profile_id = 223
+    table_name = "outlet_v"
+    profile_date = "2025-01-26"
+
+    try:
+        log_monitor.log_monitor_table(profile_id, table_name, "Started", profile_date, "Processing started")
+
+        # Simulated dq_processor logic (replace with actual code)
+        # Example: Some processing logic here
+        raise ValueError("Simulated error from dq_processor")  # Example error
+
+        log_monitor.log_monitor_table(profile_id, table_name, "Success", profile_date, "Completed successfully")
+
+    except Exception as e:
+        error_message = traceback.format_exc()  # Capture full error details
+        log_monitor.log_failure(profile_id, table_name, "Failure", profile_date, error_message)
+
+if __name__ == "__main__":
+    process_data()
+
+
+port os
 import getpass
 import sys
 from concurrent.futures import ThreadPoolExecutor
