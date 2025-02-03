@@ -1,6 +1,7 @@
+import logging
+import traceback
 from datetime import datetime
 from google.cloud import bigquery
-import traceback
 
 class LogMonitor:
     def __init__(self, project_id, dataset_name, monitor_table, failure_table):
@@ -10,30 +11,32 @@ class LogMonitor:
         self.monitor_table = monitor_table
         self.failure_table = failure_table
 
+        # Setup logging
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(level=logging.INFO)
+
     def log_monitor_table(self, profile_id, table_name, run_status, profile_date, comments=""):
         """
-        Insert or update log monitoring table with job execution metadata.
+        Insert log monitoring messages into BigQuery.
         """
         run_ts = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         
         query = f"""
         INSERT INTO `{self.project_id}.{self.dataset_name}.{self.monitor_table}`
         (profile_id, table_name, run_ts, run_status, profile_date, comments)
-        VALUES ({profile_id}, '{table_name}', '{run_ts}', '{run_status}', '{profile_date}', '{comments}')
-        ON DUPLICATE KEY UPDATE 
-        run_ts = '{run_ts}', run_status = '{run_status}', comments = '{comments}';
+        VALUES ({profile_id}, '{table_name}', '{run_ts}', '{run_status}', '{profile_date}', '{comments}');
         """
 
         try:
             self.client.query(query).result()
-            print(f"Inserted/Updated log for profile_id: {profile_id}, table_name: {table_name}")
+            self.logger.info(f"Inserted log for {table_name}: {comments}")
         except Exception as e:
-            print(f"Error logging to monitor table: {e}")
+            self.logger.error(f"Error logging to monitor table: {str(e)}")
             self.log_failure(profile_id, table_name, "Failure", profile_date, str(e))
 
     def log_failure(self, profile_id, table_name, run_status, profile_date, error_message):
         """
-        Log failures in the failure report table.
+        Log failures and error messages.
         """
         run_ts = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -45,40 +48,45 @@ class LogMonitor:
 
         try:
             self.client.query(query).result()
-            print(f"Failure logged for profile_id: {profile_id}, table_name: {table_name}")
+            self.logger.error(f"Failure logged for {table_name}: {error_message}")
         except Exception as e:
-            print(f"Error logging to failure table: {e}")
+            self.logger.error(f"Error logging to failure table: {str(e)}")
 
-
-# Integration with dq_processor.py
-def process_data():
+# **Integration with dq_processor.py**
+def request_auto_profile_engine(log_monitor, df_val):
     """
-    Simulating data processing from dq_processor.py with error handling.
+    Modified version of the function from dq_processor.py to capture logs dynamically.
     """
-    log_monitor = LogMonitor("your-gcp-project-id", "your_dataset", "monitoring_table", "failure_table")
+    sub_domain_list = df_val["DATA_SUB_DMN"].unique()
+    
+    for sub_domain in sub_domain_list:
+        try:
+            log_monitor.logger.info(f"Sub Domain: {sub_domain} - Initiating Profiling")
+            log_monitor.log_monitor_table(223, sub_domain, "Started", "2025-01-26", "Profiling Initiated")
 
-    profile_id = 223
-    table_name = "outlet_v"
-    profile_date = "2025-01-26"
+            # Simulated AutoProfileEngine Call (Replace with actual function)
+            # AutoProfileEngine(data_src=sub_domain)
 
-    try:
-        log_monitor.log_monitor_table(profile_id, table_name, "Started", profile_date, "Processing started")
+            log_monitor.logger.info(f"Sub Domain: {sub_domain} - Profiling Completed")
+            log_monitor.log_monitor_table(223, sub_domain, "Success", "2025-01-26", "Profiling Completed")
 
-        # Simulated dq_processor logic (replace with actual code)
-        # Example: Some processing logic here
-        raise ValueError("Simulated error from dq_processor")  # Example error
-
-        log_monitor.log_monitor_table(profile_id, table_name, "Success", profile_date, "Completed successfully")
-
-    except Exception as e:
-        error_message = traceback.format_exc()  # Capture full error details
-        log_monitor.log_failure(profile_id, table_name, "Failure", profile_date, error_message)
+        except Exception as e:
+            error_message = traceback.format_exc()
+            log_monitor.logger.error(f"Error While Profiling the Table of Sub Domain {sub_domain}: {error_message}")
+            log_monitor.log_failure(223, sub_domain, "Failure", "2025-01-26", error_message)
 
 if __name__ == "__main__":
-    process_data()
+    # Initialize LogMonitor with your GCP details
+    log_monitor = LogMonitor("your-gcp-project-id", "your_dataset", "monitoring_table", "failure_table")
 
+    # Simulated DataFrame for testing (Replace with actual df_val from dq_processor.py)
+    import pandas as pd
+    df_val = pd.DataFrame({"DATA_SUB_DMN": ["outlet_v", "product_x"]})
 
-port os
+    # Run the function with integrated logging
+    request_auto_profile_engine(log_monitor, df_val)
+
+import os
 import getpass
 import sys
 from concurrent.futures import ThreadPoolExecutor
