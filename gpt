@@ -1,33 +1,29 @@
-import sys
-import os
+import argparse
 import logging
 from datetime import datetime
 from google.cloud import bigquery
 
-# Import User Defined Modules
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
-from config_data import get_config, set_logger
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class ExecutionLogger:
-    def __init__(self):
-        self.config = get_config()
+    def __init__(self, project_id, dataset_name):
+        """
+        Initialize BigQuery client and logging.
+        """
         self.client = bigquery.Client()
-        
-        # Logger Setup
-        self.logger = set_logger(
-            logger_path=self.config["log_dir"],
-            log_filename="execution_logger",
-            process_name="ExecutionLogger"
-        )
+        self.project_id = project_id
+        self.dataset_name = dataset_name
+        logging.info("ExecutionLogger initialized.")
 
-    def log_job_execution(self, job_id, job_name, job_start_ts, job_end_ts, step_code, comments):
+    def log_job_execution(self, job_id, job_name, job_start_ts, job_end_ts, step_code, comments, user_id):
         """
         Logs job execution details into `dqaas_job_monitor_report`.
         """
         entry_ts = datetime.now()
 
         query = f"""
-        INSERT INTO `{self.config['gcp_metadata_db']['dq_project_id']}.{self.config['sql_rule_profile']['dq_dataset_name']}.dqaas_job_monitor_report`
+        INSERT INTO `{self.project_id}.{self.dataset_name}.dqaas_job_monitor_report`
         (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
         VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @entry_ts, @user_id, @step_code, @comments)
         """
@@ -38,17 +34,17 @@ class ExecutionLogger:
             "job_start_ts": job_start_ts,
             "job_end_ts": job_end_ts,
             "entry_ts": entry_ts,
-            "user_id": self.config['user_id'],
+            "user_id": user_id,
             "step_code": step_code,
             "comments": comments or "N/A"
         }
 
-        self.logger.info(f"Logging job execution to dqaas_job_monitor_report: {params}")
+        logging.info(f"Logging job execution: {params}")
         try:
             self.client.query(query, params).result()
-            self.logger.info(f"Inserted job execution details into dqaas_job_monitor_report")
+            logging.info(f"Inserted job execution details into `dqaas_job_monitor_report`.")
         except Exception as e:
-            self.logger.error(f"Error logging execution to dqaas_job_monitor_report: {str(e)}")
+            logging.error(f"Error logging execution: {str(e)}")
 
     def log_profile_execution(self, profile_id, table_name, run_status, profile_date, comments):
         """
@@ -57,7 +53,7 @@ class ExecutionLogger:
         run_ts = datetime.now()
 
         query = f"""
-        INSERT INTO `{self.config['gcp_metadata_db']['dq_project_id']}.{self.config['sql_rule_profile']['dq_dataset_name']}.dqaas_run_rule_ctrl_tbl`
+        INSERT INTO `{self.project_id}.{self.dataset_name}.dqaas_run_rule_ctrl_tbl`
         (profile_id, table_name, run_ts, run_status, profile_date, comments)
         VALUES (@profile_id, @table_name, @run_ts, @run_status, @profile_date, @comments)
         """
@@ -71,31 +67,59 @@ class ExecutionLogger:
             "comments": comments or "N/A"
         }
 
-        self.logger.info(f"Logging profile execution to dqaas_run_rule_ctrl_tbl: {params}")
+        logging.info(f"Logging profile execution: {params}")
         try:
             self.client.query(query, params).result()
-            self.logger.info(f"Inserted profiling execution details into dqaas_run_rule_ctrl_tbl")
+            logging.info(f"Inserted profiling execution details into `dqaas_run_rule_ctrl_tbl`.")
         except Exception as e:
-            self.logger.error(f"Error logging execution to dqaas_run_rule_ctrl_tbl: {str(e)}")
+            logging.error(f"Error logging profiling execution: {str(e)}")
 
-# Example usage (for testing)
-if __name__ == "__main__":
-    logger = ExecutionLogger()
+def parse_arguments():
+    """
+    Parse command-line arguments for job and profile execution logging.
+    """
+    parser = argparse.ArgumentParser(description="Log execution details into BigQuery.")
+    parser.add_argument("--project_id", required=True, help="Google Cloud Project ID")
+    parser.add_argument("--dataset_name", required=True, help="BigQuery Dataset Name")
+    parser.add_argument("--log_type", required=True, choices=["job", "profile"], help="Type of log: job or profile")
     
-    # Sample test data
-    logger.log_job_execution(
-        job_id=101,
-        job_name="DQ-Processing",
-        job_start_ts=datetime.now(),
-        job_end_ts=datetime.now(),
-        step_code="rule",
-        comments="Test execution"
-    )
+    # Job Execution Arguments
+    parser.add_argument("--job_id", type=int, help="Job ID")
+    parser.add_argument("--job_name", type=str, help="Job Name")
+    parser.add_argument("--job_start_ts", type=str, help="Job Start Timestamp (YYYY-MM-DD HH:MM:SS)")
+    parser.add_argument("--job_end_ts", type=str, help="Job End Timestamp (YYYY-MM-DD HH:MM:SS)")
+    parser.add_argument("--step_code", type=str, help="Step Code (Module/Function Name)")
+    parser.add_argument("--comments", type=str, help="Execution Comments")
+    parser.add_argument("--user_id", type=str, help="User ID")
 
-    logger.log_profile_execution(
-        profile_id=223,
-        table_name="outlet_v",
-        run_status="Successful",
-        profile_date=datetime.now().date(),
-        comments="Test profiling execution"
-    )
+    # Profile Execution Arguments
+    parser.add_argument("--profile_id", type=int, help="Profile ID")
+    parser.add_argument("--table_name", type=str, help="Table Name")
+    parser.add_argument("--run_status", type=str, help="Run Status (Successful/Failure)")
+    parser.add_argument("--profile_date", type=str, help="Profile Execution Date (YYYY-MM-DD)")
+
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    logger = ExecutionLogger(args.project_id, args.dataset_name)
+
+    if args.log_type == "job":
+        logger.log_job_execution(
+            job_id=args.job_id,
+            job_name=args.job_name,
+            job_start_ts=datetime.strptime(args.job_start_ts, "%Y-%m-%d %H:%M:%S"),
+            job_end_ts=datetime.strptime(args.job_end_ts, "%Y-%m-%d %H:%M:%S"),
+            step_code=args.step_code,
+            comments=args.comments,
+            user_id=args.user_id
+        )
+
+    elif args.log_type == "profile":
+        logger.log_profile_execution(
+            profile_id=args.profile_id,
+            table_name=args.table_name,
+            run_status=args.run_status,
+            profile_date=datetime.strptime(args.profile_date, "%Y-%m-%d").date(),
+            comments=args.comments
+        )
