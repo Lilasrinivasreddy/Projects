@@ -1,6 +1,2075 @@
+@autoprofile
+# importing modules
+# from multiprocessing import Pool, set_start_method
+from datetime import datetime, timedelta
+import pandas as pd
+import numpy as np
+import psutil
+import os
+import shutil
+import logging
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+## Added on 2024-03-26 for Connection issues
+import argparse
+import sys
+import math
+
+## Importing User Defined Modules
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+import scripts.config_params as config
+from scripts.dqr import DQR as DQR
+import scripts.pattern_identifiers as pattern_identifiers
+
+## Commenting Integrity for computational issue. Search the code (INT-2024-07-11) for the related changes 
+# import integrity_score_identifier as integrity_score 
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from utils.send_email import SendEmail
+from scripts.common_handlers import CommonUtils, set_logger, get_args_parser
+from scripts.dqaas_opsgenie import Alert
+from scripts.dqaas_jira import Jira_ticket
+
+
+class AutoProfileEngine(object):
+    def __init__(self, data_src: str=None, log_filename: str=None):
+        #self.__set_proxies()
+        self.log_filename = log_filename
+        self.data_src = data_src
+        if self.data_src not in config.APPL_DATA_SRC:
+            raise Exception(f"Data Source not Provided. Error: Data Source Value is {data_src}")
+            
+        self.logger = self.set_auto_profile_logger(
+            process_name="AP-Main",
+            data_src=data_src,
+            log_filename=log_filename
+        )
+        self.logger.info(f"Logger Filename: {self.log_filename}")
+        
+        self.utils = CommonUtils(logObj=self.logger)
+        
+        self.email = SendEmail(
+            loggerObj=self.logger,
+            mail_from=config.SENDER_EMAIL_ID,
+            smtp=config.SMTP_SERVER_NAME
+        )
+
+    ## Defining Proxy Parameters
+    @staticmethod
+    def __set_proxies():
+        os.environ["http_proxy"] = config.GCP_HTTP_PROXY_URL
+        os.environ["https_proxy"] = config.GCP_HTTPS_PROXY_URL
+        os.environ["no_proxy"] = config.GCP_NO_PROXY_URLS
+        
+    ## Set Logger
+    # @staticmethod
+    def set_auto_profile_logger(self, process_name:str, data_src: str=None, log_filename: str=None):
+        
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        filename = f'autoprofile_{timestamp}'
+        
+        if data_src is not None:
+            filename = f'{data_src}_autoprofile_{timestamp}'
+            
+        if log_filename is not None:
+            filename = log_filename
+        
+        self.log_filename = filename
+        
+        print(f"Printing Logger Filename for AP: {self.log_filename} ")
+        process_id = os.getpid()
+        log: logging = set_logger(
+            logger_path=config.AUTO_PROFILE_LOGS,
+            log_filename=filename,
+            process_name=f'{process_name}-{process_id}',
+            no_date_yn="Y",
+        )
+        
+        return log
+
+    ## Convert Mail distro into list - Retrieve Persona Mails from the Dataframe
+    def get_mail_distro(self, df_val:pd.DataFrame, sub_dmn:str, persona: str, default_mail_distro: str) -> list:
+        try:
+            self.logger.info(f"Sub Domain: {sub_dmn}, Persona: {persona}, Mail Distro Dataframe: \n{df_val}")
+            mail_distro_str = df_val.query(f"DATA_SUB_DMN == '{sub_dmn}'")[persona].tolist()
+            
+            self.logger.info(f"Mail Distro: {mail_distro_str}")
+            if len(mail_distro_str) > 0:
+                return config.convert_str_to_list(mail_distro_str[0]) 
+            
+        except Exception as err:
+            self.logger.error(f"Error Occured while getting the Mail Distro. Error:{err}")
+            
+        # return convert_str_to_list(default_mail_distro) 
+        return [] 
+            
+    ## Frames Incremental Where Clause 
+    def get_incremental_condition_where_clause(self, inc_dt_col: list, inc_dt_cond: int, date_range_val: str, day_limit: int=0):
+        try:
+            self.logger.info(f"""
+            -------------------------------------------------------------------
+            Incremental Column: {inc_dt_col}, Condition: {inc_dt_cond}
+            Date Range: {date_range_val}, Days Limit: {day_limit}
+            -------------------------------------------------------------------
+            """)
+
+            if len(inc_dt_col) > 0 :
+                inc_dt_cond =  int(inc_dt_cond) if inc_dt_cond not in config.EMPTY_STR_LIST else 0
+                # business_date_range = f"(date({date_range_val}) - {day_limit} - {inc_dt_cond})" 
+                business_date_range = f"(cast({date_range_val} as date) - {inc_dt_cond})" 
+                # where_clause = f" where cast({inc_dt_col[0]} as date format 'YYYY-MM-DD') >= {business_date_range}"
+                where_clause = f" where cast({inc_dt_col[0]} as date) >= {business_date_range}"
+                return where_clause, "INCR"
+            
+            return "", "FULL"
+        except Exception as e: 
+            self.logger.error(f"Error Occurred While Framing Incremental Where condition. Error: {e}")
+        
+        return "", "ERROR"
+        
+    ## Function to Check table data availability
+    def check_data_availability(self, data_src: str, db_name: str, count_query: str):
+        """
+            Count Check:
+            * This is a Count check Block, which will be used to get the Data Avalibility Count
+            using count function in SQL statement.
+            * Returns Table Record Count and Execution Status
+            * If the count is greater than Zero then the Profiling will be initiated else the process will be skipped or ended
+            * Status: ERROR - Failures, SUCCESS - For Successfully Execution
+        """
+        
+        try:
+            self.logger.info("Data Availability Check Initiated")
+            
+            df_count = self.utils.get_query_data(
+                data_src=data_src,
+                dbname=db_name,
+                select_query=count_query
+            )
+
+            self.logger.info(f"Count Result: \n{df_count}")
+            
+            if len(df_count) > 0:
+                total_record_count = df_count.iloc[0, 0]
+                self.logger.info(f"Table Record Count: {total_record_count}")
+                return total_record_count, 'SUCCESS'
+            
+            return 0, "WARN"
+        except Exception as e:
+            self.logger.info(f"Error While Executing the Table Data Availability. Error: {e}")
+            
+        return 0, "ERROR"
+
+    ## Pillars: 2024-05-15. Pattern Identification for Conformity and Validity   
+    def get_average_history_count(self, auto_prfl_tbl_rpt: str, src_table: str, table_id: int):
+        try:
+            avg_count = f"""
+                select ifnull(avg(ifnull(TBL_ROW_COUNTS, 0)), 0) as avg_count from {auto_prfl_tbl_rpt} as main
+                where PROFILE_ID = {table_id}
+                and upper(TABLE_NAME) = upper('{src_table}')
+                and date(prfl_run_dt) between (current_date - 30) and (current_date)
+                and main.rpt_ref_key in (select max(max_rpt.rpt_ref_key) 
+                                        from {auto_prfl_tbl_rpt} as max_rpt
+                                        where date(max_rpt.prfl_run_dt) = date(main.prfl_run_dt) and max_rpt.PROFILE_ID=main.PROFILE_ID)
+            """
+            self.logger.info(f"Average Historical Query: {avg_count}")
+            df_count = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=avg_count
+                )
+            self.logger.info(f"Count Result: {df_count}")
+            
+            if len(df_count) > 0:
+                avg_hist_count = df_count.iloc[0, 0]
+                self.logger.info(f"Average Hist Count: {avg_hist_count}")
+                return avg_hist_count
+        
+            return 0
+        except Exception as err:
+            raise Exception(f"Error occurred while Identifying Patterns and Abnormal Data ")
+
+    ## Pillars: 2024-05-15. Pattern Identification for Conformity and Validity   
+    def get_data_patterns(self, df_val: pd.DataFrame):
+        try:
+            self.logger.info("Identifying Unique lengths and Patterns in Column Level")
+            # identify length of each value in the cells
+            df_length_pattern = df_val.astype(str).applymap(len)
+            # identify pattern for each value in the cell 
+            df_char_label_data = df_val.applymap(pattern_identifiers.charactor_labeling)
+            df_string_pattern = df_char_label_data.applymap(pattern_identifiers.number_labeling)
+            
+            return df_length_pattern, df_string_pattern
+        
+        except Exception as err:
+            raise Exception(f"Error occurred while Identifying Patterns and Abnormal Data ")
+
+    ## Pillars: 2024-05-15. Numeric 
+    def get_numeric_report_data(self, data_src: str, dqr_df: pd.DataFrame, src_dbname, src_tablename, incr_where_clause):
+        try:
+            df_numeric =  pd.DataFrame(dqr_df.describe().T)
+            self.logger.info(f"Continuous dataframe Length: {len(df_numeric)} \n {df_numeric}")
+            df_numeric['COL_MISSING_CNT']=((len(dqr_df)-df_numeric['count'])/len(dqr_df))*100
+            df_numeric['COL_CARDINALITY']=np.nan
+            df_numeric.reset_index(inplace=True)
+            self.logger.info(f"Continuous dataframe: {df_numeric.columns}")
+            
+            df_numeric = df_numeric.rename(columns={
+                'index': 'COL_NAME',
+                'count': "COL_TOT_CNT",
+                'missing': "COL_MISSING_CNT", 
+                'cardinality': "COL_CARDINALITY",
+                'mean': "COL_MEAN",
+                '25%': "COL_1ST_QRT_VAL",
+                '50%': "COL_MEDIAN",
+                '75%': "COL_3RD_QRT_VAL", 
+                'std': "COL_STD_DEV",
+            })
+            
+            self.logger.info(f"Numeric table columns : {df_numeric.columns}")
+            
+            df_numeric = df_numeric.drop(
+                columns=["data_type", "index", "DATATYPE", "LENGTH_CHECK_PERC", "PATTERN_CHECK_PERC", "min", "max"],
+                axis=1,
+                errors="ignore"
+            )
+            
+            if len(df_numeric) > 0:
+                col_min_max_dtls_list = self.get_min_max_for_numeric_columns(
+                    data_src=data_src,
+                    db_name=src_dbname,
+                    source_tablename=src_tablename,
+                    inc_dt_cond_where_clause=incr_where_clause,
+                    df_numeric=df_numeric
+                )
+                df_col_min_max_dtls_list = pd.DataFrame.from_dict(col_min_max_dtls_list)
+                df_numeric = df_numeric.merge(df_col_min_max_dtls_list, how="inner", on=["COL_NAME"])
+                df_numeric = df_numeric.reset_index(inplace=True)
+                
+            return df_numeric
+            
+        except Exception as err:
+            self.logger.error(f"Error Occurred while Identifying the Numeric Data. \nError: {err}")
+
+    ## Pillars: 2024-05-15. Min Max
+    def get_min_max_for_numeric_columns(self, data_src: str, df_numeric: pd.DataFrame, db_name, source_tablename, inc_dt_cond_where_clause) -> list:
+        try:
+            self.logger.info("Continuous Data - Identifying Min and Max Value")
+            if len(df_numeric) == 0:
+                self.logger.info('Numeric Dataframe Not Found')
+                return pd.DataFrame()
+            
+            numeric_cols_list = df_numeric["COL_NAME"].unique().tolist()
+            # forms aggregate query for numeric columns 
+            agg_cols = [ f"{agg}({num}) as {agg}_{num}" for num in numeric_cols_list for agg in ["min", "max"]  ]
+            agg_cols = ", ".join(agg_cols)
+        
+            agg_query = f"SELECT {agg_cols} FROM {source_tablename} {inc_dt_cond_where_clause};"
+            self.logger.info(f"Aggregated query: {agg_query}")
+            
+            agg_result = self.utils.get_query_data(
+                data_src=data_src,
+                dbname=db_name,
+                select_query=agg_query
+            )
+
+            if len(agg_result) > 0:
+                self.logger.debug(f"Aggregated columns: {agg_result.columns}")
+                
+                column_agg_list = []
+                for num_col in numeric_cols_list:
+                    min_val = agg_result[f"min_{num_col}"].iloc[0]
+                    max_val = agg_result[f"max_{num_col}"].iloc[0]
+                    self.logger.debug(f"Numeric col : {num_col}, Min Value:{min_val}, Max Value:{max_val}")
+                    column_agg_list.append({
+                        "COL_NAME": num_col,
+                        "COL_MIN_VAL": min_val,
+                        "COL_MAX_VAL": max_val
+                    })
+                    
+                self.logger.info(f"New List for Min Max: {column_agg_list}")
+
+                return column_agg_list
+            
+        except Exception as err:
+            self.logger.error(f"Error Occurred while Identifying Min and Max for the Numeric Data. \nError: {err}")
+            
+        return pd.DataFrame()
+
+    ## Pillars: 2024-05-15. Categorical  
+    def get_categorical_report_data(self, dqr_obj: DQR) -> pd.DataFrame:
+        try:
+            self.logger.info("Categorical Data Process started")
+            df_catg = dqr_obj.get_categorical_df()
+            
+            self.logger.info(f"Categorical data frame: {df_catg.columns}")
+            
+            df_catg = df_catg.rename(columns={
+                'index': 'COL_NAME',
+                'count': "COL_TOT_CNT", 
+                'missing': "COL_MISSING_CNT",
+                'cardinality': "COL_CARDINALITY", 
+                'mode': "COL_MODE",
+                'mode_freq': "COL_MODE_FREQ", 
+                'mode_percent': "COL_MODE_PERCENT",
+                'mode_2': "COL_MODE_2", 
+                'mode_2_freq': "COL_MODE_2_FREQ",
+                'mode_2_perc': "COL_MODE_2_PERC",
+            })
+            
+            self.logger.info(f"Categorical data frame renamed: {df_catg.columns}")
+
+            df_catg = df_catg.drop(
+                columns=["data_type", "index", "DATATYPE", "LENGTH_CHECK_PERC", "PATTERN_CHECK_PERC"],
+                axis=1,
+                errors="ignore"
+            )
+            df_catg = df_catg.reset_index(inplace=True)
+            
+            return df_catg
+        except Exception as err:
+            self.logger.error(f"Error Occurred while Identifying the Catgorical Data. \nError: {err}")
+            
+        return pd.DataFrame()
+
+    ## Pillars: 2024-05-15. UniquePattern
+    def get_unique_pattern_count(self, pattern_data: pd.DataFrame, column: str):
+        # df_pattern_list = pd.DataFrame.from_dict(pattern_data[col].value_counts().reset_index().rename(columns={col: "value", 0: "count"}).to_dict())
+        df_pattern_list = pd.DataFrame.from_dict(pattern_data[column].value_counts().reset_index().rename(columns={"index": "value", 0: "count"}).to_dict())
+        unique_count = len(df_pattern_list['value'].unique().tolist())
+        return unique_count
+    
+    def get_prod_details(self,data_lob,data_sub_dmn):
+        # query = f''' select distinct product_type,product_area,product_name,business_program 
+        #             from {config.dqaas_auto_prfl_mtd} mtd
+        #             JOIN {config.dqaas_auto_rule_prod_mtd} prd 
+        #             ON 
+        #             mtd.data_lob = prd.data_lob
+        #             --AND mtd.data_bus_elem = prd.data_bus_elem
+        #             AND mtd.data_dmn = prd.data_dmn
+        #             AND mtd.data_sub_dmn = prd.data_sub_dmn
+        #             where
+        #             mtd.data_lob = '{data_lob}'
+        #             --AND mtd.data_bus_elem = '{data_bus_elem}'
+        #             AND mtd.data_dmn = '{data_dmn}'
+        #             AND mtd.data_sub_dmn = '{data_sub_dmn}'
+        #             ;
+        #         '''    
+        query = f"""select distinct txnmy.product_type,txnmy.product_area,txnmy.product_name from `{config.dqaas_mtd}` mtd
+                     JOIN {config.dqaas_taxonomy} txnmy
+                     ON 
+                     mtd.data_lob = txnmy.lob
+                     AND mtd.data_sub_dmn = txnmy.l2_label
+                     where
+                     mtd.data_lob = '{data_lob}'
+                     AND mtd.data_sub_dmn = '{data_sub_dmn}'"""
+        try:
+            df_val = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=query
+            )
+            return df_val
+        except Exception as err:
+            raise Exception(f'Error Occured While Executing the Query to fetch prod details. Error: {err} ')
+
+    ## Auto Profile Engine
+    def auto_profile(self, input_dict: dict,run_type=None):
+        
+        logger = self.logger
+        process_id = os.getpid()  
+        report_reference_key = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        overall_reference_key = datetime.now().strftime("%f")
+        logger.info(f"******** Process Started. Process ID: {process_id}")
+        start_mem = psutil.Process(process_id).memory_full_info().uss
+        start_time = datetime.now()
+        opsgenie_alert_info = {}
+        filename: str = ""
+        source_tablename: str =""
+        failed_tables: dict = {}
+        table_level_score: dict = {}
+        try:
+            logger.info(f"Input: {input_dict}")
+            # Connect to particular table, calculate uniqueness, completeness
+            # call reporting function
+            # execution_date = auto_profile_Date
+            execution_date = datetime.now()
+            business_date = input_dict['RUN_DT']
+            table = input_dict.get('TABLE_NAME','')
+            domain = input_dict.get('DATA_DMN','')
+            product_name = input_dict.get('PRODUCT_NAME','')
+            project_name = input_dict.get('PROJECT_NAME','')
+            td_dbname = input_dict.get('DATABASE_NAME','')
+            source_tablename = f"{project_name}.{td_dbname}.{table}"
+            
+            lob = input_dict.get('DATA_LOB','')
+            data_sub_dmn = input_dict.get('DATA_SUB_DMN','')
+            PROFILE_ID = input_dict.get('PROFILE_ID','')
+            table_cols = input_dict.get('TABLE_CDE','')
+            inc_dt_cond = input_dict.get('INCR_DATE_COND',0)
+            data_src = input_dict['DATA_SRC']
+            logger.info("Working -----------------------")
+            ## Converting below Parameters to List, which will be used is retriving the data
+            table_cde_columns = config.convert_str_to_list(str(input_dict.get('TABLE_CDE','')).upper())
+            unique_index_columns = config.convert_str_to_list(str(input_dict.get('UNIQUE_INDEX_COLS')).upper())
+            incremental_date_column = config.convert_str_to_list(str(input_dict.get('INCR_DATE_COL','')).upper())
+            logger.info("Working2 -----------------------")
+
+            inc_dt_cond = config.convert_str_to_list(input_dict.get('INCR_DATE_COND',0))
+            incremental_date_duration = 0
+            if len(inc_dt_cond) > 0:
+                incremental_date_duration = inc_dt_cond[0] if str(inc_dt_cond[0]) not in config.EMPTY_STR_LIST else 0
+
+            logger.info(f"inc_dt_cond: {inc_dt_cond}, {incremental_date_duration}")
+            
+            
+            # date_range = 'current_date'
+            if run_type == "RR":
+                process_date = f"'{business_date}'"
+            else:
+                process_date = f"'{datetime.now().date() - timedelta(days=config.AP_N_DAYS_LIMIT)}'"
+            
+            
+            print("source_tablename1", source_tablename)
+            
+            # required_rpt_cols = {
+            #     'PRFL_RUN_DT' : execution_date,
+            #     'TABLE_NAME' : table,
+            #     'PROFILE_ID' : PROFILE_ID,
+            #     'RPT_REF_KEY' : report_reference_key,
+            # }
+            
+            """
+            ## If Table CDE is not provide then all the columns will be considered While retriving the data
+            ## If Table CDE is provided, then concating Table CDE, Unique Index and Incremental columns as list
+            ## and removing the duplicate columns ins the list
+            """
+            profile_columns = "*" 
+            if len(table_cde_columns) > 0:
+                profile_columns = ", ".join(list(set(table_cde_columns + unique_index_columns + incremental_date_column)))
+            
+            logger.info(f"""
+            ------------------------------------------------------------------
+            Profille ID                 : {PROFILE_ID}
+            Execution Date              : {execution_date}
+            Table                       : {source_tablename}
+            Sub Domain                  : {data_sub_dmn}
+            Product Name                : {product_name}
+            Table CDE                   : {table_cde_columns}
+            Unique Index Column         : {unique_index_columns} 
+            Incremental Date Column     : {incremental_date_column}
+            Incremental Date Condition  : {incremental_date_duration}
+            Process Date                : {process_date}
+            Columns For Profiling       : {profile_columns}
+            Reference Key               : {report_reference_key}
+            Log Thread ID               : {overall_reference_key}
+            Process ID                  : {process_id}
+            Start at                    : {start_time}
+            ------------------------------------------------------------------
+            """)
+            
+            
+            """
+            ## where clause is framed if Incremental Column is given, else empty str will be returned for Load
+            ## To Differentiate the Load type status is returned
+            ## INCR - Incremental Load, FULL - full Load, ERROR - Internal Errored
+            """
+            where_clause, incremental_load_status= self.get_incremental_condition_where_clause(
+                inc_dt_col=incremental_date_column,
+                inc_dt_cond=incremental_date_duration,
+                date_range_val=process_date,
+                # day_limit=n_days_interval
+            )
+            
+            ## Any failures while framing Incremental where clause, Error is raised
+            if incremental_load_status == "ERROR":
+                failed_tables = {'Table': source_tablename, 'Query': ""}
+                raise Exception("Error Occured While Framing Incremental Where Clause")
+
+            total_record_count = 0
+            count_query = f"select count(1) from {source_tablename}"
+            
+            """
+            ## Checking Data Availability for the Given Count Query and where Clause
+            ## Returns Table Record Count and Execution Status 
+            ## Status: ERROR - Failures, SUCCESS - For Successfully Execution
+            """
+            incr_count_query = f"{count_query} {where_clause}"
+            total_record_count, query_exec_status = self.check_data_availability(
+                data_src=data_src,
+                db_name=td_dbname,
+                count_query=incr_count_query
+            )
+            logger.info(f"Incremental Load. Records Count:{total_record_count}, Status:{query_exec_status}")
+            
+            ## If the First Try is Full Load and Error is Occurred then Mail Alert and Exception is Raised
+            # if incremental_load_status=="FULL" and query_exec_status=="ERROR":
+            #     email_alert(f'Table({source_tablename}) not Found')
+            #     raise Exception(f'Table not found - Full Load. Table Name:{source_tablename}')
+            
+            ## If the Total Record Count for Incremental Load is Zero, Then Full load is idenfied
+            ## If the First Try is Full Load and Error is Occurred then Ignored
+            # if total_record_count == 0 and not(incremental_load_status=="FULL" and query_exec_status=="ERROR"):
+            
+            """
+            ## Commented on 2024-04-24
+            if total_record_count == 0 and incremental_load_status != "FULL" and data_src == 'TD':
+                total_record_count, query_exec_status = check_data_availability(
+                    data_src=data_src,
+                    db_name=td_dbname,
+                    count_query=count_query,
+                )
+                where_clause = ""
+                logger.info(f"Full Load. Records Count:{total_record_count}, Status:{query_exec_status}")
+            """    
+                
+            ## If the Failure occurred on  the second try or Full Load then Mail Alert and Exception is Raised
+            if query_exec_status == "ERROR":
+                failed_tables = {'Table': source_tablename, 'Query': incr_count_query}
+                self.email_alert(f'Table({source_tablename}) not Found')
+                raise Exception(f'Table not found. Table Name:{source_tablename}')
+            
+            ## If there is no data found then Mail Alert and Exception is Raised      
+            if total_record_count == 0:
+                failed_tables = {'Table': source_tablename, 'Query': incr_count_query}
+                self.email_alert(f'No Data Found in the Table({source_tablename})')
+                if input_dict.get('OPSGENIE_FLAG') == 'Y':
+                    priority = "P3"
+                    alert_type = "SLA missed"
+                    profile_type = "auto"
+                    env = config.get_config_values('environment', 'env') 
+                    api_key = input_dict.get('OPSGENIE_API', np.nan)
+                    if api_key in config.EMPTY_STR_LIST or (isinstance(api_key,float) and math.isnan(api_key)) :
+                        # Opsgenie Api Key
+                        api_key = config.get_config_values('opsgenie', 'api_key')
+                    gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL          
+                    opsgenie_client = Alert(api_key=api_key,proxy=gcp_http_proxy_url)
+                    opsgenie_alert_info = pd.DataFrame([input_dict])
+                    response,request_id,message = opsgenie_client.create_opsgenie_alert(opsgenie_alert_info, 0,alert_type,priority,env,profile_type)
+                    logger.info(f"Opsgenie response code: {response}")
+                    logger.info('Opsgenie alert sent successfully')
+                elif input_dict.get('JIRA_ASSIGNEE') is not None:  
+                    try:
+                        JIRA_ASSIGNEE = input_dict.get('JIRA_ASSIGNEE')
+                        lable = "DQaaS"       
+                        table_name = input_dict.get('TABLE_NAME','')                  
+                        self.logger.info(f"Calling Jira Module for: {table_name}")                        
+                        self.logger.info(f"No data found for the table: {table_name}")                                              
+                        
+                        summary = f"LensX|DQ Failure|Table: {table_name} no data found for profiling"
+                        description = f"DQ has failed for Table : {table_name} on Process date : {process_date}."
+                        jira_client = Jira_ticket()
+                        ticket_id=jira_client.create_jira_ticket(JIRA_ASSIGNEE,summary, description,lable)
+                        self.logger.info(f"Jira Id created: {ticket_id}")
+                    except Exception as err:
+                        self.logger.error(f"Error occured while creating JIRA tickets {err}")
+                
+                raise Exception(f"No Data Found in the Table({source_tablename}")
+            
+            TD_data_limit_clause = BQ_data_limit_clause = ""
+            if total_record_count > config.AP_DATA_LIMIT:
+                TD_data_limit_clause = f"TOP {config.AP_DATA_LIMIT}" if data_src == 'TD' else ""
+                BQ_data_limit_clause = f"LIMIT {config.AP_DATA_LIMIT}" if data_src in ('GCP', 'BQ') else ""
+            
+            data_query = f"select {TD_data_limit_clause} {profile_columns} from {source_tablename} {where_clause} {BQ_data_limit_clause}"
+            logger.info(f"Query For Data Retreival: {data_query}")
+
+            
+            ## Data Retreival for profiling 
+            data = pd.DataFrame()
+            try:
+                
+                data = self.utils.get_query_data(
+                    data_src=data_src,
+                    dbname=td_dbname,
+                    select_query=data_query
+                )
+                
+            except Exception as err:
+                message = f"""
+                Error Occurred While Executing the Final table Query. Kindly Check the Table CDE / Unique Index Columns 
+                Table: {source_tablename}
+                Query: {data_query}
+                Error: \n{err}
+                """
+                failed_tables = {'Table': source_tablename, 'Query': data_query}
+                # email_alert(message)
+                raise Exception(message)
+
+            if len(data) > 0:
+                data = data.rename(columns={col: str(col).upper() for col in data.columns.tolist()})
+                
+            logger.info(f"""
+            Data Retreival Length: {len(data)}
+            Columns: {data.columns}
+            """)
+            ## If the Total Count is greater than data Limit, Sampling the records 
+            if total_record_count > config.AP_DATA_LIMIT:
+                logger.info("Table Eligible for Sampling, Random Sampling in progress.........")
+                data=data.sample(frac=0.25, replace=False, ignore_index=False)
+            
+            ## If the CDE's are not provided, then entire columns are considered as CDE
+            if len(table_cde_columns) == 0:
+                data = data.rename(columns={col: str(col).upper() for col in data.columns.tolist()})
+                table_cde_columns = data.columns.tolist()
+            
+            ACTUAL_RECORD_COUNT = total_record_count
+            SAMPLE_RECORD_COUNT =len(data)
+            ## Patterns, Numeric and Categorical
+            df_length_pattern, df_string_pattern = self.get_data_patterns(df_val=data)
+            
+            logger.info("Anomalies - Identifying Column level Conformity and Validity.....")
+            df_abnormal_dtls = pattern_identifiers.anomalies_identifier(df_length_pattern, df_string_pattern)
+            df_abnormal_dtls['COL_NAME'] = df_abnormal_dtls['COL_NAME'].map(lambda x: str(x).upper())
+            df_abnormal_dtls = df_abnormal_dtls.rename(columns={
+                'COL_NAME': 'COL_NAME',
+                'LENGTH_CHECK_PERC':"COL_VALIDITY",
+                'PATTERN_CHECK_PERC':"COL_CONFORMITY",
+            })
+            
+            logger.info(f"Abnormal Details: {df_abnormal_dtls.columns}")
+            
+            ## Converting Dataframe to CSV for DQR report Purpose
+            filename = f"TD_{source_tablename}_{report_reference_key}"
+            temp_csv_filename = self.utils.write_df_to_csv(
+                filepath=config.TEMP_DIR,
+                filename=filename,
+                df_val=data
+            )
+            
+            dqr_df = pd.DataFrame()
+            if os.path.exists(temp_csv_filename):
+                dqr_df = pd.read_csv(temp_csv_filename)
+                
+            unnamed_col_list = [col  for col in dqr_df.columns if str(col).upper().__contains__("UNNAMED")]
+            dqr_df = dqr_df.drop(columns=unnamed_col_list, axis=1, errors="ignore")
+            
+            ## Removing the CSV Files
+            self.utils.remove_temp_csv(
+                filepath=config.TEMP_DIR,
+                filename=filename
+            )
+            
+            ## Removing Categorical and Numerical 
+            """
+            ## Numeric Report
+            df_numeric_rpt_dtls = get_numeric_report_data(
+                dqr_df=dqr_df,
+                src_dbname=db,
+                src_tablename=source_tablename,
+                incr_where_clause=where_clause
+            )
+
+            ## Categorical Report
+            dqr_obj = DQR(df=dqr_df)
+            df_catg_rpt_dtls = get_categorical_report_data(dqr_obj=dqr_obj)
+            """
+            ## Identifying Column Level Score    
+            logger.info(f'Columns for Identifying the score - {table_cde_columns}')
+            logger.info('Column Level Score - Validation Initiated')
+            
+            ## Commenting Integrity for computational issue. Search the code (INT-2024-07-11) for the related changes 
+            """
+            integrity_dict  = integrity_score.check_integrity(dqr_df,dict(zip(dqr_df.columns,dqr_df.dtypes)))
+            logger.info(f"Integrity Score: {integrity_dict}")
+            """
+            
+            column_level_score: list = []
+            for col in table_cde_columns:
+                logger.debug(f'Column: {col}')
+                col_completeness = (100 - (data[col].isna().sum() / data[col].size * 100)).round(2)
+                
+                # col_unique_pattern_cnt = get_unique_pattern_count(pattern_data=df_string_pattern, column=col)
+                # col_unique_length_cnt = get_unique_pattern_count(pattern_data=df_length_pattern, column=col)
+                
+                ## Commenting Integrity for computational issue and Assigned Zero. Search the code (INT-2024-07-11) for the related changes 
+                # col_integrity = integrity_dict.get(col, np.nan)
+                col_integrity = 0
+                
+                logger.debug(f'Completeness Score: {col_completeness}')
+                column_level_score.append({
+                    'COL_NAME': col,
+                    'COL_COMPLETENESS': col_completeness,
+                    'COL_INTEGRITY': col_integrity,
+                    # 'COL_UNIQUENESS': round(len(data[col].unique()) / len(data[col]) * 100, 2),
+                    # 'COL_CONFORMITY': 0,
+                    # 'COL_VALIDITY': 0
+                    'PRFL_RUN_DT' : execution_date,
+                    'TABLE_NAME' : table,
+                    'PROFILE_ID' : PROFILE_ID,
+                    'RPT_REF_KEY' : report_reference_key,
+                })
+                
+            logger.info(f'Column Level Score: {column_level_score}') 
+            df_column_details = pd.DataFrame.from_records(column_level_score)
+            df_column_details = df_column_details.merge(df_abnormal_dtls, how="left", on=["COL_NAME"])
+            logger.info(f"df_column_details:\n {df_column_details}")
+            # integrity_dict  = integrity_score.check_integrity(dqr_df,dict(zip(dqr_df.columns,dqr_df.dtypes)))
+            # logger.info(f"Integrity Score: {integrity_dict}")
+            # df_column_details["COL_INTEGRITY"]=integrity_dict.values()
+            df_column_details = df_column_details.reset_index(drop=True)
+            logger.info(f'Column Level Score - Validation Completed. Records Found: {len(df_column_details)} \nColumns:{df_column_details.columns}')
+        
+            # Timeliness
+            #timeliness = timeliness_score(dfval=data, incr_dt_col=date_col, incr_dt_cond=chk_date_interval)
+            
+            TIMELINESS = 100 if len(data) > 0 else 0
+            logger.info(f'Timeliness: {TIMELINESS}')
+            
+            ## Identifying Table Level Score
+            logger.info(f"Table Level Score - Validation Initiated. Source Data Length: {len(data)}")
+            
+            temp_df = pd.DataFrame()
+            try:
+                logger.info(f"Unique Index Columns List :{unique_index_columns}")
+                logger.info(f"Table Columns :{data.columns}")
+                if len(unique_index_columns) > 0:
+                    temp_df = data[unique_index_columns]
+            except Exception as e:
+                logger.error(f'Index Column Not Found. Error Info:{e}')
+                temp_df = pd.DataFrame()
+
+            if len(temp_df) == 0:
+                temp_df = data
+                
+            ## Table Level Scores
+            de_duplicate_len = len(temp_df.drop_duplicates()) #len(temp_df.duplicated())
+            logger.info(f'Length of De-duplicates: {de_duplicate_len}, Source Data: {len(temp_df)}')
+            COMPLETENESS = self.utils.round_off(df_column_details['COL_COMPLETENESS'].mean())
+            # uniqueness = df_column_details['COL_UNIQUENESS'].mean().round(2)
+            UNIQUENESS = self.utils.round_off(((de_duplicate_len/len(temp_df))*100))
+            VALIDITY = self.utils.round_off(df_column_details['COL_VALIDITY'].mean())
+            CONFORMITY = self.utils.round_off(df_column_details['COL_CONFORMITY'].mean())
+            INTEGRITY = self.utils.round_off(df_column_details["COL_INTEGRITY"].mean())
+
+            avg_hist_count = self.get_average_history_count(
+                auto_prfl_tbl_rpt=config.dqaas_auto_prfl_tbl_rpt,
+                src_table=table,
+                table_id=PROFILE_ID
+            )
+            
+            variation_perc = 0  
+            if avg_hist_count > 0 :
+                variation_perc = ((ACTUAL_RECORD_COUNT - avg_hist_count) / avg_hist_count) * 100
+                
+            CONSISTENCY = 100 if variation_perc < config.CONSISTENCY_VARIATION_PERC else 0
+            
+            total_pillars = 6 ## Assigned the Vairable value from 7 to 6 for intergrity issue . Search the code (INT-2024-07-11) for the related changes 
+            overall_score  = self.utils.zero_if_null(UNIQUENESS) + self.utils.zero_if_null(COMPLETENESS)
+            overall_score += self.utils.zero_if_null(VALIDITY) + self.utils.zero_if_null(CONFORMITY) # + self.utils.zero_if_null(INTEGRITY) ## Commenting Integrity for computational issue and Assigned Zero. Search the code (INT-2024-07-11) for the related changes 
+            overall_score += self.utils.zero_if_null(TIMELINESS)  +  self.utils.zero_if_null(CONSISTENCY)
+            overall_score = self.utils.zero_if_null(overall_score / total_pillars)
+            
+            
+            logger.info(f"""
+            ************************************************************
+            Reference Key               : {report_reference_key}
+            Process ID                  : {process_id}
+            Completeness                : {COMPLETENESS}
+            Uniqueness                  : {UNIQUENESS}
+            Validity                    : {VALIDITY}
+            Conformity                  : {CONFORMITY}
+            Integrity                   : {INTEGRITY}
+            Timeliness                  : {TIMELINESS}
+            Consistency                 : {CONSISTENCY}
+            Total Actual Count          : {ACTUAL_RECORD_COUNT}
+            Sample Count                : {SAMPLE_RECORD_COUNT}
+            Average Variation           : {avg_hist_count}
+            Variation Percentage        : {variation_perc}
+            DQ Score (Overall Score)    : {overall_score}
+            ************************************************************
+            """)
+            
+            # logger.info('***************************************')
+            # score = (((completeness + uniqueness + timeliness) / 300) * 100).round(2)
+            # logger.info('Overall DQ Score :' + str(score) )
+            # logger.info('***************************************')
+            
+            table_level_score: dict = {
+                'PRFL_RUN_DT' : execution_date,
+                'PROFILE_ID' : PROFILE_ID,
+                'RPT_REF_KEY' : report_reference_key,
+                'DATA_LOB': lob,
+                'DATA_DMN': domain,
+                'PRODUCT_NAME':product_name,
+                'DATA_SUB_DMN': data_sub_dmn,
+                'DATA_SRC': input_dict.get('DATA_SRC',''),
+                'DATABASE_NAME': td_dbname,
+                'TABLE_NAME' : table,
+                'TBL_COMPLETENESS': COMPLETENESS,
+                'TBL_UNIQUENESS': UNIQUENESS,
+                'TBL_TIMELINESS': TIMELINESS,
+                'TBL_CONFORMITY': CONFORMITY,
+                'TBL_VALIDITY': VALIDITY,
+                'TBL_INTEGRITY': INTEGRITY,
+                'TBL_CONSISTENCY': CONSISTENCY,
+                'TBL_DQ_SCORE': overall_score,
+                'TBL_AVG_COUNT': avg_hist_count,
+                'TBL_VARIATION_PERC': variation_perc,
+                'TBL_COL_COUNTS' : len(data.columns),
+                'TBL_ROW_COUNTS' : ACTUAL_RECORD_COUNT,
+                'TBL_TOTAL_CELLS' : data.size,
+                'TBL_SAMPLE_ROW_COUNT': SAMPLE_RECORD_COUNT,
+                'SCORE_MAX_THRESHOLD': input_dict.get('MAX_THRESHOLD_LIMIT', np.nan),
+                'SCORE_MIN_THRESHOLD': input_dict.get('THRESHOLD_LIMIT', np.nan),
+                # 'TBL_DUPLICATES': round((de_duplicate_len/len(temp_df))*100, 2),
+                
+            }
+            print("table_level_score",table_level_score)
+            
+            try:
+                message = ''
+                request_id = ''
+                if input_dict.get('OPSGENIE_FLAG') == 'Y':
+                    self.logger.info(f"overall_score: {overall_score}")
+                    self.logger.info(f"Auto_MAX_THRSD: {table_level_score['MAX_THRESHOLD_LIMIT']}")
+                    if table_level_score['MAX_THRESHOLD_LIMIT'] in config.EMPTY_STR_LIST or (isinstance(table_level_score['SCORE_MAX_THRESHOLD'],float) and math.isnan(table_level_score['SCORE_MAX_THRESHOLD'])) :
+                        table_level_score['MAX_THRESHOLD_LIMIT'] = config.AP_SCORE_CHECK_PCT
+                    if overall_score < table_level_score['MAX_THRESHOLD_LIMIT']:         
+                        env = config.get_config_values('environment', 'env')
+                        alert_type = "Auto_Rule_Failed"
+                        profile_type = "auto_rule" 
+                        priority = "p3"              
+                        api_key = input_dict.get('OPSGENIE_API', np.nan)
+                        if api_key in config.EMPTY_STR_LIST or (isinstance(api_key,float) and math.isnan(api_key)) :
+                            # Opsgenie Api Key
+                            api_key = config.get_config_values('opsgenie', 'api_key')
+                        gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
+                        opsgenie_client = Alert(api_key=api_key,proxy =gcp_http_proxy_url )
+                        opsgenie_alert_info = pd.DataFrame([table_level_score])
+                        response,request_id,message = opsgenie_client.create_opsgenie_alert(opsgenie_alert_info, 0,alert_type,priority,
+                              env ,profile_type)
+
+                        logger.info(f"Opsgenie response code: {response}")
+                        logger.info('Opsgenie alert sent successfully')
+                elif input_dict.get('JIRA_ASSIGNEE') is not None: 
+                    try:
+                        JIRA_ASSIGNEE = input_dict.get('JIRA_ASSIGNEE')
+                        lable = "DQaaS"
+                        self.logger.info(f"Calling Jira Module for: {table_level_score['TABLE_NAME']}")
+                        self.logger.info(f"overall_score: {overall_score}")
+                        self.logger.info(f"Auto_MAX_THRSD: {table_level_score['SCORE_MAX_THRESHOLD']}")
+                        if overall_score < table_level_score['SCORE_MAX_THRESHOLD']:                        
+                            summary = f"LensX|DQ Failure|Table: {table_level_score['TABLE_NAME']} score is below threshold"
+                            description = f"DQ has failed for Table : {table_level_score['TABLE_NAME']} on Run date : {table_level_score['PRFL_RUN_DT']}. The Score is: {table_level_score['TBL_DQ_SCORE']} which is below set Threshold: {table_level_score['SCORE_MAX_THRESHOLD']}"
+                            jira_client = Jira_ticket()
+                            ticket_id=jira_client.create_jira_ticket(JIRA_ASSIGNEE,summary, description,lable)
+                            self.logger.info(f"Jira Id created: {ticket_id}")
+                    except Exception as err:
+                        self.logger.error(f"Error occured while creating JIRA tickets {err}")
+
+                try:
+                    prod_info = self.get_prod_details(lob,data_sub_dmn)
+                except Exception as err:
+                    self.logger.error(f"Error occured while fetching product details {err}")
+                
+                opsgenie_alert_info: dict = {                    
+                    'profile_id' : PROFILE_ID,                    
+                    'data_sub_dmn': data_sub_dmn,
+                    'data_src': input_dict.get('DATA_SRC',''),
+                    'db_name': td_dbname,
+                    'table_name' : table,
+                    'dq_score': overall_score,
+                    'threshold': input_dict.get('SCORE_MAX_THRESHOLD', np.nan),
+                    'request_id': request_id,
+                    'alert_message': message,
+                    'product_type':prod_info.loc[0,'product_type'],
+                    'product_area':prod_info.loc[0,'product_area'],
+                    'product_name':prod_info.loc[0,'product_name']
+                    # 'rule_id' : 'NA',
+                    # 'src_col' : 'NA',
+                    # 'meas_rule' : 'NA'
+                }
+
+            except Exception as err:
+                self.logger.error(f"Error occured while creating opsgenie alert during auto profile {err}")
+            
+            df_table_details = pd.DataFrame.from_records([table_level_score])
+            df_table_details = df_table_details.reset_index(drop=True)
+            logger.info(f"Table Level Score - Validation Completed. \nRecord Count: {len(df_table_details)} \nColumns: {df_table_details.columns}")
+            opsgenie_table_info = pd.DataFrame.from_records([opsgenie_alert_info])
+            opsgenie_table_info = opsgenie_table_info.reset_index(drop=True)
+            ## Load Auto Profile Results to Respective Report Tables
+            self.load_auto_profile_results(
+                table_report=df_table_details,
+                column_report=df_column_details,
+                opsgenie_report=opsgenie_table_info
+            )
+            
+            
+            end_mem = psutil.Process(process_id).memory_full_info().uss
+            end_time = datetime.now()
+            
+            logger.info(f"""
+            ======================================================================================
+            Execution Details:
+                Reference Key           :   {report_reference_key}
+                Process ID              :   {process_id}
+                Started at              :   {start_time}
+                Ended by                :   {end_time}
+                Total Time Taken        :   {(end_time-start_time)}
+                Memory consumed (in MB) :   {(end_mem - start_mem) / (1024 * 1024 * 1024)} (in MB)
+            ======================================================================================
+            ******** Execution Completed 
+            ======================================================================================
+            """)
+            
+            return {"error_list": failed_tables, "end_result": table_level_score }
+        except Exception as e :
+            logger.error(f"Error Occured While Profiling the Table({source_tablename})\nError info: {e}")
+            
+            ## Removing CSV File
+            self.utils.remove_temp_csv(
+                filepath=config.TEMP_DIR,
+                filename=filename
+            )
+            
+        end_mem = psutil.Process(process_id).memory_full_info().uss
+        end_time = datetime.now()
+        
+        logger.info(f"""
+        ======================================================================================
+        Execution Details:
+            Reference Key           :   {report_reference_key}
+            Process ID              :   {process_id}
+            Started at              :   {start_time}
+            Ended by                :   {end_time}
+            Total Time Taken        :   {(end_time-start_time)}
+            Memory consumed (in MB) :   {(end_mem - start_mem) / (1024 * 1024 * 1024)} (in MB)
+        ======================================================================================
+        ******** Execution Completed 
+        ======================================================================================
+        """)
+        
+        return {"error_list": failed_tables, "end_result": {} }
+        # break
+
+    ## Load Auto Profile Results to BQ Report Tables 
+    def load_auto_profile_results(self, table_report: pd.DataFrame, column_report: pd.DataFrame,opsgenie_report: pd.DataFrame):
+        try:
+            ## BigQuery Client Connection
+            self.logger.info("Loading to Resutls BQ")
+            dbclient, db_creds = self.utils.bigquery_client(
+                auth=config.dq_gcp_auth_payload
+            )
+            
+            table_report = table_report.rename(columns={col: str(col).lower() for col in table_report.columns.tolist()})
+            column_report = column_report.rename(columns={col: str(col).lower() for col in column_report.columns.tolist()})
+            
+            
+            ## Loading Table Level Report
+            self.utils.load_result_to_bq_report_table(
+                dq_bq_client=dbclient,
+                dq_credentials=db_creds,
+                dq_report_table_name=config.dqaas_auto_prfl_tbl_rpt,
+                df_load_data=table_report,
+                seq_name='auto_prfl_num',
+                column_details=config.AUTO_PRFL_TBL_RPT
+            )
+            
+            ## Loading Column Level Report
+            self.utils.load_result_to_bq_report_table(
+                dq_bq_client=dbclient,
+                dq_credentials=db_creds,
+                dq_report_table_name=config.dqaas_auto_prfl_col_rpt,
+                df_load_data=column_report,
+                seq_name='auto_prfl_col_num',
+                column_details=config.AUTO_PRFL_COL_RPT
+            )
+
+            ## Loading Opsgenie alert details to Opsgenie rpt table
+            if len(opsgenie_report) > 0:
+                self.utils.load_result_to_bq_report_table(
+                dq_bq_client=dbclient,
+                dq_credentials=db_creds,
+                dq_report_table_name=config.dqaas_opsgenie_alert_rpt,
+                df_load_data=opsgenie_report,
+                seq_name='opsgenie_alert_num',
+                column_details=config.OPSGENIE_ALERT_INFO_UI
+            )
+
+        except Exception as err:
+            raise f"Error While Loading the results to BigQuery Report Table. Error: {err}"
+
+    ## Email Alert               
+    def email_alert(self, message: str, df=pd.DataFrame(), subject: str='', receipents_email_dtls: list=None) -> None:
+        try:
+            self.logger.info('Auto Profile e-mail Initiated')
+            self.logger.info(f"Mail Group: {receipents_email_dtls}")
+            if len(subject) == 0:
+                subject = r'DQaaS 2.0 Auto Profile Report'
+            
+            if receipents_email_dtls is None:
+                receipents_email_dtls = [] #dbconnection.get_mail_id(persona='PERSONA_3')
+            
+            ## If mail distro not found in mail distro table, then default Mail Distro is assigned
+            if len(receipents_email_dtls) == 0:
+                self.logger.info(f"Email ID not Found in the Mail Distro Table. Assigning Default mail distro({config.AP_DEFAULT_MAIL_GROUP})")
+                receipents_email_dtls = config.AP_DEFAULT_MAIL_GROUP ##receipents_email_id #dbconnection.get_mail_id(persona='PERSONA_3')
+                
+            self.email.send_common_message(
+                email_template_filepath=config.common_email_template,
+                mail_subject=subject,
+                message=message,
+                df_val=df,
+                receipents_email_id=receipents_email_dtls
+            )
+            
+        except Exception as e:
+            self.logger.error('Error while triggering email.\n {}'.format(e))
+
+    ## Color Fonting Email Alert - Not in Use - Will be Enabled if required
+    def email_summary_end_report(self, data_sub_dmn='', df_val=pd.DataFrame()):
+        mail_subject = 'Auto Profile Summary Report'
+        # summary_email_template  = os.path.join(os.path.abspath(config.get('dir','template_dir')),r'dq_auto_profile_report_summary_report.html')
+        validation_col = 'Score% (Out of 100)'
+        validation_score = 60 
+        message = 'Please find the below Auto Summary Report for the table(s).'
+        receipents_email_id = receipents_email_id #dbconnection.get_mail_id(persona='PERSONA_3')
+        style_format_dict = {'Auto Profile Date':'{:%m-%d-%y}','Completeness':'{:,.2f}',
+                            'Uniqueness':'{:,.2f}','Timeliness':'{:.2f}', r'Score% (Out of 100)':'{:.2f}'}
+        
+        self.email.send_auto_profile_email_message(
+            mail_subject=mail_subject,
+            email_template_filepath=config.ap_summary_email_template,
+            df_val=df_val,
+            report_header_name='',
+            receipents_email_id=receipents_email_id,
+            message=message,
+            validation_col=validation_col,
+            validation_score=validation_score,
+            style_format_dict=style_format_dict
+        )
+
+    ## Perona Email - DevOps - Email Summary Alert
+    def devops_email_summary_alert(self, sub_domain: str, df_summary_dtls: pd.DataFrame, df_email_distro: pd.DataFrame):
+        try:
+            ## Replacing NoN with NA for the float columns
+            for col in config.FLOAT_COLS:
+                if col in (df_summary_dtls.columns).to_list():
+                    df_summary_dtls[col] = df_summary_dtls[col].fillna(np.nan).astype(float)
+                    df_summary_dtls[col] = np.where(df_summary_dtls[col] == np.nan, 'NA', round(df_summary_dtls[col], 2))
+
+            ## Filtering required columns for Summary Mail - Renaming Columns - Parameters are defined in config_params module
+            df_summary_dtls  = df_summary_dtls[config.DEV_OPS_SUMMARY_COLS].rename(columns=config.AUTO_PROFILE_EMAIL_COLUMN_RENAME_LIST)
+            df_summary_dtls  = df_summary_dtls.reset_index(drop=True)
+            
+            ## Getting Persona 3 Email Distro - For Dev-ops Summary Mail  
+            persona_group_3_email = self.get_mail_distro(
+                df_val=df_email_distro,
+                sub_dmn=sub_domain,
+                persona='PERSONA_3',
+                default_mail_distro=config.AP_DEFAULT_MAIL_GROUP
+            )
+            
+            self.logger.info(f""" Dev-Ops Email Details
+            <======================= Persona 3: =======================>
+            Sub Domain: {sub_domain}
+            Mail Distro: {persona_group_3_email}
+            Summary Length: {len(df_summary_dtls)}
+            columns list: {df_summary_dtls.columns.to_list()}
+            DataFrame: \n{df_summary_dtls.head(5)}
+            <===========================================================>
+            """)
+            
+            ## Overall Summary Mail For Dev-ops Team - Persona 3 Mail Groups
+            summary_run_date = datetime.now().strftime("%m-%d-%y")
+            summary_run_time = datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X','').lower()
+            email_message = f'Auto Profiling completed successfully for {summary_run_date} at {summary_run_time}. Kindly find the below list.\n Table List:'
+                                                                                                                                
+            self.email_alert(
+                message=email_message, 
+                df=df_summary_dtls,
+                subject=f'DEV-OPS - Auto Profile Report for {sub_domain}',
+                receipents_email_dtls=persona_group_3_email
+            )
+        except Exception as e:
+            self.logger.error(f'Error Occured in DevOps Mail Summary Alert. Error Info: {e}')
+
+    ## Persona Email - Data Steward - Overall summary and Threshold based summary
+    def data_steward_email_summary_alert(self, sub_domain:str, df_completed_table_dtls: pd.DataFrame, df_mail_distros: pd.DataFrame):
+        try:
+            self.logger.info(f"""
+            Data Steward / Persona 2 - Email Summary Alert - Initiated ........
+            <=============== Persona Email ===============>
+            Sub Domain: {sub_domain}
+            Arrived Length: {len(df_completed_table_dtls)}
+            Columns List: {df_completed_table_dtls.columns.tolist()}
+            """)
+            
+            ## Identifying the Average Score using the 
+            persona_2 = df_completed_table_dtls.groupby(by=['DATA_DMN','TABLE_NAME']).agg({'TBL_DQ_SCORE' : ['sum','count']})
+            persona_2 = persona_2.fillna(0).astype(float)
+
+            persona_2.columns = ['actual_sum','actual_count']
+            persona_2 = persona_2.reset_index(level=['DATA_DMN','TABLE_NAME'])
+            self.logger.debug(f"Persona 2 Agg Results:\n{persona_2}")
+
+            persona_2['AVG_SCORE'] = np.where ( persona_2['actual_count']==0, 0, round(persona_2['actual_sum'] / persona_2['actual_count'],2))
+
+            persona_2 = persona_2.drop(columns=['actual_sum','actual_count'], axis=1, errors='ignore')
+            
+            # df_completed_table_dtls = df_completed_table_dtls.loc[:, ~df_completed_table_dtls.columns.isin(['TBL_DQ_SCORE'])]
+            persona_2 = df_completed_table_dtls.merge(persona_2, on=['DATA_DMN','TABLE_NAME'], how='left')
+            
+            ## Summary for Data Steward - Score less than defined Thresold
+            # persona_2_score_based = persona_2[persona_2['AVG_SCORE'] < config.AP_SCORE_CHECK_PCT]
+            persona_2_score_based = persona_2[persona_2['AVG_SCORE'] < persona_2['SCORE_MAX_THRESHOLD']]
+            
+            ## Replace NaN with NA for the float cols
+            for col in config.FLOAT_COLS:
+                if col in (persona_2.columns).to_list(): 
+                    # persona_2[col] = persona_2[col].fillna(np.nan).astype(float)
+                    persona_2[col] = np.where(persona_2[col] == np.nan, 'NA', round(persona_2[col], 2))
+                
+            ## Overall Summary for Data Steward    
+            df_persona_2 = persona_2[config.DATA_STEWARD_SUMMARY_COLS].rename(columns=config.AUTO_PROFILE_EMAIL_COLUMN_RENAME_LIST)
+            df_persona_2 = df_persona_2.reset_index(drop=True)
+            
+            ## Summary for Data Steward - Score less than defined Thresold
+            # persona_2_score_based = persona_2[persona_2['AVG_SCORE'] < config.AP_SCORE_CHECK_PCT]
+            persona_2_score_based = persona_2_score_based[config.DATA_STEWARD_SUMMARY_COLS].rename(columns=config.AUTO_PROFILE_EMAIL_COLUMN_RENAME_LIST)
+            persona_2_score_based = persona_2_score_based.reset_index(drop=True)
+            
+            self.logger.info(f"""         
+                Initiating Summary e-Mail for Data Steward - {sub_domain}
+                
+                Data Steward Email Details - Sub Domain:{sub_domain}
+                <======================= Persona 2: =======================>
+                Summary Length: {len(df_persona_2)}
+                columns list: {df_persona_2.columns.to_list()}
+                DataFrame: \n{df_persona_2.head(5)}
+
+                <==================== Threshold Based: ====================>
+                Summary Length: {len(persona_2_score_based)}
+                columns list: {persona_2_score_based.columns.to_list()}
+                DataFrame: \n{persona_2_score_based.head(5)}
+                <===========================================================>
+            """)
+            
+            persona_group_2_email = self.get_mail_distro(
+                df_val=df_mail_distros,
+                sub_dmn=sub_domain,
+                persona='PERSONA_2',
+                default_mail_distro=config.AP_DEFAULT_MAIL_GROUP
+            )
+            
+            self.logger.info(f'Persona 2 (Data Steward) Email Group: {persona_group_2_email}')
+            
+            ## Send Email - Message Preparation and Email Request
+            summary_run_date = datetime.now().strftime("%m-%d-%y")
+            summary_run_time = datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()
+            email_message = f'Auto Profiling completed successfully for {summary_run_date} at {summary_run_time}. Kindly find the below list.<br>Table List:'
+
+            ## Sending Email - Overall Summary for Data Steward
+            if len(df_persona_2) == 0:
+                email_message = f'Auto Profiling completed successfully for {summary_run_date} at {summary_run_time}. <p><b>Note: All the tables are above {config.AP_SCORE_CHECK_PCT}% </b></p>'
+            
+            email_subject = f'Data Steward - Auto Profile Report for {sub_domain}'
+            self.email_alert(
+                message=email_message,  df=df_persona_2,
+                subject=email_subject, receipents_email_dtls=persona_group_2_email
+            )
+            
+            ## Sending Email - Summary for Data Steward - Score less than defined Thresold
+            if len(persona_2_score_based) == 0:
+                email_message = f'Auto Profiling completed successfully for {summary_run_date} at {summary_run_time}. <p><b>Note: All the tables are above {config.AP_SCORE_CHECK_PCT}% </b></p>'
+                
+            email_subject = f'Data Steward - Auto Profile Report for {sub_domain} having score less the {config.AP_SCORE_CHECK_PCT}%'
+            self.email_alert(
+                message=email_message,  df=persona_2_score_based,
+                subject=email_subject, receipents_email_dtls=persona_group_2_email
+            )
+                
+        except Exception as e:
+            self.logger.error(f'Error Occured in Data Steward Mail Summary. Error Info: {e}')
+
+    ## Previous Execution Score Details - Data Retrieved from the Table
+    def prev_day_score(self, df=pd.DataFrame()):
+        try:
+            if len(df) > 0:
+                src_tab_list = df['TABLE_NAME'].to_list()
+                rpt_ref_key_list = df['RPT_REF_KEY'].to_list()
+                table_details = "', '".join(src_tab_list) if len(src_tab_list) > 0 else ''
+                reference_keys = "', '".join(rpt_ref_key_list) if len(rpt_ref_key_list) > 0 else ''
+                    
+                    
+                self.logger.info(f'\nTable name List: {src_tab_list} \nReference Keys: {rpt_ref_key_list}')
+                if len(src_tab_list) > 0:   
+                    previous_score_query = f"""
+                        SELECT 
+                        A.PROFILE_ID                 AS ACTUAL_TABLE_ID,
+                        A.AUTO_PRFL_NUM               AS PREV_PRFL_NUM,
+                        A.RPT_REF_KEY                 AS PREV_RPT_REF_KEY,
+                        A.TABLE_NAME                     AS TABLE_NAME,
+                        A.PRFL_RUN_DT            AS PREV_DATE,
+                        ifnull(TBL_COMPLETENESS, 0)   AS COMPLETENESS_PREV_SCORE,   
+                        ifnull(TBL_UNIQUENESS, 0)     AS UNIQUENESS_PREV_SCORE,
+                        ifnull(TBL_TIMELINESS, 0)     AS TIMELINESS_PREV_SCORE,
+                        ifnull(TBL_CONFORMITY, 0)     AS CONFORMITY_PREV_SCORE,   
+                        ifnull(TBL_VALIDITY, 0)       AS VALIDITY_PREV_SCORE,
+                        ifnull(TBL_INTEGRITY, 0)      AS INTEGRITY_PREV_SCORE, 
+                        ifnull(TBL_CONSISTENCY, 0)    AS CONSISTENCY_PREV_SCORE, 
+                        (CASE 
+                        WHEN IFNULL(TBL_DQ_SCORE, 0) = 0 THEN 
+                            ROUND((ifnull(TBL_COMPLETENESS, 0)  + ifnull(TBL_UNIQUENESS, 0)  +
+                            ifnull(TBL_TIMELINESS, 0)  + ifnull(TBL_CONFORMITY, 0)  +
+                            ifnull(TBL_VALIDITY, 0)  + ifnull(TBL_INTEGRITY, 0)  +
+                            ifnull(TBL_CONSISTENCY, 0)) / 7, 3)
+                        ELSE 
+                            IFNULL(TBL_DQ_SCORE, 0)
+                        END)                          AS PREV_SCORE,
+
+                        ROUND((((ifnull(TBL_COMPLETENESS, 0) + ifnull(TBL_UNIQUENESS, 0) +
+                        ifnull(TBL_TIMELINESS, 0)) / 300) * 100), 3) AS  PREV_3_PILLAR_SCORE    
+                        FROM   {config.dqaas_auto_prfl_tbl_rpt}   A
+                        WHERE  A.TABLE_NAME IN ('{table_details}')
+                        AND A.PRFL_RUN_DT = ( SELECT MAX(B.PRFL_RUN_DT)    
+                                                        FROM {config.dqaas_auto_prfl_tbl_rpt}   B    
+                                                        WHERE A.TABLE_NAME = B.TABLE_NAME    
+                                                        AND A.PROFILE_ID = B.PROFILE_ID
+                                                        AND B.RPT_REF_KEY NOT IN ('{reference_keys}'))
+                        AND EXISTS (SELECT 1 FROM {config.dqaas_auto_prfl_tbl_rpt}   B
+                                    WHERE A.TABLE_NAME = B.TABLE_NAME    
+                                    AND A.PROFILE_ID = B.PROFILE_ID
+                                    AND B.RPT_REF_KEY IN ('{reference_keys}'))
+                        ORDER BY A.TABLE_NAME;                
+                    """
+
+                    df_prev_day_rpt = self.utils.run_bq_sql(
+                        bq_auth=config.dq_gcp_auth_payload,
+                        select_query=previous_score_query
+                    )
+                    
+                    self.logger.info(f'''
+                    ============================================================================================
+                    ## Previous Day Score Details
+                    ## Dataframe Length: {len(df_prev_day_rpt)}
+                    ## Columns: {df_prev_day_rpt.columns}
+                    ## Results: \n{df_prev_day_rpt}
+                    ============================================================================================
+                    ''')
+                        
+                    df_comp_summary = df.merge(df_prev_day_rpt, how="left", on=["TABLE_NAME"])
+                    
+                    self.logger.info(f'''
+                    ============================================================================================
+                    ## Merged Results
+                    ## Dataframe Length: {len(df_comp_summary)}
+                    ## Columns: {df_comp_summary.columns}
+                    ## Results: \n{df_comp_summary}
+                    ============================================================================================
+                    ''')
+                    
+                return df_comp_summary
+            else:
+                return df
+        except Exception as e:
+            self.logger.error(f'Error While finding Previous Day Score. Error info: {e}')
+            return df 
+
+    ## Email Summary - Main Block
+    def populate_end_summary (self, results: list):
+        try:
+            self.logger.info(f'Records Arrived for Mail summary: {len(results)}')
+            
+            ## Complete Summary 
+            df_completed_table_dtls = pd.DataFrame.from_records(results)
+            df_completed_table_dtls['PRFL_RUN_DT'] = pd.to_datetime(df_completed_table_dtls['PRFL_RUN_DT']).dt.date
+            df_completed_table_dtls = df_completed_table_dtls.reset_index(drop=True)
+            
+            ## Sub Domain List for EmaiL
+            data_sub_dmn_list = df_completed_table_dtls['DATA_SUB_DMN'].unique().tolist()
+            data_sub_dmn = data_sub_dmn_list[0]
+            
+            ## Merged result of Current and Previous Execution - Score Details 
+            # df_completed_table_dtls = prev_day_score(auto_profile_Date, df_completed_table_dtls)
+            df_completed_table_dtls = self.prev_day_score(df=df_completed_table_dtls)
+            
+            ## If Previous Score not available then the missing Previous Score Columns will be added and assigned with NaN - Requried Columns
+            for col in config.PREVIOUS_SUMMARY_REQD_COLUMNS:
+                if col not in (df_completed_table_dtls.columns).to_list():
+                    df_completed_table_dtls[col] = np.nan
+            
+            for col in config.FLOAT_COLS:
+                if col in (df_completed_table_dtls.columns).to_list():
+                    df_completed_table_dtls[col] = df_completed_table_dtls[col].fillna(np.nan).astype(float)
+                    df_completed_table_dtls[col] = np.where(df_completed_table_dtls[col]>=0, round(df_completed_table_dtls[col], 2), np.nan)
+
+            ## Assigning NaN with default Score Percentage defined in Config File
+            df_completed_table_dtls[col] = df_completed_table_dtls[col].fillna(config.AP_SCORE_CHECK_PCT).astype(float)            
+                
+            ## Getting EmaiL Group Distros for Table
+            self.df_mail_distros = self.utils.get_email_distros_from_table(
+                data_sub_dmn_list=data_sub_dmn_list
+            )
+            
+            ## Data Steward Email Summary Alert - Persona 3
+            self.data_steward_email_summary_alert(
+                sub_domain=data_sub_dmn,
+                df_completed_table_dtls=df_completed_table_dtls,
+                df_mail_distros=self.df_mail_distros
+            )
+            
+            ## DevOps Summary Alert - Persona 3
+            self.devops_email_summary_alert(
+                sub_domain=data_sub_dmn, 
+                df_summary_dtls=df_completed_table_dtls,
+                df_email_distro=self.df_mail_distros
+            )
+            
+            ## Commenting below mail process, will be enabled based on confirmation
+            ## End summary for postive and failure
+            # email_summary_end_report(df_val=df_completed_table_dtls)
+            
+        except Exception as e:
+            self.logger.error(f'Error Occured in Summary for mail. Error Info: {e}')
+
+
+    #Summary and Other Mails
+    def send_email_alert(
+        self, sub_domain_name: str = '', message: str = None, subject: str = None,
+        df_val=pd.DataFrame(), df_error_val=pd.DataFrame(), receipents_email_group: list = None
+    
+):
+        self.logger.info('-------------------------------------------------------------------------')
+        self.logger.info('Email Initiated')
+        self.logger.info('-------------------------------------------------------------------------')
+        try:
+
+           
+            addl_info = f'for {sub_domain_name}' if len(sub_domain_name) > 0 else ''
+            subject = f'DQaaS 2.0 Auto Profile Summary {addl_info}' if subject in config.EMPTY_STR_LIST else subject
+            message = f'Please find the below Auto Profile Summary {addl_info}' if message in config.EMPTY_STR_LIST else message
+
+            if len(df_error_val) > 0:
+                addl_msg = f'<br><b>Auto Profile Error List:</b>{df_error_val.to_html()}'
+                message += addl_msg
+
+            if len(df_val) > 0:
+                message += '<br><b>Table List:</b><br>'
+
+            receipents_email_addr_list: list = None
+            receipents_email_addr_list: list = receipents_email_group if receipents_email_group not in config.EMPTY_STR_LIST else  []
+            
+            if len(receipents_email_addr_list) == 0:
+                self.logger.info(f"Email ID not Found in the Mail Distro Table. Assigning Default mail distro({config.AP_DEFAULT_MAIL_GROUP})")
+
+            receipents_email_addr_list = receipents_email_addr_list + config.AP_DEFAULT_MAIL_GROUP
+
+            self.logger.info(f"Receipents e-Mail Group:{receipents_email_addr_list}")
+            
+            self.email.send_common_message(
+                email_template_filepath=config.common_email_template,
+                mail_subject=subject,
+                message=message,
+                df_val=df_val,
+                receipents_email_id=receipents_email_addr_list
+            )
+
+            self.logger.info('Email Send Successfully')
+        except:
+            self.logger.error('Error Occured in email trigger')
+
+    """
+    ## Multiprocess - Pool Handler        
+    def pool_handler(self, tables_autoprofile=pd.DataFrame()):
+        ## pooling_size = 3
+        pooling_size = config.AP_POOLING_SIZE
+        # If the length of Dataframe is greate than configured pool size, then configured pool size is taken
+        pool_size = pooling_size if len(tables_autoprofile) > pooling_size else len(tables_autoprofile)
+        pool = Pool(pool_size)
+        input = tables_autoprofile.to_dict('records')
+        
+        result: list = []
+        for records in input:
+            try:
+                self.logger.info(f"Input: {records}")
+                get_end_result = pool.apply_async(self.auto_profile, args=(records,))
+                self.logger.info(f"Result: {get_end_result}")
+                result.append(get_end_result.get())
+            except Exception as e:
+                self.logger.error('Error Occured. Proceeding with next Iteration.\n Error Info:'+str(e))
+                continue
+    
+        self.logger.info(f'''
+        ---------------------------------------
+        End Result Length: {len(result)}
+        Result : {result}
+        ---------------------------------------
+        ''')
+
+        pool.close()
+        pool.terminate()
+        pool.join()
+        return result
+    """
+    
+    ## Calls Auto profile Engine
+    def profile_engine (self, df_mtd: pd.DataFrame,run_type=None):
+        try:
+            input_val = df_mtd.to_dict('records')
+            profile_result = [self.auto_profile(input_dict=val,run_type=run_type) for val in input_val]
+            self.logger.info(f"Profiled Result: \n {profile_result}")
+            return profile_result
+        except Exception as err:
+            self.logger.error(f'Error Occured. Proceeding with next Iteration.\n Error Info: {err}')
+        
+        return pd.DataFrame()
+     
+    def retieve_resulte_from_dict(self, results: list):
+        try:
+            if len(results) > 0:
+                failed_list  = [ val["error_list"] for val in results if (len(val["error_list"]) > 0 and val["error_list"] not in config.EMPTY_STR_LIST)]
+                success_list = [ val["end_result"] for val in results if (len(val["end_result"]) > 0 and val["error_list"] not in config.EMPTY_STR_LIST)]
+                return failed_list, success_list
+
+        except Exception as err:
+            self.logger.error(f'Error While Retrieving the results list .\n Error Info: {err}')
+        
+        return [], []
+
+    def send_overall_summary_email(self, failure_tbl_list: list, end_results: list, sub_dmn_list: list):
+        try:
+            if len(failure_tbl_list) > 0 or len(end_results) > 0:
+                ## Mail Distro Details
+                self.df_mail_distros = self.utils.get_email_distros_from_table(
+                    data_sub_dmn_list=sub_dmn_list
+                )
+                
+                ## Sub Domain List
+                sub_domain = sub_dmn_list[0] if len(sub_dmn_list) > 0 else ''
+                
+                ## Receptients Emaill Address - Persona 2
+                receptients_mail_addrs = self.get_mail_distro(
+                    df_val=self.df_mail_distros,
+                    sub_dmn=sub_domain,
+                    persona='EMAIL_DISTRO',
+                    default_mail_distro=config.AP_DEFAULT_MAIL_GROUP
+                )
+                
+                ## Failed Table List for Email Summary
+                df_failure = pd.DataFrame()
+                if len(failure_tbl_list) > 0:
+                    df_failure = pd.DataFrame.from_records(failure_tbl_list)
+                    df_failure = df_failure.reset_index(drop=True)
+                    
+                ## Profiled Details for Email Summary
+                df_completed = pd.DataFrame()
+                if len(end_results) > 0:
+                    df_completed = pd.DataFrame.from_records(end_results)
+                    # df_completed = df_completed.loc[:, df_completed.columns.isin(config.AP_OVERALL_SUMMARY_COLS)]
+                    reqd_column_list = [col for col in config.AP_OVERALL_SUMMARY_COLS if col in df_completed.columns.tolist()]
+                    df_completed = df_completed[reqd_column_list]
+                    
+                    for col in config.FLOAT_COLS:
+                        if col in (df_completed.columns).to_list():
+                            df_completed[col] = df_completed[col].fillna(np.nan).astype(float)
+                            df_completed[col] = np.where(df_completed[col]>=0, round(df_completed[col], 2), np.nan)
+
+                    self.logger.info(f"Mail Columns: {df_completed.columns.tolist()}")
+                    df_completed = df_completed.rename(columns=config.AUTO_PROFILE_EMAIL_COLUMN_RENAME_LIST)
+                    df_completed = df_completed.reset_index(drop=True)
+                    
+                ## Send Email Summary
+                self.send_email_alert(
+                    df_error_val=df_failure,    
+                    df_val=df_completed,
+                    sub_domain_name=sub_domain,
+                    receipents_email_group=receptients_mail_addrs
+                )
+
+        except Exception as e:
+            self.logger.error(f'Error While Sending Overall Email. Error: {e}')
+        
+    ## Auto Profile - Initiation Block - Pre-Requisite 
+    def initiate_auto_profile(self, tables_csv_autoprofile=pd.DataFrame(), data_sub_dmn=[],run_type=None):
+        try:
+            tables_csv_autoprofile = tables_csv_autoprofile.drop(columns=['Unnamed: 0'], axis=1, errors='ignore')
+            tables_csv_autoprofile = tables_csv_autoprofile.reset_index(drop=True)
+            self.logger.info(f'No of Active Tables for Auto Profile is {len(tables_csv_autoprofile)}')
+
+            tables = tables_csv_autoprofile['TABLE_NAME'].to_list()
+            no_of_tables = len(tables)
+            if no_of_tables <= 0:
+                self.logger.info('Tables Not found for auto profiling')
+                self.email_alert(message='Tables Not found for auto profiling')
+            else:
+                self.logger.info('No of tables required for auto profiling is {}'.format(len(tables_csv_autoprofile)))
+                
+                ## Initiating Auto Profile Engine with multiprocessing
+                ## Below Spawning Need to be placed outside Pool Handler
+                # set_start_method("spawn",force=True)
+                # get_results_list = self.pool_handler(tables_csv_autoprofile)
+                get_results_list = self.profile_engine(df_mtd=tables_csv_autoprofile,run_type=run_type)
+                
+                """                        
+                results_list = []
+                if len(get_results_list) > 0:
+                    # results_list = [val for val in get_results_list if val not in EMPTY_STR_LIST if len(val) > 0]
+                    for val in get_results_list:
+                        # if val != None :
+                        if val not in config.EMPTY_STR_LIST :
+                            if len(val) > 0:
+                                results_list.append(val)
+                """
+                
+                failure_list, success_list = self.retieve_resulte_from_dict(results=get_results_list)  
+                self.logger.info(f"Failure Table List Count: {len(failure_list)}, Compelete Summary Count: {len(success_list)}")      
+                
+                if len(success_list) > 0:
+                    # self.populate_end_summary(success_list)
+                    ## Above Line is commented - Depreciating Devops and Data Steward Mail
+                    pass
+                else:
+                    self.logger.warn("No Records Found for Email Summary")
+
+                ## Send Overall Summary with Failure List and Complete Summary List 
+                self.send_overall_summary_email(
+                    failure_tbl_list=failure_list,
+                    end_results=success_list,
+                    sub_dmn_list=data_sub_dmn
+                )
+
+        except Exception as e:
+            self.logger.error(f'Tables Not found for auto profiling.\n Error Info:{e}')
+            self.email_alert(message='Tables Not found for auto profiling')
+
+    ## Converting Runtime Arguments into where clause for metadata  
+    def get_addl_condition_using_parser(self, args=None):
+        add_condition: str = ''
+        data_src: str = ''
+        if args:
+            
+            if args.data_dmn:
+                add_condition += f" AND upper(DATA_DMN) in ('{str(args.data_dmn).upper()}') "
+
+            if args.data_sub_dmn:
+                add_condition += f" AND upper(DATA_SUB_DMN) in ('{str(args.data_sub_dmn).upper()}') "
+
+            if args.data_bus_elem:
+                add_condition += f" AND upper(DATA_BUS_ELEM) in ('{str(args.data_bus_elem).upper()}') "
+            
+            if args.data_lob:
+                add_condition += f" AND upper(DATA_LOB) in ('{str(args.data_lob).upper()}') "
+            
+            if args.data_src:
+                data_src = str(args.data_src).upper()
+                add_condition += f" AND upper(DATA_SRC) in ('{data_src}') "
+                
+            if args.data_src is None and self.data_src is not None:
+                data_src = str(self.data_src).upper()	
+                add_condition += f" AND upper(DATA_SRC) in ('{data_src}') "
+                
+            if args.profile_id:
+                add_condition += f" AND profile_id in ({args.profile_id}) "
+            
+            if args.critical_flag_value in ('Y','N'):
+                add_condition += f" AND IS_CRITICAL_FLG = '{str(args.critical_flag_value).upper()}' "
+        
+        return data_src, add_condition
+
+    ## Converting Keyword Arguments into where clause for metadata
+    def get_addl_condition_dict(self, kwargs):
+        add_condition: str = ''
+        data_src: str = ''
+        
+        kwargs = { k.upper(): v for k, v in kwargs.items()}
+        if "DATA_SRC" not in kwargs.keys() and self.data_src is not None:
+            kwargs["DATA_SRC"] = self.data_src
+            
+        for key, value in kwargs.items():
+            column_value = ""
+            if key in ['DATA_DMN', 'DATA_SUB_DMN', 'DATA_BUS_ELEM', 'DATA_LOB', 'TABLE_NAME', 'DB_NAME', 'DATA_SRC']:
+                column_value = "', '".join(config.convert_str_to_list(str(value).upper()))
+                add_condition += f" AND upper({key}) IN ('{column_value}') "
+                
+            if key in ['PROFILE_ID']:
+                column_value = ", ".join(config.convert_str_to_list(value))
+                add_condition += f""" AND {key} in ({column_value}) """
+
+            if key == 'DATA_SRC':
+                data_src = str(value).upper()
+        
+        return data_src, add_condition     
+    
+    ## Get the Metadata from table - DataFrame
+    def get_metadata(self, add_condition: str) -> pd.DataFrame:
+        try:
+            metadata_query = f"""
+                SELECT * FROM {config.dqaas_auto_prfl_mtd}
+                WHERE IS_ACTIVE_FLG = 'Y'    
+                {add_condition}
+                ORDER BY PROFILE_ID;
+            """
+            ## AND DATA_SRC = 'TD'
+            df_val = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=metadata_query
+            )
+            df_val = df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
+            return df_val
+        except Exception as err:
+            self.logger.error(f'Error Occured While Executing the Metadata Query. Error: {err} ')
+        return pd.DataFrame()
+
+    ## Call the Auto Profile Engine - Used in Main Block and Scheduler
+    def call_auto_profile_engine(self, df_input: pd.DataFrame,run_type=None):
+        """Called inside Table Watcher for Initiating Auto Profile Engine"""
+        
+        process_id = os.getpid()
+        start_mem = psutil.Process(process_id).memory_full_info().uss
+        start_time = datetime.now()
+        self.logger.info(f'''
+        ==================================================================
+        #### Initiating Auto Profile Engine
+        Process ID      :   {process_id}
+        Requested Time  :   {start_time}
+        ==================================================================
+        ''')
+        
+        try:
+            self.logger.info(f'Total Records Found Profiling: {len(df_input)}')
+            if len(df_input) > 0 :
+                self.logger.info('Requesting for Auto Profiling............')
+                
+                summary_run_date = datetime.now().strftime("%m-%d-%y")
+                summary_run_time = datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()
+                self.email_alert(message=f'Auto Profiling started for {summary_run_date} at {summary_run_time}.')
+                
+                data_sub_dmn = df_input['DATA_SUB_DMN'].unique().tolist()
+
+                self.initiate_auto_profile(
+                    tables_csv_autoprofile=df_input,
+                    data_sub_dmn=data_sub_dmn,
+                    run_type=run_type
+                )
+            else:
+                self.logger.error('Tables Not found for auto profiling at the scheduled hour')
+                self.email_alert(message='Tables Not found for Auto Profiling at the scheduled hour')
+
+        except Exception as e:
+            self.logger.error('Failied to Initiate Auto Profile Engine.\n Error Info: '+ str(e))
+            self.email_alert(message='File not Found in the server')
+            
+        end_mem = psutil.Process(process_id).memory_full_info().uss
+        end_time = datetime.now()
+        
+        self.logger.info(f"""
+        ======================================================================================
+        Job Process Details:
+            Process ID              :   {process_id}
+            Started at              :   {start_time}
+            Ended by                :   {end_time}
+            Total Time Taken        :   {(end_time-start_time)}
+            Memory consumed (in MB) :   {(end_mem - start_mem) / (1024 * 1024 * 1024)}
+        ======================================================================================
+        """)
+    
+    ## Main Block
+    def main(self, parse_val=None, **kwargs):
+        try: 
+            self.critical_flag_value = None
+            self.csv_flag = None
+            self.data_sub_dmn = None
+            self.input_src_filepath = None
+            additional_cond_str = None
+            
+            ## Runtime Arguments
+            val = sys.argv[:1]
+            if len(val) == 0 and parse_val is not None:
+                val = parse_val
+            
+            if len(val) > 0:
+                parse_args = get_args_parser(parse_val=val)
+                self.critical_flag_value = parse_args.critical_flag_value
+                self.data_sub_dmn = parse_args.data_sub_dmn
+                self.input_src_filepath = parse_args.input_filepath
+                self.csv_flag = parse_args.csv_flag
+                data_src, additional_cond_str = self.get_addl_condition_using_parser(args=parse_args)
+            
+            ## Keyword Arguments
+            if len(kwargs) > 0:
+                self.logger.info(f"Kwargs: {kwargs}")
+                data_src, additional_cond_str = self.get_addl_condition_dict(kwargs)
+                    
+            self.logger.info(f"""\nCSV Flag: {self.csv_flag} \nCritical Flag: {self.critical_flag_value} 
+                \nFile Path: {self.input_src_filepath} \nAdditional Condition: {additional_cond_str}
+                \nSub Domain: {self.data_sub_dmn}
+                """)
+        
+            if self.csv_flag == 'Y':
+                rules = pd.read_csv(self.input_src_filepath)
+                
+                try:
+                    shutil.move(src=self.input_src_filepath, dst=config.ARCHIVE_DIR)
+                    print('CSV file moved to Archival path')
+                except Exception as err:
+                    print(f'CSV file not Archived. Error: {err}')
+                        
+            else:
+                rules = self.get_metadata(add_condition=additional_cond_str)
+
+            self.call_auto_profile_engine(df_input=rules)
+            
+        except Exception as err:
+            self.logger.error(f"Error in Main Block Execution. Error: {err}")
+            self.email_alert(message=f'''<p>Error Occured While Auto Profiling.<br><b>Error:</b>{err}</p>''')
+===============================================
+===============================================
+import argparse
+import sys
+import os
+import pandas as pd
+import google.auth
+from requests.exceptions import HTTPError
+from google.cloud import bigquery
+from datetime import datetime, timedelta
+import logging
+
+
+## Importing User Defined Modules
+sys.path.insert(1,os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from utils.send_email import SendEmail
+from config_data import get_config, set_logger
+import scripts.config_params as config
+from scripts.common_handlers import CommonUtils, set_logger
+from scripts.auto_profile import AutoProfileEngine
+from scripts.sql_rule_profile_bkp import RuleProfileEngine
+from scripts.sql_rule_profile import RuleProfile
+from scripts.source_chk_avail import SourceCheckAvailability
+from scripts.custom_metrics import CustomeMetrics
+import scripts.custom_common_handlers as apps
+
+
+class DQProcessor(object):
+    def __init__(self, data_src: str=None,run_type=None):
+        self.config = get_config()
+        self.data_src = data_src
+        self.run_type = run_type
+        if self.data_src not in config.APPL_DATA_SRC:
+            raise Exception(f"Data Source not Provided. Error: Data Source Value is {data_src}")
+
+        ## Creating Logger File and Object
+        self.logger: logging = set_logger(
+            logger_path=config.LOGS_DIR,
+            log_filename=f'DQ-PROCESS-Main',
+            process_name=f'DQ-PROCESS-Main',
+            # date_with_minutes_yn='Y'
+        )
+        self.utils: CommonUtils = CommonUtils(logObj=self.logger)
+ 
+
+    def _set_attributes(self, config):
+        bq_cred_dtls = config['gcp_metadata_db']
+        profile_dtls = config['sql_rule_profile']
+        
+        home_path: str = self.config["dir"]["home_dir"]
+        config_path = self.config["dir"]["config_dir"]
+        # self.run_queries_on_remote = self.config["sql_rule_profile"]["run_queries_on_remote"]
+
+        ##  Data Quality Service Account
+        self.dq_project_id = bq_cred_dtls['dq_project_id']
+        self.dq_auth_payload = {
+            "client_id": bq_cred_dtls['dq_client_id'],
+            "client_secret": bq_cred_dtls['dq_client_secret_key'],
+            "token_url": bq_cred_dtls['gcp_token_url'],
+            "conn_project_id": self.dq_project_id,
+            "sa_json_file_dtls": os.path.abspath(os.path.join(config_path, bq_cred_dtls['dq_sa_json'])),
+            "project_space": os.path.join(config_path, "dq_oidc_token.json")
+        }
+
+        # DQ Space Metadata and Report Table Details
+        # dq_dataset_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name']
+        # self.dq_mtd_table_name =  self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + master_mtd_table['dq_metadata_table']
+        # self.dq_report_table_name = self.dq_project_id + "." + profile_dtls['dq_dataset_name'] + "." + profile_dtls['dq_rpt_table_name']
+
+    def request_auto_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame):
+        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
+        # filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]
+        self.logger.info(f'Sub Domain List: {sub_domain_list}')
+        if self.run_type == "RR":
+            self.logger.info(f'Request for Auto Rerun Profiling Initiated...')
+        else:
+            self.logger.info(f'Request for Auto Profiling Initiated...')
+        #need to use filtered_sub_domains_list in below for loop to include load balancing. Else use sub_domain_list
+        for sub_domain in sub_domain_list:
+            try:
+                self.logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
+                
+                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                self.logger.info(f'Records Count: {len(df_tbl_list)}')
+                
+                ## Initiating Profile Engine
+                AutoProfileEngine(data_src=data_src).call_auto_profile_engine(df_input=df_tbl_list,run_type=self.run_type)
+                self.logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
+            except Exception as err:
+                self.logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
+            
+            self.logger.info('-------------------------------------------------------------')
+        
+        self.logger.info(f'Request for Auto Profiling got Completed...')
+        self.logger.info('-------------------------------------------------------------')
+
+    ## Requesting for rule Profile Engine
+    def request_rule_profile_engine(self,logger: logging, utils: CommonUtils, data_src: str, df_val: pd.DataFrame,assigned_subdomains = []):
+        sub_domain_list = df_val['DATA_SUB_DMN'].unique().tolist()
+        filtered_sub_domains_list = [sub_domain for sub_domain in sub_domain_list if sub_domain in assigned_subdomains]   
+        logger.info(f'Sub Domain List: {sub_domain_list}')
+        if self.run_type == "RR":
+               logger.info(f'Request for Rule Rerun Profiling Initiated...')
+        else:
+               logger.info(f'Request for Rule Profiling Initiated...')
+        ruleprofile = RuleProfile(data_src=data_src)
+        ruleprofile.current_date = datetime.now()
+        environment = self.config.get('environment','env')
+        if self.run_type == "RR":
+            mail_subject_msg = f"LensX|{environment}|Rule Rerun Profiling started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+        else:
+            mail_subject_msg = f"LensX|{environment}|Rule Profiling started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+        if ruleprofile.monthly_process_yn == "MONTHLY":
+            mail_subject_msg = f"LensX|{environment}|Monthly_Rule_Profiling_Started|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+
+        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
+                                        mail_subject = mail_subject_msg,
+                                        message="DQ-2.0 rule profiling have started",
+                                        receipents_email_id=ruleprofile.summary_alert_email_group)
+        for sub_domain in sub_domain_list:
+            try:
+                logger.info(f'Sub Domain: {sub_domain}, Initiating Profiling')
+                
+                df_tbl_list = df_val[df_val['DATA_SUB_DMN'] == sub_domain]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                logger.info(f'Records Count: {len(df_tbl_list)}') 
+                # ruleProfile.call_sql_profile(df_metadata=df_tbl_list)
+                # daily_run_process(logger=logger,df_rules_list=df_tbl_list)
+
+                ## Initiating Profile Engine
+                if self.run_type == "RR": 
+                    for idx,row in df_tbl_list.iterrows():
+                        df_table = pd.DataFrame([row])
+                        df_table = df_table.rename(columns={col: str(col).upper() for col in df_table.columns.tolist()})
+                        ruleprofile.run_regular_process(df_rules_list=df_table,run_type=self.run_type)
+                else:
+                    ruleprofile.run_regular_process(df_rules_list=df_tbl_list,run_type=self.run_type)
+                logger.info(f'Sub Domain: {sub_domain} - Profiling Completed')
+            except Exception as err:
+                logger.error(f"Error While Profiling the Table of Sub Domain({sub_domain}). Error: {err}")
+            
+            logger.info('-------------------------------------------------------------')
+        #Send Profile Completed Alert
+        # mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the daily run on ({ruleprofile.current_date})"
+        mail_subject_msg = f"LensX|{environment}|Rule_Profiling_Ended|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+        print("mail_subject_msg",mail_subject_msg)
+        if ruleprofile.monthly_process_yn == "MONTHLY":
+            # mail_subject_msg = f"DQ-2.0 Rule Profiling ended for the monthly run on ({ruleprofile.current_date})"
+            mail_subject_msg = f"LensX|{environment}|Rule_Profiling_Ended|DQ2.0|{ruleprofile.current_date.strftime('%Y-%m-%d %H:%M:%S')}"
+        ruleprofile.email.send_common_message(email_template_filepath=ruleprofile.email_template,
+                                    mail_subject = mail_subject_msg,
+                                    message="DQ-2.0 rule profiling have ended",
+                                    receipents_email_id=ruleprofile.summary_alert_email_group)
+        logger.info(f'Request for Rule Profiling got Completed...')
+        logger.info('-------------------------------------------------------------')
+
+    def request_custom_profile_engine(self,logger: logging, df_val: pd.DataFrame):
+    
+        df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
+        df_val["comparison_type"] = df_val["comparison_type"].fillna("WEEKDAYS")
+        df_val["run_frequency"] = df_val["run_frequency"].fillna("N")
+        dfGroupList = df_val[["data_sub_dmn", "comparison_type", "run_frequency"]].drop_duplicates()
+        process_date = "current_date-1"
+        business_date = "current_date-1"
+        cmObj = CustomeMetrics()
+        
+        logger.info(f'Request for Rule - Custom Profiling Initiated...\nTotal Records: {len(df_val)}\n{dfGroupList}')
+        
+        
+        logger.info("---------------------------------------------------------------------")
+        for row in dfGroupList.itertuples():
+            try:
+                logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type}, Hourly: {row.run_frequency} Initiating Profiling')
+                
+                df_tbl_list = df_val[
+                    (df_val["data_sub_dmn"] == row.data_sub_dmn) & 
+                    (df_val["comparison_type"] == row.comparison_type) &
+                    (df_val["run_frequency"] == row.run_frequency)
+                ]
+                df_tbl_list = df_tbl_list.reset_index(drop=True)
+                
+                logger.info(f'Records Count: {len(df_tbl_list)}')
+                
+                # Initiating Profile Engine
+                cmObj.main_metrics_execution(
+                    df_mtd=df_tbl_list,
+                    sub_domain=row.data_sub_dmn,
+                    start_date=business_date,
+                end_date=process_date
+
+                )
+                
+                logger.info(f'Sub Domain: {row.data_sub_dmn}, Comparison : {row.comparison_type} - Rule - Custom Profiling Completed')
+            except Exception as err:
+                logger.error(f"""Error While Profiling the Table of Sub Domain({row.data_sub_dmn}, Comparison : {row.comparison_type}) and Hourly: {row.run_frequency}. Error: {err}""")
+            
+            logger.info("---------------------------------------------------------------------")
+
+    def read_metadata(self):
+        query =f"""select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.email_type,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.jira_assignee,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T2.table_id, T2.server_name,T2.run_status,T2.data_availability_indicator,T2.run_dt
+            from {config.dqaas_mtd} T1 join
+            {config.dqaas_src_chk_avail} T2 on  
+            T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND  T1.profile_id = T2.table_id
+            WHERE  T2.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T2.run_status in ('Ready','RR') AND T1.data_src = '{self.data_src}' AND cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern')"""
+        mtd_data = self.utils.run_bq_sql(
+                    bq_auth=config.dq_gcp_auth_payload,
+                    select_query=query
+                    )
+        self.logger.info(f"read meta data query: {query}")
+        self.logger.info(f"Count Result: {len(mtd_data)}")
+        return mtd_data
+    
+    def check_cross_project_enable(self, df):
+        df['run_queries_on_remote'] = df['VSAD'].apply(lambda x: 'N' if pd.isna(x) or x == 'izcv' else 'Y')
+        return df
+    
+    def split_metadata_based_on_profile_type(self,df):
+        profile_type_df = {ptype: pdata for ptype, pdata in df.groupby("profile_type")}
+        for ptype,pdata in profile_type_df.items():
+            print(f"Profile Type: {ptype} has recor length of {len(pdata)}")
+        return profile_type_df
+    
+    def call_respective_profile_engine(self,profile_type, df,data_src):
+        df = df.rename(columns={col: str(col).upper() for col in df.columns.tolist()})
+        if profile_type == "auto":
+            print("inside auto")
+            self.request_auto_profile_engine(logger=self.logger,
+                utils=self.utils,
+                data_src=data_src,
+                df_val=df)            
+        elif profile_type == "rule":
+            df = self.check_cross_project_enable(df)
+            self.request_rule_profile_engine(
+                logger=self.logger,
+                utils=self.utils,
+                data_src=data_src,
+                df_val=df
+            )
+        elif len(df) > 0 and profile_type == 'rule_custom':
+            logger: logging = None
+            try:
+                logger: logging = apps.set_logger(
+                    logger_path=config.LOGS_DIR,
+                    log_filename=f'custom_rules_table_watcher',
+                    process_name=f'CRCron',
+                    date_with_hourly_yn="Y"
+                )
+                logger.info("---------------------------------------------------------------------")
+                # args = apps.get_args_parser(parse_val=sys.argv)
+                
+                watcher = apps.TableWatcher(
+                    logObj=logger,
+                    config=config
+                )
+                
+
+                # df_mtd = watcher.get_metadata(profile_type='RULE_CUSTOM')
+                df_mtd = df
+                
+                df_val = watcher.runner(
+                    df_mtd=df_mtd,
+                    cron_schd_col='PROFILE_SCHEDULE_TS'
+                )
+                
+                if len(df_val) == 0:
+                    logger.warning("No Tables Scheduled for Current Hour")
+                    logger.info("---------------------------------------------------------------------")
+                    return
+                
+                self.request_custom_profile_engine(
+                    df_val=df_val,
+                    logger=logger
+                )
+                
+                logger.info(f'Request for Rule Profiling got Completed...')
+                logger.info("---------------------------------------------------------------------")
+                
+            except ValueError as verr:
+                logger.error(verr)
+            except Exception as err:
+                logger.error(f"Error in Custom Metrics Table Watcher.\nError: {err}")
+            logger.info("---------------------------------------------------------------------")
+
+    
+    def process_main(self):
+        try:
+            metadata_df = self.read_metadata()
+            self.logger.info(f"metadata_df: {metadata_df}")
+            profile_type_dfs = self.split_metadata_based_on_profile_type(metadata_df)
+            for profile_type, df in profile_type_dfs.items(): 
+                try:           
+                    self.call_respective_profile_engine(profile_type, df,self.data_src)
+                    table_ids_to_update = metadata_df[metadata_df["run_status"].isin( ['Ready','RR'])]["table_id"].tolist()
+                except Exception as e: 
+                    self.logger.info(f"Error pocessing profile type: {profile_type} with error : {str(e)}")           
+                if table_ids_to_update:
+                    table_ids_str = ', '.join(f"{str(table_id)}" for table_id in table_ids_to_update) 
+                    update_query = f"""UPDATE `{config.dqaas_src_chk_avail}`
+                    SET  run_status = CASE 
+                    WHEN run_status = 'Ready' THEN 'Completed' 
+                    WHEN run_status = 'RR' THEN 'RC' 
+                    ELSE run_status
+                    END
+                    WHERE table_id in ({table_ids_str}) AND run_status in ('Ready','RR') and profile_type = '{profile_type}'"""
+                    update_ct_table_with_status = self.utils.run_bq_sql(
+                        bq_auth=config.dq_gcp_auth_payload,
+                        select_query=update_query
+                    )
+                    
+                    self.logger.info(f"Run Status updated in control table")
+        except Exception as e:
+            self.logger.info(f"Error occured in main processor function: {str(e)}")
+
+def get_profile_input_details():
+    message = None
+    try:
+        if len(sys.argv[1:]) > 0:
+            parser_args = argparse.ArgumentParser()
+            parser_args.add_argument('--data_src', dest='data_src', type=str, required=True, help="Data Source is Mandatory")
+            args = parser_args.parse_args()
+            
+            data_src = args.data_src
+            data_src = data_src.upper()
+
+            
+            if data_src in config.APPL_DATA_SRC:
+                return data_src
+            
+            
+            message = f"""\n
+            Data Source Not Found for Auto/Rule Profile Scheduled Tables
+            Flag                    : --data_src
+            Applicable Data Source  : {config.APPL_DATA_SRC}
+            Example for Teradata    : python3.9 table_watcher_auto_profile_cron --data_src=TD
+            Example for GCP         : python3.9 table_watcher_auto_profile_cron --data_src=GCP
+            
+            ** Data Source is Mandatory
+            """
+    except Exception as err:
+        message = f"Error Occurred in  Argument Flag Validation. Error: {err}"
+        
+    raise Exception(message)
+
+
+
+if __name__ == "__main__":
+    data_src = get_profile_input_details()
+    processor = DQProcessor(data_src)
+    processor.process_main()
+
+ ===========================================================
+========================================================
 import argparse
 import logging
-import subprocess
 from datetime import datetime
 from google.cloud import bigquery
 
@@ -8,7 +2077,7 @@ from google.cloud import bigquery
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class LoggerExecution:
-    def __init__(self, dq_gcp_data_project_id, dq_bq_dataset):
+    def __init__(self, dq_gcp_data_project_id, dq_bq_dataset): # Will update using config later
         """
         Initialize BigQuery client and logging.
         """
@@ -17,25 +2086,35 @@ class LoggerExecution:
         self.dataset_name = dq_bq_dataset
         logging.info("LoggerExecution initialized.")
 
-    def run_dq_processor(self):
+
+    def get_log_messages(self, log_file="dq_processor.log"):
         """
-        Runs `dq_processor.py` as a subprocess and captures its output.
+        Reads the log messages from the dq_processor.log file.
         """
         try:
-            result = subprocess.run(["python3", "dq_processor.py"], capture_output=True, text=True, check=True)
-            return result.stdout.strip()  # Capture stdout (Success or Failure message)
-        except subprocess.CalledProcessError as e:
-            return f"Error running dq_processor: {e.stderr.strip()}"  # Capture stderr if there's an error
+            with open(log_file, "r") as file:
+                logs = file.readlines()
+                if logs:
+                    return logs[-1].strip()  # Get the last log entry
+                else:
+                    return "No logs found"
+        except FileNotFoundError:
+            return "Log file not found"
 
-    def log_job_monitoring(self, job_id, job_name, job_start_ts, job_end_ts, step_code, user_id):
+    def log_job_monitoring(self, job_id, job_name, job_start_ts, job_end_ts, step_code, comments, user_id):
         """
         Logs job monitoring details into `dqaas_job_monitor_report` table.
         """
         entry_ts = datetime.now()
-        comments = self.run_dq_processor()  # Run dq_processor and capture its output
+        # Start Time
+        job_start_ts = datetime.now()
+        # End Time
+        job_end_ts = datetime.now()
+        #comments
+        comments = self.get_log_messages()
 
         query = f"""
-        INSERT INTO `{self.project_id}.{self.dataset_name}.dqaas_job_monitor_report`
+        INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table}
         (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
         VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @entry_ts, @user_id, @step_code, @comments)
         """
@@ -48,7 +2127,7 @@ class LoggerExecution:
             "entry_ts": entry_ts,
             "user_id": user_id,
             "step_code": step_code,
-            "comments": comments  # Get message dynamically from `dq_processor.py`
+            "comments": comments or "N/A"
         }
 
         logging.info(f"Logging job monitoring: {params}")
@@ -58,31 +2137,104 @@ class LoggerExecution:
         except Exception as e:
             logging.error(f"Error logging monitoring: {str(e)}")
 
+
+    def read_metadata(self):
+        """
+        Read metadata from the BigQuery metadata table.
+        """
+        query = f"""
+        SELECT * FROM `{config.dqaas_mtd}`
+        WHERE data_src = '{self.data_src}' AND active_flag = 'Y'
+        """
+        metadata_df = self.utils.run_bq_sql(
+            bq_auth=config.dq_gcp_auth_payload,
+            select_query=query
+        )
+        self.logger.info(f"Metadata fetched, total records: {len(metadata_df)}")
+        return metadata_df
+
+
+    def log_profile_monitoring(self, profile_id, table_name, run_status, profile_date, comments):
+        """
+        Logs profiling monitoring details into `dqaas_run_rule_ctrl_tbl`.
+        """
+        run_ts = datetime.now()
+
+        #will update the tablename via cofig
+        query = f"""
+        INSERT INTO `{self.dq_gcp_data_project_id}.{self.dataset_name}.dqaas_run_rule_ctrl_tbl` 
+        (profile_id, table_name, run_ts, run_status, profile_date, comments)
+        VALUES (@profile_id, @table_name, @run_ts, @run_status, @profile_date, @comments)
+        """
+
+        params = {
+            "profile_id": profile_id,
+            "table_name": table_name,
+            "run_ts": run_ts,
+            "run_status": run_status or "Not Started",
+            "profile_date": profile_date,
+            "comments": comments or "N/A"
+        }
+
+        logging.info(f"Logging profile execution: {params}")
+        try:
+            self.client.query(query, params).result()
+            logging.info(f"Inserted profiling monitoring details into `dqaas_run_rule_ctrl_tbl`.")
+        except Exception as e:
+            logging.error(f"Error logging profiling monitoring: {str(e)}")
+
 def parse_arguments():
     """
-    Parse command-line arguments for job monitoring logging.
+    Parse command-line arguments for job and profile monitoring logging.
     """
     parser = argparse.ArgumentParser(description="Log monitoring details into BigQuery.")
     parser.add_argument("--dq_gcp_data_project_id", required=True, help="Google Cloud Project ID")
     parser.add_argument("--dataset_name", required=True, help="BigQuery Dataset Name")
-    parser.add_argument("--job_id", type=int, required=True, help="Job ID")
-    parser.add_argument("--job_name", type=str, required=True, help="Job Name")
-    parser.add_argument("--job_start_ts", type=str, required=True, help="Job Start Timestamp (YYYY-MM-DD HH:MM:SS)")
-    parser.add_argument("--job_end_ts", type=str, required=True, help="Job End Timestamp (YYYY-MM-DD HH:MM:SS)")
-    parser.add_argument("--step_code", type=str, required=True, help="Step Code (Module/Function Name)")
-    parser.add_argument("--user_id", type=str, required=True, help="User ID")
+    parser.add_argument("--log_type", required=True, choices=["job", "profile"], help="Type of log: job or profile")
     
+    # Job monitoring Arguments
+    parser.add_argument("--job_id", type=int, help="Job ID")
+    parser.add_argument("--job_name", type=str, help="Job Name")
+    parser.add_argument("--job_start_ts", type=str, help="Job Start Timestamp (YYYY-MM-DD HH:MM:SS)")
+    parser.add_argument("--job_end_ts", type=str, help="Job End Timestamp (YYYY-MM-DD HH:MM:SS)")
+    parser.add_argument("--step_code", type=str, help="Step Code (Module/Function Name)")
+    parser.add_argument("--comments", type=str, help="Execution Comments")
+    parser.add_argument("--user_id", type=str, help="User ID")
+
+    # Profile monitoring Arguments
+    parser.add_argument("--profile_id", type=int, help="Profile ID")
+    parser.add_argument("--table_name", type=str, help="Table Name")
+    parser.add_argument("--run_status", type=str, help="Run Status (Successful/Failure)")
+    parser.add_argument("--profile_date", type=str, help="Profile Execution Date (YYYY-MM-DD)")
+
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_arguments()
-    logger = LoggerExecution(args.dq_gcp_data_project_id, args.dataset_name)
+    logger = LoggerExecution(args.dq_gcp_data_project_id, args.dq_bq_dataset)
 
-    logger.log_job_monitoring(
-        job_id=args.job_id,
-        job_name=args.job_name,
-        job_start_ts=datetime.strptime(args.job_start_ts, "%Y-%m-%d %H:%M:%S"),
-        job_end_ts=datetime.strptime(args.job_end_ts, "%Y-%m-%d %H:%M:%S"),
-        step_code=args.step_code,
-        user_id=args.user_id
-    )
+    if args.log_type == "job":
+        logger.log_job_monitoring(
+            job_id=args.job_id,
+            job_name=args.job_name,
+            job_start_ts=datetime.strptime(args.job_start_ts, "%Y-%m-%d %H:%M:%S"),
+            job_end_ts=datetime.strptime(args.job_end_ts, "%Y-%m-%d %H:%M:%S"),
+            step_code=args.step_code,
+            comments=args.comments,
+            user_id=args.user_id
+        )
+
+    elif args.log_type == "profile":
+        logger.log_profile_monitoring(
+            profile_id=args.profile_id,
+            table_name=args.table_name,
+            run_status=args.run_status,
+            profile_date=datetime.strptime(args.profile_date, "%Y-%m-%d").date(),
+            comments=args.comments
+        )
+
+
+
+
+        
+
