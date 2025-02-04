@@ -1,198 +1,101 @@
-import argparse
 import sys
 import os
-import pandas as pd
-import google.auth
-from google.cloud import bigquery
-from datetime import datetime
 import logging
+from datetime import datetime
+from google.cloud import bigquery
 
-# Importing User Defined Modules
+# Import User Defined Modules
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
-from utils.send_email import SendEmail
 from config_data import get_config, set_logger
-import scripts.config_params as config
-from scripts.common_handlers import CommonUtils
-from scripts.auto_profile import AutoProfileEngine
-from scripts.sql_rule_profile import RuleProfile
 
-class DQProcessor:
-    def __init__(self, data_src: str = None, run_type=None):
+class ExecutionLogger:
+    def __init__(self):
         self.config = get_config()
-        self.data_src = data_src
-        self.run_type = run_type
-
-        if self.data_src not in config.APPL_DATA_SRC:
-            raise Exception(f"Invalid Data Source: {data_src}")
-
+        self.client = bigquery.Client()
+        
         # Logger Setup
         self.logger = set_logger(
-            logger_path=config.LOGS_DIR,
-            log_filename=f'DQ-PROCESS-Main',
-            process_name=f'DQ-PROCESS-Main'
+            logger_path=self.config["log_dir"],
+            log_filename="execution_logger",
+            process_name="ExecutionLogger"
         )
-        self.utils = CommonUtils(logObj=self.logger)
-        self.client = bigquery.Client()  # Initialize BigQuery client
 
-    def log_execution_status(self, job_id, job_name, job_start_ts, job_end_ts, step_code, comments, profile_id=None, table_name=None, run_status=None, profile_date=None):
+    def log_job_execution(self, job_id, job_name, job_start_ts, job_end_ts, step_code, comments):
         """
-        Logs execution details into:
-        1. dqaas_job_monitor_report (Job monitoring details)
-        2. dqaas_run_rule_ctrl_tbl (Profiling execution status)
+        Logs job execution details into `dqaas_job_monitor_report`.
         """
-
         entry_ts = datetime.now()
 
-        # ✅ Insert into dqaas_job_monitor_report
-        monitor_query = f"""
+        query = f"""
         INSERT INTO `{self.config['gcp_metadata_db']['dq_project_id']}.{self.config['sql_rule_profile']['dq_dataset_name']}.dqaas_job_monitor_report`
         (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
         VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @entry_ts, @user_id, @step_code, @comments)
         """
 
-        monitor_params = {
+        params = {
             "job_id": job_id,
             "job_name": job_name,
             "job_start_ts": job_start_ts,
             "job_end_ts": job_end_ts,
             "entry_ts": entry_ts,
-            "user_id": self.config['user_id'],  # Assuming user_id is stored in config
+            "user_id": self.config['user_id'],
             "step_code": step_code,
             "comments": comments or "N/A"
         }
 
-        self.logger.info(f"Logging job execution to dqaas_job_monitor_report: {monitor_params}")
+        self.logger.info(f"Logging job execution to dqaas_job_monitor_report: {params}")
         try:
-            self.client.query(monitor_query, monitor_params).result()
+            self.client.query(query, params).result()
             self.logger.info(f"Inserted job execution details into dqaas_job_monitor_report")
         except Exception as e:
             self.logger.error(f"Error logging execution to dqaas_job_monitor_report: {str(e)}")
 
-        # ✅ Insert into dqaas_run_rule_ctrl_tbl (if profiling details exist)
-        if profile_id and table_name:
-            profile_query = f"""
-            INSERT INTO `{self.config['gcp_metadata_db']['dq_project_id']}.{self.config['sql_rule_profile']['dq_dataset_name']}.dqaas_run_rule_ctrl_tbl`
-            (profile_id, table_name, run_ts, run_status, profile_date, comments)
-            VALUES (@profile_id, @table_name, @run_ts, @run_status, @profile_date, @comments)
-            """
-
-            profile_params = {
-                "profile_id": profile_id,
-                "table_name": table_name,
-                "run_ts": entry_ts,
-                "run_status": run_status or "Not Started",
-                "profile_date": profile_date,
-                "comments": comments or "N/A"
-            }
-
-            self.logger.info(f"Logging profile execution to dqaas_run_rule_ctrl_tbl: {profile_params}")
-            try:
-                self.client.query(profile_query, profile_params).result()
-                self.logger.info(f"Inserted profiling execution details into dqaas_run_rule_ctrl_tbl")
-            except Exception as e:
-                self.logger.error(f"Error logging execution to dqaas_run_rule_ctrl_tbl: {str(e)}")
-
-    def process_main(self):
+    def log_profile_execution(self, profile_id, table_name, run_status, profile_date, comments):
         """
-        Main function to process metadata and execute profiling.
+        Logs profiling execution details into `dqaas_run_rule_ctrl_tbl`.
         """
-        try:
-            metadata_df = self.read_metadata()
-            profile_type_dfs = self.split_metadata_based_on_profile_type(metadata_df)
+        run_ts = datetime.now()
 
-            for profile_type, df in profile_type_dfs.items():
-                for idx, row in df.iterrows():
-                    try:
-                        self.logger.info(f"Processing Profile Type: {profile_type} | Table: {row['table_name']}")
-
-                        # Start Time
-                        job_start_ts = datetime.now()
-
-                        # Execute Profiling Logic
-                        self.call_respective_profile_engine(profile_type, row, self.data_src)
-
-                        # End Time
-                        job_end_ts = datetime.now()
-
-                        # Log Successful Execution
-                        self.log_execution_status(
-                            job_id=row['profile_id'],
-                            job_name="DQ-Processing",
-                            job_start_ts=job_start_ts,
-                            job_end_ts=job_end_ts,
-                            step_code=profile_type,
-                            comments="Successful Execution",
-                            profile_id=row['profile_id'],
-                            table_name=row['table_name'],
-                            run_status="Successful",
-                            profile_date=row['profile_date']
-                        )
-
-                    except Exception as e:
-                        self.logger.error(f"Error processing profile type: {profile_type} for table {row['table_name']} - {str(e)}")
-
-                        # Log Failure Execution
-                        self.log_execution_status(
-                            job_id=row['profile_id'],
-                            job_name="DQ-Processing",
-                            job_start_ts=job_start_ts,
-                            job_end_ts=datetime.now(),
-                            step_code=profile_type,
-                            comments=f"Error: {str(e)}",
-                            profile_id=row['profile_id'],
-                            table_name=row['table_name'],
-                            run_status="Failure",
-                            profile_date=row['profile_date']
-                        )
-
-        except Exception as e:
-            self.logger.error(f"Error in main processing function: {str(e)}")
-
-    def read_metadata(self):
-        """
-        Reads metadata from the BigQuery metadata table.
-        """
         query = f"""
-        SELECT * FROM `{config.dqaas_mtd}`
-        WHERE data_src = '{self.data_src}' AND active_flag = 'Y'
+        INSERT INTO `{self.config['gcp_metadata_db']['dq_project_id']}.{self.config['sql_rule_profile']['dq_dataset_name']}.dqaas_run_rule_ctrl_tbl`
+        (profile_id, table_name, run_ts, run_status, profile_date, comments)
+        VALUES (@profile_id, @table_name, @run_ts, @run_status, @profile_date, @comments)
         """
-        metadata_df = self.utils.run_bq_sql(
-            bq_auth=config.dq_gcp_auth_payload,
-            select_query=query
-        )
-        self.logger.info(f"Metadata fetched, total records: {len(metadata_df)}")
-        return metadata_df
 
-    def split_metadata_based_on_profile_type(self, df):
-        """
-        Splits metadata based on profile type.
-        """
-        return {ptype: pdata for ptype, pdata in df.groupby("profile_type")}
+        params = {
+            "profile_id": profile_id,
+            "table_name": table_name,
+            "run_ts": run_ts,
+            "run_status": run_status or "Not Started",
+            "profile_date": profile_date,
+            "comments": comments or "N/A"
+        }
 
-    def call_respective_profile_engine(self, profile_type, df, data_src):
-        """
-        Calls the respective profiling engine.
-        """
-        if profile_type == "auto":
-            self.request_auto_profile_engine(df, data_src)
-        elif profile_type == "rule":
-            self.request_rule_profile_engine(df, data_src)
+        self.logger.info(f"Logging profile execution to dqaas_run_rule_ctrl_tbl: {params}")
+        try:
+            self.client.query(query, params).result()
+            self.logger.info(f"Inserted profiling execution details into dqaas_run_rule_ctrl_tbl")
+        except Exception as e:
+            self.logger.error(f"Error logging execution to dqaas_run_rule_ctrl_tbl: {str(e)}")
 
-def get_profile_input_details():
-    """
-    Parses command-line arguments for data source.
-    """
-    parser_args = argparse.ArgumentParser()
-    parser_args.add_argument('--data_src', dest='data_src', type=str, required=True, help="Data Source is Mandatory")
-    args = parser_args.parse_args()
-    data_src = args.data_src.upper()
-
-    if data_src in config.APPL_DATA_SRC:
-        return data_src
-    else:
-        raise Exception(f"Invalid Data Source: {data_src}")
-
+# Example usage (for testing)
 if __name__ == "__main__":
-    data_src = get_profile_input_details()
-    processor = DQProcessor(data_src)
-    processor.process_main()
+    logger = ExecutionLogger()
+    
+    # Sample test data
+    logger.log_job_execution(
+        job_id=101,
+        job_name="DQ-Processing",
+        job_start_ts=datetime.now(),
+        job_end_ts=datetime.now(),
+        step_code="rule",
+        comments="Test execution"
+    )
+
+    logger.log_profile_execution(
+        profile_id=223,
+        table_name="outlet_v",
+        run_status="Successful",
+        profile_date=datetime.now().date(),
+        comments="Test profiling execution"
+    )
