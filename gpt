@@ -1,3 +1,20 @@
+import logging
+
+# Configure logging to write to a file
+logging.basicConfig(filename='dq_processor.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+try:
+    # Run processing logic here
+    logging.info("DQ Processing Completed Successfully")
+except Exception as e:
+    logging.error(f"DQ Processing Failed: {str(e)}")
+
+
+
+
+
+
+
 import argparse
 import logging
 from datetime import datetime
@@ -7,7 +24,7 @@ from google.cloud import bigquery
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class LoggerExecution:
-    def __init__(self, dq_gcp_data_project_id, dq_bq_dataset): # Will update using config later
+    def __init__(self, dq_gcp_data_project_id, dq_bq_dataset):
         """
         Initialize BigQuery client and logging.
         """
@@ -16,14 +33,29 @@ class LoggerExecution:
         self.dataset_name = dq_bq_dataset
         logging.info("LoggerExecution initialized.")
 
-    def log_job_monitoring(self, job_id, job_name, job_start_ts, job_end_ts, step_code, comments, user_id):
+    def get_latest_log_message(self, log_file="dq_processor.log"):
+        """
+        Reads the latest log message from the dq_processor.log file.
+        """
+        try:
+            with open(log_file, "r") as file:
+                logs = file.readlines()
+                if logs:
+                    return logs[-1].strip()  # Get the last log entry
+                else:
+                    return "No logs found"
+        except FileNotFoundError:
+            return "Log file not found"
+
+    def log_job_monitoring(self, job_id, job_name, job_start_ts, job_end_ts, step_code, user_id):
         """
         Logs job monitoring details into `dqaas_job_monitor_report` table.
         """
         entry_ts = datetime.now()
+        comments = self.get_latest_log_message()  # Get success/failure message from logs
 
         query = f"""
-        INSERT INTO `{self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.dqaas_job_monitor_report`
+        INSERT INTO `{self.project_id}.{self.dataset_name}.dqaas_job_monitor_report`
         (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
         VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @entry_ts, @user_id, @step_code, @comments)
         """
@@ -36,7 +68,7 @@ class LoggerExecution:
             "entry_ts": entry_ts,
             "user_id": user_id,
             "step_code": step_code,
-            "comments": comments or "N/A"
+            "comments": comments  # Get message dynamically from logs
         }
 
         logging.info(f"Logging job monitoring: {params}")
@@ -46,80 +78,31 @@ class LoggerExecution:
         except Exception as e:
             logging.error(f"Error logging monitoring: {str(e)}")
 
-    def log_profile_monitoring(self, profile_id, table_name, run_status, profile_date, comments):
-        """
-        Logs profiling monitoring details into `dqaas_run_rule_ctrl_tbl`.
-        """
-        run_ts = datetime.now()
-
-        query = f"""
-        INSERT INTO `{self.dq_gcp_data_project_id}.{self.dataset_name}.dqaas_run_rule_ctrl_tbl`
-        (profile_id, table_name, run_ts, run_status, profile_date, comments)
-        VALUES (@profile_id, @table_name, @run_ts, @run_status, @profile_date, @comments)
-        """
-
-        params = {
-            "profile_id": profile_id,
-            "table_name": table_name,
-            "run_ts": run_ts,
-            "run_status": run_status or "Not Started",
-            "profile_date": profile_date,
-            "comments": comments or "N/A"
-        }
-
-        logging.info(f"Logging profile execution: {params}")
-        try:
-            self.client.query(query, params).result()
-            logging.info(f"Inserted profiling monitoring details into `dqaas_run_rule_ctrl_tbl`.")
-        except Exception as e:
-            logging.error(f"Error logging profiling monitoring: {str(e)}")
-
 def parse_arguments():
     """
-    Parse command-line arguments for job and profile monitoring logging.
+    Parse command-line arguments for job monitoring logging.
     """
     parser = argparse.ArgumentParser(description="Log monitoring details into BigQuery.")
     parser.add_argument("--dq_gcp_data_project_id", required=True, help="Google Cloud Project ID")
     parser.add_argument("--dataset_name", required=True, help="BigQuery Dataset Name")
-    parser.add_argument("--log_type", required=True, choices=["job", "profile"], help="Type of log: job or profile")
+    parser.add_argument("--job_id", type=int, required=True, help="Job ID")
+    parser.add_argument("--job_name", type=str, required=True, help="Job Name")
+    parser.add_argument("--job_start_ts", type=str, required=True, help="Job Start Timestamp (YYYY-MM-DD HH:MM:SS)")
+    parser.add_argument("--job_end_ts", type=str, required=True, help="Job End Timestamp (YYYY-MM-DD HH:MM:SS)")
+    parser.add_argument("--step_code", type=str, required=True, help="Step Code (Module/Function Name)")
+    parser.add_argument("--user_id", type=str, required=True, help="User ID")
     
-    # Job monitoring Arguments
-    parser.add_argument("--job_id", type=int, help="Job ID")
-    parser.add_argument("--job_name", type=str, help="Job Name")
-    parser.add_argument("--job_start_ts", type=str, help="Job Start Timestamp (YYYY-MM-DD HH:MM:SS)")
-    parser.add_argument("--job_end_ts", type=str, help="Job End Timestamp (YYYY-MM-DD HH:MM:SS)")
-    parser.add_argument("--step_code", type=str, help="Step Code (Module/Function Name)")
-    parser.add_argument("--comments", type=str, help="Execution Comments")
-    parser.add_argument("--user_id", type=str, help="User ID")
-
-    # Profile monitoring Arguments
-    parser.add_argument("--profile_id", type=int, help="Profile ID")
-    parser.add_argument("--table_name", type=str, help="Table Name")
-    parser.add_argument("--run_status", type=str, help="Run Status (Successful/Failure)")
-    parser.add_argument("--profile_date", type=str, help="Profile Execution Date (YYYY-MM-DD)")
-
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_arguments()
-    logger = LoggerExecution(args.dq_gcp_data_project_id, args.dq_bq_dataset)
+    logger = LoggerExecution(args.dq_gcp_data_project_id, args.dataset_name)
 
-    if args.log_type == "job":
-        logger.log_job_monitoring(
-            job_id=args.job_id,
-            job_name=args.job_name,
-            job_start_ts=datetime.strptime(args.job_start_ts, "%Y-%m-%d %H:%M:%S"),
-            job_end_ts=datetime.strptime(args.job_end_ts, "%Y-%m-%d %H:%M:%S"),
-            step_code=args.step_code,
-            comments=args.comments,
-            user_id=args.user_id
-        )
-
-    elif args.log_type == "profile":
-        logger.log_profile_monitoring(
-            profile_id=args.profile_id,
-            table_name=args.table_name,
-            run_status=args.run_status,
-            profile_date=datetime.strptime(args.profile_date, "%Y-%m-%d").date(),
-            comments=args.comments
-        )
+    logger.log_job_monitoring(
+        job_id=args.job_id,
+        job_name=args.job_name,
+        job_start_ts=datetime.strptime(args.job_start_ts, "%Y-%m-%d %H:%M:%S"),
+        job_end_ts=datetime.strptime(args.job_end_ts, "%Y-%m-%d %H:%M:%S"),
+        step_code=args.step_code,
+        user_id=args.user_id
+    )
