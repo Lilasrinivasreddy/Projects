@@ -6,24 +6,24 @@ from google.cloud import bigquery
 # Configure Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-class ExecutionLogger:
-    def __init__(self, project_id, dataset_name):
+class LoggerExecution:
+    def __init__(self, dq_gcp_data_project_id, dq_bq_dataset): # Will update using config later
         """
         Initialize BigQuery client and logging.
         """
         self.client = bigquery.Client()
-        self.project_id = project_id
-        self.dataset_name = dataset_name
-        logging.info("ExecutionLogger initialized.")
+        self.project_id = dq_gcp_data_project_id
+        self.dataset_name = dq_bq_dataset
+        logging.info("LoggerExecution initialized.")
 
-    def log_job_execution(self, job_id, job_name, job_start_ts, job_end_ts, step_code, comments, user_id):
+    def log_job_monitoring(self, job_id, job_name, job_start_ts, job_end_ts, step_code, comments, user_id):
         """
-        Logs job execution details into `dqaas_job_monitor_report`.
+        Logs job monitoring details into `dqaas_job_monitor_report` table.
         """
         entry_ts = datetime.now()
 
         query = f"""
-        INSERT INTO `{self.project_id}.{self.dataset_name}.dqaas_job_monitor_report`
+        INSERT INTO `{self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.dqaas_job_monitor_report`
         (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
         VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @entry_ts, @user_id, @step_code, @comments)
         """
@@ -39,21 +39,21 @@ class ExecutionLogger:
             "comments": comments or "N/A"
         }
 
-        logging.info(f"Logging job execution: {params}")
+        logging.info(f"Logging job monitoring: {params}")
         try:
             self.client.query(query, params).result()
-            logging.info(f"Inserted job execution details into `dqaas_job_monitor_report`.")
+            logging.info(f"Inserted job monitoring details into `dqaas_job_monitor_report`.")
         except Exception as e:
-            logging.error(f"Error logging execution: {str(e)}")
+            logging.error(f"Error logging monitoring: {str(e)}")
 
-    def log_profile_execution(self, profile_id, table_name, run_status, profile_date, comments):
+    def log_profile_monitoring(self, profile_id, table_name, run_status, profile_date, comments):
         """
-        Logs profiling execution details into `dqaas_run_rule_ctrl_tbl`.
+        Logs profiling monitoring details into `dqaas_run_rule_ctrl_tbl`.
         """
         run_ts = datetime.now()
 
         query = f"""
-        INSERT INTO `{self.project_id}.{self.dataset_name}.dqaas_run_rule_ctrl_tbl`
+        INSERT INTO `{self.dq_gcp_data_project_id}.{self.dataset_name}.dqaas_run_rule_ctrl_tbl`
         (profile_id, table_name, run_ts, run_status, profile_date, comments)
         VALUES (@profile_id, @table_name, @run_ts, @run_status, @profile_date, @comments)
         """
@@ -70,20 +70,20 @@ class ExecutionLogger:
         logging.info(f"Logging profile execution: {params}")
         try:
             self.client.query(query, params).result()
-            logging.info(f"Inserted profiling execution details into `dqaas_run_rule_ctrl_tbl`.")
+            logging.info(f"Inserted profiling monitoring details into `dqaas_run_rule_ctrl_tbl`.")
         except Exception as e:
-            logging.error(f"Error logging profiling execution: {str(e)}")
+            logging.error(f"Error logging profiling monitoring: {str(e)}")
 
 def parse_arguments():
     """
-    Parse command-line arguments for job and profile execution logging.
+    Parse command-line arguments for job and profile monitoring logging.
     """
-    parser = argparse.ArgumentParser(description="Log execution details into BigQuery.")
-    parser.add_argument("--project_id", required=True, help="Google Cloud Project ID")
+    parser = argparse.ArgumentParser(description="Log monitoring details into BigQuery.")
+    parser.add_argument("--dq_gcp_data_project_id", required=True, help="Google Cloud Project ID")
     parser.add_argument("--dataset_name", required=True, help="BigQuery Dataset Name")
     parser.add_argument("--log_type", required=True, choices=["job", "profile"], help="Type of log: job or profile")
     
-    # Job Execution Arguments
+    # Job monitoring Arguments
     parser.add_argument("--job_id", type=int, help="Job ID")
     parser.add_argument("--job_name", type=str, help="Job Name")
     parser.add_argument("--job_start_ts", type=str, help="Job Start Timestamp (YYYY-MM-DD HH:MM:SS)")
@@ -92,7 +92,7 @@ def parse_arguments():
     parser.add_argument("--comments", type=str, help="Execution Comments")
     parser.add_argument("--user_id", type=str, help="User ID")
 
-    # Profile Execution Arguments
+    # Profile monitoring Arguments
     parser.add_argument("--profile_id", type=int, help="Profile ID")
     parser.add_argument("--table_name", type=str, help="Table Name")
     parser.add_argument("--run_status", type=str, help="Run Status (Successful/Failure)")
@@ -102,10 +102,10 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
-    logger = ExecutionLogger(args.project_id, args.dataset_name)
+    logger = LoggerExecution(args.dq_gcp_data_project_id, args.dq_bq_dataset)
 
     if args.log_type == "job":
-        logger.log_job_execution(
+        logger.log_job_monitoring(
             job_id=args.job_id,
             job_name=args.job_name,
             job_start_ts=datetime.strptime(args.job_start_ts, "%Y-%m-%d %H:%M:%S"),
@@ -116,7 +116,7 @@ if __name__ == "__main__":
         )
 
     elif args.log_type == "profile":
-        logger.log_profile_execution(
+        logger.log_profile_monitoring(
             profile_id=args.profile_id,
             table_name=args.table_name,
             run_status=args.run_status,
