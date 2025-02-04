@@ -1,22 +1,6 @@
-import logging
-
-# Configure logging to write to a file
-logging.basicConfig(filename='dq_processor.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-try:
-    # Run processing logic here
-    logging.info("DQ Processing Completed Successfully")
-except Exception as e:
-    logging.error(f"DQ Processing Failed: {str(e)}")
-
-
-
-
-
-
-
 import argparse
 import logging
+import subprocess
 from datetime import datetime
 from google.cloud import bigquery
 
@@ -33,26 +17,22 @@ class LoggerExecution:
         self.dataset_name = dq_bq_dataset
         logging.info("LoggerExecution initialized.")
 
-    def get_latest_log_message(self, log_file="dq_processor.log"):
+    def run_dq_processor(self):
         """
-        Reads the latest log message from the dq_processor.log file.
+        Runs `dq_processor.py` as a subprocess and captures its output.
         """
         try:
-            with open(log_file, "r") as file:
-                logs = file.readlines()
-                if logs:
-                    return logs[-1].strip()  # Get the last log entry
-                else:
-                    return "No logs found"
-        except FileNotFoundError:
-            return "Log file not found"
+            result = subprocess.run(["python3", "dq_processor.py"], capture_output=True, text=True, check=True)
+            return result.stdout.strip()  # Capture stdout (Success or Failure message)
+        except subprocess.CalledProcessError as e:
+            return f"Error running dq_processor: {e.stderr.strip()}"  # Capture stderr if there's an error
 
     def log_job_monitoring(self, job_id, job_name, job_start_ts, job_end_ts, step_code, user_id):
         """
         Logs job monitoring details into `dqaas_job_monitor_report` table.
         """
         entry_ts = datetime.now()
-        comments = self.get_latest_log_message()  # Get success/failure message from logs
+        comments = self.run_dq_processor()  # Run dq_processor and capture its output
 
         query = f"""
         INSERT INTO `{self.project_id}.{self.dataset_name}.dqaas_job_monitor_report`
@@ -68,7 +48,7 @@ class LoggerExecution:
             "entry_ts": entry_ts,
             "user_id": user_id,
             "step_code": step_code,
-            "comments": comments  # Get message dynamically from logs
+            "comments": comments  # Get message dynamically from `dq_processor.py`
         }
 
         logging.info(f"Logging job monitoring: {params}")
