@@ -1,4 +1,60 @@
+
+#################################### Using only to test monitor table insertion ###################
+import argparse
+import logging
+import inspect
+import uuid  
+import subprocess  # To get user_id from server
+from datetime import datetime
 from google.cloud import bigquery
+import sys
+import os
+import traceback
+
+# Import necessary modules
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from scripts.auto_profile import AutoProfileEngine
+import scripts.config_params as config
+from scripts.common_handlers import CommonUtils
+from scripts.config_params import DQ_GCP_DATA_PROJECT_ID
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+
+class JobMonitor:
+    def __init__(self, project_id, dataset_name, data_src):
+        """
+        Initialize BigQuery client and logging.
+        """
+        self.client = bigquery.Client()
+        self.data_src = data_src
+        self.utils = CommonUtils(logObj=logging)
+        self.project_id = 'vz-it-np-izcv-dev-idmcdo-0'
+        self.dataset_name = 'dga_dq_tbls'
+
+        # Table Names 
+        self.job_monitor_table = 'dqaas_job_monitor_report'  
+        # self.rule_ctrl_table = config.dqaas_run_rule_ctrl_tbl  # Rule Control Table
+        # self.metadata_table = config.dqaas_mtd  # Metadata Table
+
+        logging.info("JobMonitoring initialized.")
+
+
+    def get_current_function(self):
+        """
+        Geting the function name
+        """
+        return inspect.stack()[1].function
+
+    def get_user_id(self):
+        """
+        user ID from the server 
+        """
+        return subprocess.getoutput("whoami").strip()
+    
+
+    from google.cloud import bigquery
 
 def log_monitoring(self, job_id, job_name, step_code, user_id, status, comments):
     """
@@ -33,42 +89,119 @@ def log_monitoring(self, job_id, job_name, step_code, user_id, status, comments)
         logging.info("Inserted job monitoring details into `dqaas_job_monitor_report`.")
     except Exception as e:
         logging.error(f"Error logging monitoring: {str(e)}")
-================
-def execute_autoprofile(self):
-    """
-    Executes the AutoProfile function and logs the result.
-    """
-    job_id = int(datetime.now().timestamp())  # Unique Job ID
-    job_name = "AutoProfile"
-    step_code = "request_auto_profile_engine"  
-    user_id = os.popen("whoami").read().strip() 
-    comments = "Execution started."
 
-    # Insert Initial Log
-    self.log_monitoring(job_id, job_name, step_code, user_id, "Running", comments)
 
-    job_start_ts = datetime.now()
-
-    try:
-        # Importing from dq_processor
-        from scripts.dq_processor import DQProcessor  
+    # def log_monitoring(self, job_id, job_name, step_code, user_id, status, comments):
+    #     """
+    #     Inserts or updates job monitoring details into BigQuery.
+    #     """
+    #     job_start_ts = datetime.now()
         
-        dq_processor = DQProcessor(data_src="BQ")  # Using BigQuery as data source
+    #     query = f"""
+    #     INSERT INTO `vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_job_monitor_report`
+    #     (job_id, job_name, job_start_ts, job_end_ts, step_code, user_id, comments)
+    #     VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @step_code, @user_id, @comments)
+    #     """
+        
+    #     params = {
+    #         "job_id": job_id,
+    #         "job_name": job_name,
+    #         "job_start_ts": job_start_ts,
+    #         "job_end_ts": datetime.now(),  # Updated dynamically
+    #         "step_code": step_code,
+    #         "user_id": user_id,
+    #         "comments": comments or "Execution successful."
+    #     }
 
-        result = dq_processor.request_auto_profile_engine(logging, None, "BQ", None)
+    #     logging.info(f"Logging job monitoring: {params}")
+    #     try:
+    #         self.client.query(query, params).result()
+    #         logging.info("Inserted job monitoring details into `dqaas_job_monitor_report`.")
+    #     except Exception as e:
+    #         logging.error(f"Error logging monitoring: {str(e)}")
 
-        # ✅ Fix: Check if `result` is None before proceeding
-        if result is None:
-            raise ValueError("AutoProfile execution failed: dq_processor.request_auto_profile_engine() returned None.")
+    # def execute_autoprofile(self):
+    #     """
+    #     Executes the AutoProfile function and logs the result.
+    #     """
+    #     job_id = int(datetime.now().timestamp())  # Unique Job ID
+    #     job_name = "AutoProfile"
+    #     step_code = "request_auto_profile_engine"  
+    #     user_id = os.popen("whoami").read().strip() 
+    #     comments = "Execution started."
 
-        comments = "Execution successful."
-        status = "Success"
+    #     # Insert Initial Log
+    #     self.log_monitoring(job_id, job_name, step_code, user_id, "Running", comments)
 
-    except Exception as e:
-        comments = f"Error: {str(e)} \n {traceback.format_exc()}"
-        status = "Failure"
+    #     job_start_ts = datetime.now()
 
-    job_end_ts = datetime.now()
+    #     try:
+    #         # AutoProfile Execution
+    #         from scripts.dq_processor import DQProcessor  # Importing from dq_processor
+    #         dq_processor = DQProcessor(data_src="BQ")  # Using BigQuery as data source
+    #         dq_processor.request_auto_profile_engine(logging, None, "BQ", None)  
+            
+    #         comments = "Execution successful."
+    #         status = "Success"
 
-    # Update Log Entry
-    self.log_monitoring(job_id, job_name, step_code, user_id, status, comments)
+    #     except Exception as e:
+    #         comments = f"Error: {str(e)} \n {traceback.format_exc()}"
+    #         status = "Failure"
+
+    #     job_end_ts = datetime.now()
+
+    #     # Update Log Entry
+    #     self.log_monitoring(job_id, job_name, step_code, user_id, status, comments)
+
+    def execute_autoprofile(self):
+        """
+        Executes the AutoProfile function and logs the result.
+        """
+        job_id = int(datetime.now().timestamp())  # Unique Job ID
+        job_name = "AutoProfile"
+        step_code = "request_auto_profile_engine"  
+        user_id = os.popen("whoami").read().strip() 
+        comments = "Execution started."
+
+        # Insert Initial Log
+        self.log_monitoring(job_id, job_name, step_code, user_id, "Running", comments)
+
+        job_start_ts = datetime.now()
+
+        try:
+            # Importing from dq_processor
+            from scripts.dq_processor import DQProcessor  
+            
+            dq_processor = DQProcessor(data_src="BQ")  # Using BigQuery as data source
+
+            result = dq_processor.request_auto_profile_engine(logging, None, "BQ", None)
+
+            # ✅ Fix: Check if `result` is None before proceeding
+            if result is None:
+                raise ValueError("AutoProfile execution failed: dq_processor.request_auto_profile_engine() returned None.")
+
+            comments = "Execution successful."
+            status = "Success"
+
+        except Exception as e:
+            comments = f"Error: {str(e)} \n {traceback.format_exc()}"
+            status = "Failure"
+
+        job_end_ts = datetime.now()
+
+        # Update Log Entry
+        self.log_monitoring(job_id, job_name, step_code, user_id, status, comments)
+def parse_arguments():
+    """
+    Parse command-line arguments for job monitoring.
+    """
+    parser = argparse.ArgumentParser(description="Job Monitoring Script.")
+    parser.add_argument("--project_id", required=True, help="GCP Project ID")
+    parser.add_argument("--dataset_name", required=True, help="BigQuery Dataset Name")
+
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    monitor = JobMonitor(args.project_id, args.dataset_name, "GCP")
+    monitor.execute_autoprofile()
