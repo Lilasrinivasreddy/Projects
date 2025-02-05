@@ -1,3 +1,127 @@
+INSERT INTO `<your_project_id>.<your_dataset>.dqaas_job_monitor_report`
+(job_id, job_name, job_start_ts, job_end_ts, step_code, comments, user_id)
+VALUES (1001, 'AutoProfile', TIMESTAMP('2025-02-05 08:00:00'), NULL, 'request_auto_profile_engine', 'Pending execution', 'test_user');
+
+
+def read_metadata(self):
+    """
+    Fetch metadata for testing a single table.
+    """
+    query = f"""
+    SELECT * FROM `{config.dqaas_mtd}`
+    WHERE data_src = '{self.data_src}' AND active_flag = 'Y'
+    LIMIT 1  -- Fetch only one table for testing
+    """
+    metadata_df = self.utils.run_bq_sql(
+        bq_auth=config.dq_gcp_auth_payload,
+        select_query=query
+    )
+    self.logger.info(f"Fetched 1 table metadata for testing: {metadata_df['table_name'].values}")
+    return metadata_df
+
+
+import argparse
+import os
+import sys
+import traceback
+from datetime import datetime
+from google.cloud import bigquery
+import logging
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+class JobMonitor:
+    def __init__(self, project_id, dataset_name):
+        """
+        Initialize BigQuery client and setup configuration.
+        """
+        self.client = bigquery.Client()
+        self.project_id = project_id
+        self.dataset_name = dataset_name
+        self.monitor_table = "dqaas_job_monitor_report"  # Table for monitoring logs
+        logging.info("JobMonitor initialized.")
+
+    def log_monitoring(self, job_id, job_name, step_code, user_id, status, comments):
+        """
+        Inserts or updates job monitoring details into BigQuery.
+        """
+        job_start_ts = datetime.now()
+        
+        query = f"""
+        INSERT INTO `{self.project_id}.{self.dataset_name}.{self.monitor_table}`
+        (job_id, job_name, job_start_ts, job_end_ts, step_code, user_id, comments)
+        VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @step_code, @user_id, @comments)
+        """
+        
+        params = {
+            "job_id": job_id,
+            "job_name": job_name,
+            "job_start_ts": job_start_ts,
+            "job_end_ts": datetime.now(),  # Updated dynamically
+            "step_code": step_code,
+            "user_id": user_id,
+            "comments": comments or "Execution successful."
+        }
+
+        logging.info(f"Logging job monitoring: {params}")
+        try:
+            self.client.query(query, params).result()
+            logging.info("Inserted job monitoring details into `dqaas_job_monitor_report`.")
+        except Exception as e:
+            logging.error(f"Error logging monitoring: {str(e)}")
+
+    def execute_autoprofile(self):
+        """
+        Executes the AutoProfile function and logs the result.
+        """
+        job_id = int(datetime.now().timestamp())  # Unique Job ID
+        job_name = "AutoProfile"
+        step_code = "request_auto_profile_engine"  # Capturing function dynamically
+        user_id = os.popen("whoami").read().strip()  # Fetch user from server
+        comments = "Execution started."
+
+        # Insert Initial Log
+        self.log_monitoring(job_id, job_name, step_code, user_id, "Running", comments)
+
+        job_start_ts = datetime.now()
+
+        try:
+            # Simulating AutoProfile Execution
+            from scripts.dq_processor import DQProcessor  # Importing from dq_processor
+            dq_processor = DQProcessor(data_src="BQ")  # Using BigQuery as data source
+            dq_processor.request_auto_profile_engine(logging, None, "BQ", None)  # Dummy execution
+            
+            comments = "Execution successful."
+            status = "Success"
+
+        except Exception as e:
+            comments = f"Error: {str(e)} \n {traceback.format_exc()}"
+            status = "Failure"
+
+        job_end_ts = datetime.now()
+
+        # Update Log Entry
+        self.log_monitoring(job_id, job_name, step_code, user_id, status, comments)
+
+def parse_arguments():
+    """
+    Parse command-line arguments for job monitoring.
+    """
+    parser = argparse.ArgumentParser(description="Job Monitoring Script.")
+    parser.add_argument("--project_id", required=True, help="GCP Project ID")
+    parser.add_argument("--dataset_name", required=True, help="BigQuery Dataset Name")
+
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    monitor = JobMonitor(args.project_id, args.dataset_name)
+    monitor.execute_autoprofile()
+
+
+
+
 import argparse
 import logging
 import inspect
