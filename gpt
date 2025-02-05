@@ -1,9 +1,74 @@
-(smartdq-venv) tdcldizcva002:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$  python job_monitor.py --project_id vz-it-np-izcv-dev-idmcdo-0 --dataset_name dga_dq_tbls
-/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts/../config/config.ini
-2025-02-05 07:33:16,636 - INFO - JobMonitoring initialized.
-2025-02-05 07:33:16,646 - INFO - Logging job monitoring: {'job_id': 1738758796, 'job_name': 'AutoProfile', 'job_start_ts': datetime.datetime(2025, 2, 5, 7, 33, 16, 646575), 'job_end_ts': datetime.datetime(2025, 2, 5, 7, 33, 16, 646581), 'step_code': 'request_auto_profile_engine', 'user_id': 'sD_smartdq', 'comments': 'Execution started.'}
-2025-02-05 07:33:16,647 - ERROR - Error logging monitoring: 'dict' object has no attribute '_properties'
-/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts/../config/config.ini
-../config/config.ini
-name:DQ-PROCESS-Main, path:/apps/opt/application/dev_smartdq/dev/dqaas//logs/DQ-PROCESS-Main_2025-02-05-07-33-16.log
-2025-02-05 07:33:16,669 - INFO - Logging job monitoring: {'job_id': 1738758796, 'job_name': 'AutoProfile', 'job_start_ts': datetime.datetime(2025, 2, 5, 7, 33, 16, 669875), 'job_end_ts': datetime.datetime(2025, 2, 5, 7, 33, 16, 669876), 'step_code': 'request_auto_profile_engine', 'user_id': 'sD_smartdq', 'comments': 'Error: \'NoneType\' object is not subscriptable \n Traceback (most recent call last):\n  File "/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts/job_monitor.py", line 105, in execute_autoprofile\n    dq_processor.request_auto_profile_engine(logging, None, "BQ", None)  # Dummy execution\n  File "/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts/dq_processor.py", line 69, in request_auto_profile_engine\n    sub_domain_list = df_val[\'DATA_SUB_DMN\'].unique().tolist()\nTypeError: \'NoneType\' object is not subscriptable\n'}
+from google.cloud import bigquery
+
+def log_monitoring(self, job_id, job_name, step_code, user_id, status, comments):
+    """
+    Inserts or updates job monitoring details into BigQuery.
+    """
+    job_start_ts = datetime.now()
+    job_end_ts = datetime.now()  # Update dynamically
+
+    query = f"""
+    INSERT INTO `{self.project_id}.{self.dataset_name}.{self.job_monitor_table}`
+    (job_id, job_name, job_start_ts, job_end_ts, step_code, user_id, comments)
+    VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @step_code, @user_id, @comments)
+    """
+
+    query_params = [
+        bigquery.ScalarQueryParameter("job_id", "INT64", job_id),
+        bigquery.ScalarQueryParameter("job_name", "STRING", job_name),
+        bigquery.ScalarQueryParameter("job_start_ts", "TIMESTAMP", job_start_ts),
+        bigquery.ScalarQueryParameter("job_end_ts", "TIMESTAMP", job_end_ts),
+        bigquery.ScalarQueryParameter("step_code", "STRING", step_code),
+        bigquery.ScalarQueryParameter("user_id", "STRING", user_id),
+        bigquery.ScalarQueryParameter("comments", "STRING", comments or "Execution successful."),
+    ]
+
+    job_config = bigquery.QueryJobConfig()
+    job_config.query_parameters = query_params
+
+    logging.info(f"Logging job monitoring: {query_params}")
+    
+    try:
+        self.client.query(query, job_config=job_config).result()
+        logging.info("Inserted job monitoring details into `dqaas_job_monitor_report`.")
+    except Exception as e:
+        logging.error(f"Error logging monitoring: {str(e)}")
+================
+def execute_autoprofile(self):
+    """
+    Executes the AutoProfile function and logs the result.
+    """
+    job_id = int(datetime.now().timestamp())  # Unique Job ID
+    job_name = "AutoProfile"
+    step_code = "request_auto_profile_engine"  
+    user_id = os.popen("whoami").read().strip() 
+    comments = "Execution started."
+
+    # Insert Initial Log
+    self.log_monitoring(job_id, job_name, step_code, user_id, "Running", comments)
+
+    job_start_ts = datetime.now()
+
+    try:
+        # Importing from dq_processor
+        from scripts.dq_processor import DQProcessor  
+        
+        dq_processor = DQProcessor(data_src="BQ")  # Using BigQuery as data source
+
+        result = dq_processor.request_auto_profile_engine(logging, None, "BQ", None)
+
+        # ✅ Fix: Check if `result` is None before proceeding
+        if result is None:
+            raise ValueError("AutoProfile execution failed: dq_processor.request_auto_profile_engine() returned None.")
+
+        comments = "Execution successful."
+        status = "Success"
+
+    except Exception as e:
+        comments = f"Error: {str(e)} \n {traceback.format_exc()}"
+        status = "Failure"
+
+    job_end_ts = datetime.now()
+
+    # Update Log Entry
+    self.log_monitoring(job_id, job_name, step_code, user_id, status, comments)
