@@ -1,60 +1,47 @@
-def log_monitor_table(self, job_id, job_name, job_start_ts, job_end_ts, entry_ts, step_code, comments):
+def initialize_metadata_records(self):
     """
-    Logs job execution details into the monitoring table.
-
-    Parameters:
-        job_id (str): Unique Job ID
-        job_name (str): Name of the job
-        job_start_ts (str): Job start timestamp (format: '%Y-%m-%d %H:%M:%S')
-        job_end_ts (str or None): Job end timestamp (format: '%Y-%m-%d %H:%M:%S'), None if job is still running
-        entry_ts (str): Entry timestamp for logging (format: '%Y-%m-%d %H:%M:%S')
-        step_code (str): Step code indicating progress (e.g., "START", "FAIL", "COMPLETE")
-        comments (str): Additional job execution comments
+    Inserts all metadata records into dqaas_ran_rule_ctrl_tbl where active_flag='Y'.
+    Initializes run_status as 'NS' (Not Started) and profile_date as NULL.
     """
-    
-    query = f"""
-    INSERT INTO `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_job_monitor_report`
-    (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
-    VALUES ('{job_id}', '{job_name}', timestamp('{job_start_ts}'), 
-            {'timestamp(' + job_end_ts + ')' if job_end_ts else 'null'}, 
-            timestamp('{entry_ts}'), '{config.user_id}', '{step_code}', '{comments}')
-    """
-
-    self.logger.info(f"Executing Query: {query}")
-    
     try:
+        query = f"""
+        INSERT INTO `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_ran_rule_ctrl_tbl` 
+        (profile_id, table_name, run_ts, run_status, profile_date, comments)
+        SELECT profile_id, table_name, timestamp('{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'), 
+               'NS', NULL, ''
+        FROM `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_metadata_table`
+        WHERE active_flag = 'Y'
+        """
+
+        self.logger.info("Initializing metadata records in dqaas_ran_rule_ctrl_tbl...")
         self.run_bq_sql(bq_auth=config.dq_gcp_auth_payload, select_query=query)
-        self.logger.info(f"Successfully logged job in dqaas_job_monitor_report: {comments}")
+        self.logger.info("Metadata records inserted successfully for today's run.")
+
     except Exception as e:
-        self.logger.error(f"Error logging job in dqaas_job_monitor_report: {str(e)}")
-======================
-============================
-def log_execution_status(self, profile_id, table_name, run_ts, run_status, profile_date, comments):
+        self.logger.error(f"Error inserting metadata records: {str(e)}")
+=============
+def update_execution_status(self, profile_id, table_name, run_status, comments):
     """
-    Logs execution status in the control table.
+    Updates execution status in dqaas_ran_rule_ctrl_tbl after execution.
 
     Parameters:
         profile_id (str): Unique profile ID for the job
         table_name (str): Table name associated with the execution
-        run_ts (str): Execution timestamp (format: '%Y-%m-%d %H:%M:%S')
-        run_status (str): Execution status (e.g., "Success", "Failure", "In Progress")
-        profile_date (str): Profile date (format: '%Y-%m-%d')
-        comments (str): Additional comments on execution status
+        run_status (str): Execution status ('C' for Completed, 'F' for Failed)
+        comments (str): Error message or success remarks
     """
-
-    query = f"""
-    UPDATE `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_ran_rule_ctrl_tbl`
-    SET run_ts = timestamp('{run_ts}'), 
-        run_status = '{run_status}', 
-        profile_date = date('{profile_date}'), 
-        comments = '{comments}'
-    WHERE profile_id = '{profile_id}' AND table_name = '{table_name}'
-    """
-
-    self.logger.info(f"Executing Query: {query}")
-
     try:
+        query = f"""
+        UPDATE `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_ran_rule_ctrl_tbl`
+        SET run_status = '{run_status}', 
+            profile_date = date('{datetime.now().strftime("%Y-%m-%d")}'), 
+            comments = '{comments}'
+        WHERE profile_id = '{profile_id}' AND table_name = '{table_name}'
+        """
+
+        self.logger.info(f"Updating execution status for Profile ID {profile_id}, Table {table_name} to {run_status}")
         self.run_bq_sql(bq_auth=config.dq_gcp_auth_payload, select_query=query)
-        self.logger.info(f"Updated execution status for Profile ID {profile_id}, Table {table_name} to {run_status}")
+        self.logger.info(f"Execution status updated successfully for {table_name}.")
+
     except Exception as e:
-        self.logger.error(f"Error updating execution status: {str(e)}")
+        self.logger.error(f"Error updating execution status for {table_name}: {str(e)}")
