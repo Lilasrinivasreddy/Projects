@@ -1,6 +1,6 @@
 def initialize_metadata_records(self):
     """
-    Inserts all metadata records into dqaas_ran_rule_ctrl_tbl where active_flag='Y'.
+    Inserts metadata records into dqaas_ran_rule_ctrl_tbl where active_flag='Y'.
     Initializes run_status as 'NS' (Not Started) and profile_date as NULL.
     """
     try:
@@ -19,29 +19,48 @@ def initialize_metadata_records(self):
 
     except Exception as e:
         self.logger.error(f"Error inserting metadata records: {str(e)}")
-=============
-def update_execution_status(self, profile_id, table_name, run_status, comments):
+==============================
+def update_metadata_records(self, profile_id, table_name, run_status, run_ts, profile_date, comments):
     """
-    Updates execution status in dqaas_ran_rule_ctrl_tbl after execution.
+    Updates the dqaas_ran_rule_ctrl_tbl table after execution.
+    """
+    try:
+        update_query = f"""
+        UPDATE `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_ran_rule_ctrl_tbl`
+        SET run_status = '{run_status}',
+            run_ts = timestamp('{run_ts}'),
+            profile_date = DATE('{profile_date}'),
+            comments = '{comments}'
+        WHERE profile_id = {profile_id} AND table_name = '{table_name}'
+        """
 
-    Parameters:
-        profile_id (str): Unique profile ID for the job
-        table_name (str): Table name associated with the execution
-        run_status (str): Execution status ('C' for Completed, 'F' for Failed)
-        comments (str): Error message or success remarks
+        self.logger.info(f"Updating run status for Profile ID: {profile_id}, Table: {table_name}")
+        self.run_bq_sql(bq_auth=config.dq_gcp_auth_payload, select_query=update_query)
+        self.logger.info(f"Successfully updated metadata for Profile ID: {profile_id}, Table: {table_name}")
+
+    except Exception as e:
+        self.logger.error(f"Error updating metadata records: {str(e)}")
+===================================
+
+def fetch_pending_metadata_records(self):
+    """
+    Fetches metadata records from dqaas_ran_rule_ctrl_tbl where run_status='NS'.
+    These records are pending execution.
     """
     try:
         query = f"""
-        UPDATE `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_ran_rule_ctrl_tbl`
-        SET run_status = '{run_status}', 
-            profile_date = date('{datetime.now().strftime("%Y-%m-%d")}'), 
-            comments = '{comments}'
-        WHERE profile_id = '{profile_id}' AND table_name = '{table_name}'
+        SELECT profile_id, table_name, run_ts, run_status
+        FROM `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_ran_rule_ctrl_tbl`
+        WHERE run_status = 'NS'
         """
 
-        self.logger.info(f"Updating execution status for Profile ID {profile_id}, Table {table_name} to {run_status}")
-        self.run_bq_sql(bq_auth=config.dq_gcp_auth_payload, select_query=query)
-        self.logger.info(f"Execution status updated successfully for {table_name}.")
+        self.logger.info(f"Fetching pending metadata records using query: {query}")
+        pending_metadata_df = self.run_bq_sql(
+            bq_auth=config.dq_gcp_auth_payload, select_query=query
+        )
+        self.logger.info(f"Fetched {len(pending_metadata_df)} pending metadata records.")
+        return pending_metadata_df
 
     except Exception as e:
-        self.logger.error(f"Error updating execution status for {table_name}: {str(e)}")
+        self.logger.error(f"Error fetching pending metadata records: {str(e)}")
+        return pd.DataFrame()
