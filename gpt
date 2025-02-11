@@ -1,3 +1,132 @@
+
+def initialize_metadata_records(self):
+    """
+    Inserts metadata records into dqaas_ran_rule_ctrl_tbl where active_flag='Y'.
+    Initializes run_status as 'NS' (Not Started) and profile_date as NULL.
+    """
+    try:
+        query = f"""
+        INSERT INTO `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_ran_rule_ctrl_tbl` 
+        (profile_id, table_name, run_ts, run_status, profile_date, comments)
+        SELECT profile_id, table_name, timestamp('{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'), 
+               'NS', NULL, ''
+        FROM `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_metadata_table`
+        WHERE active_flag = 'Y'
+        """
+
+        self.logger.info("Initializing metadata records in dqaas_ran_rule_ctrl_tbl...")
+        self.run_bq_sql(bq_auth=config.dq_gcp_auth_payload, select_query=query)
+        self.logger.info("Metadata records inserted successfully for today's run.")
+
+    except Exception as e:
+        self.logger.error(f"Error inserting metadata records: {str(e)}")
+
+
+
+def initialize_metadata_records(self):
+    """
+    Inserts metadata records into dqaas_ran_rule_ctrl_tbl where active_flag='Y'.
+    Initializes run_status as 'NS' (Not Started) and profile_date as NULL.
+    """
+    try:
+        query = f"""
+        INSERT INTO `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_ran_rule_ctrl_tbl` 
+        (profile_id, table_name, run_ts, run_status, profile_date, comments)
+        SELECT profile_id, table_name, timestamp('{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'), 
+               'NS', NULL, ''
+        FROM `{config.dq_project_id}.{config.dq_bq_dataset}.dqaas_metadata_table`
+        WHERE active_flag = 'Y'
+        """
+
+        self.logger.info("Initializing metadata records in dqaas_ran_rule_ctrl_tbl...")
+        self.run_bq_sql(bq_auth=config.dq_gcp_auth_payload, select_query=query)
+        self.logger.info("Metadata records inserted successfully for today's run.")
+
+    except Exception as e:
+        self.logger.error(f"Error inserting metadata records: {str(e)}")
+
+
+
+
+def process_main(self):
+    try:
+        # Initialize metadata records at the start of the day
+        self.utils.initialize_metadata_records()
+
+        # Fetch records that haven't started yet
+        metadata_df = self.utils.fetch_pending_metadata_records()
+        self.logger.info(f"metadata_df: {metadata_df}")
+
+        profile_type_dfs = self.split_metadata_based_on_profile_type(metadata_df)
+        for profile_type, df in profile_type_dfs.items(): 
+            try:           
+                self.call_respective_profile_engine(profile_type, df, self.data_src)
+
+                # Update execution status after processing
+                for _, row in df.iterrows():
+                    self.utils.update_metadata_records(
+                        profile_id=row["profile_id"],
+                        table_name=row["table_name"],
+                        run_status="C",  # Mark as Completed
+                        run_ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        profile_date=datetime.now().strftime("%Y-%m-%d"),
+                        comments="Execution successful"
+                    )
+                    
+            except Exception as e: 
+                self.logger.info(f"Error processing profile type: {profile_type} - {str(e)}")           
+
+    except Exception as e:
+        self.logger.error(f"Error in main processor function: {str(e)}")
+
+
+
+def call_auto_profile_engine(self, df_input: pd.DataFrame, run_type=None):
+    """
+    Processes auto profiling for each table and updates metadata accordingly.
+    """
+    for _, row in df_input.iterrows():
+        try:
+            self.logger.info(f"Initiating profiling for table: {row['table_name']}")
+
+            # Step 1: Update Run Status to 'In Progress'
+            self.utils.update_metadata_records(
+                profile_id=row["profile_id"],
+                table_name=row["table_name"],
+                run_status="IP",  # 'IP' for In Progress
+                run_ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                profile_date=None,
+                comments="Profiling started."
+            )
+
+            # Step 2: Execute profiling logic
+            self.run_profiling_logic(row)
+
+            # Step 3: Mark as Completed
+            self.utils.update_metadata_records(
+                profile_id=row["profile_id"],
+                table_name=row["table_name"],
+                run_status="C",  # 'C' for Completed
+                run_ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                profile_date=datetime.now().strftime("%Y-%m-%d"),
+                comments="Profiling completed successfully."
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error profiling table {row['table_name']}: {str(e)}")
+
+            # Step 4: Mark as Failed
+            self.utils.update_metadata_records(
+                profile_id=row["profile_id"],
+                table_name=row["table_name"],
+                run_status="F",  # 'F' for Failed
+                run_ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                profile_date=datetime.now().strftime("%Y-%m-%d"),
+                comments=str(e)
+            )
+
+
+
 # Monitor Table
 def log_monitor_table(self, job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments):
     """
