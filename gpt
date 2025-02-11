@@ -1,3 +1,79 @@
+understand this code and explain properly # User ID
+def get_user_id(self):
+"""Fetch user ID from the server."""
+return subprocess.getoutput("whoami").strip()
+
+# Monitor Table  
+def log_monitor_table(self, job_id, job_name, job_start_ts, job_end_ts, entry_ts, step_code, comments):  
+    """  
+    Log the job step into the monitor table.  
+    """  
+    #job_end_ts = datetime.now()  
+    #entry_ts = datetime.now()  
+    if (str(job_end_ts).lower() == 'null'):  
+        query = f"""  
+        INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table} (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)  
+        VALUES ({job_id}, '{job_name}', '{job_start_ts}', timestamp({job_end_ts}), '{entry_ts}', '{self.user_id}', '{step_code}', '{comments}')"""  
+    else :  
+        query = f"""  
+        INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table} (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)  
+        VALUES ({job_id}, '{job_name}', '{job_start_ts}', timestamp('{job_end_ts}'), '{entry_ts}', '{self.user_id}', '{step_code}', '{comments}')"""  
+    self.logger.info(query)  
+    try:  
+        self.client.query(query).result()  
+        self.logger.info(f"Inserted into monitor table: {comments}")  
+    except Exception as e:  
+        self.logger.error(f"Error logging to monitor table: {str(e)}")  
+        raise  
+
+
+# Read Metadata  
+def read_metadata_table(self):  
+    """  
+    Inserting all metadata records into controle table with our logic where active_flag='Y'.  
+    Initializes run_status as 'NS' (Not Started) and profile_date as NULL.  
+    """  
+    try:  
+        query = f"""  
+        INSERT INTO `{self.dq_project_id}.{self.dq_bq_dataset}.{self.control_rpt_table}`   
+        (profile_id, table_name, run_ts, run_status, profile_date, comments)  
+        SELECT profile_id, table_name, timestamp('{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'),   
+        'NS', NULL, ''  
+        FROM `{self.dq_project_id}.{self.dq_bq_dataset}.{self.dqaas_mtd}`  
+        WHERE active_flag = 'Y'  
+        """  
+
+        self.logger.info("Initial metadata records in control table")  
+        self.run_bq_sql(bq_auth=self.dq_gcp_auth_payload, select_query=query)  
+        self.logger.info("Metadata records inserted successfully for day start run.")  
+
+    except Exception as e:  
+        self.logger.error(f"Error inserting metadata records: {str(e)}")  
+
+# Log execution for control table   
+def log_execution_status(self, profile_id, table_name, run_ts, run_status, profile_date, comments):  
+    """  
+    Logs execution status in the control table.  
+    """  
+    try:  
+        query = f"""  
+        UPDATE `{self.dq_project_id}.{self.dq_bq_dataset}.{self.control_rpt_table}`  
+        SET run_ts = timestamp('{run_ts}'),   
+            run_status = '{run_status}',   
+            profile_date = date('{profile_date}'),   
+            comments = '{comments}'  
+        WHERE profile_id = '{profile_id}' AND table_name = '{table_name}'  
+        """  
+        self.logger.info(f"Updating run status for Profile ID: {profile_id}, Table: {table_name}")  
+        self.run_bq_sql(bq_auth=self.dq_gcp_auth_payload, select_query=query)  
+        self.logger.info(f"Successfully updated metadata for Profile ID: {profile_id}, Table: {table_name}")  
+
+    except Exception as e:  
+        self.logger.error(f"Error updating metadata records: {str(e)}")
+
+
+
+
 
 def initialize_metadata_records(self):
     """
