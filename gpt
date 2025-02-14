@@ -1,29 +1,51 @@
-"select cast(INSERT_DT as date) as profile_date,'VSB_NET_ADDS,' as feature_name, 
- null as dimension,SUM(CASE WHEN REV_GEN_IND = 'TRUE' AND MANAGED_IND <> 'U' AND ACTIVITY_CD = 'AC' THEN 1
- WHEN REV_GEN_IND = 'TRUE' AND MANAGED_IND <> 'U' AND ACTIVITY_CD = 'D6' THEN -1
- WHEN REV_GEN_IND = 'TRUE' AND MANAGED_IND <> 'U' AND ACTIVITY_CD = 'DE' THEN -1
- WHEN REV_GEN_IND = 'TRUE' AND MANAGED_IND <> 'U' AND ACTIVITY_CD = 'RE' THEN 1 ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(INSERT_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.VL_DAILY_LINE_ACTIVITY_V where INSERT_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_TOTAL_FWA,' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND COE_PPLAN_CTGRY_DESC IN ('Fixed Wireless') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'B2B_M2M_NET_ADDS_TOTAL_FWA,' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND LINE_TYPE_CD = 'T' AND REV_GEN_IND = 'Y' AND COE_SEGMT_CTGRY_COMMON = 'BUSINESS' AND COE_PPLAN_CTGRY_DESC IN ('Fixed Wireless') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'TF_NET_ADDS_TOTAL,' as feature_name, 
- null as dimension,SUM(CASE WHEN ACTIVITY_TYPE = 'Actual_GA' THEN PHONE_CNT+TABLET_CNT+OTHER_CNT
- WHEN ACTIVITY_TYPE = 'Actual_disconn' THEN (PHONE_CNT+TABLET_CNT+OTHER_CNT)*-1 ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.TF_RPT_ACT_DISC_GA_TOTAL_BRAND_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_OTHER_WEARABLES,' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('Internet') AND DEVICE_GROUPING = 'Wearable Devices' AND MFG_NM <> 'apple' THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+select cast(INSERT_DT as date) as profile_date,
+       'VSB_NET_ADDS,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN REV_GEN_IND = 'TRUE' AND MANAGED_IND <> 'U' AND ACTIVITY_CD IN ('AC', 'RE') THEN 1
+                WHEN REV_GEN_IND = 'TRUE' AND MANAGED_IND <> 'U' AND ACTIVITY_CD IN ('D6', 'DE') THEN -1 ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(INSERT_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.VL_DAILY_LINE_ACTIVITY_V
+where cast(INSERT_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_TOTAL_FWA,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND COE_PPLAN_CTGRY_DESC IN ('Fixed Wireless') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'B2B_M2M_NET_ADDS_TOTAL_FWA,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND LINE_TYPE_CD = 'T' AND REV_GEN_IND = 'Y' AND COE_SEGMT_CTGRY_COMMON = 'BUSINESS' AND COE_PPLAN_CTGRY_DESC IN ('Fixed Wireless') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'TF_NET_ADDS_TOTAL,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN ACTIVITY_TYPE = 'Actual_GA' THEN PHONE_CNT + TABLET_CNT + OTHER_CNT
+                WHEN ACTIVITY_TYPE = 'Actual_disconn' THEN (PHONE_CNT + TABLET_CNT + OTHER_CNT) * -1 ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.TF_RPT_ACT_DISC_GA_TOTAL_BRAND_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_OTHER_WEARABLES,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('Internet') AND DEVICE_GROUPING = 'Wearable Devices' AND MFG_NM <> 'apple' THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
