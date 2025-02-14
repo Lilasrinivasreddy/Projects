@@ -1,20 +1,39 @@
-"select cast(ACTIVITY_DT as date) as profile_date,'GROSS_ADDS_PHONE_NEW' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('BASIC','SMARTPHONE') THEN (CASE WHEN CAL.Line_Act_Dt <= (Coalesce(cah.ORIG_ACCT_ESTB_DT,ca.ORIG_ACCT_ESTB_DT,cah.ACCT_ESTB_DT,ca.ACCT_ESTB_DT, CAST('8888-12-31' AS DATE))) + 60 THEN GROSS_ADDS ELSE 0 END) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'2nd LINE ACTIVITY NET ADDS' as feature_name, 
- null as dimension,SUM(CASE WHEN (PP.PPLAN_CD IN ('74191') OR PP.COE_PPLAN_SUB_TYPE_DESC = 'SECOND NUMBER') AND DATA_TIER IN ('Basic','Smartphone')THEN GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_TOTAL,' as feature_name, 
- null as dimension,SUM(GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_PHONE,' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('BASIC','SMARTPHONE') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+select cast(ACTIVITY_DT as date) as profile_date,
+       'GROSS_ADDS_PHONE_NEW' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('BASIC','SMARTPHONE') THEN (CASE WHEN Line_Act_Dt <= Coalesce(ORIG_ACCT_ESTB_DT, ACCT_ESTB_DT, CAST('8888-12-31' AS DATE)) + 60 THEN GROSS_ADDS ELSE 0 END) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       '2nd LINE ACTIVITY NET ADDS' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN (PPLAN_CD IN ('74191') OR COE_PPLAN_SUB_TYPE_DESC = 'SECOND NUMBER') AND DATA_TIER IN ('Basic','Smartphone') THEN GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_TOTAL,' as feature_name,
+       null as dimension,
+       SUM(GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_PHONE,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('BASIC','SMARTPHONE') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT asa date) = current_date - 1
+group by 1,2,3,5,6;
