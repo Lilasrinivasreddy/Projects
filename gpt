@@ -1,22 +1,247 @@
-import pandas as pd
-import re
+select cast(ACTIVITY_DT as date) as profile_date,
+'NEW_ACCOUNTS_MULTI_PHONE,' as feature_name, 
+ null as dimension,
+ SUM(CASE WHEN PHONE_GRP_TYPE = 'Multi Phone' THEN TOTAL_NEW_ACCTS ELSE 0 END) as "value", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DAILY_ACCT_ACTIVITY_V2_V where cast(ACTIVITY_DT as date) =current_date-1
+ group by 1,2,3,5,6
 
-# Load the provided rule sheet
-file_path = '/mnt/data/rule_sheet.xlsx'
-df = pd.read_excel(file_path)
 
-# Function to remove SQL aliases and store them separately
-def process_sql(sql_query):
-    alias_pattern = re.compile(r'\s+AS\s+(\w+)', re.IGNORECASE)
-    aliases = alias_pattern.findall(sql_query)
-    cleaned_sql = alias_pattern.sub('', sql_query)
-    return cleaned_sql, ', '.join(aliases)
 
-# Apply the function to the SQL column
-df[['Cleaned_SQL', 'Aliases']] = df['SQL'].apply(lambda x: pd.Series(process_sql(x)))
 
-# Save the updated sheet
-output_path = '/mnt/data/processed_rule_sheet.xlsx'
-df.to_excel(output_path, index=False)
 
-print("Processed rule sheet saved at:", output_path)
+
+"select cast(ACTIVITY_DT as date) as profile_date,'NET_DEACTS_APPLE_SMARTWATCH,' as feature_name, 
+ null as dimension,SUM(CASE WHEN dsf.PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('Internet') AND HE.DM_DEVICE_GROUPING = 'Wearable Devices' AND HE.MFG_NM = 'apple' THEN dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'NET_DEACTS_OTHER,' as feature_name, 
+ null as dimension,SUM(dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS) - SUM(CASE WHEN HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') THEN dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS ELSE 0 END)
+ -SUM(CASE WHEN HE.DM_DEVICE_GROUPING IN ('TABLET') THEN dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS ELSE 0 END)
+ - SUM(CASE WHEN HE.PROD_NM IN ('HUM BY VERIZON','HUM EXTREME','VERIZON HUM X','VERIZON HUM X - TEST', 'VERIZON TELEMATICS - AT-150','HUM PLUS VT410','HUM PLUS VT410 DTC','HUMX VT1010') THEN dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS ELSE 0 END)
+ -SUM(CASE WHEN HE.DM_DATA_TIER_FIN IN ('Internet') AND HE.DM_DEVICE_GROUPING = 'Wearable Devices' AND HE.MFG_NM = 'apple' THEN dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS ELSE 0 END)
+ -SUM(CASE WHEN dsf.PREPAID_IND = 'N' AND PP.FWA_TECH_TYPE_PPLAN IN ('5G C-Band','4G LTE','5G mmWave') THEN dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS ELSE 0 END)
+ - SUM(CASE WHEN dsf.PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('Internet') AND HE.DM_DEVICE_GROUPING = 'Wearable Devices' AND HE.MFG_NM <> 'apple' THEN dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+"select cast(INSERT_DT as date) as profile_date,'VSB_NET_DEACTS,' as feature_name, 
+ null as dimension,SUM(CASE WHEN REV_GEN_IND = 'TRUE' AND mkt.MANAGED_IND <> 'U' AND ACTIVITY_CD = 'DE' THEN 1
+ WHEN REV_GEN_IND = 'TRUE' AND mkt.MANAGED_IND <> 'U' AND ACTIVITY_CD = 'RE' THEN -1 ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(INSERT_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.VL_DAILY_LINE_ACTIVITY_V where INSERT_DT=current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'NET_DEACTS_TOTAL_FWA,' as feature_name, 
+ null as dimension,SUM(CASE WHEN dsf.PREPAID_IND = 'N' AND PP.COE_PPLAN_CTGRY_DESC IN ('Fixed Wireless') THEN dsf.VOLUNTARY_DISCONNECTS + dsf.INVOLUNTARY_DISCONNECTS ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'B2B_M2M_NET_DEACTS_TOTAL_FWA,' as feature_name, 
+ null as dimension,SUM(CASE WHEN dsf.PREPAID_IND = 'N' AND dsf.REV_GEN_IND = 'Y' AND dsf.LINE_TYPE_CD = 'T' AND VS.COE_SEGMT_CTGRY_COMMON = 'BUSINESS' AND PP.COE_PPLAN_CTGRY_DESC IN ('Fixed Wireless') THEN (dsf.INVOLUNTARY_DISCONNECTS + dsf.VOLUNTARY_DISCONNECTS)*-1 ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+"select cast( as date) as profile_date,'TF_NET_DEACTS_TOTAL,' as feature_name, 
+ null as dimension,SUM(CASE WHEN ACTIVITY_TYPE = 'Actual_disconn' THEN (PHONE_CNT+TABLET_CNT+OTHER_CNT) ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from where =current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'NET_DEACTS_OTHER_WEARABLES,' as feature_name, 
+ null as dimension,SUM(CASE WHEN dsf.PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('Internet') AND HE.DM_DEVICE_GROUPING = 'Wearable Devices' AND HE.MFG_NM <> 'apple' THEN dsf.VOLUNTARY_DISCONNECTS + dsf.INVOLUNTARY_DISCONNECTS ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+"select cast( as date) as profile_date,'MRC_STEP_RATIO_NUM,' as feature_name, 
+ null as dimension,Sum(CASE WHEN DAA.ACCT_STATUS = 'EXISTING' AND DAA.ACCT_PPLAN_CHG_IND = 'Y' AND daa.curr_prev_ind = 'c' AND tot_acct_lvl_rev_change = 'increase' THEN daa.chg_acct_fraction ELSE 0.00000000 end) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from where =current_date -1"
+"select cast( as date) as profile_date,'MRC_STEP_RATIO_DEN,' as feature_name, 
+ null as dimension,Sum(CASE WHEN DAA.ACCT_STATUS = 'EXISTING' AND DAA.ACCT_PPLAN_CHG_IND = 'Y' AND daa.curr_prev_ind = 'c' AND tot_acct_lvl_rev_change = 'decrease' THEN daa.chg_acct_fraction ELSE 0.00000000 end) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from where =current_date -1"
+"select cast(UPDATE_DT as date) as profile_date,'ARD_NUM,' as feature_name, 
+ null as dimension,SUM( CASE WHEN esf.PYMNT_DT < '2018-01-01' then 
+ CASE WHEN sdct.SLS_DIST_CHNL_GRP_CD = 'D' AND eiv.EQP_CLASS_DESC= 'ACCESSORIES' AND eiv.EQP_CTGRY_DESC <> 'SMARTWATCH ACCESSORY' 
+ THEN CAST ((ABS(esf.item_price_amt) * esf.NET_SALES) - GROSS_DISCOUNT AS NUMERIC(18,2)) else 0 end 
+ ELSE 
+ CASE WHEN sdct.SLS_DIST_CHNL_GRP_CD = 'D' AND eiv.EQP_CLASS_DESC= 'ACCESSORIES' 
+ THEN CAST ((ABS(esf.item_price_amt) * esf.NET_SALES) - GROSS_DISCOUNT AS NUMERIC(18,2)) else 0 end 
+ end) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(UPDATE_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.EQUIP_SUM_FACT_V where UPDATE_DT=current_date -1"
+"select cast(UPDATE_DT as date) as profile_date,'ARD_DEN,' as feature_name, 
+ null as dimension,SUM(CASE WHEN sdct.SLS_DIST_CHNL_GRP_CD = 'D' AND esf.FIN_TOT_FLAG = 'Y' THEN (CASE WHEN ddm.DATA_TIER_FIN IN ('SMARTPHONE') OR ddm.DEVICE_GROUPING IN ('TABLET','NETBOOK') then esf.NET_SALES else 0 end) ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(UPDATE_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.EQUIP_SUM_FACT_V where UPDATE_DT=current_date -1"
+"select cast( as date) as profile_date,'PREPAY_WEIGHTED_AVG_NUM,' as feature_name, 
+ null as dimension,SUM(CASE WHEN dsf.PREPAID_IND = 'Y' AND pp.COE_PPLAN_CTGRY_DESC IN ('Prepaid Smartphone','Prepaid Smartphone Unlimited') THEN (dsf.GROSS_ADDS * pp.ACCESS_AMT) ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from where =current_date -1"
+"select cast( as date) as profile_date,'PREPAY_WEIGHTED_AVG_DEN,' as feature_name, 
+ null as dimension,SUM(CASE WHEN dsf.PREPAID_IND = 'Y' AND pp.COE_PPLAN_CTGRY_DESC IN ('Prepaid Smartphone','Prepaid Smartphone Unlimited') AND dsf.PPLAN_CD <> 'UNTG'THEN dsf.GROSS_ADDS ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from where =current_date -1"
+"select cast(TRANS_DT as date) as profile_date,'VZPH,' as feature_name, 
+ null as dimension,SUM(CASE WHEN vzp.PROD_OFF_PRODUCT_CD IN ('PR.0522')AND coalesce(vzp.EIS_INC_IND,'Y') = 'Y' THEN VZP.PROD_BUNDLED_ACT_CNT ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(TRANS_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.BI_PROD_ACTIVITY_V where TRANS_DT=current_date -1"
+"select cast(TRANS_DT as date) as profile_date,'VZP_MIX_DEN,' as feature_name, 
+ null as dimension,SUM(CASE WHEN PROD_TYPE IN ('VZP','TMP','TMP-MD','VZP-MD') THEN TMPVZP_TOT_PURE_ACT_""value"" ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(TRANS_DT AS date)) AS weekday
+ from NTL_PRD_QMVM.VZBI_VZP_MIX_PEAK_RPT_V where TRANS_DT=current_date -1"
+"select cast(TRANS_DT as date) as profile_date,'VZP_MIX_NUM,' as feature_name, 
+ null as dimension,SUM(CASE WHEN PROD_TYPE IN ('VZP','VZP-MD') THEN TMPVZP_TOT_PURE_ACT_""value"" ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(TRANS_DT AS date)) AS weekday
+ from NTL_PRD_QMVM.VZBI_VZP_MIX_PEAK_RPT_V where TRANS_DT=current_date -1"
+"select cast(TRANS_DT as date) as profile_date,'VMP_NUM,' as feature_name, 
+ null as dimension,SUM(CASE WHEN PROD_TYPE IN ('VMP','VMP-MD') THEN TMPVZP_TOT_PURE_ACT_""value"" ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(TRANS_DT AS date)) AS weekday
+ from NTL_PRD_QMVM.VZBI_VZP_MIX_PEAK_RPT_V where TRANS_DT=current_date -1"
+"select cast(LAST_UPD_DT as date) as profile_date,'PORTS_IN_ATT_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN CAR.COE_CARRIER = 'ATT' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PI', 'WB') THEN 1 ELSE 0 END) AS PORTS_IN_ATT_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where LAST_UPD_DT=current_date -1"
+"select cast(LAST_UPD_DT as date) as profile_date,'PORTS_IN_SPRINT_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN CAR.COE_CARRIER = 'Sprint' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PI', 'WB') THEN 1 ELSE 0 END) AS PORTS_IN_SPRINT_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where LAST_UPD_DT=current_date -1"
+"select cast( as date) as profile_date,'PORTS_IN_COMCAST_PHONE,' as feature_name, 
+ null as dimension,No Longer in One Ex Summary Table as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from No Longer in One Ex Summary Table where =current_date -1"
+"select cast( as date) as profile_date,'PORTS_IN_CHARTER_PHONE,' as feature_name, 
+ null as dimension,No Longer in One Ex Summary Table as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from No Longer in One Ex Summary Table where =current_date -1"
+"select cast(LAST_UPD_DT as date) as profile_date,'PORTS_IN_TMOBILE_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN CAR.COE_CARRIER = 'T-Mobile w_Metro-PCS' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PI', 'WB') THEN 1 ELSE 0 END) AS PORTS_IN_TMOBILE_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where LAST_UPD_DT=current_date -1"
+"select cast(LAST_UPD_DT as date) as profile_date,'PORTS_IN_OTHER_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN (CAR.COE_CARRIER IS NULL OR (CAR.COE_CARRIER = 'Other' ) AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PI', 'WB') THEN 1 ELSE 0 END) AS PORTS_IN_OTHER_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where LAST_UPD_DT=current_date -1"
+"select cast(LAST_UPD_DT as date) as profile_date,'PORTS_OUT_ATT_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN CAR.COE_CARRIER = 'ATT' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PO', 'IO') THEN 1 ELSE 0 END) AS PORTS_OUT_ATT_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where LAST_UPD_DT=current_date -1"
+"select cast(LAST_UPD_DT as date) as profile_date,'PORTS_OUT_SPRINT_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN CAR.COE_CARRIER = 'Sprint' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PO', 'IO') THEN 1 ELSE 0 END) AS PORTS_OUT_SPRINT_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where LAST_UPD_DT=current_date -1"
+"select cast( as date) as profile_date,'PORTS_OUT_COMCAST_PHONE,' as feature_name, 
+ null as dimension,No Longer in One Ex Summary Table as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from No Longer in One Ex Summary Table where =current_date -1"
+"select cast( as date) as profile_date,'PORTS_OUT_CHARTER_PHONE,' as feature_name, 
+ null as dimension,No Longer in One Ex Summary Table as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from No Longer in One Ex Summary Table where =current_date -1"
+"select cast(LAST_UPD_DT as date) as profile_date,'PORTS_OUT_TMOBILE_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN CAR.COE_CARRIER = 'Other' AND SC.SUB_CARRIER_CD = 'COMCAST' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PO', 'IO') THEN 1 ELSE 0 END) AS PORTS_OUT_COMCAST_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where LAST_UPD_DT=current_date -1"
+"select cast(LAST_UPD_DT as date) as profile_date,'PORTS_OUT_OTHER_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN (CAR.COE_CARRIER IS NULL OR (CAR.COE_CARRIER = 'Other' )) AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PO', 'IO') THEN 1 ELSE 0 END) AS PORTS_OUT_OTHER_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where LAST_UPD_DT=current_date -1"
+"select cast( as date) as profile_date,'postpaid_one' as feature_name, 
+ null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PI', 'WB') THEN 1 ELSE 0 END) AS PORTS_IN_PHONE/SUM(CASE WHEN PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PO', 'IO') THEN 1 ELSE 0 END) AS PORTS_OUT_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where =current_date -1"
+"select cast( as date) as profile_date,'postpaid_two' as feature_name, 
+ null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PI', 'WB') AND CARRIER = ATT THEN 1 ELSE 0 END) AS PORTS_IN_PHONE/SUM(CASE WHEN PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PO', 'IO') AND CARRIER = ATT THEN 1 ELSE 0 END) AS PORTS_OUT_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where =current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'postpaid_two' as feature_name, 
+ null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PI', 'WB') AND CARRIER = TMO THEN 1 ELSE 0 END) AS PORTS_IN_PHONE/SUM(CASE WHEN PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PO', 'IO') AND CARRIER = TMO THEN 1 ELSE 0 END) AS PORTS_OUT_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'postpaid_two' as feature_name, 
+ null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PI', 'WB') AND CARRIER = Other THEN 1 ELSE 0 END) AS PORTS_IN_PHONE/SUM(CASE WHEN PREPAID_IND = 'N' AND HE.DM_DATA_TIER_FIN IN ('BASIC','SMARTPHONE') AND A.ACTIVITY_CD IN ('PO', 'IO') AND CARRIER = Other THEN 1 ELSE 0 END) AS PORTS_OUT_PHONE as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PORT_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+"select cast( as date) as profile_date,'TF_SL_GROSS_ADDS' as feature_name, 
+ null as dimension,SUM(CASE WHEN BRAND = 'SAFELINK' AND ACTIVITY_TYPE = 'Actual_GA' THEN PHONE_CNT+TABLET_CNT+OTHER_CNT ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from NTL_PRD_ALLVM.TF_RPT_ACT_DISC_GA_TOTAL_BRAND_V where =current_date -1"
+"select cast( as date) as profile_date,'TF_SL_NET_DEACTS' as feature_name, 
+ null as dimension,SUM(CASE WHEN BRAND = 'SAFELINK' AND ACTIVITY_TYPE = 'Actual_disconn' THEN (PHONE_CNT+TABLET_CNT+OTHER_CNT) ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from NTL_PRD_ALLVM.TF_RPT_ACT_DISC_GA_TOTAL_BRAND_V where =current_date -1"
+"select cast( as date) as profile_date,'TF_SL_NET_ADDS' as feature_name, 
+ null as dimension,SUM(CASE WHEN BRAND = 'SAFELINK' AND ACTIVITY_TYPE = 'Actual_GA' THEN PHONE_CNT+TABLET_CNT+OTHER_CNT
+ WHEN BRAND = 'SAFELINK' AND ACTIVITY_TYPE = 'Actual_disconn' THEN (PHONE_CNT+TABLET_CNT+OTHER_CNT)*-1 ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast( AS date)) AS weekday
+ from NTL_PRD_ALLVM.TF_RPT_ACT_DISC_GA_TOTAL_BRAND_V where =current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'NEW_ACCOUNTS,' as feature_name, 
+ null as dimension,Sum(CASE WHEN daa.acct_status = '30 day deact' THEN daa.chg_acct_fraction*-1 
+ WHEN daa.acct_status = 'true new' THEN daa.chg_acct_fraction ELSE 0 end) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DAILY_ACCT_ACTIVITY_V2_V where ACTIVITY_DT=current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'NET_ACCOUNTS_INCL_SPLITS_MERGES,' as feature_name, 
+ null as dimension,Sum(CASE WHEN daa.acct_status = '30 day deact' THEN daa.chg_acct_fraction*-1
+ WHEN daa.acct_status = 'true new' THEN daa.chg_acct_fraction
+ WHEN daa.acct_status = 'lost' THEN daa.chg_acct_fraction*-1
+ WHEN daa.acct_status = 'react' THEN daa.chg_acct_fraction
+ WHEN daa.acct_status = 'merged' THEN daa.chg_acct_fraction*-1
+ WHEN daa.acct_status = 'new by split' THEN daa.chg_acct_fraction
+ ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DAILY_ACCT_ACTIVITY_V2_V where ACTIVITY_DT=current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'UNLIMITED_NEW_ACCOUNTS,' as feature_name, 
+ null as dimension,SUM(CASE WHEN (CAPX.ACCT_PPLAN_TIER2 LIKE '%UNLIMITED%' OR
+ CAPX.ACCT_PPLAN_TIER2 LIKE '%PURE%' OR
+ CAPX.ACCT_PPLAN_TIER2 LIKE '%MIX & MATCH%' OR CAPX.ACCT_PPLAN_TIER2 LIKE '%MYPLANS MIXED PREMIUM
+ %') AND DAA.ACCT_STATUS = '30 DAY DEACT' THEN DAA.CHG_ACCT_FRACTION * -1
+ WHEN (CAPX.ACCT_PPLAN_TIER2 LIKE '%UNLIMITED%' OR
+ CAPX.ACCT_PPLAN_TIER2 LIKE '%PURE%' OR
+ CAPX.ACCT_PPLAN_TIER2 LIKE '%MIX & MATCH%' OR CAPX.ACCT_PPLAN_TIER2 LIKE '%MYPLANS MIXED PREMIUM
+ %') AND DAA.ACCT_STATUS = 'TRUE NEW' THEN DAA.CHG_ACCT_FRACTION
+ ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DAILY_ACCT_ACTIVITY_V2_V where ACTIVITY_DT=current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'NEW_ACCOUNTS_SINGLE_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN PHONE_GRP_TYPE = 'Single Phone' THEN TOTAL_NEW_ACCTS ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DAILY_ACCT_ACTIVITY_V2_V where ACTIVITY_DT=current_date -1"
+"select cast(ACTIVITY_DT as date) as profile_date,'NEW_ACCOUNTS_MULTI_PHONE,' as feature_name, 
+ null as dimension,SUM(CASE WHEN PHONE_GRP_TYPE = 'Multi Phone' THEN TOTAL_NEW_ACCTS ELSE 0 END) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.DAILY_ACCT_ACTIVITY_V2_V where ACTIVITY_DT=current_date -1"
