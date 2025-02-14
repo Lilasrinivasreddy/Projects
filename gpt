@@ -1,32 +1,51 @@
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_SMARTPHONE,' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('SMARTPHONE') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS)
- WHEN PREPAID_IND <> 'N' AND COE_PPLAN_CTGRY_DESC IN ('Prepaid Smartphone','Prepaid Smartphone Unlimited') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS)
- ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_TABLET,' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND DEVICE_GROUPING IN ('TABLET') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_HUM,' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND PROD_NM IN ('HUM BY VERIZON','HUM EXTREME','VERIZON HUM X','VERIZON HUM X - TEST', 'VERIZON TELEMATICS - AT-150','HUM PLUS VT410','HUM PLUS VT410 DTC','HUMX VT1010') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_APPLE_SMARTWATCH,' as feature_name, 
- null as dimension,SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('Internet') AND DEVICE_GROUPING = 'Wearable Devices' AND MFG_NM = 'apple' THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
-"select cast(ACTIVITY_DT as date) as profile_date,'NET_ADDS_OTHER,' as feature_name, 
- null as dimension,SUM((GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS)) - SUM(CASE WHEN DATA_TIER IN ('BASIC','SMARTPHONE') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END)
- -SUM(CASE WHEN DEVICE_GROUPING IN ('TABLET') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END)
- - SUM(CASE WHEN PROD_NM IN ('HUM BY VERIZON','HUM EXTREME','VERIZON HUM X','VERIZON HUM X - TEST', 'VERIZON TELEMATICS - AT-150','HUM PLUS VT410','HUM PLUS VT410 DTC','HUMX VT1010') THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END)
- -SUM(CASE WHEN DATA_TIER IN ('Internet') AND DEVICE_GROUPING = 'Wearable Devices' AND MFG_NM = 'apple' THEN (GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS) ELSE 0 END)
- -SUM(CASE WHEN PREPAID_IND = 'N' AND PP.FWA_TECH_TYPE_PPLAN IN ('5G C-Band','4G LTE','5G mmWave') THEN ((GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS)) ELSE 0 END)
- - SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('Internet') AND DEVICE_GROUPING = 'Wearable Devices' AND MFG_NM <> 'apple' THEN ((GROSS_ADDS - dsf.INVOLUNTARY_DISCONNECTS - dsf.VOLUNTARY_DISCONNECTS)) ELSE 0 END) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.DLA_SUM_FACT_V where ACTIVITY_DT=current_date -1"
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_SMARTPHONE,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('SMARTPHONE') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS)
+                WHEN PREPAID_IND <> 'N' AND COE_PPLAN_CTGRY_DESC IN ('Prepaid Smartphone','Prepaid Smartphone Unlimited') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS)
+                ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_TABLET,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND DEVICE_GROUPING IN ('TABLET') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_HUM,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND PROD_NM IN ('HUM BY VERIZON','HUM EXTREME','VERIZON HUM X','VERIZON HUM X - TEST','VERIZON TELEMATICS - AT-150','HUM PLUS VT410','HUM PLUS VT410 DTC','HUMX VT1010') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_APPLE_SMARTWATCH,' as feature_name,
+       null as dimension,
+       SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('Internet') AND DEVICE_GROUPING = 'Wearable Devices' AND MFG_NM = 'apple' THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
+
+select cast(ACTIVITY_DT as date) as profile_date,
+       'NET_ADDS_OTHER,' as feature_name,
+       null as dimension,
+       SUM((GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS)) - SUM(CASE WHEN DATA_TIER IN ('BASIC','SMARTPHONE') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) - SUM(CASE WHEN DEVICE_GROUPING IN ('TABLET') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) - SUM(CASE WHEN PROD_NM IN ('HUM BY VERIZON','HUM EXTREME','VERIZON HUM X','VERIZON HUM X - TEST','VERIZON TELEMATICS - AT-150','HUM PLUS VT410','HUM PLUS VT410 DTC','HUMX VT1010') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) - SUM(CASE WHEN DATA_TIER IN ('Internet') AND DEVICE_GROUPING = 'Wearable Devices' AND MFG_NM = 'apple' THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) - SUM(CASE WHEN PREPAID_IND = 'N' AND FWA_TECH_TYPE_PPLAN IN ('5G C-Band','4G LTE','5G mmWave') THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) - SUM(CASE WHEN PREPAID_IND = 'N' AND DATA_TIER IN ('Internet') AND DEVICE_GROUPING = 'Wearable Devices' AND MFG_NM <> 'apple' THEN (GROSS_ADDS - INVOLUNTARY_DISCONNECTS - VOLUNTARY_DISCONNECTS) ELSE 0 END) as "value",
+       current_timestamp as insert_date,
+       dayofweek(cast(ACTIVITY_DT AS date)) AS weekday
+from NTL_PRD_ALLVM.DLA_SUM_FACT_V
+where cast(ACTIVITY_DT as date) = current_date - 1
+group by 1,2,3,5,6;
