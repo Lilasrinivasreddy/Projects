@@ -1,1 +1,22 @@
-this is the rule sheet, if i got bit late time being take the sql and remove the aliases and keep it in a separate column. Once i am back we can check in TD and push it in prod
+import pandas as pd
+import re
+
+# Load the provided rule sheet
+file_path = '/mnt/data/rule_sheet.xlsx'
+df = pd.read_excel(file_path)
+
+# Function to remove SQL aliases and store them separately
+def process_sql(sql_query):
+    alias_pattern = re.compile(r'\s+AS\s+(\w+)', re.IGNORECASE)
+    aliases = alias_pattern.findall(sql_query)
+    cleaned_sql = alias_pattern.sub('', sql_query)
+    return cleaned_sql, ', '.join(aliases)
+
+# Apply the function to the SQL column
+df[['Cleaned_SQL', 'Aliases']] = df['SQL'].apply(lambda x: pd.Series(process_sql(x)))
+
+# Save the updated sheet
+output_path = '/mnt/data/processed_rule_sheet.xlsx'
+df.to_excel(output_path, index=False)
+
+print("Processed rule sheet saved at:", output_path)
