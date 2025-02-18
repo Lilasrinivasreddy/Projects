@@ -1,98 +1,31 @@
-Here are the table names present in the provided SQL code:
-
-1. ${STGDB}.calpp_dla
-
-
-2. ${STGDB}.hyp_price_plan_xref
-
-
-3. ${UDMITVMDB}.dly_line_activity
-
-
-4. ${UDMITVMDB}.cust_acct_line_pplan_hist
-
-
-5. ${STGDB}.calpp_dla_de
-
-
-6. ${STGDB}.dla_sum_fact_stg
-
-
-7. ${STGDB}.caldh_eom
-
-
-8. ${STGDB}.caldh_eom_first
-
-
-9. ${STGDB}.caldh_eom_vertical
-
-
-10. ${STGDB}.data_access_tier
-
-
-11. ${STGDB}.cust_ecpd_tmp
-
-
-12. ${STGDB}.hyp_breakage
-
-
-13. ${STGDB}.new_fact_hyp_seg
-
-
-14. ${STGDB}.new_fact_hyp_seg_earliest
-
-
-15. ${UDMITVMDB}.change_reason
-
-
-16. ${STGDB}.pplan_contract
-
-
-17. ${UDMITVMDB}.outlet
-
-
-18. ${UDMITVMDB}.service
-
-
-19. ${UDMITVMDB}.market
-
-
-20. ${STGDB}.score_decile_xref
-
-
-21. ${STGDB}.ssfdsf_data_allow_stg
-
-
-22. ${UDMITVMDB}.cust_acct
-
-
-23. ${UDMITVMDB}.CUST_ACCT_LINE_CNTRCT
-
-
-24. NTL_${BOX}_ALLVM.CONTRACT_TERM_V
-
-
-25. ${STGDB}.new_fact_hyp_seg_dla_de
-
-
-26. ${UDMITVMDB}.cust_ecpd
-
-
-27. ${STGDB}.dla_sum_fact_stg_de
-
-
-28. ${UDMITVMDB}.cust_acct_dly_hist
-
-
-29. vt_cadh (volatile table)
-
-
-30. vt_vertical (volatile table)
-
-
-31. ${STGDB}.dsf_feat_allow
-
-
-
-These tables include both staging and source tables, as well as volatile tables created during the execution of the script. Let me know if you need any further clarification.
-
+select rule_MTN_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count" FROM ( SELECT CASE WHEN MTN IS NOT NULL THEN 'VALID' ELSE 'INVALID' END AS rule_MTN_DLA_SUM_FACT_V_Completeness FROM NTL_PRD_ALLVM.DLA_FACT_V WHERE ACTIVITY_DATE=CURRENT_DATE-1) AS subquery GROUP BY rule_MTN_DLA_SUM_FACT_V_Completeness
+
+SRC_TBL	SRC_COL	DQ_PILLAR	MEAS_NAME	MEAS_RULE_DESC
+DLA_SUM_FACT_V	PORT_CARRIER_CD	Completeness	rule_PORT_CARRIER_CD_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	VOLUNTARY_DISCONNECTS	Completeness	rule_VOLUNTARY_DISCONNECTS_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	MTN	Completeness	rule_MTN_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	SOR_ID	Completeness	rule_SOR_ID_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	CUST_ID	Completeness	rule_CUST_ID_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	CUST_LINE_SEQ_ID	Completeness	rule_CUST_LINE_SEQ_ID_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	ACTIVITY_CD	Completeness	rule_ACTIVITY_CD_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	MTN	Completeness	rule_MTN_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	ACCT_NUM	Completeness	rule_ACCT_NUM_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	CUST_TYPE_CD	Completeness	rule_CUST_TYPE_CD_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	GROSS_ADDS	Completeness	rule_GROSS_ADDS_DLA_SUM_FACT_V_Completeness	Null Check
+DLA_SUM_FACT_V	GROSS_ADDS	Completeness	rule_GROSS_ADDS_DLA_SUM_FACT_V_Completeness	Null Check
+
+
+Fact table name	Column	Pseudo Rule	Completed
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	PORT_CARRIER_CD 	When change_reas_cd = 91 , then PORT_CARRIER_CD  should not be null 	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	VOLUNTARY_DISCONNECTS 	when ACTIVITY_CD='DE' and CHANGE_REAS_CD=91, then VOLUNTARY_DISCONNECTS should be 1	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	MTN	Null check	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	SOR_ID	Null check	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	CUST_ID	Null check	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	CUST_LINE_SEQ_ID	Null check	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	ACTIVITY_CD	Null check	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	MTN	Null check	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	ACCT_NUM	Null check	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	CUST_TYPE_CD	Null check	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	GROSS_ADDS	" WHEN dla.activity_cd = 'AC',THEN 1
+"	
+NTL_PRD_ALLVM.DLA_SUM_FACT_V	GROSS_ADDS	WHEN dla.activity_cd IN ( 'D3','D6' ) THEN -1	
