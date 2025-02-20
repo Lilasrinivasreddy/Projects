@@ -1,2 +1,92 @@
-2025-02-19	VCG	One_ex_Model_DQ_TIER1	NTL_PRD_ALLVM	DLA_SUM_FACT_V	2nd LINE ACTIVITY NET ADDS	None	Consistency	3	-31.00	NaN	NaN	NaN	NaN	outlier	0.00	0.00	LOW
-17	2025-02-19	VCG	One_ex_Model_DQ_TIER1	NTL_PRD_ALLVM	DLA_SUM_FACT_V	NET_ADDS_TOTAL,	None	Consistency	3	-16,300.00	NaN	NaN	NaN	NaN	outlier	0.00	0.00	LOW
+import pandas as pd
+import numpy as np
+import math
+from datetime import datetime
+from opsgenie_sdk import Alert  # Assuming an Opsgenie SDK is used
+
+def check_sigma_outlier_alerts(rules_data: pd.DataFrame):
+    """
+    Checks for outliers in the SIGMA VALUE column and triggers an Opsgenie alert 
+    if an outlier is detected.
+
+    Parameters:
+        rules_data (pd.DataFrame): DataFrame containing rule profile data with a 'SIGMA VALUE' column.
+
+    Returns:
+        None
+    """
+    try:
+        opsgenie_alert_info = []  # To store alert details
+
+        # Ensure 'SIGMA VALUE' column exists
+        if 'SIGMA VALUE' not in rules_data.columns:
+            raise KeyError("The column 'SIGMA VALUE' is missing in the dataset.")
+
+        # Filter records where 'SIGMA VALUE' is marked as an outlier
+        outlier_records = rules_data[rules_data['DQ_IND'] == 'outlier']
+
+        if outlier_records.empty:
+            print("No outliers found. No alert needed.")
+            return
+        
+        # Process each outlier row
+        for idx, row in outlier_records.iterrows():
+            alert_message = f"Alert: Sigma Value Outlier detected for Rule {row['MEAS_NAME']}"
+            
+            # Opsgenie Alert Details
+            alert_type = 'Sigma_Outlier'
+            priority = 'P2'  # Set priority to P2 (High)
+            env = config.get_config_values('environment', 'env')
+            
+            details = {
+                'Message': f"Sigma Value Outlier detected: {row['SIGMA VALUE']}",
+                'Sub domain': row['DATA_SUB_DMN'],
+                'Table': row['SRC_TBL'],
+                'Column': row['SRC_COL'],
+                'DQ Score': row['COL_VLD_PCT'],
+                'Threshold': row['RULE_MAX_THRSD'],
+                'Alert Type': alert_type
+            }
+
+            # Fetch Opsgenie API Key
+            api_key = row['OPSGENIE_API_KEY']
+            if pd.isna(api_key) or api_key in config.EMPTY_STR_LIST:
+                api_key = config.get_config_values('opsgenie', 'api_key')
+
+            # Initialize Opsgenie Client
+            gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
+            opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
+
+            # Send Opsgenie alert
+            response, request_id, message = opsgenie_client.create_opsgenie_alert(
+                rules_data, idx, alert_type, priority, env, 'sigma_outlier'
+            )
+
+            print(f"Opsgenie response: {response}, Alert Sent: {message}")
+
+            # Store alert info
+            opsgenie_alert_info.append({
+                'rule_id': row['RULE_ID'],
+                'data_bus_elem': row['DATA_BUS_ELEM'],
+                'data_dmn': row['DATA_DMN'],
+                'data_sub_dmn': row['DATA_SUB_DMN'],
+                'data_src': row['DATA_SRC'],
+                'db_name': row['DB_NAME'],
+                'src_tbl': row['SRC_TBL'],
+                'src_col': row['SRC_COL'],
+                'dq_score': row['COL_VLD_PCT'],
+                'threshold': row['RULE_MAX_THRSD'],
+                'meas_rule': row['MEAS_NAME'],
+                'request_id': request_id,
+                'alert_message': message
+            })
+
+        # Convert alert info into a DataFrame and load to Opsgenie alert report
+        opsgenie_table_info = pd.DataFrame.from_records(opsgenie_alert_info)
+        opsgenie_table_info = opsgenie_table_info.reset_index(drop=True)
+
+        # Load alert data to reporting table
+        self.load_opsgenie_alert_info(opsgenie_table_info)
+
+    except Exception as err:
+        print(f"Error in check_sigma_outlier_alerts: {err}")
