@@ -1,288 +1,1029 @@
 import pandas as pd
 import numpy as np
+import psutil
+import os
+import shutil
+import logging
+import argparse
+import sys
+from datetime import datetime, timedelta
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+from dqaas_opsgenie import Alert
 import math
-from datetime import datetime
-from opsgenie_sdk import Alert  # Assuming an Opsgenie SDK is used
 
-class CustomeMetrics:
-    def __init__(self, data_src=None) -> None:
-        self.__set_default_values()
-        self.logger: logging = set_logger(
-            logger_path=config.LOGS_DIR,
-            log_filename="CustomMetricsLogs",
-            process_name='CRM',
-        )
-        self.utils = CommonUtils(config, self.logger)
-        self.df_email_distro = pd.DataFrame()
+## Importing User Defined Modules
+import config_params as config
+from utils.send_email import SendEmail
+from common_handlers import CommonUtils, set_logger, get_args_parser
+from dqaas_jira import Jira_ticket
 
-    def check_sigma_outlier_alerts(self, df_rules: pd.DataFrame):
-        """
-        Checks for outliers in the SIGMA VALUE column and triggers an Opsgenie alert if an outlier is detected.
 
-        Parameters:
-            df_rules (pd.DataFrame): DataFrame containing rule profile data with a 'sigma_value' column.
-
-        Returns:
-            None
-        """
-        try:
-            opsgenie_alert_info = []
-
-            # Ensure 'sigma_value' column exists
-            if 'sigma_value' not in df_rules.columns:
-                self.logger.error("The column 'sigma_value' is missing in the dataset.")
-                return
-
-            # Filter outliers
-            outlier_records = df_rules[df_rules['sigma_value'] == 'outlier']
-
-            if outlier_records.empty:
-                self.logger.info("No outliers found. No alert needed.")
-                return
+class RuleProfileEngine(object):
+    
+    def __init__(self, data_src: str=None):
+        #self.__set_proxies()
+        self.set_rule_profile_default_values()
+        
+        self.data_src = data_src
+        if self.data_src is None:
+            raise Exception(f"Data Source not Provided.")
             
-            # Process each outlier row
-            for idx, row in outlier_records.iterrows():
-                alert_message = f"Alert: Sigma Value Outlier detected for Rule {row['meas_name']}"
-                
-                # Opsgenie Alert Details
-                alert_type = 'Sigma_Outlier'
-                priority = 'P2'  # Set priority to P2 (High)
-                env = config.get_config_values('environment', 'env')
+        self.logger = self.set_rule_profile_logger(
+            process_name="RP-Main",
+            data_src=data_src
+        )
+        
+        self.utils = CommonUtils(logObj=self.logger)
+        
+        self.email = SendEmail(
+            loggerObj=self.logger,
+            mail_from=config.SENDER_EMAIL_ID,
+            smtp=config.SMTP_SERVER_NAME
+        )
 
-                details = {
-                    'Message': f"Sigma Value Outlier detected: {row['sigma_value']}",
-                    'Sub domain': row['data_sub_dmn'],
-                    'Table': row['src_tbl'],
-                    'Column': row['grouped_columns'],
-                    'DQ Score': row['dq_score'],
-                    'Threshold': row['max_thresh_value'],
-                    'Alert Type': alert_type
-                }
+    def set_rule_profile_default_values(self):
+        self.current_datetime = datetime.now()
+        self.current_date = datetime.strftime(self.current_datetime, '%Y-%m-%d')
+        self.previous_day_date = datetime.strftime((self.current_datetime - timedelta(days=config.RP_N_DAYS_LIMIT)), '%Y-%m-%d %H:%M:%S')
+        
+        
+    ## Defining Proxy Parameters
+    @staticmethod
+    def __set_proxies():
+        os.environ["http_proxy"] = config.GCP_HTTP_PROXY_URL
+        os.environ["https_proxy"] = config.GCP_HTTPS_PROXY_URL
+        os.environ["no_proxy"] = config.GCP_NO_PROXY_URLS
+        
+    ## Set Logger
+    # @staticmethod
+    def set_rule_profile_logger(self, process_name:str, data_src: str):
+        
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+        filename = f'{data_src}_rule_profile_{timestamp}'
+        
+        process_id = os.getpid()
+        log: logging = set_logger(
+            logger_path=config.SQL_RULE_PROFILE_LOGS,
+            log_filename=filename,
+            process_name=f'{process_name}-{process_id}',
+            no_date_yn="Y",
+        )
+        
+        return log
 
-                # Fetch Opsgenie API Key
-                api_key = row['OPSGENIE_API_KEY']
-                if pd.isna(api_key) or api_key in config.EMPTY_STR_LIST:
-                    api_key = config.get_config_values('opsgenie', 'api_key')
+    def send_failure_status_email(self, table_name: str, rule: str, data_sub_dmn: str='', persona: str=''):
+        try:
+            receipents_email_addr_list = None
+            if len(data_sub_dmn) > 0 and len(persona) > 0:
+                receipents_email_addr_list = self.utils.get_mail_distro(df_val=self.mail_list, sub_dmn=data_sub_dmn, persona=persona)
+            self.logger.info(f"Receipents email details - Table: {receipents_email_addr_list}")
 
-                # Initialize Opsgenie Client
-                gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
-                opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
 
-                # Send Opsgenie alert
-                response, request_id, message = opsgenie_client.create_opsgenie_alert(
-                    df_rules, idx, alert_type, priority, env, 'sigma_outlier'
+            if receipents_email_addr_list is None:
+                receipents_email_addr_list = config.RP_DEFAULT_MAIL_GROUP
+            self.logger.info(f"Receipents email details - default: {receipents_email_addr_list}")
+            
+            self.logger.info(f'Initiating eMail for failed rule {rule}')
+            self.email.send_rules_error_report(
+                email_template_filepath=config.rp_error_report_email_template,
+                mail_subject=f'{config.EMAIL_ENV} Rule Failure Report',
+                receipents_email_id=receipents_email_addr_list,
+                rule_id=rule,
+                table_name=table_name
+            )
+        except Exception as e:
+            self.logger.error(f'Error while triggering error status.\n {e}')
+
+    def send_email_alert(
+        self, sub_domain_name: str = '', message: str = None, subject: str = None,
+        df_val=pd.DataFrame(), df_error_val=pd.DataFrame(), receipents_email_group: str = None,
+        default_mail_group_yn: str = 'N'
+        ):
+        self.logger.info('-------------------------------------------------------------------------')
+        self.logger.info(f'Email Initiated - {sub_domain_name}')
+        self.logger.info('-------------------------------------------------------------------------')
+        try:
+
+            if subject is None:
+                subject = f'{config.EMAIL_ENV} Rule Profile Summary Mail for {sub_domain_name} - {self.current_date}'
+
+            if message is None:
+                message = 'Please find the below Rule Profile summary.<br>'
+
+            self.logger.info(f"Sub Domain:{sub_domain_name}, message:{message}, subject:{subject}")
+
+            if len(df_error_val) > 0:
+                self.logger.info(f"Length of Error List:{len(df_error_val)}")
+                addl_msg = f'<br><b>Rules Error List:</b>{df_error_val.to_html()}'
+                message += addl_msg
+
+            if len(df_val) > 0:
+                self.logger.info(f"Length of Summary:{len(df_val)}")
+                message += '<br><b>Rule Summary:</b><br>'
+
+            if receipents_email_group is None:
+                receipents_email_group = ''
+
+            receipents_email_addr_list: list = []
+
+            if len(receipents_email_group) > 0:
+                receipents_email_addr_list = receipents_email_group.strip().split(',')
+
+            if len(sub_domain_name) > 0 and len(receipents_email_group) == 0:
+                receipents_email_group = self.utils.get_email_distros_from_table(data_sub_dmn_list=[sub_domain_name])
+                receipents_email_addr_list = self.utils.get_mail_distro(
+                    df_val=receipents_email_group, 
+                    sub_dmn=sub_domain_name, 
+                    persona='PERSONA_2'
                 )
 
-                self.logger.info(f"Opsgenie response: {response}, Alert Sent: {message}")
+            mail_group: list = []
+            if len(receipents_email_addr_list) == 0 or len(receipents_email_group) == 0 or default_mail_group_yn == 'Y':
+                mail_group = config.RP_DEFAULT_MAIL_GROUP
+                self.logger.info(f'default mail group : {mail_group}')
 
-                # Store alert info
-                opsgenie_alert_info.append({
-                    'rule_id': row['prfl_id'],
-                    'feature_name': row['feature_name'],
-                    'data_bus_elem': row['data_bus_elem'],
-                    'data_dmn': row['data_dmn'],
-                    'data_sub_dmn': row['data_sub_dmn'],
-                    'data_src': row['data_src'],
-                    'db_name': row['db_name'],
-                    'src_tbl': row['src_tbl'],
-                    'grouped_columns': row['grouped_columns'],
-                    'dq_score': row['dq_score'],
-                    'threshold': row['max_thresh_value'],
-                    'meas_rule': row['meas_name'],
+            receipents_email_addr_list = receipents_email_addr_list + mail_group
+
+            self.logger.info(f"Receipents e-Mail Group:{receipents_email_addr_list}")
+            self.email.send_common_message(
+                email_template_filepath=config.common_email_template,
+                mail_subject=subject,
+                message=message,
+                df_val=df_val,
+                receipents_email_id=receipents_email_addr_list
+            )
+
+            self.logger.info('Email Send Successfully')
+        except Exception as err:
+            self.logger.error(f'Error Occured in email trigger. Error:{err}')
+            
+    def send_email(self, message, data_sub_dmn='', persona='', subject='', df_val=pd.DataFrame(), receipents_email_addr_list=[]):
+        try:
+            self.logger.info('Rule Based Profile Process initiation eMail')
+            if len(subject) == 0:
+                subject = f'{config.EMAIL_ENV} Rule Based Profiling'
+            
+            if len(data_sub_dmn) > 0 and len(persona) > 0:
+                receipents_email_addr_list = self.utils.get_mail_distro(df_val=self.mail_list, sub_dmn=data_sub_dmn, persona=persona)
+                
+            self.logger.info(f"Receipents email details - Table: {receipents_email_addr_list}")
+
+            if len(receipents_email_addr_list) == 0:
+                receipents_email_addr_list = config.RP_DEFAULT_MAIL_GROUP
+                
+            self.logger.info(f"Receipents email details - default: {receipents_email_addr_list}")
+
+            self.email.send_common_message(
+                email_template_filepath=config.common_email_template,
+                mail_subject=subject,
+                message=message,
+                df_val=df_val,
+                receipents_email_id=receipents_email_addr_list
+            )
+        except Exception as e:
+            self.logger.error(f'Error while triggering email.\n {e}')
+   
+    def archive_trigger_files(self, file_list: list = None):
+        if file_list is not None:
+            for file in file_list:
+                try: 
+                    self.logger.info(f"Trigger File: {file}")
+                    temp_file = config.TEMP_DIR + file
+                    if os.path.isfile(temp_file):
+                        shutil.move(src=temp_file, dst=config.ARCHIVE_DIR)
+                        self.logger.info(f'Trigger File ({file}) moved to Archival path')
+                except Exception as err:
+                    self.logger.error(f"Error While Archiving the Trigger File ({file}). Error: {err}")
+
+    def validate_non_agg_rules(self, df_rule_data, rules_name):
+        df_rule_data['COL_VLD_CNT'] = ""
+        df_rule_data['COL_INVLD_CNT'] = ""
+        # df_rule_data['VALID_Prcnt'] = ""
+        df_rule_data['COL_INVLD_PCT'] = ""
+        df_rule_data['COL_NULL_CNT'] = ""
+        df_rule_data['COL_DIST_CNT'] = ""
+        df_rule_data['COL_MIN_VAL'] = ""
+        df_rule_data['COL_MAX_VAL'] = ""
+        df_rule_data['COL_VLD_PCT'] = ""
+        df_rule_data['COL_TOT_CNT'] = ""      
+
+        rules_error_list: list = []
+        for count, rule in enumerate(rules_name):        
+            valid_percent = 0.00
+            invalid_percent = 0.00
+            valid_count = 0
+            invalid_count = 0
+            null_records = 0
+            unique_records = 0
+            min = 0
+            max = 0
+            tablename = ''
+            data_sub_dmn = ''
+            rule_sql = ""
+            try:
+                self.logger.info(f'Rule:{rule}')
+                dbname = df_rule_data['DB_NAME'][count]
+                rule_sql = df_rule_data['MEAS_RULE_SQL'][count]  # get the query for respective rule
+                tablename = df_rule_data['SRC_TBL'][count]
+                data_sub_dmn = df_rule_data['DATA_SUB_DMN'][count]
+                # db_engine = self.get_connection(dbname=dbname, section='profile_database')
+                # df = pd.read_sql(query, db_engine)
+                
+                df = self.utils.run_teradata_sql(
+                    db_name=dbname, 
+                    query=rule_sql, 
+                    td_auth=config.src_tbl_db_config
+                )
+                dx = df[rule].value_counts()
+                null_count = int(df.iloc[:, 0].replace(r'^\s*$', np.nan, regex=True).isnull().sum())
+                unique = len(df.iloc[:, 0].replace(r'^\s*$', np.nan, regex=True).unique())
+                try:
+                    valid_percent = float(dx.loc['VALID']/len(df))
+                except:
+                    valid_percent = 0.00
+                try:
+                    invalid_percent = float(dx.loc['INVALID']/len(df))
+                except:
+                    invalid_percent = 0.00
+                try:
+                    valid_count = dx.loc['VALID']
+                except:
+                    valid_count = 0
+                try:
+                    invalid_count = dx.loc['INVALID']
+                except:
+                    invalid_count = 0
+                try:
+                    null_records = null_count
+                except:
+                    null_records = 0
+                try:
+                    unique_records = unique
+                except:
+                    unique_records = 0
+                try:
+                    min_val = df.iloc[:, 0].replace(r'^\s*$', 0, regex=True).min()
+                    min = int(min_val)
+                    self.logger.info(f'min:{min}')
+                except:
+                    min = 0
+                try:
+                    max_val = df.iloc[:, 0].replace(r'^\s*$', 0, regex=True).max()
+                    max = int(max_val)
+                    self.logger.info(f'max:{max}')
+                except:
+                    max = min
+            except Exception as e:
+                self.logger.error(f'Error in Validating the Rule({rule}).\nError info:{e}')
+                # eMail Error Report
+                self.send_failure_status_email(tablename, rule)
+                rules_error_list.append({'table':tablename, 'rules': rule , 'query': rule_sql})
+
+            # df_rule_data.loc[count, 'VALID_Prcnt'] = valid_percent*100
+            df_rule_data.loc[count, 'COL_VLD_PCT'] = valid_percent*100  # df_rule_data['VALID_Prcnt']
+            df_rule_data.loc[count, 'COL_INVLD_PCT'] = invalid_percent*100
+            df_rule_data.loc[count, 'COL_VLD_CNT'] = int(valid_count)
+            df_rule_data.loc[count, 'COL_INVLD_CNT'] = int(invalid_count)
+            df_rule_data['COL_TOT_CNT'] = df_rule_data['COL_VLD_CNT'] + df_rule_data['COL_INVLD_CNT']
+            df_rule_data.loc[count, 'COL_NULL_CNT'] = int(null_records)
+            df_rule_data.loc[count, 'COL_DIST_CNT'] = int(unique_records)
+            df_rule_data.loc[count, 'COL_MIN_VAL'] = min
+            df_rule_data.loc[count, 'COL_MAX_VAL'] = max
+
+
+        return df_rule_data, rules_error_list
+    
+    def validate_agg_rules(self, df_rules_list=pd.DataFrame(), sub_domain_name: str = ''):
+        self.logger.info('-------------------------------------------------------------------------')
+        self.logger.info('Rule Validation - Initiated')
+        self.logger.info('-------------------------------------------------------------------------')
+        error_list: list = []
+        try:
+            self.logger.info(f'Rules Length: {len(df_rules_list)}')
+            if len(df_rules_list) > 0:
+                df_rules_list['COL_VLD_CNT'] = ""
+                df_rules_list['COL_INVLD_CNT'] = ""
+                df_rules_list['COL_INVLD_PCT'] = ""
+                df_rules_list['COL_NULL_CNT'] = ""
+                df_rules_list['COL_DIST_CNT'] = ""
+                df_rules_list['COL_MIN_VAL'] = ""
+                df_rules_list['COL_MAX_VAL'] = ""
+                df_rules_list['COL_VLD_PCT'] = ""
+                df_rules_list['COL_TOT_CNT'] = ""
+                table_name, rule, rule_sql = "", "", ""
+                
+                for idx in df_rules_list.index:
+                    valid_count, invalid_count = 0, 0
+                    try:
+                        self.logger.info('-------------------------------------------------------------------------')
+                        rule = df_rules_list.loc[idx, 'MEAS_NAME']
+                        rule_id = df_rules_list.loc[idx, 'RULE_ID']
+                        db_name = df_rules_list.loc[idx, 'DB_NAME']
+                        table_name = df_rules_list.loc[idx, 'SRC_TBL']
+                        rule_sql = df_rules_list.loc[idx, 'MEAS_RULE_SQL']
+                        
+                        self.logger.info(f'index: {idx}, rule_id: {rule_id}, rule: {rule}')
+
+                        # Add TD_AGG condition here
+                        if self.data_src in ["TD_AGG"]:
+                            result = self.utils.run_teradata_sql(
+                                db_name=db_name,
+                                query=rule_sql,
+                                td_auth=config.src_tbl_db_config
+                            )
+                        else:
+                            result = self.utils.run_bq_sql(
+                                bq_auth=config.dq_gcp_auth_payload,
+                                select_query=rule_sql
+                            )
+                       
+                        result = result.rename(columns={str(col): str(col).lower() for col in result.columns.to_list()})
+                        self.logger.info(f'result:\n{result}')
+
+                        try:
+                            valid_count = result[result[rule.lower()] == 'VALID']['count']
+                            valid_count = valid_count.iloc[0] if len(valid_count) > 0 else 0
+                        except Exception as err:
+                            self.logger.error(f"Valid Count issue. Error:{err}")
+                            valid_count = 0
+
+                        try:
+                            invalid_count = result[result[rule.lower()] == 'INVALID']['count']
+                            invalid_count = invalid_count.iloc[0] if len(invalid_count) > 0 else 0
+                        except Exception as err:
+                            self.logger.error(f"Invalid Count issue. Error:{err}")
+                            invalid_count = 0
+
+                    except Exception as e:
+                        error_list.append({
+                            'table': table_name,
+                            'rules': rule,
+                            'query': rule_sql
+                        })
+                        # error_list = pd.DataFrame.from_records([{'table': table_name,
+                        #                                          'rules': rule,
+                        #                                          'query': rule_sql}])
+                        # df_rules_error_list = pd.concat([df_rules_error_list, error_list])
+                        self.logger.error(f'Error in Rule Engine. Error:{e}')
+                        subject = f'{config.EMAIL_ENV} Rule Failure'
+                        message = f'Rule Failed.<br>Rule: {rule}<br>Query: {rule_sql}'
+                        # self.send_email_alert(  # sub_domain_name=sub_domain_name,
+                        #                         subject=subject,
+                        #                         message=message)
+
+                    total_record_count = int(valid_count) + int(invalid_count)
+
+                    try:
+                        valid_percent = float(valid_count / total_record_count)
+                    except:
+                        valid_percent = 0.00
+
+                    try:
+                        invalid_percent = float(invalid_count / total_record_count)
+                    except:
+                        invalid_percent = 0.00
+
+                    self.logger.info(f'valid_count:{valid_count}, invalid_count:{invalid_count}')
+                    self.logger.info(f'total_record_count:{total_record_count}')
+                    self.logger.info(f'valid_percent:{valid_percent}, invalid_percent:{invalid_percent}')
+
+                    df_rules_list.loc[idx, 'COL_VLD_PCT'] = valid_percent * 100
+                    df_rules_list.loc[idx, 'COL_INVLD_PCT'] = invalid_percent * 100
+                    df_rules_list.loc[idx, 'COL_VLD_CNT'] = int(valid_count)
+                    df_rules_list.loc[idx, 'COL_INVLD_CNT'] = int(invalid_count)
+                    df_rules_list.loc[idx, 'COL_TOT_CNT'] = total_record_count
+                    df_rules_list.loc[idx, 'COL_NULL_CNT'] = 0
+                    df_rules_list.loc[idx, 'COL_DIST_CNT'] = 0
+                    df_rules_list.loc[idx, 'COL_MIN_VAL'] = 0
+                    df_rules_list.loc[idx, 'COL_MAX_VAL'] = 0
+
+            else:
+                raise ValueError('No Records found to load in Report Table')
+
+        except ValueError as err:
+            self.logger.error(f'{err}')
+
+        except Exception as e:
+            self.logger.error(f'Error in Retriving Rules List. Error: {e}')
+
+        self.logger.info('-------------------------------------------------------------------------')
+        self.logger.info('Rule Validation - Compeleted')
+        self.logger.info('-------------------------------------------------------------------------')
+
+        return df_rules_list, error_list  #df_rules_error_list
+
+    def check_if_done_file_exists(self):
+        try:
+            self.logger.info(f"Critical Flag: {self.critical_flag_value}")
+            if self.critical_flag_value == 'N':
+                full_name = os.path.basename(self.input_src_filepath)
+                self.logger.info(f"Base File name: {full_name}")
+                
+                if full_name.endswith('.DONE') and full_name.__contains__('_NC_'):
+                    file_name = os.path.splitext(full_name)
+                    filename_split_str = file_name[0].split('_')
+                    self.logger.info(f" File name: {file_name}, Split string: {filename_split_str}")
+                    
+                    file_list: list = []
+                    filename_prefix = filename_split_str[0]
+                    done_file_date = filename_split_str[-2]
+                    self.logger.info(f"File name Prefix:{filename_prefix}, .Done file date: {done_file_date}")
+
+                    from pathlib import Path
+                    temp_dir_list = list(Path(config.TEMP_DIR).glob(filename_prefix+'_*'+str(done_file_date)+'_*.DONE'))
+                    temp_file_list = [os.path.basename(file) for file in temp_dir_list]
+
+                    critical, non_critical = 'N', 'N'
+                    for file in temp_file_list:
+                        if str(file).__contains__(filename_prefix+'_'+str(done_file_date)):
+                            critical = 'Y'
+                            file_list.append(file)
+
+                        if str(file).__contains__(filename_prefix+'_NC_'+str(done_file_date)):
+                            non_critical = 'Y'
+                            file_list.append(file)
+
+                    if critical == 'Y' and non_critical == 'Y':
+                        return file_list, done_file_date
+                    
+        except Exception as err:
+            self.logger.error(f"Error While finding the .Done File Validation for Archiving. Error: {err}")
+        return [], ''
+
+    @staticmethod
+    def critical_type_header_name(flag: str = None):
+        if flag is None:
+            return ""
+        if flag == 'Y':
+            return 'Critical '
+        if flag == 'N':
+            return 'Non Critical '
+        return ""
+    
+    def consolidated_persona_mail_summary(self, done_file_date='', data_sub_dmn=''):
+        try:
+            self.logger.info('Preparing Consolidate Summary for Data Steward------------------')
+            rpt_query = f"""
+                select RULE_RUN_DT, DATA_LOB, DATA_DMN, DATA_BUS_ELEM,
+                DATA_SUB_DMN, DB_NAME, SRC_TBL, SRC_COL, A.DQ_PILLAR, MEAS_NAME, 
+                IFNULL(COL_VLD_CNT, 0) AS  COL_VLD_CNT,
+                IFNULL(COL_INVLD_CNT, 0) AS COL_INVLD_CNT, 
+                IFNULL(COL_VLD_PCT, 0) AS COL_VLD_PCT, DQ_IND 
+                FROM  {config.dqaas_rule_prfl_rpt}  A, {config.dqaas_rule_prfl_mtd}  B 
+                WHERE date(RULE_RUN_DT) = '{datetime.now().strftime('%Y-%m-%d')}' 
+                AND B.IS_ACTIVE_FLG = 'Y' 
+                AND B.IS_CRITICAL_FLG IN ('Y','N') 
+                AND B.RULE_ID = A.RULE_ID
+                AND B.DQ_PILLAR = A.DQ_PILLAR
+                AND B.DATA_SUB_DMN = '{data_sub_dmn}'
+                AND RULE_RUN_DT = (SELECT MAX(C.RULE_RUN_DT)
+                FROM  {config.dqaas_rule_prfl_rpt} C
+                WHERE C.RULE_ID = A.RULE_ID
+                AND C.DQ_PILLAR = A.DQ_PILLAR);"""
+                
+            
+            self.logger.info(f'Consolidated Report Query: {rpt_query}')
+            overall_result = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=rpt_query
+            )
+            
+            self.logger.info(f'Overall Result len: {len(overall_result)}')
+
+            if len(overall_result) > 0:
+                overall_result['COL_VLD_PCT'] = round(overall_result['COL_VLD_PCT'].astype(float), 2)
+                overall_result = overall_result.drop(columns=['DATA_LOB','DATA_BUS_ELEM', 'DATA_SUB_DMN'], axis=1, errors='ignore')
+                overall_result = overall_result.sort_values(by=['COL_VLD_PCT'])
+                overall_result = overall_result.reset_index(drop=True)
+
+                persona_2 = overall_result[overall_result['COL_VLD_PCT'] < config.RP_SCORE_CHECK_PCT] 
+                persona_2 = persona_2.sort_values(by=['COL_VLD_PCT'])
+                persona_2 = persona_2.reset_index(drop=True)
+
+                self.logger.info(f'overall_result len: {len(overall_result)},\n Columns: {overall_result.columns.tolist()}\n{overall_result.head(5)}')
+                self.logger.info(f'Persona 2 len: {len(persona_2)},\n Columns: {persona_2.columns.tolist()} \n{persona_2.head(5)}')
+
+                column_rename = config.RP_EMAIL_SUMMARY_COL_RENAME
+                overall_result = overall_result.rename(columns=column_rename)
+                persona_2 = persona_2.rename(columns=column_rename)
+                
+                # Data Steward
+                self.logger.info(f'Initiating Summary e-Mail for Data Steward - {data_sub_dmn}...')
+                email_subject = f'Data Steward - SQL Profile Report for {data_sub_dmn} having score less the {config.RP_SCORE_CHECK_PCT}%'
+                
+                summary_run_date = datetime.now().strftime("%m-%d-%y")
+                summary_run_time = datetime.now().strftime("X%I:%M %p").replace('X0', '').replace('X', '').lower()
+                email_message = f"""
+                <p>Rule based Profiling completed successfully for {summary_run_date} at {summary_run_time}. Kindly find the below list. </p>
+                <p><br> Rule Summary List:</p>
+                """
+                
+                email_group = self.utils.get_mail_distro(df_val=self.mail_list, sub_dmn=data_sub_dmn, persona='PERSONA_2') \
+                    +  self.utils.get_mail_distro(df_val=self.mail_list, sub_dmn=data_sub_dmn, persona='PERSONA_3')
+                self.logger.info(f"Email Group: {email_group}")
+                
+                if len(email_group) == 0:
+                    email_group = config.RP_DEFAULT_MAIL_GROUP ## receipents_email_id
+                    
+                if len(persona_2) == 0:
+                    summary_run_date = datetime.now().strftime("%m-%d-%y")
+                    summary_run_time = datetime.now().strftime("X%I:%M %p").replace('X0', '').replace('X', '').lower()
+                    email_message = f"""
+                    <p>Rule based Profiling completed successfully for {summary_run_date} at {summary_run_time}.</p>
+                    <p><b>Note: All the rules are above {config.RP_SCORE_CHECK_PCT}% </b></p>
+                    """
+                    
+                self.send_email(
+                    message=email_message,
+                    subject=email_subject,
+                    df_val=persona_2,
+                    receipents_email_addr_list=email_group
+                )
+
+                # Consolidated Overall summary
+                self.logger.info(f'Initiating Overall Summary e-Mail for {data_sub_dmn}...')
+                
+                self.email.send_rules_email_message(
+                    df_val=overall_result,
+                    email_template_filepath=config.rp_summary_report_email_template,
+                    receipents_email_id=email_group,
+                    mail_subject=f'{config.EMAIL_ENV} Rule Summary for {data_sub_dmn}',
+                    report_header_name=f'{config.EMAIL_ENV} Rule Summary for  {data_sub_dmn}'
+                )
+            
+        except Exception as e:
+            self.logger.error('Error While Initiating e-Mail for Persona Groups - Executives and Data Steward.\n Error Info:',e)
+ 
+    def overall_summary_alert(self, sub_domain: str, rules_data=pd.DataFrame(), df_rules_error_list=pd.DataFrame(), critical_flag=None):
+        try:
+            self.logger.info('Preparing Overall Summary for Persona Group ------------------')
+            email_cols_list = config.RP_REQD_SUMMARY_COLS
+            df_email_rules_data = rules_data.loc[:, rules_data.columns.isin(email_cols_list)]
+            df_email_rules_data = df_email_rules_data.sort_values(by=['COL_VLD_PCT'])
+            df_email_rules_data['COL_VLD_PCT'] = round(df_email_rules_data['COL_VLD_PCT'].astype(float), 2)
+            # df_email_rules_data['RULE_RUN_DT'] = pd.to_datetime(df_email_rules_data['RULE_RUN_DT']).dt.date
+            self.logger.info(f'SQL Profile eMail Columns: {df_email_rules_data.columns.tolist()}')
+            df_email_rules_data = df_email_rules_data[email_cols_list]
+            df_email_rules_data = df_email_rules_data.rename(columns=config.RP_EMAIL_SUMMARY_COL_RENAME)
+            df_email_rules_data = df_email_rules_data.reset_index(drop=True)
+
+            report_header_name = self.critical_type_header_name(flag=critical_flag)
+            data_sub_dmn=sub_domain
+            self.logger.info(f'Sub Domain:{data_sub_dmn}')
+
+            email_group = self.utils.get_mail_distro(df_val=self.mail_list, sub_dmn=data_sub_dmn, persona='PERSONA_3')
+            self.logger.info(f'Email Group:{email_group}')
+            
+            if len(email_group ) == 0:
+                email_group = config.RP_DEFAULT_MAIL_GROUP ## receipents_email_id
+                
+            self.email.send_rules_email_message(
+                df_val=df_email_rules_data,
+                df_err_val=df_rules_error_list,
+                email_template_filepath=config.rp_summary_report_email_template,
+                receipents_email_id=email_group, #receipents_email_id,
+                mail_subject=f"{config.EMAIL_ENV} {report_header_name} Rule Summary for {data_sub_dmn}",
+                report_header_name=f"{config.EMAIL_ENV} {report_header_name} Rule Summary for {data_sub_dmn}"
+            )
+            
+        except Exception as e:
+            self.logger.error('Error While Initiating Overall Summary Email.\n Error Info:', e)
+
+    def consolidated_summary_for_trigger_file(self,sub_domain):
+        try:
+            file_list, done_file_date = self.check_if_done_file_exists()
+            self.logger.info(f".Done File:{file_list}, Done File date {done_file_date}, Sub Domain: {sub_domain} ")
+
+            if len(file_list) > 0:
+                self.consolidated_persona_mail_summary(
+                    done_file_date=done_file_date,
+                    data_sub_dmn=sub_domain
+                )
+                
+                self.archive_trigger_files(file_list=file_list)
+                    
+        except Exception as err:
+            raise Exception(f"Error Occured in Consolidation Email. Error: {err}")
+        
+    ## Load Rule Profile Results to BQ Report Tables 
+    def load_rule_profile_results(self, rules_report: pd.DataFrame):
+        try:
+            ## BigQuery Client Connection
+            dbclient, db_creds = self.utils.bigquery_client(
+                auth=config.dq_gcp_auth_payload
+            )
+            
+            rules_report = rules_report.rename(columns={col: str(col).lower() for col in rules_report.columns.tolist()})
+            
+            ## Loading Rule Report
+            self.utils.load_result_to_bq_report_table(
+                dq_bq_client=dbclient,
+                dq_credentials=db_creds,
+                dq_report_table_name=config.dqaas_rule_prfl_rpt,
+                df_load_data=rules_report,
+                seq_name='rule_prfl_num',
+                column_details=config.RULE_PRFL_RPT
+            )
+            
+        except Exception as err:
+            raise f"Error While Loading the results to BigQuery Report Table. Error: {err}"
+        
+    ## Load Rule Profile Results to BQ Report Tables 
+    def load_opsgenie_alert_info(self, alert_info: pd.DataFrame):
+        try:
+            ## BigQuery Client Connection
+            dbclient, db_creds = self.utils.bigquery_client(
+                auth=config.dq_gcp_auth_payload
+            )
+            
+            alert_info = alert_info.rename(columns={col: str(col).lower() for col in alert_info.columns.tolist()})
+            
+            ## Loading Rule Report
+            self.utils.load_result_to_bq_report_table(
+                dq_bq_client=dbclient,
+                dq_credentials=db_creds,
+                dq_report_table_name=config.dqaas_opsgenie_alert_rpt,
+                df_load_data=alert_info,
+                seq_name='opsgenie_alert_num',
+                column_details=config.OPSGENIE_ALERT_INFO_UI
+            )
+            
+        except Exception as err:
+            raise f"Error While Loading the opsgenie alert into alert info Table. Error: {err}"
+    
+    def check_threshold_create_opsgenie_Jira_alert(self,rules_data=pd.DataFrame()):
+        try:
+            opsgenie_alert_info: list = [] 
+            #rules_data  = rules_data[rules_data['IS_OPSGENIE_FLG'] == "Y"]
+            rules_data['RULE_MAX_THRSD'] = rules_data['RULE_MAX_THRSD'].fillna(config.RP_DEFAULT_MAX_THRSD)
+            rules_data = rules_data.reset_index(drop=True)
+            for idx in rules_data.index:
+                #if rules_data.loc[idx,'COL_VLD_PCT'] < rules_data.loc[idx,'RULE_MIN_THRSD']:
+                self.logger.info(f"COL_VLD_PCT: {rules_data.loc[idx,'COL_VLD_PCT']}")
+                self.logger.info(f"RULE_MAX_THRSD: {rules_data.loc[idx,'RULE_MAX_THRSD']}")
+                if rules_data.loc[idx,'COL_VLD_PCT'] < rules_data.loc[idx,'RULE_MAX_THRSD']:
+                    if rules_data.loc[idx,'IS_OPSGENIE_FLG'] == 'Y':
+                        priority = "p3"
+                        alert_type = 'SQL_Rule_failed' 
+                        profile_type = "sql_rule"        
+                        env = config.get_config_values('environment', 'env')                                
+                        details={'Message': f"Rule: {rules_data.loc[idx,'MEAS_NAME']} score is below threshold", 'Sub domain': rules_data.loc[idx,'DATA_SUB_DMN'], 'Table': rules_data.loc[idx,'SRC_TBL'], 'Data Src': rules_data.loc[idx,'DATA_SRC'] }
+                        api_key = rules_data.loc[idx,'OPSGENIE_API_KEY']
+                        #if not api_key:
+                        if api_key in config.EMPTY_STR_LIST or (isinstance(api_key,float) and math.isnan(api_key)) :
+                                # Opsgenie Api Key
+                                api_key = config.get_config_values('opsgenie', 'api_key')
+
+                        # response,request_id,message = self.create_opsgenie_alert(rules_data,idx,alert_type,priority,api_key)
+                        gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL          
+                        opsgenie_client = Alert(api_key=api_key,proxy=gcp_http_proxy_url)
+                        response,request_id,message = opsgenie_client.create_opsgenie_alert(rules_data, 0,alert_type,priority,env ,profile_type)
+                        self.logger.info(f"Opsgenie response code: {response}")
+                        self.logger.info('Opsgenie alert sent successfully')
+                        self.logger.info(f"Alert Message: {message}")
+                    elif rules_data.loc[idx,'JIRA_ASSIGNEE'] is not None:  
+                        try:
+                            jira_assignee = rules_data.loc[idx,'JIRA_ASSIGNEE']
+                            lable = "DQaaS"       
+                            table_name = rules_data.loc[idx,'SRC_TBL']                  
+                            self.logger.info(f"Calling Jira Module for: {table_name}")                        
+                            self.logger.info(f"No data found for the table: {table_name}")  
+
+                            process_date = f"'{datetime.now().date() - timedelta(days=config.RP_N_DAYS_LIMIT)}'"                                            
+                            
+                            summary = f"LensX|DQ Failure|Table: {table_name} no data found for profiling"
+                            description = f"DQ has failed for Table : {table_name} on Process date : {process_date}."
+                            jira_client = Jira_ticket()
+                            ticket_id=jira_client.create_jira_ticket(jira_assignee,summary, description,lable)
+                            self.logger.info(f"Jira Id created: {ticket_id}")
+                        except Exception as err:
+                            self.logger.error(f"Error occured while creating JIRA tickets {err}")
+                    
+
+                    try:
+                        data_lob = rules_data.loc[idx,'DATA_LOB']
+                        data_bus_elem = rules_data.loc[idx,'DATA_BUS_ELEM']
+                        data_dmn = rules_data.loc[idx,'DATA_DMN']
+                        data_sub_dmn = rules_data.loc[idx,'DATA_SUB_DMN']
+
+                        prod_info = self.get_prod_details(data_lob,data_bus_elem,data_dmn,data_sub_dmn)
+                    except Exception as err:
+                        self.logger.error(f"Error occured while fetching product details {err}")
+
+                    opsgenie_alert_info.append({                    
+                    'rule_id' : rules_data.loc[idx,'RULE_ID'],
+                    'data_bus_elem':rules_data.loc[idx,'DATA_BUS_ELEM'],
+                    'data_dmn': rules_data.loc[idx,'DATA_DMN'],
+                    'data_sub_dmn': rules_data.loc[idx,'DATA_SUB_DMN'],
+                    'data_src': rules_data.loc[idx,'DATA_SRC'],
+                    'db_name': rules_data.loc[idx,'DB_NAME'],
+                    'src_tbl' : rules_data.loc[idx,'SRC_TBL'],
+                    'src_col': rules_data.loc[idx,'SRC_COL'],
+                    'dq_score': rules_data.loc[idx,'COL_VLD_PCT'],
+                    'threshold': rules_data.loc[idx,'RULE_MAX_THRSD'],
+                    'meas_rule': rules_data.loc[idx,'MEAS_NAME'],
                     'request_id': request_id,
-                    'alert_message': message
-                })
+                    'alert_message': message,
+                    'product_type':prod_info.loc[idx,'product_type'],
+                    'product_area':prod_info.loc[idx,'product_area'],
+                    'product_name':prod_info.loc[idx,'product_name']
+                    })
 
-            # Convert alert info into a DataFrame and load to Opsgenie alert report
             opsgenie_table_info = pd.DataFrame.from_records(opsgenie_alert_info)
             opsgenie_table_info = opsgenie_table_info.reset_index(drop=True)
 
-            # Load alert data to reporting table
             self.load_opsgenie_alert_info(opsgenie_table_info)
-
         except Exception as err:
-            self.logger.error(f"Error in check_sigma_outlier_alerts: {err}")
+            self.logger.info(f"Error in check_threshold_create_opsgenie_Jira_alert while rule profile: {err}")
 
-    def main(self):
+    def get_prod_details(self,data_lob,data_bus_elem,data_dmn,data_sub_dmn):
+        query = f''' select distinct product_type,product_area,product_name,business_program 
+                    from {config.dqaas_rule_prfl_mtd} mtd
+                    JOIN {config.dqaas_auto_rule_prod_mtd} prd 
+                    ON 
+                    mtd.data_lob = prd.data_lob
+                    AND mtd.data_bus_elem = prd.data_bus_elem
+                    AND mtd.data_dmn = prd.data_dmn
+                    AND mtd.data_sub_dmn = prd.data_sub_dmn
+                    where
+                    mtd.data_lob = '{data_lob}'
+                    AND mtd.data_bus_elem = '{data_bus_elem}'
+                    AND mtd.data_dmn = '{data_dmn}'
+                    AND mtd.data_sub_dmn = '{data_sub_dmn}';
+                '''    
         try:
-            self.laod_historical_report()
-            df_mtd = self.get_metadata()
+            # metadata_query = f"""
+            #     SELECT * FROM {config.dqaas_rule_prfl_mtd}
+            #     WHERE IS_ACTIVE_FLG = 'Y'    
+            #     {add_condition}
+            #     ORDER BY rule_id;
+            # """
+            ## AND DATA_SRC = 'TD'
+            df_val = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=query
+            )
+            # df_val = df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
+            return df_val
+        except Exception as err:
+            raise Exception(f'Error Occured While Executing the Query to fetch prod details. Error: {err} ')
+        
+    def initiate_rule_profile(self, rules: pd.DataFrame, sub_domain: str, input_src_filepath=None, critical_flag_value=None):
+        try:
+
+            self.logger.info(f'Total No of Active Records For SQL Profile is {len(rules)} \n Columns List: {rules.columns.tolist()}')
+            self.logger.info(f"Previous Day Date: {self.previous_day_date}")
             
-            sub_domain_list = df_mtd['data_sub_dmn'].unique().tolist()
-            start_date = "current_date-1"
-            end_date = "current_date-1"
+            rules_data = rules.reset_index(drop=True)
+            rules_name = rules_data['MEAS_NAME'].to_list()
+
+            self.logger.info(f'Sub Domain : {sub_domain}')
+            self.mail_list = self.utils.get_email_distros_from_table(data_sub_dmn_list=[sub_domain])
+
+            rules_error_list: list = []
+            if self.data_src in config.RP_NON_AGG_RULES_APPL_DATA_SRC:
+                rules_data, rules_error_list = self.validate_non_agg_rules(rules_data, rules_name)
             
-            for dmn in sub_domain_list:
-                df_result = self.run_metrics_engine(
-                    df_mtd=df_mtd,
-                    start_date=start_date,
-                    end_date=end_date
+            if self.data_src in config.RP_AGG_RULES_APPL_DATA_SRC:
+                rules_data, rules_error_list = self.validate_agg_rules(rules_data, sub_domain)
+            # rules_data['DQ_IND'] = rules_data['COL_VLD_PCT'].map(self.get_score_indicator)
+
+            rules_data['RULE_RUN_DT'] = self.previous_day_date
+            rules_data['SRC_COL_DT_VAL'] = datetime.strftime(self.current_datetime, '%Y-%m-%d %H:%M:%S')
+            
+            # ---------------------------------------------------------------------------
+            # Score Validation
+            rules_data['RULE_MIN_THRSD'] = rules_data['RULE_MIN_THRSD'].fillna(config.RP_DEFAULT_MIN_THRSD)
+            rules_data['RULE_MAX_THRSD'] = rules_data['RULE_MAX_THRSD'].fillna(config.RP_DEFAULT_MAX_THRSD)
+            rules_data['RULE_MIN_THRSD'] = rules_data['RULE_MIN_THRSD'].astype('float64')
+            self.logger.info(f"RULE_MAX_THRSD: {rules_data['RULE_MAX_THRSD']}")
+            rules_data['RULE_MAX_THRSD'] = rules_data['RULE_MAX_THRSD'].astype('float64')
+            self.logger.info(f"RULE_MAX_THRSD: {rules_data['RULE_MAX_THRSD']}")
+            rules_data['DQ_IND'] = ''
+            rules_data['DQ_IND'] = np.where((rules_data['COL_VLD_PCT'] >= rules_data['RULE_MAX_THRSD']),
+                                            'Good', rules_data['DQ_IND'])
+            rules_data['DQ_IND'] = np.where((rules_data['COL_VLD_PCT'] <= rules_data['RULE_MIN_THRSD']),
+                                            'Bad', rules_data['DQ_IND'])
+            rules_data['DQ_IND'] = np.where((rules_data['COL_VLD_PCT'] < rules_data['RULE_MAX_THRSD']) & 
+                                            (rules_data['COL_VLD_PCT'] > rules_data['RULE_MIN_THRSD']), 
+                                            'Average', 
+                                            rules_data['DQ_IND'])
+            rules_data['DQ_IND'] = np.where((rules_data['COL_VLD_CNT'] == 0) &
+                                            (rules_data['COL_INVLD_CNT'] == 0),
+                                            'No Data',
+                                            rules_data['DQ_IND'])
+            # ---------------------------------------------------------------------------
+            
+            df_rules_error_list = pd.DataFrame()
+            if len(rules_error_list) > 0:
+                df_rules_error_list = pd.DataFrame.from_records(rules_error_list)
+                df_rules_error_list = df_rules_error_list.reset_index(drop=True)
+                
+                error_list = df_rules_error_list['rules'].tolist()
+                self.logger.info(f'Rule Names Error List : {error_list}')
+                
+                rules_data['DQ_IND'] = np.where((
+                    (rules_data['MEAS_NAME'].isin(error_list)) & 
+                    (rules_data['SRC_TBL'].isin(df_rules_error_list['table'].tolist()))), 
+                    'error', rules_data['DQ_IND']
                 )
 
-                # Trigger Sigma Value Alerts
-                self.check_sigma_outlier_alerts(df_result)
+            self.logger.info(f'Failure Rules Count: {len(df_rules_error_list)} \n{df_rules_error_list}')
+            self.logger.info(f"Row Count: {len(rules_data)}")
+            try:
+                self.check_threshold_create_opsgenie_Jira_alert(rules_data)
+            except Exception as err:
+                self.logger.error(f"Error occured while creating opsgenie alert during rule profiling {err}")
+            ## Loading Results to Report Table
+            self.load_rule_profile_results(rules_report=rules_data)
+
+            ## Consolidation Email Summary for Trigger Files 
+            self.consolidated_summary_for_trigger_file(sub_domain=sub_domain)
             
-        except ValueError as err:
-            self.logger.error(err)
+            ## Overall Summary Email    
+            self.overall_summary_alert(
+                sub_domain=sub_domain,
+                rules_data=rules_data,
+                df_rules_error_list=df_rules_error_list,
+                critical_flag=critical_flag_value
+            )
+            
+        except Exception as e:
+            raise Exception(f'Error in Profile Initiation Engine. Error: {e}')
+
+    def send_initiation_email(self):
+        ## Process Initiation and Completion Email
+        summary_run_date = datetime.now().strftime("%m-%d-%y")
+        summary_run_time = datetime.now().strftime("X%I:%M %p").replace('X0','').replace('X', '').lower()
+        self.send_email(message=f'Rule Based Profiling Process started for {summary_run_date} at {summary_run_time}.')
+      
+    ## Converting Runtime Arguments into where clause for metadata  
+    def get_addl_condition_using_parser(self, args=None):
+        add_condition: str = ''
+        data_src: str = ''
+        if args:
+            
+            if args.data_dmn:
+                add_condition += f" AND upper(DATA_DMN) in ('{str(args.data_dmn).upper()}') "
+
+            if args.data_sub_dmn:
+                add_condition += f" AND upper(DATA_SUB_DMN) in ('{str(args.data_sub_dmn).upper()}') "
+
+            if args.data_bus_elem:
+                add_condition += f" AND upper(DATA_BUS_ELEM) in ('{str(args.data_bus_elem).upper()}') "
+            
+            if args.data_lob:
+                add_condition += f" AND upper(DATA_LOB) in ('{str(args.data_lob).upper()}') "
+            
+            if args.data_src:
+                data_src = str(args.data_src).upper()
+                add_condition += f" AND upper(DATA_SRC) in ('{data_src}') "
+                
+            if args.data_src is None and self.data_src is not None:
+                data_src = str(self.data_src).upper()	
+                add_condition += f" AND upper(DATA_SRC) in ('{data_src}') "
+                
+            if args.rule_id:
+                add_condition += f" AND rule_id in ({args.rule_id}) "
+            
+            if args.critical_flag_value in ('Y','N'):
+                add_condition += f" AND IS_CRITICAL_FLG = '{str(args.critical_flag_value).upper()}' "
+        
+        return data_src, add_condition
+
+    ## Converting Keyword Arguments into where clause for metadata
+    def get_addl_condition_dict(self, kwargs):
+        add_condition: str = ''
+        data_src: str = ''
+        
+        kwargs = { k.upper(): v for k, v in kwargs.items()}
+        if "DATA_SRC" not in kwargs.keys() and self.data_src is not None:
+            kwargs["DATA_SRC"] = self.data_src
+            
+        for key, value in kwargs.items():
+            column_value = ""
+            if key in ['DATA_DMN', 'DATA_SUB_DMN', 'DATA_BUS_ELEM', 'DATA_LOB', 'SRC_TBL', 'DB_NAME', 'DATA_SRC']:
+                column_value = "', '".join(config.convert_str_to_list(str(value).upper()))
+                add_condition += f" AND upper({key}) IN ('{column_value}') "
+                
+            if key in ['RULE_ID']:
+                column_value = ", ".join(config.convert_str_to_list(value))
+                add_condition += f""" AND {key} in ({column_value}) """
+
+            if key == 'DATA_SRC':
+                data_src = str(value).upper()
+        
+        return data_src, add_condition     
+    
+    ## Get the Metadata from table - DataFrame
+    def get_metadata(self, add_condition: str) -> pd.DataFrame:
+        try:
+            metadata_query = f"""
+                SELECT * FROM {config.dqaas_rule_prfl_mtd}
+                WHERE IS_ACTIVE_FLG = 'Y'    
+                {add_condition}
+                ORDER BY rule_id;
+            """
+            ## AND DATA_SRC = 'TD'
+            df_val = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=metadata_query
+            )
+            df_val = df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
+            return df_val
         except Exception as err:
-            self.logger.error(f"Error in Main Block. Error {err}")
-=========
-=========
-=========
+            raise Exception(f'Error Occured While Executing the Metadata Query. Error: {err} ')
 
-def check_sigma_outlier_alerts(self, df_rules: pd.DataFrame):
-    """
-    Checks for outliers in the 'sigma_value' column and triggers an Opsgenie alert if an outlier is detected.
+    ## Calling the Rule Profile 
+    def call_sql_profile(self, df_metadata: pd.DataFrame, critical_flag: str=None):
+        """Called inside Table Watcher for Initiating Rule Profile Engine"""
+        try:
 
-    Parameters:
-        df_rules (pd.DataFrame): DataFrame containing rule profile data with a 'sigma_value' column.
-
-    Returns:
-        None
-    """
-    try:
-        opsgenie_alert_info = []
-
-        # Ensure 'sigma_value' column exists
-        if 'sigma_value' not in df_rules.columns:
-            self.logger.error("The column 'sigma_value' is missing in the dataset.")
-            return
-
-        # Filter records where sigma_value is an outlier
-        outlier_records = df_rules[df_rules['sigma_value'] == 'outlier']
-
-        if outlier_records.empty:
-            self.logger.info("No outliers found. No alert needed.")
-            return
+            self.logger.info(f"Total rules found for profiling is {len(df_metadata)}")
+            if len(df_metadata) > 0:
+                # Mail for initiating Rule based Profiling process
+                self.send_initiation_email()
+                
+                sub_domain_list = df_metadata['DATA_SUB_DMN'].unique().tolist()
+                for sub_domain in sub_domain_list:
+                    
+                    try:
+                        df_rule_mtd = df_metadata.query(f"DATA_SUB_DMN == '{sub_domain}'")
+                        df_rule_mtd = df_rule_mtd.reset_index(drop=True)
+                        
+                        self.initiate_rule_profile(
+                            rules=df_rule_mtd,
+                            sub_domain=sub_domain,
+                            critical_flag_value=critical_flag
+                        )
+                    except Exception as err:
+                        self.logger.info(f"Error While Initiating Profiling for Sub Domain ({sub_domain}). Error: {err}")
+             
+            else:
+                self.logger.error('Rules Not Found for SQL Profiling')
+                file_list, done_file_date = self.check_if_done_file_exists()
+                
+                self.logger.error(f'File List: {file_list}, Done File Date: {done_file_date}')
+                if len(file_list) > 0:
+                    self.archive_trigger_files(file_list=file_list)
+                
+                self.send_email(message='Rules Not Found for SQL Profiling', subject='Rules not Found')
+                
+                   
+        except Exception as e:
+            self.email_alert(message='Error in Rule Profile Engine', subject='Rules Engine Error')
+            raise Exception('Failed to Initiate Rule Profile Engine.\n Error Info: '+ str(e))
         
-        # Process each outlier row
-        for idx, row in outlier_records.iterrows():
-            alert_message = f"Alert: Sigma Value Outlier detected for Rule {row['meas_name']}"
+
+    ## Main Block
+    def main(self, parse_val=None, **kwargs):
+        try: 
+            self.critical_flag_value = None
+            self.csv_flag = None
+            self.data_sub_dmn = None
+            self.input_src_filepath = None
+            additional_cond_str = None
             
-            # Opsgenie Alert Details
-            alert_type = 'Sigma_Outlier'
-            priority = 'P2'  # Set priority to P2 (High)
-            env = config.get_config_values('environment', 'env')
+            ## Runtime Arguments
+            val = sys.argv[:1]
+            if len(val) == 0 and parse_val is not None:
+                val = parse_val
+            
+            if len(val) > 0:
+                parse_args = get_args_parser(parse_val=val)
+                self.critical_flag_value = parse_args.critical_flag_value
+                self.data_sub_dmn = parse_args.data_sub_dmn
+                self.input_src_filepath = parse_args.input_filepath
+                self.csv_flag = parse_args.csv_flag
+                data_src, additional_cond_str = self.get_addl_condition_using_parser(args=parse_args)
+            
+            ## Keyword Arguments
+            if len(kwargs) > 0:
+                self.logger.info(f"Kwargs: {kwargs}")
+                data_src, additional_cond_str = self.get_addl_condition_dict(kwargs)
+                    
+            self.logger.info(f"""\nCSV Flag: {self.csv_flag} \nCritical Flag: {self.critical_flag_value} 
+                \nFile Path: {self.input_src_filepath} \nAdditional Condition: {additional_cond_str}
+                \nSub Domain: {self.data_sub_dmn}
+                """)
+        
+            if self.csv_flag == 'Y':
+                rules = pd.read_csv(self.input_src_filepath)
+                
+                try:
+                    if os.path.isfile(self.input_src_filepath):
+                        shutil.move(src=self.input_src_filepath, dst=config.ARCHIVE_DIR)
+                        self.logger.info('CSV file moved to Archival path')
+                except Exception as err:
+                    self.logger.error(f'CSV file not Archived. Error: {err}')
+                        
+            else:
+                rules = self.get_metadata(add_condition=additional_cond_str)
 
-            details = {
-                'Message': f"Sigma Value Outlier detected: {row['sigma_value']}",
-                'Sub domain': row['data_sub_dmn'],
-                'Table': row['src_tbl'],
-                'Column': row['grouped_columns'],
-                'DQ Score': row['dq_score'],
-                'Threshold': row['max_thresh_value'],
-                'Alert Type': alert_type
-            }
-
-            # Fetch Opsgenie API Key
-            api_key = row['OPSGENIE_API_KEY']
-            if pd.isna(api_key) or api_key in config.EMPTY_STR_LIST:
-                api_key = config.get_config_values('opsgenie', 'api_key')
-
-            # Initialize Opsgenie Client
-            gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
-            opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
-
-            # Send Opsgenie alert
-            response, request_id, message = opsgenie_client.create_opsgenie_alert(
-                df_rules, idx, alert_type, priority, env, 'sigma_outlier'
+            self.call_sql_profile(
+                df_metadata=rules,
+                critical_flag=self.critical_flag_value
             )
-
-            self.logger.info(f"Opsgenie response: {response}, Alert Sent: {message}")
-
-            # Store alert info
-            opsgenie_alert_info.append({
-                'rule_id': row['prfl_id'],
-                'feature_name': row['feature_name'],
-                'data_bus_elem': row['data_bus_elem'],
-                'data_dmn': row['data_dmn'],
-                'data_sub_dmn': row['data_sub_dmn'],
-                'data_src': row['data_src'],
-                'db_name': row['db_name'],
-                'src_tbl': row['src_tbl'],
-                'grouped_columns': row['grouped_columns'],
-                'dq_score': row['dq_score'],
-                'threshold': row['max_thresh_value'],
-                'meas_rule': row['meas_name'],
-                'request_id': request_id,
-                'alert_message': message
-            })
-
-        # Convert alert info into a DataFrame and load to Opsgenie alert report
-        opsgenie_table_info = pd.DataFrame.from_records(opsgenie_alert_info)
-        opsgenie_table_info = opsgenie_table_info.reset_index(drop=True)
-
-        # Load alert data to reporting table
-        self.load_opsgenie_alert_info(opsgenie_table_info)
-
-    except Exception as err:
-        self.logger.error(f"Error in check_sigma_outlier_alerts: {err}")
-======\
-======
-======
-def main(self):
-    try:
-        self.laod_historical_report()
-        df_mtd = self.get_metadata()
-        
-        sub_domain_list = df_mtd['data_sub_dmn'].unique().tolist()
-        start_date = "current_date-1"
-        end_date = "current_date-1"
-        
-        for dmn in sub_domain_list:
-            df_result = self.run_metrics_engine(
-                df_mtd=df_mtd,
-                start_date=start_date,
-                end_date=end_date
-            )
-
-            # 🔹 Add this line to trigger Sigma Value Outlier Alerts
-            self.check_sigma_outlier_alerts(df_result)
-        
-    except ValueError as err:
-        self.logger.error(err)
-    except Exception as err:
-        self.logger.error(f"Error in Main Block. Error {err}")
-====
-def calculate_sigma_value(df):
-    print("calculate_sigma_value")
-    df['std_dev_value'] = df['std_dev_value'].astype(float)
-    df['count_curr'] = df['count_curr'].fillna(0).astype(float)
-    df['avg_count_prev'] = df['avg_count_prev'].astype(float)
-
-    conditions_null_dim = [
-        (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 1 * df['std_dev_value'].fillna(0).astype(float)) & 
-        (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 1 * df['std_dev_value'].fillna(0).astype(float)),
-        
-        (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 2 * df['std_dev_value'].fillna(0).astype(float)) & 
-        (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 2 * df['std_dev_value'].fillna(0).astype(float)),
-        
-        (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 3 * df['std_dev_value'].fillna(0).astype(float)) & 
-        (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 3 * df['std_dev_value'].fillna(0).astype(float)),
-        
-        pd.isna(df['grouped_columns'])
-    ]
-
-    choices = [1, 2, 3, 'outlier']
-    df['sigma_value'] = np.select(conditions_null_dim, choices, default='outlier')
-=====
-=====
-def load_opsgenie_alert_info(self, opsgenie_table_info: pd.DataFrame):
-    try:
-        if opsgenie_table_info.empty:
-            self.logger.info("No alerts to log. Skipping alert storage.")
-            return
-        
-        self.utils.load_result_to_bq_report_table(
-            dq_bq_client=self.utils.bigquery_client(auth=config.dq_gcp_auth_payload)[0],
-            dq_credentials=config.dq_gcp_auth_payload,
-            dq_report_table_name=config.dqaas_alerts_table,
-            df_load_data=opsgenie_table_info,
-            seq_name='alert_seq_num'
-        )
-        self.logger.info("Opsgenie Alert Data successfully loaded into BQ table.")
-        
-    except Exception as err:
-        self.logger.error(f"Error in load_opsgenie_alert_info: {err}")
-=====
-=====
+        except Exception as err:
+            self.logger.error(f"Error in Main Block Execution. Error: {err}")
