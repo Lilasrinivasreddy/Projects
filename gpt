@@ -1,87 +1,199 @@
-SELECT rule_MTN_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count"
-FROM (
-    SELECT CASE 
-        WHEN MTN IS NOT NULL THEN 'VALID' 
-        ELSE 'INVALID' 
-    END AS rule_MTN_DLA_SUM_FACT_V_Completeness
-    FROM NTL_PRD_ALLVM.DLA_FACT_V
-    WHERE CAST(ACTIVITY_DATE AS DATE) = CURRENT_DATE - 1
-) AS subquery
-GROUP BY rule_MTN_DLA_SUM_FACT_V_Completeness;
+    def check_threshold_create_opsgenie_Jira_alert(self,rules_data=pd.DataFrame()):
+        try:
+            opsgenie_alert_info: list = [] 
+            #rules_data  = rules_data[rules_data['IS_OPSGENIE_FLG'] == "Y"]
+            rules_data['RULE_MAX_THRSD'] = rules_data['RULE_MAX_THRSD'].fillna(config.RP_DEFAULT_MAX_THRSD)
+            rules_data = rules_data.reset_index(drop=True)
+            for idx in rules_data.index:
+                #if rules_data.loc[idx,'COL_VLD_PCT'] < rules_data.loc[idx,'RULE_MIN_THRSD']:
+                self.logger.info(f"COL_VLD_PCT: {rules_data.loc[idx,'COL_VLD_PCT']}")
+                self.logger.info(f"RULE_MAX_THRSD: {rules_data.loc[idx,'RULE_MAX_THRSD']}")
+                if rules_data.loc[idx,'COL_VLD_PCT'] < rules_data.loc[idx,'RULE_MAX_THRSD']:
+                    if rules_data.loc[idx,'IS_OPSGENIE_FLG'] == 'Y':
+                        priority = "p3"
+                        alert_type = 'SQL_Rule_failed' 
+                        profile_type = "sql_rule"        
+                        env = config.get_config_values('environment', 'env')                                
+                        details={'Message': f"Rule: {rules_data.loc[idx,'MEAS_NAME']} score is below threshold", 'Sub domain': rules_data.loc[idx,'DATA_SUB_DMN'], 'Table': rules_data.loc[idx,'SRC_TBL'], 'Data Src': rules_data.loc[idx,'DATA_SRC'] }
+                        api_key = rules_data.loc[idx,'OPSGENIE_API_KEY']
+                        #if not api_key:
+                        if api_key in config.EMPTY_STR_LIST or (isinstance(api_key,float) and math.isnan(api_key)) :
+                                # Opsgenie Api Key
+                                api_key = config.get_config_values('opsgenie', 'api_key')
 
-SELECT rule_SOR_ID_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count"
-FROM (
-    SELECT CASE 
-        WHEN SOR_ID IS NOT NULL THEN 'VALID' 
-        ELSE 'INVALID' 
-    END AS rule_SOR_ID_DLA_SUM_FACT_V_Completeness
-    FROM NTL_PRD_ALLVM.DLA_FACT_V
-    WHERE CAST(ACTIVITY_DATE AS DATE) = CURRENT_DATE - 1
-) AS subquery
-GROUP BY rule_SOR_ID_DLA_SUM_FACT_V_Completeness;
+                        # response,request_id,message = self.create_opsgenie_alert(rules_data,idx,alert_type,priority,api_key)
+                        gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL          
+                        opsgenie_client = Alert(api_key=api_key,proxy=gcp_http_proxy_url)
+                        response,request_id,message = opsgenie_client.create_opsgenie_alert(rules_data, 0,alert_type,priority,env ,profile_type)
+                        self.logger.info(f"Opsgenie response code: {response}")
+                        self.logger.info('Opsgenie alert sent successfully')
+                        self.logger.info(f"Alert Message: {message}")
+                    elif rules_data.loc[idx,'JIRA_ASSIGNEE'] is not None:  
+                        try:
+                            jira_assignee = rules_data.loc[idx,'JIRA_ASSIGNEE']
+                            lable = "DQaaS"       
+                            table_name = rules_data.loc[idx,'SRC_TBL']                  
+                            self.logger.info(f"Calling Jira Module for: {table_name}")                        
+                            self.logger.info(f"No data found for the table: {table_name}")  
 
-SELECT rule_CUST_ID_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count"
-FROM (
-    SELECT CASE 
-        WHEN CUST_ID IS NOT NULL THEN 'VALID' 
-        ELSE 'INVALID' 
-    END AS rule_CUST_ID_DLA_SUM_FACT_V_Completeness
-    FROM NTL_PRD_ALLVM.DLA_FACT_V
-    WHERE CAST(ACTIVITY_DATE AS DATE) = CURRENT_DATE - 1
-) AS subquery
-GROUP BY rule_CUST_ID_DLA_SUM_FACT_V_Completeness;
+                            process_date = f"'{datetime.now().date() - timedelta(days=config.RP_N_DAYS_LIMIT)}'"                                            
+                            
+                            summary = f"LensX|DQ Failure|Table: {table_name} no data found for profiling"
+                            description = f"DQ has failed for Table : {table_name} on Process date : {process_date}."
+                            jira_client = Jira_ticket()
+                            ticket_id=jira_client.create_jira_ticket(jira_assignee,summary, description,lable)
+                            self.logger.info(f"Jira Id created: {ticket_id}")
+                        except Exception as err:
+                            self.logger.error(f"Error occured while creating JIRA tickets {err}")
+                    
 
-SELECT rule_CUST_LINE_SEQ_ID_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count"
-FROM (
-    SELECT CASE 
-        WHEN CUST_LINE_SEQ_ID IS NOT NULL THEN 'VALID' 
-        ELSE 'INVALID' 
-    END AS rule_CUST_LINE_SEQ_ID_DLA_SUM_FACT_V_Completeness
-    FROM NTL_PRD_ALLVM.DLA_FACT_V
-    WHERE CAST(ACTIVITY_DATE AS DATE) = CURRENT_DATE - 1
-) AS subquery
-GROUP BY rule_CUST_LINE_SEQ_ID_DLA_SUM_FACT_V_Completeness;
+                    try:
+                        data_lob = rules_data.loc[idx,'DATA_LOB']
+                        data_bus_elem = rules_data.loc[idx,'DATA_BUS_ELEM']
+                        data_dmn = rules_data.loc[idx,'DATA_DMN']
+                        data_sub_dmn = rules_data.loc[idx,'DATA_SUB_DMN']
 
-SELECT rule_ACTIVITY_CD_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count"
-FROM (
-    SELECT CASE 
-        WHEN ACTIVITY_CD IS NOT NULL THEN 'VALID' 
-        ELSE 'INVALID' 
-    END AS rule_ACTIVITY_CD_DLA_SUM_FACT_V_Completeness
-    FROM NTL_PRD_ALLVM.DLA_FACT_V
-    WHERE CAST(ACTIVITY_DATE AS DATE) = CURRENT_DATE - 1
-) AS subquery
-GROUP BY rule_ACTIVITY_CD_DLA_SUM_FACT_V_Completeness;
+                        prod_info = self.get_prod_details(data_lob,data_bus_elem,data_dmn,data_sub_dmn)
+                    except Exception as err:
+                        self.logger.error(f"Error occured while fetching product details {err}")
 
-SELECT rule_MTN_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count"
-FROM (
-    SELECT CASE 
-        WHEN MTN IS NOT NULL THEN 'VALID' 
-        ELSE 'INVALID' 
-    END AS rule_MTN_DLA_SUM_FACT_V_Completeness
-    FROM NTL_PRD_ALLVM.DLA_FACT_V
-    WHERE CAST(ACTIVITY_DATE AS DATE) = CURRENT_DATE - 1
-) AS subquery
-GROUP BY rule_MTN_DLA_SUM_FACT_V_Completeness;
+                    opsgenie_alert_info.append({                    
+                    'rule_id' : rules_data.loc[idx,'RULE_ID'],
+                    'data_bus_elem':rules_data.loc[idx,'DATA_BUS_ELEM'],
+                    'data_dmn': rules_data.loc[idx,'DATA_DMN'],
+                    'data_sub_dmn': rules_data.loc[idx,'DATA_SUB_DMN'],
+                    'data_src': rules_data.loc[idx,'DATA_SRC'],
+                    'db_name': rules_data.loc[idx,'DB_NAME'],
+                    'src_tbl' : rules_data.loc[idx,'SRC_TBL'],
+                    'src_col': rules_data.loc[idx,'SRC_COL'],
+                    'dq_score': rules_data.loc[idx,'COL_VLD_PCT'],
+                    'threshold': rules_data.loc[idx,'RULE_MAX_THRSD'],
+                    'meas_rule': rules_data.loc[idx,'MEAS_NAME'],
+                    'request_id': request_id,
+                    'alert_message': message,
+                    'product_type':prod_info.loc[idx,'product_type'],
+                    'product_area':prod_info.loc[idx,'product_area'],
+                    'product_name':prod_info.loc[idx,'product_name']
+                    })
 
-SELECT rule_ACCT_NUM_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count"
-FROM (
-    SELECT CASE 
-        WHEN ACCT_NUM IS NOT NULL THEN 'VALID' 
-        ELSE 'INVALID' 
-    END AS rule_ACCT_NUM_DLA_SUM_FACT_V_Completeness
-    FROM NTL_PRD_ALLVM.DLA_FACT_V
-    WHERE CAST(ACTIVITY_DATE AS DATE) = CURRENT_DATE - 1
-) AS subquery
-GROUP BY rule_ACCT_NUM_DLA_SUM_FACT_V_Completeness;
+            opsgenie_table_info = pd.DataFrame.from_records(opsgenie_alert_info)
+            opsgenie_table_info = opsgenie_table_info.reset_index(drop=True)
 
-SELECT rule_CUST_TYPE_CD_DLA_SUM_FACT_V_Completeness, COUNT(*) AS "count"
-FROM (
-    SELECT CASE 
-        WHEN CUST_TYPE_CD IS NOT NULL THEN 'VALID' 
-        ELSE 'INVALID' 
-    END AS rule_CUST_TYPE_CD_DLA_SUM_FACT_V_Completeness
-    FROM NTL_PRD_ALLVM.DLA_FACT_V
-    WHERE CAST(ACTIVITY_DATE AS DATE) = CURRENT_DATE - 1
-) AS subquery
-GROUP BY rule_CUST_TYPE_CD_DLA_SUM_FACT_V_Completeness;
+            self.load_opsgenie_alert_info(opsgenie_table_info)
+        except Exception as err:
+            self.logger.info(f"Error in check_threshold_create_opsgenie_Jira_alert while rule profile: {err}")
+
+    def get_prod_details(self,data_lob,data_bus_elem,data_dmn,data_sub_dmn):
+        query = f''' select distinct product_type,product_area,product_name,business_program 
+                    from {config.dqaas_rule_prfl_mtd} mtd
+                    JOIN {config.dqaas_auto_rule_prod_mtd} prd 
+                    ON 
+                    mtd.data_lob = prd.data_lob
+                    AND mtd.data_bus_elem = prd.data_bus_elem
+                    AND mtd.data_dmn = prd.data_dmn
+                    AND mtd.data_sub_dmn = prd.data_sub_dmn
+                    where
+                    mtd.data_lob = '{data_lob}'
+                    AND mtd.data_bus_elem = '{data_bus_elem}'
+                    AND mtd.data_dmn = '{data_dmn}'
+                    AND mtd.data_sub_dmn = '{data_sub_dmn}';
+                '''    
+        try:
+            # metadata_query = f"""
+            #     SELECT * FROM {config.dqaas_rule_prfl_mtd}
+            #     WHERE IS_ACTIVE_FLG = 'Y'    
+            #     {add_condition}
+            #     ORDER BY rule_id;
+            # """
+            ## AND DATA_SRC = 'TD'
+            df_val = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=query
+            )
+            # df_val = df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
+            return df_val
+        except Exception as err:
+            raise Exception(f'Error Occured While Executing the Query to fetch prod details. Error: {err} ')
+        
+    def initiate_rule_profile(self, rules: pd.DataFrame, sub_domain: str, input_src_filepath=None, critical_flag_value=None):
+        try:
+
+            self.logger.info(f'Total No of Active Records For SQL Profile is {len(rules)} \n Columns List: {rules.columns.tolist()}')
+            self.logger.info(f"Previous Day Date: {self.previous_day_date}")
+            
+            rules_data = rules.reset_index(drop=True)
+            rules_name = rules_data['MEAS_NAME'].to_list()
+
+            self.logger.info(f'Sub Domain : {sub_domain}')
+            self.mail_list = self.utils.get_email_distros_from_table(data_sub_dmn_list=[sub_domain])
+
+            rules_error_list: list = []
+            if self.data_src in config.RP_NON_AGG_RULES_APPL_DATA_SRC:
+                rules_data, rules_error_list = self.validate_non_agg_rules(rules_data, rules_name)
+            
+            if self.data_src in config.RP_AGG_RULES_APPL_DATA_SRC:
+                rules_data, rules_error_list = self.validate_agg_rules(rules_data, sub_domain)
+            # rules_data['DQ_IND'] = rules_data['COL_VLD_PCT'].map(self.get_score_indicator)
+
+            rules_data['RULE_RUN_DT'] = self.previous_day_date
+            rules_data['SRC_COL_DT_VAL'] = datetime.strftime(self.current_datetime, '%Y-%m-%d %H:%M:%S')
+            
+            # ---------------------------------------------------------------------------
+            # Score Validation
+            rules_data['RULE_MIN_THRSD'] = rules_data['RULE_MIN_THRSD'].fillna(config.RP_DEFAULT_MIN_THRSD)
+            rules_data['RULE_MAX_THRSD'] = rules_data['RULE_MAX_THRSD'].fillna(config.RP_DEFAULT_MAX_THRSD)
+            rules_data['RULE_MIN_THRSD'] = rules_data['RULE_MIN_THRSD'].astype('float64')
+            self.logger.info(f"RULE_MAX_THRSD: {rules_data['RULE_MAX_THRSD']}")
+            rules_data['RULE_MAX_THRSD'] = rules_data['RULE_MAX_THRSD'].astype('float64')
+            self.logger.info(f"RULE_MAX_THRSD: {rules_data['RULE_MAX_THRSD']}")
+            rules_data['DQ_IND'] = ''
+            rules_data['DQ_IND'] = np.where((rules_data['COL_VLD_PCT'] >= rules_data['RULE_MAX_THRSD']),
+                                            'Good', rules_data['DQ_IND'])
+            rules_data['DQ_IND'] = np.where((rules_data['COL_VLD_PCT'] <= rules_data['RULE_MIN_THRSD']),
+                                            'Bad', rules_data['DQ_IND'])
+            rules_data['DQ_IND'] = np.where((rules_data['COL_VLD_PCT'] < rules_data['RULE_MAX_THRSD']) & 
+                                            (rules_data['COL_VLD_PCT'] > rules_data['RULE_MIN_THRSD']), 
+                                            'Average', 
+                                            rules_data['DQ_IND'])
+            rules_data['DQ_IND'] = np.where((rules_data['COL_VLD_CNT'] == 0) &
+                                            (rules_data['COL_INVLD_CNT'] == 0),
+                                            'No Data',
+                                            rules_data['DQ_IND'])
+            # ---------------------------------------------------------------------------
+            
+            df_rules_error_list = pd.DataFrame()
+            if len(rules_error_list) > 0:
+                df_rules_error_list = pd.DataFrame.from_records(rules_error_list)
+                df_rules_error_list = df_rules_error_list.reset_index(drop=True)
+                
+                error_list = df_rules_error_list['rules'].tolist()
+                self.logger.info(f'Rule Names Error List : {error_list}')
+                
+                rules_data['DQ_IND'] = np.where((
+                    (rules_data['MEAS_NAME'].isin(error_list)) & 
+                    (rules_data['SRC_TBL'].isin(df_rules_error_list['table'].tolist()))), 
+                    'error', rules_data['DQ_IND']
+                )
+
+            self.logger.info(f'Failure Rules Count: {len(df_rules_error_list)} \n{df_rules_error_list}')
+            self.logger.info(f"Row Count: {len(rules_data)}")
+            try:
+                self.check_threshold_create_opsgenie_Jira_alert(rules_data)
+            except Exception as err:
+                self.logger.error(f"Error occured while creating opsgenie alert during rule profiling {err}")
+            ## Loading Results to Report Table
+            self.load_rule_profile_results(rules_report=rules_data)
+
+            ## Consolidation Email Summary for Trigger Files 
+            self.consolidated_summary_for_trigger_file(sub_domain=sub_domain)
+            
+            ## Overall Summary Email    
+            self.overall_summary_alert(
+                sub_domain=sub_domain,
+                rules_data=rules_data,
+                df_rules_error_list=df_rules_error_list,
+                critical_flag=critical_flag_value
+            )
+            
+        except Exception as e:
+            raise Exception(f'Error in Profile Initiation Engine. Error: {e}')
