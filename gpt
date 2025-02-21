@@ -1,74 +1,61 @@
-def send_opsgenie_alert_for_outliers(self, reference_key: str):
-    try:
-        # Query to fetch final results where sigma_value = 'outlier'
-        report_query = f"""
-            SELECT rpt.*, 
-                   mtd.data_lob, mtd.data_bus_elem, mtd.db_name, mtd.src_tbl, 
-                   mtd.dq_pillar, mtd.opsgenie_api, mtd.opsgenie_flag
-            FROM {config.dqaas_profile_mtd} mtd 
-            INNER JOIN 
-            (SELECT * FROM {config.dqaas_profile_rpt} 
-             WHERE rpt_ref_key = '{reference_key}' AND sigma_value = 'outlier') rpt
-            ON mtd.prfl_id = rpt.prfl_id
-            WHERE upper(mtd.prfl_type) = 'CUSTOM_RULES'
-        """
-        self.logger.info(f"Opsgenie Query: {report_query}")
+def send_opsgenie_jira_alert(self, reference_key: str):
+        try:
+            
+            report_query = f"""                
+                select rpt.*, 
+                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag
+                from {config.dqaas_mtd} mtd 
+                inner join 
+                (select * from 
+                {config.dqaas_profile_rpt} 
+                where rpt_ref_key = {reference_key} ) rpt
+                on mtd.profile_id = rpt.profile_id
+                and upper(mtd.profile_type) = 'RULE_CUSTOM'
+            """
+            self.logger.info(f"opsgenie info Query : {report_query}")
 
-        report_df = self.utils.run_bq_sql(
-            bq_auth=config.dq_gcp_auth_payload,
-            select_query=report_query
-        )
+            report_df = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=report_query
+            )
+            
+            if len(report_df) == 0:
+                raise Exception("No Records found for opsgenie alert")
+            
+            self.logger.info(f"report_df: {report_df}")
+            
+            for idx in report_df.index:
+                if report_df.loc[idx,'dq_status'].upper() == "LOW":
+                    if report_df.loc[idx,'opsgenie_flag'].upper() == "Y":                
+                        alert_type = 'custom_profile_failed'  
+                        profile_type = "custom"        
+                        env = config.get_config_values('environment', 'env')  
+                        priority = "p3"                                    
+                        api_key = report_df.loc[idx,'opsgenie_api']                    
+                        if api_key in config.EMPTY_STR_LIST or (isinstance(api_key,float) and math.isnan(api_key)) :
+                                # Opsgenie Api Key
+                                api_key = config.get_config_values('opsgenie', 'api_key')
 
-        if report_df.empty:
-            self.logger.warning("No outlier records found for Opsgenie alert")
-            return
-
-        self.logger.info(f"Outlier Records for Opsgenie:\n{report_df}")
-
-        for idx in report_df.index:
-            if report_df.loc[idx, 'opsgenie_flag'].upper() == "Y":  
-                alert_type = 'custom_profile_outlier'  
-                profile_type = "custom"        
-                env = config.get_config_values('environment', 'env')  
-                priority = "P2"  # High priority for outliers 
-                api_key = report_df.loc[idx, 'opsgenie_api']
-
-                # If API key is missing, use default from config
-                if api_key in config.EMPTY_STR_LIST or pd.isna(api_key):
-                    api_key = config.get_config_values('opsgenie', 'api_key')
-
-                report_df = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
-                gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL          
+                        report_df = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
+                        gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL          
+                        opsgenie_client = Alert(api_key=api_key,proxy=gcp_http_proxy_url)
+                        response,request_id,message = opsgenie_client.create_opsgenie_alert(report_df, 0,alert_type,priority,env ,profile_type)
+                        self.logger.info(f"Opsgenie response code: {response}")
+                        self.logger.info('Opsgenie alert sent successfully')
+                    elif report_df.loc[idx,'JIRA_ASSIGNEE'] is not None: 
+                        try:
+                            JIRA_ASSIGNEE = report_df.loc[idx,'JIRA_ASSIGNEE']
+                            lable = "DQaaS"
+                            self.logger.info(f"Calling Jira Module for: {report_df.loc[idx,'TABLE_NAME']}")
+                            self.logger.info(f"dq_status: {report_df.loc[idx,'dq_status']}")                                                                        
+                            summary = f"LensX|DQ Failure|Table: {report_df.loc[idx,'TABLE_NAME']} DQ status is LOW"
+                            description = f"DQ has failed for Table : {report_df.loc[idx,'TABLE_NAME']} on Run date : {report_df.loc[idx,'PRFL_RUN_DT']}. DQ status is LOW"
+                            jira_client = Jira_ticket()
+                            ticket_id=jira_client.create_jira_ticket(JIRA_ASSIGNEE,summary, description,lable)
+                            self.logger.info(f"Jira Id created: {ticket_id}")
+                        except Exception as err:
+                            self.logger.error(f"Error occured while creating JIRA tickets {err}")
                 
-                # Initialize Opsgenie client
-                opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
-                
-                # Send alert
-                response, request_id, message = opsgenie_client.create_opsgenie_alert(
-                    report_df, 0, alert_type, priority, env, profile_type
-                )
+        except Exception as err:
+            self.logger.error(f"Error occured while creating opsgenie alert. Error: {err}")
 
-                self.logger.info(f"Opsgenie response: {response}")
-                self.logger.info("Opsgenie alert sent successfully")
-
-    except Exception as err:
-        self.logger.error(f"Error in sending Opsgenie alert for outliers. Error: {err}")
-
-
-
-def main_metrics_execution(self, df_mtd: pd.DataFrame, sub_domain: str, start_date: str, end_date: str):
-    ...
-    ## Loading Results to Report
-    self.load_to_report_results(
-        df_report_result=df_end_result,
-        reference_key=reference_key
-    )
-
-    ## Send Email
-    self.send_email_report(
-        reference_key=reference_key,
-        sub_domain=sub_domain
-    )
-
-    ## Send Opsgenie Alert for Outliers
-    self.send_opsgenie_alert_for_outliers(reference_key)
