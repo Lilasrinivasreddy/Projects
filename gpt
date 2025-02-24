@@ -1,87 +1,77 @@
-import math
+#Create an opsgenie function
+    def send_opsgenie_jira_outlier_alert(self, reference_key: str):
+        try:
+            report_query = f"""                
+                SELECT rpt.*, 
+                    mtd.data_lob, mtd.data_sub_dmn, mtd.database_name, mtd.table_name, 
+                    mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api, mtd.opsgenie_flag
+                FROM {config.dqaas_mtd} mtd 
+                INNER JOIN 
+                (SELECT * FROM {config.dqaas_profile_rpt} 
+                WHERE rpt_ref_key = '{reference_key}' 
+                AND (dq_status = 'LOW' OR sigma_value = 'outlier') ) rpt
+                ON mtd.profile_id = rpt.profile_id
+                WHERE upper(mtd.profile_type) = 'RULE_CUSTOM'
+            """
+            self.logger.info(f"Opsgenie Info Query: {report_query}")
 
-def send_opsgenie_jira_outlier_alert(self, reference_key: str):
-    try:
-        self.logger.info(f"Fetching Opsgenie alerts for reference key: {reference_key}")
+            report_df = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=report_query
+            )
+            
+            if len(report_df) == 0:
+                self.logger.warning("No records found for Opsgenie alert")
+                return
+            
+            self.logger.info(f"Report DataFrame for Opsgenie Alerts: {report_df}")
 
-        # Optimized Query: Fetch required fields only and include Domain Name filtering
-        report_query = f"""                
-            SELECT rpt.profile_id, rpt.dq_status, rpt.sigma_value, rpt.prfl_run_dt, 
-                   mtd.table_name, mtd.opsgenie_api, mtd.opsgenie_flag, mtd.JIRA_ASSIGNEE,
-                   mtd."Domain Name"
-            FROM {config.dqaas_mtd} mtd 
-            INNER JOIN 
-            (SELECT profile_id, dq_status, sigma_value, prfl_run_dt 
-             FROM {config.dqaas_profile_rpt} 
-             WHERE rpt_ref_key = '{reference_key}' 
-             AND (dq_status = 'LOW' OR sigma_value = 'outlier') ) rpt
-            ON mtd.profile_id = rpt.profile_id
-            WHERE upper(mtd.profile_type) = 'RULE_CUSTOM'
-            AND mtd."Domain Name" = 'One_ex_Model_DQ_TIER1'  -- Additional filter condition
-        """
-        self.logger.info(f"Opsgenie Info Query: {report_query}")
+            for idx in report_df.index:
+                alert_type = None
+                priority = None
 
-        # Fetch data
-        report_df = self.utils.run_bq_sql(
-            bq_auth=config.dq_gcp_auth_payload,
-            select_query=report_query
-        )
+                # Fetch records where dq_status = 'LOW' OR sigma_value = 'outlier'
+                if report_df.loc[idx, 'dq_status'].upper() == "LOW":
+                    alert_type = 'custom_profile_failed'
+                    priority = "P3"  
 
-        if report_df.empty:
-            self.logger.warning("No records found for Opsgenie alert.")
-            return
+                if report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_outlier'
+                    priority = "P3"  
 
-        self.logger.info(f"Found {len(report_df)} records for Opsgenie Alerts")
+                if alert_type and report_df.loc[idx, 'opsgenie_flag'].upper() == "Y":
+                    profile_type = "custom"
+                    env = config.get_config_values('environment', 'env')
+                    api_key = report_df.loc[idx, 'opsgenie_api']
 
-        for idx, row in report_df.iterrows():
-            dq_status = row['dq_status'].upper() if isinstance(row['dq_status'], str) else ""
-            sigma_value = row['sigma_value'].lower() if isinstance(row['sigma_value'], str) else ""
-            opsgenie_flag = row['opsgenie_flag'].upper() if isinstance(row['opsgenie_flag'], str) else "N"
-            table_name = row.get('table_name', 'Unknown Table')
-            prfl_run_dt = row.get('prfl_run_dt', 'Unknown Date')
-            domain_name = row.get("Domain Name", "Unknown Domain")
-            jira_assignee = row.get('JIRA_ASSIGNEE')
+                    # Use default API key
+                    if api_key in config.EMPTY_STR_LIST or (isinstance(api_key, float) and math.isnan(api_key)):
+                        api_key = config.get_config_values('opsgenie', 'api_key')
 
-            # Ensure processing only if Domain Name is 'One_ex_Model_DQ_TIER1'
-            if domain_name != "One_ex_Model_DQ_TIER1":
-                self.logger.info(f"Skipping record as Domain Name does not match 'One_ex_Model_DQ_TIER1' ({domain_name})")
-                continue
-
-            alert_type, priority = None, None
-            if dq_status == "LOW":
-                alert_type, priority = 'custom_profile_failed', "P3"
-            elif sigma_value == "outlier":
-                alert_type, priority = 'custom_profile_outlier', "P2"
-
-            if alert_type and opsgenie_flag == "Y":
-                profile_type = "custom"
-                env = config.get_config_values('environment', 'env')
-                api_key = row.get('opsgenie_api', "")
-
-                # Fallback to default API key
-                if not api_key or (isinstance(api_key, float) and math.isnan(api_key)):
-                    api_key = config.get_config_values('opsgenie', 'api_key')
-
-                gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
-                opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
-
-                try:
+                    report_df = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
+                    gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
+                
+                    opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
+                    
+                    # Send Opsgenie alert
                     response, request_id, message = opsgenie_client.create_opsgenie_alert(
                         report_df, 0, alert_type, priority, env, profile_type
                     )
-                    self.logger.info(f"Opsgenie Alert Sent: Type={alert_type}, Response={response}")
-                except Exception as e:
-                    self.logger.error(f"Failed to send Opsgenie Alert. Error: {e}")
 
-            elif jira_assignee:
-                try:
-                    summary = f"LensX | DQ Issue | Table: {table_name}"
-                    description = f"DQ Issue detected for Table {table_name} on Run Date {prfl_run_dt}."
-                    jira_client = Jira_ticket()
-                    ticket_id = jira_client.create_jira_ticket(jira_assignee, summary, description, "DQaaS")
-                    self.logger.info(f"Jira Ticket Created: {ticket_id}")
-                except Exception as e:
-                    self.logger.error(f"Failed to create JIRA ticket. Error: {e}")
+                    self.logger.info(f"Opsgenie response code: {response}")
+                    self.logger.info(f"Opsgenie alert sent successfully for {alert_type}")
 
-    except Exception as err:
-        self.logger.error(f"Unexpected error in send_opsgenie_jira_outlier_alert: {err}")
+                elif report_df.loc[idx, 'JIRA_ASSIGNEE'] is not None: 
+                    try:
+                        JIRA_ASSIGNEE = report_df.loc[idx, 'JIRA_ASSIGNEE']
+                        label = "DQaaS"
+                        summary = f"LensX | DQ Issue | Table: {report_df.loc[idx,'TABLE_NAME']}"
+                        description = f"DQ Issue detected for Table {report_df.loc[idx,'TABLE_NAME']} on Run Date {report_df.loc[idx,'PRFL_RUN_DT']}."
+                        jira_client = Jira_ticket()
+                        ticket_id = jira_client.create_jira_ticket(JIRA_ASSIGNEE, summary, description, label)
+                        self.logger.info(f"Jira ticket created: {ticket_id}")
+                    except Exception as err:
+                        self.logger.error(f"Error while creating JIRA ticket: {err}")
+        
+        except Exception as err:
+            self.logger.error(f"Error occurred while sending Opsgenie alert. Error: {err}")
