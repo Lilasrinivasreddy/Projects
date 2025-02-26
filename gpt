@@ -1,1 +1,12 @@
-2025-02-26 21:54:44 : CRM - main - ERROR : Error in Main Block. Error module 'config_params' has no attribute 'error'
+PS C:\Users\reddyvu\Desktop\smart_dq>  c:; cd 'c:\Users\reddyvu\Desktop\smart_dq'; & 'c:\Users\reddyvu\AppData\Local\Programs\Python\Python312\python.exe' 'c:\Users\reddyvu\.vscode\extensions\ms-python.debugpy-2025.0.1-win32-x64\bundled\libs\debugpy\launcher' '51068' '--' 'c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\custom_metrics.py' 
+c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\..\config\config.ini
+c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\..\config\config.ini
+name:CRM, path:C:\Users\reddyvu\Desktop\smart_dq\smartdq/smartdq_gcp_migration//logs/CustomMetricsLogs_2025-02-26-22-34-57.log  
+Traceback (most recent call last):
+  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\custom_metrics.py", line 853, in <module>       
+    CustomeMetrics().main()
+    ^^^^^^^^^^^^^^^^
+  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\custom_metrics.py", line 34, in __init__        
+    self.utils = CommonUtils(config,self.logger)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: CommonUtils.__init__() takes from 1 to 2 positional arguments but 3 were given
