@@ -1,7 +1,4 @@
-  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\customer_metrics_and_micro_segment\custom_metrics.py", line 19, in <module>
-    from scripts.dqaas_jira import Jira_ticket
-  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\dqaas_jira.py", line 13, in <module>
-    from scripts.common_handlers import CommonUtils, set_logger
-  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\common_handlers.py", line 35, in <module>
-    from utils.logger import Logger
-ModuleNotFoundError: No module named 'utils'
+2025-02-26 16:02:12 : CRM - laod_historical_report - INFO : Inside laod_historical_report
+2025-02-26 16:02:12 : CRM - laod_historical_report - ERROR : Error While Executing fetch_sql: Errormodule 'config_params' has no attribute 'dqaas_profile_mtd'
+2025-02-26 16:02:12 : CRM - laod_historical_report - ERROR : Error While Executing insert_sql: Error'str' object has no attribute 'iterrows'
+2025-02-26 16:02:12 : CRM - main - ERROR : Error in Main Block. Error module 'config_params' has no attribute 'dqaas_mtd'
