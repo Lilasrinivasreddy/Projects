@@ -1,8 +1,82 @@
-Section/Key Not Found in config. Section: master_mtd_table, Param: dq_metadata_table. Error: No section: 'master_mtd_table'
-Traceback (most recent call last):
-  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\customer_metrics_and_micro_segment\custom_metrics.py", line 14, in <module>
-    import config_params as config
-  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\customer_metrics_and_micro_segment\config_params.py", line 250, in <module>
-    dqaas_mtd = metadata_dbname   + "." +  get_config_values("master_mtd_table", "dq_metadata_table")
-                ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TypeError: can only concatenate str (not "NoneType") to str
+ #Create an opsgenie function
+    def send_opsgenie_jira_outlier_alert(self, reference_key: str):
+        try:
+            report_query = f"""                
+                SELECT rpt.*, 
+                    mtd.data_lob, mtd.data_sub_dmn, mtd.database_name, mtd.table_name, 
+                    mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api, mtd.opsgenie_flag
+                FROM {config.dqaas_mtd} mtd 
+                INNER JOIN 
+                (SELECT * FROM {config.dqaas_profile_rpt} 
+                WHERE rpt_ref_key = '{reference_key}'             
+                ON mtd.profile_id = rpt.profile_id
+                WHERE upper(mtd.profile_type) = 'RULE_CUSTOM'
+            """
+            self.logger.info(f"Opsgenie Info Query: {report_query}")
+
+            report_df = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=report_query
+            )
+            
+            if len(report_df) == 0:
+                self.logger.warning("No records found for Opsgenie alert")
+                return
+            
+            self.logger.info(f"Report DataFrame for Opsgenie Alerts: {report_df}")
+
+            for idx in report_df.index:
+                alert_type = None
+                priority = None
+
+                # Fetch records where dq_status = 'LOW' OR sigma_value = 'outlier'
+                if report_df.loc[idx, 'dq_ind'].upper() == "LOW" and report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_both_dq_status and sigma_value failed'
+                    priority = "P3"  
+
+                elif report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_outlier'
+                    priority = "P3" 
+                elif report_df.loc[idx, 'dq_ind'].upper() == "LOW":
+                    alert_type = 'custom_profile_dq_status failed'
+                    priority = "P3"
+                else:
+                    return
+
+                if report_df.loc[idx, 'opsgenie_flag'].upper() == "Y":
+                    profile_type = "custom"
+                    env = config.get_config_values('environment', 'env')
+                    api_key = report_df.loc[idx, 'opsgenie_api']
+
+                    # Use default API key
+                    if api_key in config.EMPTY_STR_LIST or (isinstance(api_key, float) and math.isnan(api_key)):
+                        api_key = config.get_config_values('opsgenie', 'api_key')
+
+                    report_df = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
+                    gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
+                
+                    opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
+                    
+                    # Send Opsgenie alert
+                    response, request_id, message = opsgenie_client.create_opsgenie_alert(
+                        report_df, 0, alert_type, priority, env, profile_type
+                    )
+
+                    self.logger.info(f"Opsgenie response code: {response}")
+                    self.logger.info(f"Opsgenie alert sent successfully for {alert_type}")
+
+                elif report_df.loc[idx, 'JIRA_ASSIGNEE'] is not None: 
+                    try:
+                        JIRA_ASSIGNEE = report_df.loc[idx, 'JIRA_ASSIGNEE']
+                        label = "DQaaS"
+                        summary = f"LensX | DQ Issue | Table: {report_df.loc[idx,'TABLE_NAME']}"
+                        description = f"DQ Issue detected for Table {report_df.loc[idx,'TABLE_NAME']} on Run Date {report_df.loc[idx,'PRFL_RUN_DT']}."
+                        jira_client = Jira_ticket()
+                        ticket_id = jira_client.create_jira_ticket(JIRA_ASSIGNEE, summary, description, label)
+                        self.logger.info(f"Jira ticket created: {ticket_id}")
+                    except Exception as err:
+                        self.logger.error(f"Error while creating JIRA ticket: {err}")
+        
+        except Exception as err:
+            self.logger.error(f"Error occurred while sending Opsgenie alert. Error: {err}")
+    ## Email distros
