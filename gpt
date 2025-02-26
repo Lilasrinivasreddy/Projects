@@ -1,9 +1,5 @@
-Traceback (most recent call last):
-  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\custom_metrics.py", line 847, in <module>
-    CustomeMetrics().main()
-    ^^^^^^^^^^^^^^^^
-  File "c:\Users\reddyvu\Desktop\smart_dq\smartdq\smartdq_gcp_migration\scripts\custom_metrics.py", line 34, in __init__
-    self.utils = CommonUtils(config, self.logger)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: CommonUtils.__init__() takes from 1 to 2 positional arguments but 3 were given
-PS C:\Users\reddyvu\Desktop\smart_dq> 
+name:CRM, path:C:\Users\reddyvu\Desktop\smart_dq\smartdq/smartdq_gcp_migration//logs/CustomMetricsLogs_2025-02-26-09-40-41.log
+2025-02-26 09:40:41 : CRM - laod_historical_report - INFO : Inside laod_historical_report
+2025-02-26 09:40:41 : CRM - laod_historical_report - ERROR : Error While Executing fetch_sql: Errormodule 'config_params' has no attribute 'dqaas_profile_mtd'
+2025-02-26 09:40:41 : CRM - laod_historical_report - ERROR : Error While Executing insert_sql: Error'str' object has no attribute 'iterrows'
+2025-02-26 09:40:41 : CRM - main - ERROR : Error in Main Block. Error module 'config_params' has no attribute 'dqaas_profile_mtd'
