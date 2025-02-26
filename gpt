@@ -1,4 +1,85 @@
-2025-02-26 16:50:10 : CRM - laod_historical_report - INFO : Inside laod_historical_report
-2025-02-26 16:50:10 : CRM - laod_historical_report - ERROR : Error While Executing fetch_sql: Errormodule 'config_params' has no attribute 'dqaas_profile_mtd'
-2025-02-26 16:50:10 : CRM - laod_historical_report - ERROR : Error While Executing insert_sql: Error'str' object has no attribute 'iterrows'
-2025-02-26 16:50:10 : CRM - main - ERROR : Error in Main Block. Error module 'config_params' has no attribute 'error'
+def laod_historical_report(self):
+
+        source_data = ''
+
+        try:
+            self.logger.info(f"Inside laod_historical_report")
+
+            fetch_sql = f""" select distinct mtd.prfl_id, mtd.prfl_type, mtd.dq_pillar, mtd.src_tbl, mtd.meas_name, mtd.feature_name, meas_rule_sql from {config.dqaas_profile_mtd} mtd
+            left join {config.dqaas_profile_rpt} rpt
+            on mtd.prfl_id = rpt.prfl_id
+            where rpt.prfl_id is null
+            and upper(mtd.prfl_type) = 'CUSTOM_RULES'"""
+
+            self.logger.info(f"Fetch SQL executing: {fetch_sql}")
+
+            source_data = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=fetch_sql)
+
+            self.logger.info(f"Fetched new onboarded tables")
+
+        except Exception as err:
+                self.logger.error(f"Error While Executing fetch_sql: Error{err}")
+
+        try:
+            
+            for index, row in source_data.iterrows():
+                prfl_id = row[0]
+                prfl_type = row[1]
+                dq_pillar = row[2]
+                src_tbl = row[3]
+                meas_name = row[4].replace(" ","_")
+                meas_rule_sql = row[6]
+
+                self.logger.info(f"Orginal meas_rule_sql : {meas_rule_sql}")
+
+                modified_sql = meas_rule_sql.replace("= RUN_DT","between current_date() -1 and current_date() - 92")
+                modified_sql = re.sub(r"(?i)null.* as.* dimension","'null' AS dimension", modified_sql)
+                modified_sql = re.sub(r"(?i)^SELECT\s",f"""Select 999999 as rpt_seq_num, {prfl_id} as prfl_id, '{prfl_type}' as prfl_type, '{dq_pillar}' as dq_pillar, '{src_tbl}' as src_tbl, '{meas_name}' as meas_name, """, modified_sql)
+                modified_sql = re.sub(r"(?i)date\s*\(\s*current_timestamp\s*\)","current_timestamp", modified_sql)
+                modified_sql = re.sub(r"(?i)extract.*\(.*date.*current_timestamp\s*\(\s*\)\s*\)","current_timestamp()", modified_sql)
+                modified_sql = re.sub(r"(?i)group\s* by\s*.*","group by 1,2,3,4,5,6,7,8,9,11,12;", modified_sql)
+
+                insert_sql = f"""insert into {config.dqaas_profile_rpt} (rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt,feature_name,grouped_columns,count_curr,prfl_run_ts,weekday) """ + modified_sql
+
+                self.logger.info(f"History SQL for {src_tbl} : {insert_sql}")
+
+                #job = self.utils.client.query(insert_sql)
+
+                insert_status = self.utils.run_bq_dml_sql(
+                    bq_auth=config.dq_gcp_auth_payload,
+                    dml_query=insert_sql
+                )
+
+                self.logger.info('insert_status')
+                self.logger.info(insert_status)
+
+        except Exception as err:
+                self.logger.error(f"Error While Executing insert_sql: Error{err}")
+
+
+    def main(self):
+        try:
+            self.laod_historical_report()
+            df_mtd = self.get_metadata()
+            
+            sub_domain_list = df_mtd['data_sub_dmn'].unique().tolist()
+            start_date = "current_date-1"
+            end_date = "current_date-1"
+            
+            for dmn in sub_domain_list:
+                self.main_metrics_execution(
+                    df_mtd=df_mtd,
+                    sub_domain=dmn,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+            
+        except ValueError as err:
+            self.logger.error(err)
+        except Exception as err:
+            self.logger.error(f"Error in Main Block. Error {err}")
+            
+            
+CustomeMetrics().main()
