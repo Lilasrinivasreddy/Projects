@@ -1,3 +1,10 @@
+"select cast(PYMNT_TRANS_DT as date) as profile_date,'Executive Reports' as feature_name, 
+ NULL as dimension,
+ count (*) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PAYMENT_WO_FIN_V group by 1,2,3,5,6"
+
 SELECT COUNT(*)
 FROM NTL_PRD_ALLVM.PAYMENT_WO_FIN_V
 WHERE cast(ACTIVITY_DT AS date) = current_date - 1;
