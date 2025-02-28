@@ -14,7 +14,10 @@
 select 
   cast(PYMNT_TRANS_DT as date) as profile_date,
   'Executive Reports' as feature_name, 
-  NULL as dimension,
+  CASE 
+    WHEN some_column IS NOT NULL THEN some_column
+    ELSE 'Default Dimension'
+  END as dimension, 
   count(*) as "value", 
   current_timestamp as insert_date, 
   dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
@@ -24,6 +27,7 @@ where
   cast(ACTIVITY_DT as date) = current_date-1
 group by 
   1, 2, 3, 5, 6
+
 
 
 
