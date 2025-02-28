@@ -26,7 +26,25 @@ from
 where 
   cast(ACTIVITY_DT as date) = current_date-1
 group by 
+  1, 2, 3, 5, 6\
+
+select 
+  cast(PYMNT_TRANS_DT as date) as profile_date,
+  'Executive Reports' as feature_name, 
+  CASE 
+    WHEN PAYMENT_ID IS NOT NULL THEN PAYMENT_ID
+    ELSE 'Default Dimension'
+  END as dimension, 
+  count(*) as "value", 
+  current_timestamp as insert_date, 
+  dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
+from 
+  NTL_PRD_ALLVM.PAYMENT_WO_FIN_V 
+where 
+  cast(ACTIVITY_DT as date) = current_date-1
+group by 
   1, 2, 3, 5, 6
+
 
 
 
