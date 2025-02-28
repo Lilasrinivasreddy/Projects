@@ -1,3 +1,21 @@
+"select cast(INSERT_DT as date) as profile_date,'Executive Reports' as feature_name, 
+ NULL as dimension,
+ count (*) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(INSERT_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.INDIRECT_DEVICE_TRADE_CANCEL_V group by 1,2,3,5,6"
+"select cast(PYMNT_TRANS_DT as date) as profile_date,'Executive Reports' as feature_name, 
+ NULL as dimension,
+ count (*) as ""value"", 
+ current_timestamp as insert_date, 
+ dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
+ from NTL_PRD_ALLVM.PAYMENT_WO_FIN_V group by 1,2,3,5,6"
+
+
+
+
+
+
 data_lob	data_bus_elem	data_dmn	data_sub_dmn	data_src	dq_pillar	feature_name	db_name	src_tbl	src_col	meas_name	meas_rule_sql	comparison_type	max_threshold	min_threshold	is_hourly_flg	prfl_schd_ts	is_active_flg	is_opsgenie_flg	opsgenie_api_key	persona_2	product_type	product_area	product_name	business_program
 VCG	One_Ex_Executive_report	Executive Reports	One_Ex_Executive_report	TD	Consistency	Executive Reports	NTL_PRD_ALLVM	CUST_ACCT_CBR_V	CBR_PHONE_EFF_DT	CUST_ACCT_CBR_V Table count	"select cast(CBR_PHONE_EFF_DT as date) as profile_date,'Executive Reports' as feature_name, 
  NULL as dimension,
