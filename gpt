@@ -1,7 +1,6 @@
 SELECT 
     cast(PYMNT_TRANS_DT AS date) AS profile_date, 
     'Executive Reports' AS feature_name, 
-    NULL AS dimension,  -- If you're explicitly setting it to NULL, we keep it as is
     count(*) AS "value", 
     current_timestamp AS insert_date, 
     dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
@@ -9,7 +8,6 @@ FROM
     NTL_PRD_ALLVM.PAYMENT_WO_FIN_V
 GROUP BY 
     cast(PYMNT_TRANS_DT AS date), 
-    'Executive Reports', 
-    dayofweek(cast(PYMNT_TRANS_DT AS date)) 
+    dayofweek(cast(PYMNT_TRANS_DT AS date))
 ORDER BY 
     profile_date, weekday;
