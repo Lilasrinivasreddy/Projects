@@ -1,7 +1,7 @@
 SELECT 
     cast(PYMNT_TRANS_DT AS date) AS profile_date, 
     'Executive Reports' AS feature_name, 
-    NULL AS dimension, 
+    COALESCE(dimension, 'Unknown') AS dimension,  -- Replace NULL in dimension with 'Unknown'
     count(*) AS "value", 
     current_timestamp AS insert_date, 
     dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
@@ -10,7 +10,7 @@ FROM
 GROUP BY 
     cast(PYMNT_TRANS_DT AS date), 
     'Executive Reports', 
-    NULL, 
-    dayofweek(cast(PYMNT_TRANS_DT AS date))
+    dimension,  -- Ensure grouping by actual dimension
+    dayofweek(cast(PYMNT_TRANS_DT AS date))  -- Group by weekday
 ORDER BY 
-    profile_date;
+    profile_date, weekday;  -- Ensure proper sorting for better visibility
