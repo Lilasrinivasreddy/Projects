@@ -1,44 +1,16 @@
-"select cast(PYMNT_TRANS_DT as date) as profile_date,'Executive Reports' as feature_name, 
- NULL as dimension,
- count (*) as ""value"", 
- current_timestamp as insert_date, 
- dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
- from NTL_PRD_ALLVM.PAYMENT_WO_FIN_V group by 1,2,3,5,6"
-
-SELECT COUNT(*)
-FROM NTL_PRD_ALLVM.PAYMENT_WO_FIN_V
-WHERE cast(ACTIVITY_DT AS date) = current_date - 1;
-
-
-SELECT cast(PYMNT_TRANS_DT AS date) AS profile_date, 
-       dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday, 
-       COUNT(*) AS record_count
-FROM NTL_PRD_ALLVM.PAYMENT_WO_FIN_V
-WHERE cast(ACTIVITY_DT AS date) = current_date - 1
-GROUP BY 1, 2
-ORDER BY 1;
-
-
-
-SELECT cast(PYMNT_TRANS_DT AS date) AS profile_date, 
-       'Executive Reports' AS feature_name, 
-       count(*) AS "value", 
-       current_timestamp AS insert_date, 
-       dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
-FROM NTL_PRD_ALLVM.PAYMENT_WO_FIN_V
-WHERE cast(ACTIVITY_DT AS date) = current_date - 1
-GROUP BY profile_date, feature_name, weekday
-ORDER BY profile_date;
-
-
-
-SELECT cast(PYMNT_TRANS_DT AS date) AS profile_date, 
-       'Executive Reports' AS feature_name, 
-       COALESCE(dimension, 'Unknown') AS dimension, 
-       count(*) AS "value", 
-       current_timestamp AS insert_date, 
-       dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
-FROM NTL_PRD_ALLVM.PAYMENT_WO_FIN_V
-WHERE cast(ACTIVITY_DT AS date) = current_date - 1
-GROUP BY profile_date, feature_name, dimension, weekday
-ORDER BY profile_date;
+SELECT 
+    cast(PYMNT_TRANS_DT AS date) AS profile_date, 
+    'Executive Reports' AS feature_name, 
+    NULL AS dimension, 
+    count(*) AS "value", 
+    current_timestamp AS insert_date, 
+    dayofweek(cast(PYMNT_TRANS_DT AS date)) AS weekday
+FROM 
+    NTL_PRD_ALLVM.PAYMENT_WO_FIN_V
+GROUP BY 
+    cast(PYMNT_TRANS_DT AS date), 
+    'Executive Reports', 
+    NULL, 
+    dayofweek(cast(PYMNT_TRANS_DT AS date))
+ORDER BY 
+    profile_date;
