@@ -1,11 +1,132 @@
-SELECT rpt.*, 
-       mtd.data_lob, mtd.data_dmn, mtd.data_sub_dmn, 
-       mtd.db_name, mtd.src_tbl, mtd.meas_name,
-       mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api_key, 
-       mtd.is_opsgenie_flg, mtd.jira_assignee
-FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd 
-INNER JOIN 
-    (SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt 
-     WHERE rpt_ref_key = '20250305023008083003') rpt
-ON mtd.prfl_id = rpt.prfl_id
-WHERE UPPER(mtd.prfl_type) = 'CUSTOM_RULES'
+Field name
+Type
+Mode
+Key
+Collation
+Default Value
+Policy Tags 
+Description
+rpt_seq_num
+INTEGER	REQUIRED	-	-	-	
+-
+-
+rpt_ref_key
+STRING	NULLABLE	-	-	-	
+-
+-
+prfl_id
+INTEGER	NULLABLE	-	-	-	
+-
+-
+prfl_run_ts
+TIMESTAMP	NULLABLE	-	-	-	
+-
+-
+data_dt
+DATE	NULLABLE	-	-	-	
+-
+-
+prfl_type
+STRING	NULLABLE	-	-	-	
+-
+-
+validation_level
+STRING	NULLABLE	-	-	-	
+-
+-
+src_tbl
+STRING	NULLABLE	-	-	-	
+-
+-
+dq_pillar
+STRING	NULLABLE	-	-	-	
+-
+-
+feature_name
+STRING	NULLABLE	-	-	-	
+-
+-
+meas_name
+STRING	NULLABLE	-	-	-	
+-
+-
+grouped_columns
+STRING	NULLABLE	-	-	-	
+-
+-
+count_curr
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+avg_count_prev
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+count_diff
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+pct_change
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+col_data
+STRING	NULLABLE	-	-	-	
+-
+-
+weekday
+INTEGER	NULLABLE	-	-	-	
+-
+-
+std_dev_value
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+variance_value
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+sigma_value
+STRING	NULLABLE	-	-	-	
+-
+-
+dq_score
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+hour
+INTEGER	NULLABLE	-	-	-	
+-
+-
+col_tot_cnt
+INTEGER	NULLABLE	-	-	-	
+-
+-
+col_vld_cnt
+INTEGER	NULLABLE	-	-	-	
+-
+-
+col_invld_cnt
+INTEGER	NULLABLE	-	-	-	
+-
+-
+col_vld_pct
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+col_invld_pct
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+dq_ind
+STRING	NULLABLE	-	-	-	
+-
+-
+sigma_2_value
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
+consistency_score
+BIGNUMERIC	NULLABLE	-	-	-	
+-
+-
