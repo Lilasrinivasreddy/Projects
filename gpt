@@ -1,3 +1,25 @@
+df_report_result["rpt_ref_key"] = reference_key
+
+df_report_result = df_report_result.rename(
+    columns={col: str(col).lower() for col in df_report_result.columns.tolist()}
+)
+
+# ✅ Fix: Convert rpt_seq_num to INT64 before passing it to BigQuery
+if "rpt_seq_num" in df_report_result.columns:
+    df_report_result["rpt_seq_num"] = pd.to_numeric(df_report_result["rpt_seq_num"], errors="coerce").fillna(0).astype(int)
+
+## Loading Table Level Report
+self.utils.load_result_to_bq_report_table(
+    dq_bq_client=dbclient,
+    dq_credentials=db_creds,
+    dq_report_table_name=config.dgaas_profile_rpt,
+    df_load_data=df_report_result,
+    seq_name="rpt_seq_num",
+    column_details=self.custom_profile_report_columns
+)
+
+
+
 logging.info(f"Fetched data sample:\n{df.head(5)}")
 logging.info(f"Fetched data types:\n{df.dtypes}")
 
