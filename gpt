@@ -1,53 +1,102 @@
-import logging
+logging.info(f"Fetched data sample:\n{df.head(5)}")
+logging.info(f"Fetched data types:\n{df.dtypes}")
 
-# Configure logging
-logging.basicConfig(
-    filename='custom_metrics.log', 
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
 
-logging.info("Starting execution of custom_metrics.py")
-==============
+logging.info(f"Before conversion: rpt_seq_num types: {df['rpt_seq_num'].dtype}")
+logging.info(f"Unique values in rpt_seq_num: {df['rpt_seq_num'].unique()[:10]}")  # Log first 10 unique values
 
-def fetch_data_from_bigquery(query: str, client):
-    logging.info(f"Executing BigQuery: {query}")
+try:
+    df['rpt_seq_num'] = df['rpt_seq_num'].astype(int)
+except Exception as e:
+    logging.error(f"Type conversion error for rpt_seq_num: {str(e)}", exc_info=True)
+    raise
+
+
+
+logging.info(f"Before writing to BigQuery: Final Data Types:\n{df.dtypes}")
+
+invalid_rows = df[df['rpt_seq_num'].apply(lambda x: not isinstance(x, int))]
+if not invalid_rows.empty:
+    logging.warning(f"Found {len(invalid_rows)} invalid rows in rpt_seq_num:\n{invalid_rows}")
+
+
+
+try:
+    df.to_gbq(destination_table="your_project.your_table", if_exists="append")
+    logging.info("Successfully loaded data into BigQuery.")
+except Exception as e:
+    logging.error(f"Failed to load data into BigQuery: {str(e)}", exc_info=True)
+    raise
+
+
+
+
+def run_bq_sql(query):
+    logging.info(f"Executing BigQuery query:\n{query}")
     try:
         df = client.query(query).to_dataframe()
-        logging.info(f"Fetched {len(df)} records from BigQuery")
-        return df
+        logging.info(f"Fetched {len(df)} records from BigQuery.")
+        logging.info(f"Sample fetched data:\n{df.head(5)}")
+        logging.info(f"Data types:\n{df.dtypes}")
     except Exception as e:
-        logging.error(f"Error while fetching data: {str(e)}", exc_info=True)
+        logging.error(f"Error executing BigQuery query: {str(e)}", exc_info=True)
         raise
-===============
+    return df
 
-def validate_and_cast_data(df):
-    try:
-        logging.info(f"Before type conversion: Data types\n{df.dtypes}")
-        
-        # Explicit type casting
-        df['rpt_seq_num'] = df['rpt_seq_num'].astype(int, errors='ignore')
-        df['count_curr'] = df['count_curr'].astype(int, errors='ignore')
-        df['avg_count_prev'] = df['avg_count_prev'].astype(float, errors='ignore')
 
-        logging.info(f"After type conversion: Data types\n{df.dtypes}")
-
-        return df
-    except Exception as e:
-        logging.error(f"Type conversion error: {str(e)}", exc_info=True)
-        raise
-==================
-
-def load_to_bigquery(df, table_id, client):
-    logging.info(f"Loading {len(df)} records into BigQuery table: {table_id}")
+def get_historical_details():
+    logging.info("Fetching historical data for variance calculation...")
+    df = run_bq_sql(historical_query)
     
+    if df.empty:
+        logging.warning("Historical Data Not Found! This may affect threshold calculations.")
+    
+    logging.info(f"Fetched historical data sample:\n{df.head(5)}")
+    logging.info(f"Data types:\n{df.dtypes}")
+    
+    return df
+
+
+def compare_historical_latest_dimensions(latest_df, historical_df):
+    logging.info(f"Latest Data Sample:\n{latest_df.head(5)}")
+    logging.info(f"Historical Data Sample:\n{historical_df.head(5)}")
+
+    merged_df = latest_df.merge(historical_df, on=["prfl_id", "feature_name", "weekday"], how="left")
+
+    logging.info(f"Merged Data Sample (after join):\n{merged_df.head(5)}")
+    logging.info(f"Checking for NaN values:\n{merged_df.isna().sum()}")
+
+    if merged_df.isna().sum().sum() > 0:
+        logging.warning("Merged Data contains NaN values! This may cause errors in variance calculations.")
+
+    return merged_df
+
+
+def fix_data_types_before_loading(df):
+    logging.info("Validating data types before loading into BigQuery...")
+
+    # Check for non-numeric values in numeric columns
+    for col in ["rpt_seq_num", "count_curr"]:
+        if df[col].dtype != "int64":
+            logging.warning(f"Column {col} has invalid data types! Attempting conversion...")
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            logging.info(f"Fixed {col}: New dtype -> {df[col].dtype}")
+
+    # Log final DataFrame structure
+    logging.info(f"Final Data Types Before Load:\n{df.dtypes}")
+
+    return df
+
+
+def load_results_to_bigquery(df):
+    logging.info(f"Preparing to load {len(df)} records into BigQuery...")
+
+    # Validate data types before loading
+    df = fix_data_types_before_loading(df)
+
     try:
-        client.load_table_from_dataframe(df, table_id).result()
-        logging.info(f"Successfully loaded data into {table_id}")
+        df.to_gbq(destination_table="your_project.your_table", if_exists="append")
+        logging.info("Successfully loaded data into BigQuery.")
     except Exception as e:
         logging.error(f"Failed to load data into BigQuery: {str(e)}", exc_info=True)
         raise
-===================
-
-if __name__ == "__main__":
-    logging.info("Custom metrics script execution completed successfully.")
