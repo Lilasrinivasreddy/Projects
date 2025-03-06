@@ -1,3 +1,8 @@
+# ✅ LOGGING df_report_result BEFORE passing it
+self.logger.info(f"df_report_result columns: {df_report_result.columns.tolist()}")
+self.logger.info(f"df_report_result shape: {df_report_result.shape}")
+self.logger.info(f"df_report_result sample data:\n{df_report_result.head()}")
+
 df_report_result["rpt_ref_key"] = reference_key
 
 df_report_result = df_report_result.rename(
