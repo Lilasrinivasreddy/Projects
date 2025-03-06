@@ -1,30 +1,9 @@
-[5 rows x 11 columns]
-2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : Historical Dtypes before conversion:
-prfl_id               Int64
-feature_name         object
-grouped_columns      object
-weekday               Int64
-sum_count_prev       object
-avg_count_prev       object
-variance_value      float64
-std_dev_value       float64
-sigma_2_value       float64
-min_thresh_value    float64
-max_thresh_value    float64
-dtype: object
-2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : Latest Dtypes before conversion:
-data_dt                         object
-feature_name                    object
-grouped_columns                 object
-hr                             float64
-count_curr                       int64
-prfl_run_ts                     object
-weekday                        float64
-prfl_id                          int64
-insert_date        datetime64[ns, UTC]
-dtype: object
-2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : Converting column prfl_id in df_tbl_hist_rec from Int64Dtype to int64
-2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : Converting column weekday in df_tbl_hist_rec from Int64Dtype to int64
-2025-03-06 11:19:19 : CRM-180189 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error cannot convert to 'int64'-dtype NumPy array with missing values. Specify an appropriate 'na_value' for this dtype.
-2025-03-06 11:19:19 : CRM-180189 - main - ERROR : Error in Main Block. Error object of type 'NoneType' has no len()
+if not df_tbl_hist_rec.empty:
+    for col in df_tbl_hist_rec.select_dtypes(include=['Int64']).columns:
+        self.logger.info(f"Converting column {col} in df_tbl_hist_rec from Int64Dtype to int64")
+        df_tbl_hist_rec[col] = df_tbl_hist_rec[col].fillna(0).astype(pd.Int64Dtype()).astype('int64')
+
+if not df_tbl_latest_rec.empty:
+    for col in df_tbl_latest_rec.select_dtypes(include=['Int64']).columns:
+        self.logger.info(f"Converting column {col} in df_tbl_latest_rec from Int64Dtype to int64")
+        df_tbl_latest_rec[col] = df_tbl_latest_rec[col].fillna(0).astype(pd.Int64Dtype()).astype('int64')
