@@ -24,3 +24,65 @@ else:
 
 
 
+
+
+def compare_historical_latest_dimensions(self, df_tbl_hist_rec, df_tbl_latest_rec, comparison_type="WEEKDAYS", isHourly="N"):
+    
+    ## Historical Records
+    self.logger.info('------------------------------------------------------------------')
+    
+    # Log column data types before conversion
+    self.logger.info(f"Historical Data Types BEFORE conversion:\n{df_tbl_hist_rec.dtypes}")
+    self.logger.info(f"Latest Data Types BEFORE conversion:\n{df_tbl_latest_rec.dtypes}")
+
+    # Convert Int64Dtype to standard int64
+    if not df_tbl_hist_rec.empty:
+        for col in df_tbl_hist_rec.select_dtypes(include=['Int64']).columns:
+            self.logger.info(f"Converting column {col} in df_tbl_hist_rec from Int64Dtype to int64")
+            df_tbl_hist_rec[col] = df_tbl_hist_rec[col].astype(pd.Int64Dtype()).astype('int64')
+
+    if not df_tbl_latest_rec.empty:
+        for col in df_tbl_latest_rec.select_dtypes(include=['Int64']).columns:
+            self.logger.info(f"Converting column {col} in df_tbl_latest_rec from Int64Dtype to int64")
+            df_tbl_latest_rec[col] = df_tbl_latest_rec[col].astype(pd.Int64Dtype()).astype('int64')
+
+    # Log column data types after conversion
+    self.logger.info(f"Historical Data Types AFTER conversion:\n{df_tbl_hist_rec.dtypes}")
+    self.logger.info(f"Latest Data Types AFTER conversion:\n{df_tbl_latest_rec.dtypes}")
+
+    ## Continue with existing code
+    df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
+    df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>', np.nan).replace('nan', np.nan).replace('None', np.nan)
+    self.logger.info(f'Length of the historical Records : {len(df_tbl_hist_rec)}')
+    self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
+
+    ## Latest Records
+    self.logger.info('------------------------------------------------------------------')
+    df_tbl_latest_rec = df_tbl_latest_rec.rename(columns={col: str(col).lower() for col in df_tbl_latest_rec.columns.tolist()})
+    df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>', np.nan).replace('nan', np.nan).replace('None', np.nan)
+    self.logger.info(f'Length of the latest Records : {len(df_tbl_latest_rec)}')
+    self.logger.info(f'\n{df_tbl_latest_rec.columns}\n{df_tbl_latest_rec.head()}')
+
+    ## Merging the Historical and Latest Records
+    self.logger.info('------------------------------------------------------------------')
+    join_list = ['prfl_id', 'feature_name', 'grouped_columns', 'weekday']
+
+    if comparison_type == 'DTRAN_MONTHLY':
+        join_list.remove('weekday')
+
+    df_merge_rec = pd.merge(
+        df_tbl_hist_rec,
+        df_tbl_latest_rec,
+        on=join_list,
+        how='right'
+    )
+
+    self.logger.info(f'Length of the Merged Records : {len(df_merge_rec)}')
+    self.logger.info(f'\n{df_merge_rec.columns}\n{df_merge_rec.head()}')
+    self.logger.info('------------------------------------------------------------------')
+
+    return df_merge_rec
+
+
+
+
