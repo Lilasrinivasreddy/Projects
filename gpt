@@ -1,88 +1,30 @@
-if not df_report_result.empty:
-    for col in df_report_result.select_dtypes(include=['Int64']).columns:
-        self.logger.info(f"Converting column {col} from Int64Dtype to int64")
-        df_report_result[col] = df_report_result[col].astype(pd.Int64Dtype()).astype('int64')
-
-
-
-if not df_tbl_hist_rec.empty:
-    for col in df_tbl_hist_rec.select_dtypes(include=['Int64']).columns:
-        self.logger.info(f"Converting column {col} in df_tbl_hist_rec from Int64Dtype to int64")
-        df_tbl_hist_rec[col] = df_tbl_hist_rec[col].astype(pd.Int64Dtype()).astype('int64')
-
-if not df_tbl_latest_rec.empty:
-    for col in df_tbl_latest_rec.select_dtypes(include=['Int64']).columns:
-        self.logger.info(f"Converting column {col} in df_tbl_latest_rec from Int64Dtype to int64")
-        df_tbl_latest_rec[col] = df_tbl_latest_rec[col].astype(pd.Int64Dtype()).astype('int64')
-
-
-if not df_latest.empty:
-    df_latest["prfl_run_ts"] = datetime.now().strftime(config.DTM_FMT)
-else:
-    self.logger.warning("df_latest is empty, skipping timestamp assignment.")
-
-
-
-
-
-
-def compare_historical_latest_dimensions(self, df_tbl_hist_rec, df_tbl_latest_rec, comparison_type="WEEKDAYS", isHourly="N"):
-    
-    ## Historical Records
-    self.logger.info('------------------------------------------------------------------')
-    
-    # Log column data types before conversion
-    self.logger.info(f"Historical Data Types BEFORE conversion:\n{df_tbl_hist_rec.dtypes}")
-    self.logger.info(f"Latest Data Types BEFORE conversion:\n{df_tbl_latest_rec.dtypes}")
-
-    # Convert Int64Dtype to standard int64
-    if not df_tbl_hist_rec.empty:
-        for col in df_tbl_hist_rec.select_dtypes(include=['Int64']).columns:
-            self.logger.info(f"Converting column {col} in df_tbl_hist_rec from Int64Dtype to int64")
-            df_tbl_hist_rec[col] = df_tbl_hist_rec[col].astype(pd.Int64Dtype()).astype('int64')
-
-    if not df_tbl_latest_rec.empty:
-        for col in df_tbl_latest_rec.select_dtypes(include=['Int64']).columns:
-            self.logger.info(f"Converting column {col} in df_tbl_latest_rec from Int64Dtype to int64")
-            df_tbl_latest_rec[col] = df_tbl_latest_rec[col].astype(pd.Int64Dtype()).astype('int64')
-
-    # Log column data types after conversion
-    self.logger.info(f"Historical Data Types AFTER conversion:\n{df_tbl_hist_rec.dtypes}")
-    self.logger.info(f"Latest Data Types AFTER conversion:\n{df_tbl_latest_rec.dtypes}")
-
-    ## Continue with existing code
-    df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
-    df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>', np.nan).replace('nan', np.nan).replace('None', np.nan)
-    self.logger.info(f'Length of the historical Records : {len(df_tbl_hist_rec)}')
-    self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
-
-    ## Latest Records
-    self.logger.info('------------------------------------------------------------------')
-    df_tbl_latest_rec = df_tbl_latest_rec.rename(columns={col: str(col).lower() for col in df_tbl_latest_rec.columns.tolist()})
-    df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>', np.nan).replace('nan', np.nan).replace('None', np.nan)
-    self.logger.info(f'Length of the latest Records : {len(df_tbl_latest_rec)}')
-    self.logger.info(f'\n{df_tbl_latest_rec.columns}\n{df_tbl_latest_rec.head()}')
-
-    ## Merging the Historical and Latest Records
-    self.logger.info('------------------------------------------------------------------')
-    join_list = ['prfl_id', 'feature_name', 'grouped_columns', 'weekday']
-
-    if comparison_type == 'DTRAN_MONTHLY':
-        join_list.remove('weekday')
-
-    df_merge_rec = pd.merge(
-        df_tbl_hist_rec,
-        df_tbl_latest_rec,
-        on=join_list,
-        how='right'
-    )
-
-    self.logger.info(f'Length of the Merged Records : {len(df_merge_rec)}')
-    self.logger.info(f'\n{df_merge_rec.columns}\n{df_merge_rec.head()}')
-    self.logger.info('------------------------------------------------------------------')
-
-    return df_merge_rec
-
-
-
-
+[5 rows x 11 columns]
+2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : Historical Dtypes before conversion:
+prfl_id               Int64
+feature_name         object
+grouped_columns      object
+weekday               Int64
+sum_count_prev       object
+avg_count_prev       object
+variance_value      float64
+std_dev_value       float64
+sigma_2_value       float64
+min_thresh_value    float64
+max_thresh_value    float64
+dtype: object
+2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : Latest Dtypes before conversion:
+data_dt                         object
+feature_name                    object
+grouped_columns                 object
+hr                             float64
+count_curr                       int64
+prfl_run_ts                     object
+weekday                        float64
+prfl_id                          int64
+insert_date        datetime64[ns, UTC]
+dtype: object
+2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : Converting column prfl_id in df_tbl_hist_rec from Int64Dtype to int64
+2025-03-06 11:19:19 : CRM-180189 - compare_historical_latest_dimensions - INFO : Converting column weekday in df_tbl_hist_rec from Int64Dtype to int64
+2025-03-06 11:19:19 : CRM-180189 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error cannot convert to 'int64'-dtype NumPy array with missing values. Specify an appropriate 'na_value' for this dtype.
+2025-03-06 11:19:19 : CRM-180189 - main - ERROR : Error in Main Block. Error object of type 'NoneType' has no len()
