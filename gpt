@@ -1,64 +1,1054 @@
-def load_to_report_results(self, df_report_result: pd.DataFrame, reference_key: str):
-    try:
-        ## BigQuery Client Connection
-        dbclient, db_creds = self.utils.bigquery_client(
-            auth=config.dq_gcp_auth_payload
-        )
+(smartdq-venv) tdcldizcva002:/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment$  python custom_metrics.py
+/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment/../config/config.ini
+/apps/opt/application/smartdq/smartdq_gcp_migration/scripts/../config/config.ini
+name:CRM-1230289, path:/apps/opt/application/smartdq//smartdq_gcp_migration//logs/2025-03-07/CustomMetricsLogs-2025-03-07-04-56-07.log
+2025-03-07 04:56:07 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query:
+                SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd
+                WHERE prfl_type = 'CUSTOM_RULES'
+                and IS_ACTIVE_FLG = 'Y'
 
-        df_report_result["rpt_ref_key"] = reference_key
+                ORDER BY PRFL_ID;
 
-        df_report_result = df_report_result.rename(columns={col: str(col).lower() for col in df_report_result.columns.tolist()})
+2025-03-07 04:56:07 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:07 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:07 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:07 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:07 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:11 : CRM-1230289 - get_metadata - INFO : Metadata Length: 37
+2025-03-07 04:56:11 : CRM-1230289 - main_metrics_execution - INFO :
+Request Reference:: 20250307045611140848
+Sub Domain:: Tier1_Models
+2025-03-07 04:56:11 : CRM-1230289 - run_metrics_engine - INFO : Comparison:: WEEKDAYS, Hourly:: N
+0     7662
+1     7663
+2     7664
+3     7666
+4     7667
+5     7668
+6     7669
+7     7670
+8     7671
+9     7672
+10    7674
+11    7676
+12    7678
+13    7681
+14    7685
+15    7686
+16    7687
+17    7690
+18    7695
+19    7696
+20    7697
+21    7699
+22    7700
+23    7701
+24    7702
+25    7703
+26    7705
+27    7708
+28    7710
+29    7711
+30    7712
+31    7713
+32    7715
+33    7716
+34    7718
+35    7719
+36    7721
+Name: prfl_id, dtype: Int64
+2025-03-07 04:56:11 : CRM-1230289 - run_metrics_engine - INFO : Profile ID List : 7681, 7685, 7686, 7687, 7690, 7695, 7696, 7697, 7699, 7700, 7701, 7702, 7703, 7705, 7708, 7710, 7711, 7712, 7713, 7715, 7716, 7718, 7719, 7721, 7662, 7663, 7664, 7666, 7667, 7668, 7669, 7670, 7671, 7672, 7674, 7676, 7678
+2025-03-07 04:56:11 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query:
+                select date(current_date-1) as run_dt,
+                extract(dayofweek from date(current_date-1)) as weekday;
 
-        ## Add dtype conversion **before** inserting into BigQuery
-        import pandas as pd
+2025-03-07 04:56:11 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:11 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:11 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:11 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:11 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:14 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:14 : CRM-1230289 - profile_engine - INFO : Index:: 0, Rule ID:: 7662
+2025-03-07 04:56:14 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.service where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:14 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:14 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:14 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:14 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:14 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:18 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>       24045 2025-03-07 09:56:15.455589+00:00        5     7662
+2025-03-07 04:56:18 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:18 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:18 : CRM-1230289 - profile_engine - INFO : Index:: 1, Rule ID:: 7663
+2025-03-07 04:56:18 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(event_date as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from event_date) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.scm_usage where cast(event_date as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:18 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:18 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:18 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:18 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:18 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:22 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2445-03-08  Tier1 Models       <NA>           2 2025-03-07 09:56:19.106981+00:00        4     7663
+1  3116-03-01  Tier1 Models       <NA>           1 2025-03-07 09:56:19.106981+00:00        4     7663
+2  4016-04-08  Tier1 Models       <NA>           1 2025-03-07 09:56:19.106981+00:00        6     7663
+3  4017-08-08  Tier1 Models       <NA>           1 2025-03-07 09:56:19.106981+00:00        3     7663
+4  4000-04-24  Tier1 Models       <NA>           2 2025-03-07 09:56:19.106981+00:00        2     7663
+5  2025-03-05  Tier1 Models       <NA>      494197 2025-03-07 09:56:19.106981+00:00        4     7663
+6  2025-03-06  Tier1 Models       <NA>      300864 2025-03-07 09:56:19.106981+00:00        5     7663
+2025-03-07 04:56:22 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:22 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:22 : CRM-1230289 - profile_engine - INFO : Index:: 2, Rule ID:: 7664
+2025-03-07 04:56:22 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(call_start_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from call_start_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.sa_drivers where cast(call_start_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:22 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:22 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:22 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:22 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:22 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:26 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>       25556 2025-03-07 09:56:23.701153+00:00        4     7664
+2025-03-07 04:56:26 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:26 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:26 : CRM-1230289 - profile_engine - INFO : Index:: 3, Rule ID:: 7666
+2025-03-07 04:56:26 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.port_sum_fact where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:26 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:26 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:26 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:26 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:26 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:33 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>       75973 2025-03-07 09:56:27.607667+00:00        5     7666
+1  2025-03-05  Tier1 Models       <NA>       27631 2025-03-07 09:56:27.607667+00:00        4     7666
+2025-03-07 04:56:33 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:33 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:33 : CRM-1230289 - profile_engine - INFO : Index:: 4, Rule ID:: 7667
+2025-03-07 04:56:33 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(pymnt_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from pymnt_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.payment_apo_decline where cast(pymnt_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:33 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:33 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:33 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:33 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:33 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:36 : CRM-1230289 - profile_engine - INFO : No Records Found in Rules
+2025-03-07 04:56:36 : CRM-1230289 - profile_engine - INFO : Date Results ::
+       run_dt  weekday
+0  2025-03-06        5
+2025-03-07 04:56:36 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                rule_run_ts  weekday  prfl_id
+0  2025-03-06  Tier1 Models        NaN           0 2025-03-07 04:56:36.766925        5     7667
+2025-03-07 04:56:36 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:36 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:36 : CRM-1230289 - profile_engine - INFO : Index:: 5, Rule ID:: 7668
+2025-03-07 04:56:36 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(pymnt_trans_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from pymnt_trans_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.payment where cast(pymnt_trans_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:36 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:36 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:36 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:36 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:36 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:41 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>     1694284 2025-03-07 09:56:37.606337+00:00        4     7668
+2025-03-07 04:56:41 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:41 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:41 : CRM-1230289 - profile_engine - INFO : Index:: 6, Rule ID:: 7669
+2025-03-07 04:56:41 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(trans_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from trans_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.mtn_occ_trans where cast(trans_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:41 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:41 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:41 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:41 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:41 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:46 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>     5119079 2025-03-07 09:56:42.556610+00:00        4     7669
+1  2050-11-02  Tier1 Models       <NA>           1 2025-03-07 09:56:42.556610+00:00        4     7669
+2  2025-03-07  Tier1 Models       <NA>           1 2025-03-07 09:56:42.556610+00:00        6     7669
+3  2025-03-06  Tier1 Models       <NA>       12306 2025-03-07 09:56:42.556610+00:00        5     7669
+4  2025-07-10  Tier1 Models       <NA>           1 2025-03-07 09:56:42.556610+00:00        5     7669
+5  2030-04-13  Tier1 Models       <NA>           1 2025-03-07 09:56:42.556610+00:00        7     7669
+2025-03-07 04:56:46 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:46 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:46 : CRM-1230289 - profile_engine - INFO : Index:: 7, Rule ID:: 7670
+2025-03-07 04:56:46 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(ivr_call_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from ivr_call_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.ivr_call where cast(ivr_call_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:46 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:46 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:46 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:46 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:46 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:56:51 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>     1103778 2025-03-07 09:56:47.689057+00:00        4     7670
+2025-03-07 04:56:51 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:51 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:56:51 : CRM-1230289 - profile_engine - INFO : Index:: 8, Rule ID:: 7671
+2025-03-07 04:56:51 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.install_loan_trans where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:56:51 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:56:51 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:56:51 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:56:51 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:56:51 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:57:21 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>     4381791 2025-03-07 09:56:52.149200+00:00        4     7671
+1  2025-03-06  Tier1 Models       <NA>     2856845 2025-03-07 09:56:52.149200+00:00        5     7671
+2025-03-07 04:57:21 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:21 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:21 : CRM-1230289 - profile_engine - INFO : Index:: 9, Rule ID:: 7672
+2025-03-07 04:57:21 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.fixed_5g_avail_cust_inquiry where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:57:21 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:57:21 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:57:21 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:57:21 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:57:21 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:57:27 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>    63779119 2025-03-07 09:57:22.203230+00:00        5     7672
+2025-03-07 04:57:27 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:27 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:27 : CRM-1230289 - profile_engine - INFO : Index:: 10, Rule ID:: 7674
+2025-03-07 04:57:27 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.ecpd_profile where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:57:27 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:57:27 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:57:27 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:57:27 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:57:27 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:57:32 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>     8510181 2025-03-07 09:57:28.829654+00:00        5     7674
+2025-03-07 04:57:32 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:32 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:32 : CRM-1230289 - profile_engine - INFO : Index:: 11, Rule ID:: 7676
+2025-03-07 04:57:32 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.dly_service_activity where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:57:32 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:57:32 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:57:32 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:57:32 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:57:32 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:57:38 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>     6688205 2025-03-07 09:57:33.047258+00:00        5     7676
+1  2025-03-05  Tier1 Models       <NA>     7279712 2025-03-07 09:57:33.047258+00:00        4     7676
+2025-03-07 04:57:38 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:38 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:38 : CRM-1230289 - profile_engine - INFO : Index:: 12, Rule ID:: 7678
+2025-03-07 04:57:38 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.dly_line_activity_pending where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:57:38 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:57:38 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:57:38 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:57:38 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:57:38 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:57:42 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>       54539 2025-03-07 09:57:38.927517+00:00        4     7678
+1  2025-03-06  Tier1 Models       <NA>       70396 2025-03-07 09:57:38.927517+00:00        5     7678
+2025-03-07 04:57:42 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:42 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:42 : CRM-1230289 - profile_engine - INFO : Index:: 13, Rule ID:: 7681
+2025-03-07 04:57:42 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(fcst_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from fcst_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.discos_fcst_js where cast(fcst_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:57:42 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:57:42 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:57:42 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:57:42 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:57:42 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:57:46 : CRM-1230289 - profile_engine - INFO :
+        data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0    2025-04-07  Tier1 Models       <NA>       30756 2025-03-07 09:57:43.369243+00:00        2     7681
+1    2025-06-30  Tier1 Models       <NA>       30756 2025-03-07 09:57:43.369243+00:00        2     7681
+2    2025-03-30  Tier1 Models       <NA>       58020 2025-03-07 09:57:43.369243+00:00        1     7681
+3    2025-05-28  Tier1 Models       <NA>       30756 2025-03-07 09:57:43.369243+00:00        4     7681
+4    2025-06-05  Tier1 Models       <NA>       30756 2025-03-07 09:57:43.369243+00:00        5     7681
+..          ...           ...        ...         ...                              ...      ...      ...
+113  2025-05-10  Tier1 Models       <NA>       30756 2025-03-07 09:57:43.369243+00:00        7     7681
+114  2025-06-12  Tier1 Models       <NA>       30756 2025-03-07 09:57:43.369243+00:00        5     7681
+115  2025-03-07  Tier1 Models       <NA>       58020 2025-03-07 09:57:43.369243+00:00        6     7681
+116  2025-05-29  Tier1 Models       <NA>       30756 2025-03-07 09:57:43.369243+00:00        5     7681
+117  2025-06-19  Tier1 Models       <NA>       30756 2025-03-07 09:57:43.369243+00:00        5     7681
 
-        # Ensure date columns are properly formatted
-        df_report_result['data_dt'] = pd.to_datetime(df_report_result['data_dt'], errors='coerce')
-        df_report_result['insert_date'] = pd.to_datetime(df_report_result['insert_date'], errors='coerce')
-        df_report_result['prfl_run_ts'] = pd.to_datetime(df_report_result['prfl_run_ts'], errors='coerce')
+[118 rows x 7 columns]
+2025-03-07 04:57:46 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:46 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:46 : CRM-1230289 - profile_engine - INFO : Index:: 14, Rule ID:: 7685
+2025-03-07 04:57:46 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_svc_prod_trans where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:57:46 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:57:46 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:57:46 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:57:46 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:57:46 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:57:50 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>       90235 2025-03-07 09:57:47.196824+00:00        5     7685
+1  2025-03-05  Tier1 Models       <NA>       97148 2025-03-07 09:57:47.196824+00:00        4     7685
+2025-03-07 04:57:50 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:50 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:50 : CRM-1230289 - profile_engine - INFO : Index:: 15, Rule ID:: 7686
+2025-03-07 04:57:50 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_promo_activity where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:57:50 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:57:50 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:57:50 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:57:50 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:57:50 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:57:56 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>        1091 2025-03-07 09:57:51.636192+00:00        6     7686
+1  2025-03-06  Tier1 Models       <NA>        1333 2025-03-07 09:57:51.636192+00:00        5     7686
+2  2025-03-05  Tier1 Models       <NA>        1229 2025-03-07 09:57:51.636192+00:00        4     7686
+2025-03-07 04:57:56 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:56 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:57:56 : CRM-1230289 - profile_engine - INFO : Index:: 16, Rule ID:: 7687
+2025-03-07 04:57:56 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_occ_trans where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:57:56 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:57:56 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:57:56 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:57:56 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:57:56 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:01 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>      794852 2025-03-07 09:57:57.592990+00:00        4     7687
+2025-03-07 04:58:01 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:01 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:01 : CRM-1230289 - profile_engine - INFO : Index:: 17, Rule ID:: 7690
+2025-03-07 04:58:01 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_svc_prod_tran where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:01 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:01 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:01 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:01 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:01 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:08 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>  2015194499 2025-03-07 09:58:02.318166+00:00        5     7690
+2025-03-07 04:58:08 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:08 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:08 : CRM-1230289 - profile_engine - INFO : Index:: 18, Rule ID:: 7695
+2025-03-07 04:58:08 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_reg where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:08 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:08 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:08 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:08 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:08 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:13 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>     6451617 2025-03-07 09:58:09.854851+00:00        5     7695
+1  2025-03-05  Tier1 Models       <NA>     1430659 2025-03-07 09:58:09.854851+00:00        4     7695
+2025-03-07 04:58:13 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:13 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:13 : CRM-1230289 - profile_engine - INFO : Index:: 19, Rule ID:: 7696
+2025-03-07 04:58:13 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_promo where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:13 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:13 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:13 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:13 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:13 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:18 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>      151848 2025-03-07 09:58:14.488049+00:00        5     7696
+1  2025-03-05  Tier1 Models       <NA>      742778 2025-03-07 09:58:14.488049+00:00        4     7696
+2025-03-07 04:58:18 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:18 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:18 : CRM-1230289 - profile_engine - INFO : Index:: 20, Rule ID:: 7697
+2025-03-07 04:58:18 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_pplan_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:18 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:18 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:18 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:18 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:18 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:22 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>      458977 2025-03-07 09:58:19.456331+00:00        4     7697
+1  2025-03-06  Tier1 Models       <NA>      447283 2025-03-07 09:58:19.456331+00:00        5     7697
+2025-03-07 04:58:22 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:22 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:22 : CRM-1230289 - profile_engine - INFO : Index:: 21, Rule ID:: 7699
+2025-03-07 04:58:22 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_pplan where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:22 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:22 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:22 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:22 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:22 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:27 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>     1681930 2025-03-07 09:58:23.662055+00:00        5     7699
+1  2025-03-05  Tier1 Models       <NA>      283793 2025-03-07 09:58:23.662055+00:00        4     7699
+2025-03-07 04:58:27 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:27 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:27 : CRM-1230289 - profile_engine - INFO : Index:: 22, Rule ID:: 7700
+2025-03-07 04:58:27 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_email where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:27 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:27 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:27 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:27 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:27 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:32 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>       92819 2025-03-07 09:58:28.049473+00:00        4     7700
+1  2025-03-06  Tier1 Models       <NA>       79786 2025-03-07 09:58:28.049473+00:00        5     7700
+2025-03-07 04:58:32 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:32 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:32 : CRM-1230289 - profile_engine - INFO : Index:: 23, Rule ID:: 7701
+2025-03-07 04:58:32 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_dly_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:32 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:32 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:32 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:32 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:32 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:37 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>     1070953 2025-03-07 09:58:33.428539+00:00        5     7701
+1  2025-03-05  Tier1 Models       <NA>     1240742 2025-03-07 09:58:33.428539+00:00        4     7701
+2025-03-07 04:58:37 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:37 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:37 : CRM-1230289 - profile_engine - INFO : Index:: 24, Rule ID:: 7702
+2025-03-07 04:58:37 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_dim_dly_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:37 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:37 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:37 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:37 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:37 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:42 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>      164558 2025-03-07 09:58:37.992237+00:00        4     7702
+1  2025-03-06  Tier1 Models       <NA>      158425 2025-03-07 09:58:37.992237+00:00        5     7702
+2025-03-07 04:58:42 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:42 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:42 : CRM-1230289 - profile_engine - INFO : Index:: 25, Rule ID:: 7703
+2025-03-07 04:58:42 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(insert_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from insert_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_cloud_usg where cast(insert_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:42 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:42 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:42 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:42 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:42 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:47 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>    38288704 2025-03-07 09:58:43.320438+00:00        5     7703
+2025-03-07 04:58:47 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:47 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:47 : CRM-1230289 - profile_engine - INFO : Index:: 26, Rule ID:: 7705
+2025-03-07 04:58:47 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:47 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:47 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:47 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:47 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:47 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:51 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>    10233912 2025-03-07 09:58:48.378592+00:00        5     7705
+1  2025-03-05  Tier1 Models       <NA>      832111 2025-03-07 09:58:48.378592+00:00        4     7705
+2025-03-07 04:58:51 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:51 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:51 : CRM-1230289 - profile_engine - INFO : Index:: 27, Rule ID:: 7708
+2025-03-07 04:58:51 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_dly_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:51 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:51 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:51 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:51 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:51 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:58:56 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>     1077500 2025-03-07 09:58:52.464640+00:00        4     7708
+1  2025-03-06  Tier1 Models       <NA>      837678 2025-03-07 09:58:52.464640+00:00        5     7708
+2025-03-07 04:58:56 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:56 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:58:56 : CRM-1230289 - profile_engine - INFO : Index:: 28, Rule ID:: 7710
+2025-03-07 04:58:56 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_addr_dly_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:58:56 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:58:56 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:58:56 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:58:56 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:58:56 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:02 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>       91137 2025-03-07 09:58:57.586340+00:00        5     7710
+1  2025-03-05  Tier1 Models       <NA>      536526 2025-03-07 09:58:57.586340+00:00        4     7710
+2025-03-07 04:59:02 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:02 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:02 : CRM-1230289 - profile_engine - INFO : Index:: 29, Rule ID:: 7711
+2025-03-07 04:59:02 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_addr where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:59:02 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:02 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:02 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:02 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:02 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:06 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>       71717 2025-03-07 09:59:02.998933+00:00        5     7711
+1  2025-03-05  Tier1 Models       <NA>      292474 2025-03-07 09:59:02.998933+00:00        4     7711
+2025-03-07 04:59:06 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:06 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:06 : CRM-1230289 - profile_engine - INFO : Index:: 30, Rule ID:: 7712
+2025-03-07 04:59:06 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:59:06 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:06 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:06 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:06 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:06 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:11 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>     1114500 2025-03-07 09:59:07.191845+00:00        5     7712
+1  2025-03-05  Tier1 Models       <NA>    11886449 2025-03-07 09:59:07.191845+00:00        4     7712
+2025-03-07 04:59:11 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:11 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:11 : CRM-1230289 - profile_engine - INFO : Index:: 31, Rule ID:: 7713
+2025-03-07 04:59:11 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cjcm_case_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:59:11 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:11 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:11 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:11 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:11 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:15 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>     1086619 2025-03-07 09:59:11.855368+00:00        5     7713
+1  2025-03-05  Tier1 Models       <NA>     1073935 2025-03-07 09:59:11.855368+00:00        4     7713
+2025-03-07 04:59:15 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:15 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:15 : CRM-1230289 - profile_engine - INFO : Index:: 32, Rule ID:: 7715
+2025-03-07 04:59:15 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(call_start_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from call_start_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.calls_driver_trans where cast(call_start_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:59:15 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:15 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:15 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:15 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:15 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:19 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-06  Tier1 Models       <NA>       20213 2025-03-07 09:59:15.985969+00:00        5     7715
+1  2025-03-05  Tier1 Models       <NA>       72276 2025-03-07 09:59:15.985969+00:00        4     7715
+2025-03-07 04:59:19 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:19 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:19 : CRM-1230289 - profile_engine - INFO : Index:: 33, Rule ID:: 7716
+2025-03-07 04:59:19 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(last_upd_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from last_upd_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cacs_cust_acct_coll where cast(last_upd_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:59:19 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:19 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:19 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:19 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:19 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:26 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>      214813 2025-03-07 09:59:21.247141+00:00        4     7716
+1  2025-03-06  Tier1 Models       <NA>     3162096 2025-03-07 09:59:21.247141+00:00        5     7716
+2025-03-07 04:59:26 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:26 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:26 : CRM-1230289 - profile_engine - INFO : Index:: 34, Rule ID:: 7718
+2025-03-07 04:59:26 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(current_date as date)as profile_date,
+'Tier1 models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from current_date) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.acss_dept group by 1,2,3,5,6
+2025-03-07 04:59:26 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:26 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:26 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:26 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:26 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:29 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 models       <NA>         870 2025-03-07 09:59:26.769207+00:00        6     7718
+2025-03-07 04:59:29 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:29 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:29 : CRM-1230289 - profile_engine - INFO : Index:: 35, Rule ID:: 7719
+2025-03-07 04:59:29 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(acss_call_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from acss_call_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.acss_call where cast(acss_call_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-07 04:59:29 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:29 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:29 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:29 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:29 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:34 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-05  Tier1 Models       <NA>      537923 2025-03-07 09:59:30.762117+00:00        4     7719
+2025-03-07 04:59:34 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:34 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:34 : CRM-1230289 - profile_engine - INFO : Index:: 36, Rule ID:: 7721
+2025-03-07 04:59:34 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query: select cast(current_date as date)as profile_date,
+'Tier1 models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from current_date) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_dmtbls_rd_v.dma_line_add group by 1,2,3,5,6
+2025-03-07 04:59:34 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:34 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:34 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:34 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:34 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:39 : CRM-1230289 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 models       <NA>   714082827 2025-03-07 09:59:35.524060+00:00        6     7721
+2025-03-07 04:59:39 : CRM-1230289 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:39 : CRM-1230289 - profile_engine - INFO : Length of the Rules Result : 187
+2025-03-07 04:59:39 : CRM-1230289 - profile_engine - INFO :
+Index(['data_dt', 'feature_name', 'dimension', 'count_curr', 'insert_date',
+       'weekday', 'prfl_id', 'rule_run_ts'],
+      dtype='object')
+      data_dt  feature_name dimension  count_curr                      insert_date  weekday  prfl_id rule_run_ts
+0  2025-03-06  Tier1 Models      <NA>       24045 2025-03-07 09:56:15.455589+00:00        5     7662         NaT
+1  2445-03-08  Tier1 Models      <NA>           2 2025-03-07 09:56:19.106981+00:00        4     7663         NaT
+2  3116-03-01  Tier1 Models      <NA>           1 2025-03-07 09:56:19.106981+00:00        4     7663         NaT
+3  4016-04-08  Tier1 Models      <NA>           1 2025-03-07 09:56:19.106981+00:00        6     7663         NaT
+4  4017-08-08  Tier1 Models      <NA>           1 2025-03-07 09:56:19.106981+00:00        3     7663         NaT
+2025-03-07 04:59:39 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query:
+            with top_records as
+            (
+            select *,row_number() over (partition by prfl_id,feature_name,grouped_columns order by data_dt desc) as row_num
+            from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt join
+            unnest(GENERATE_DATE_ARRAY(date_sub(current_date-1,INTERVAL 3 MONTH),current_date-1, INTERVAL 1 day)) as interval_Date
+            on data_dt = interval_Date
+            where prfl_id IN (7681, 7685, 7686, 7687, 7690, 7695, 7696, 7697, 7699, 7700, 7701, 7702, 7703, 7705, 7708, 7710, 7711, 7712, 7713, 7715, 7716, 7718, 7719, 7721, 7662, 7663, 7664, 7666, 7667, 7668, 7669, 7670, 7671, 7672, 7674, 7676, 7678)
+            and data_dt != current_date-1
+            order by prfl_id,feature_name, grouped_columns,data_dt desc
+            )
+            select prfl_id,feature_name,grouped_columns,WEEKDAY,
+            round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
+            round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
+            round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
+            round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
+            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value,
+            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value,
+            round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
+            from top_records
+            group by prfl_id,feature_name,grouped_columns,WEEKDAY
+            order by prfl_id,feature_name,grouped_columns,WEEKDAY;
 
-        # Convert numeric columns
-        df_report_result['prfl_id'] = pd.to_numeric(df_report_result['prfl_id'], errors='coerce', downcast='integer')
-        df_report_result['count_curr'] = pd.to_numeric(df_report_result['count_curr'], errors='coerce')
-        df_report_result['weekday'] = pd.to_numeric(df_report_result['weekday'], errors='coerce', downcast='integer')
-        df_report_result['rpt_seq_num'] = pd.to_numeric(df_report_result['rpt_seq_num'], errors='coerce', downcast='integer')
-        df_report_result['dq_score'] = pd.to_numeric(df_report_result['dq_score'], errors='coerce', downcast='integer')
+2025-03-07 04:59:39 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:39 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:39 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:39 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:39 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:43 : CRM-1230289 - get_historical_details - INFO : Length of the historical groupby list : 0
+2025-03-07 04:59:43 : CRM-1230289 - get_historical_details - INFO :
+Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+Empty DataFrame
+Columns: [prfl_id, feature_name, grouped_columns, weekday, sum_count_prev, avg_count_prev, variance_value, std_dev_value, sigma_2_value, min_thresh_value, max_thresh_value]
+Index: []
+2025-03-07 04:59:43 : CRM-1230289 - get_historical_details - WARNING : Historical Data Not found for Identifying the variance
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Historical Dtypes before conversion:
+prfl_id             object
+feature_name        object
+grouped_columns     object
+weekday             object
+sum_count_prev      object
+avg_count_prev      object
+variance_value      object
+std_dev_value       object
+sigma_2_value       object
+min_thresh_value    object
+max_thresh_value    object
+dtype: object
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Latest Dtypes before conversion:
+data_dt                         object
+feature_name                    object
+grouped_columns                 object
+count_curr                       int64
+insert_date        datetime64[ns, UTC]
+weekday                          int64
+prfl_id                          int64
+prfl_run_ts                     object
+dtype: object
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Converting column count_curr in df_tbl_latest_rec from Int64Dtype to int64
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Converting column weekday in df_tbl_latest_rec from Int64Dtype to int64
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Converting column prfl_id in df_tbl_latest_rec from Int64Dtype to int64
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Historical Data Types AFTER conversion:
+prfl_id             object
+feature_name        object
+grouped_columns     object
+weekday             object
+sum_count_prev      object
+avg_count_prev      object
+variance_value      object
+std_dev_value       object
+sigma_2_value       object
+min_thresh_value    object
+max_thresh_value    object
+dtype: object
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Latest Data Types AFTER conversion:
+data_dt                         object
+feature_name                    object
+grouped_columns                 object
+count_curr                       int64
+insert_date        datetime64[ns, UTC]
+weekday                          int64
+prfl_id                          int64
+prfl_run_ts                     object
+dtype: object
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 0
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO :
+Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+Empty DataFrame
+Columns: [prfl_id, feature_name, grouped_columns, weekday, sum_count_prev, avg_count_prev, variance_value, std_dev_value, sigma_2_value, min_thresh_value, max_thresh_value]
+Index: []
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 187
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO :
+Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
+       'insert_date', 'weekday', 'prfl_id', 'prfl_run_ts'],
+      dtype='object')
+      data_dt  feature_name  grouped_columns  count_curr                      insert_date  weekday  prfl_id          prfl_run_ts
+0  2025-03-06  Tier1 Models              NaN       24045 2025-03-07 09:56:15.455589+00:00        5     7662  2025-03-07 04:59:39
+1  2445-03-08  Tier1 Models              NaN           2 2025-03-07 09:56:19.106981+00:00        4     7663  2025-03-07 04:59:39
+2  3116-03-01  Tier1 Models              NaN           1 2025-03-07 09:56:19.106981+00:00        4     7663  2025-03-07 04:59:39
+3  4016-04-08  Tier1 Models              NaN           1 2025-03-07 09:56:19.106981+00:00        6     7663  2025-03-07 04:59:39
+4  4017-08-08  Tier1 Models              NaN           1 2025-03-07 09:56:19.106981+00:00        3     7663  2025-03-07 04:59:39
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Columns in df_tbl_hist_rec: Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Columns in df_tbl_latest_rec: Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
+       'insert_date', 'weekday', 'prfl_id', 'prfl_run_ts'],
+      dtype='object')
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : Length of the Merged Records : 187
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO :
+Index(['sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
+       'feature_name', 'grouped_columns', 'count_curr', 'insert_date',
+       'weekday', 'prfl_id', 'prfl_run_ts'],
+      dtype='object')
+  sum_count_prev avg_count_prev variance_value std_dev_value  ...                      insert_date weekday prfl_id          prfl_run_ts
+0            NaN            NaN            NaN           NaN  ... 2025-03-07 09:56:15.455589+00:00       5    7662  2025-03-07 04:59:39
+1            NaN            NaN            NaN           NaN  ... 2025-03-07 09:56:19.106981+00:00       4    7663  2025-03-07 04:59:39
+2            NaN            NaN            NaN           NaN  ... 2025-03-07 09:56:19.106981+00:00       4    7663  2025-03-07 04:59:39
+3            NaN            NaN            NaN           NaN  ... 2025-03-07 09:56:19.106981+00:00       6    7663  2025-03-07 04:59:39
+4            NaN            NaN            NaN           NaN  ... 2025-03-07 09:56:19.106981+00:00       3    7663  2025-03-07 04:59:39
 
-        # Convert statistical columns (ensure they are float)
-        df_report_result['avg_count_prev'] = pd.to_numeric(df_report_result['avg_count_prev'], errors='coerce')
-        df_report_result['variance_value'] = pd.to_numeric(df_report_result['variance_value'], errors='coerce')
-        df_report_result['std_dev_value'] = pd.to_numeric(df_report_result['std_dev_value'], errors='coerce')
-        df_report_result['sigma_2_value'] = pd.to_numeric(df_report_result['sigma_2_value'], errors='coerce')
-        df_report_result['min_thresh_value'] = pd.to_numeric(df_report_result['min_thresh_value'], errors='coerce')
-        df_report_result['max_thresh_value'] = pd.to_numeric(df_report_result['max_thresh_value'], errors='coerce')
+[5 rows x 15 columns]
+2025-03-07 04:59:43 : CRM-1230289 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+calculate_percentage_change
+calculate_sigma_value
+calculate_dq_status
+2025-03-07 04:59:43 : CRM-1230289 - run_metrics_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:43 : CRM-1230289 - run_metrics_engine - INFO : Length of the End Results : 187
+2025-03-07 04:59:43 : CRM-1230289 - run_metrics_engine - INFO :
+Index(['sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
+       'feature_name', 'grouped_columns', 'count_curr', 'insert_date',
+       'weekday', 'prfl_id', 'prfl_run_ts', 'prfl_type', 'src_tbl',
+       'dq_pillar', 'meas_name', 'min_threshold', 'max_threshold',
+       'comparison_type', 'is_hourly_flg', 'pct_change', 'consistency_score',
+       'dq_score', 'sigma_value', 'dq_ind'],
+      dtype='object')
+  sum_count_prev  avg_count_prev variance_value  std_dev_value sigma_2_value  ...  pct_change  consistency_score dq_score sigma_value dq_ind
+0            NaN             NaN            NaN            NaN           NaN  ...         NaN                0.0        0     outlier    LOW
+1            NaN             NaN            NaN            NaN           NaN  ...         NaN                0.0        0     outlier    LOW
+2            NaN             NaN            NaN            NaN           NaN  ...         NaN                0.0        0     outlier    LOW
+3            NaN             NaN            NaN            NaN           NaN  ...         NaN                0.0        0     outlier    LOW
+4            NaN             NaN            NaN            NaN           NaN  ...         NaN                0.0        0     outlier    LOW
 
-        # Convert categorical columns to string
-        df_report_result['feature_name'] = df_report_result['feature_name'].astype(str)
-        df_report_result['grouped_columns'] = df_report_result['grouped_columns'].astype(str)
-        df_report_result['prfl_type'] = df_report_result['prfl_type'].astype(str)
-        df_report_result['src_tbl'] = df_report_result['src_tbl'].astype(str)
-        df_report_result['dq_pillar'] = df_report_result['dq_pillar'].astype(str)
-        df_report_result['meas_name'] = df_report_result['meas_name'].astype(str)
-        df_report_result['dq_ind'] = df_report_result['dq_ind'].astype(str)
-        df_report_result['rpt_ref_key'] = df_report_result['rpt_ref_key'].astype(str)
+[5 rows x 28 columns]
+2025-03-07 04:59:43 : CRM-1230289 - run_metrics_engine - INFO : ------------------------------------------------------------------
+2025-03-07 04:59:43 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:43 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:43 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:43 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:43 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:43 : CRM-1230289 - load_to_report_results - ERROR :  'rpt_seq_num'
+2025-03-07 04:59:43 : CRM-1230289 - send_email_report - INFO : Mail Query :
+                select rpt.*,
+                mtd.data_lob, mtd.data_bus_elem ,mtd.db_name ,mtd.src_tbl ,mtd.dq_pillar
+                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
+                inner join
+                (select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
+                where rpt_ref_key = '20250307045611140848' ) rpt
+                on mtd.prfl_id = rpt.prfl_id
+                and upper(mtd.prfl_type) = 'CUSTOM_RULES'
 
-        # Check for missing values and replace with defaults
-        df_report_result.fillna({'prfl_id': 0, 'count_curr': 0, 'weekday': 0, 'dq_score': 0}, inplace=True)
-        df_report_result.fillna({'avg_count_prev': 0.0, 'variance_value': 0.0, 'std_dev_value': 0.0, 
-                                 'sigma_2_value': 0.0, 'min_thresh_value': 0.0, 'max_thresh_value': 0.0}, inplace=True)
+2025-03-07 04:59:43 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query:
+                select rpt.*,
+                mtd.data_lob, mtd.data_bus_elem ,mtd.db_name ,mtd.src_tbl ,mtd.dq_pillar
+                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
+                inner join
+                (select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
+                where rpt_ref_key = '20250307045611140848' ) rpt
+                on mtd.prfl_id = rpt.prfl_id
+                and upper(mtd.prfl_type) = 'CUSTOM_RULES'
 
-        # Print the final data types before inserting
-        self.logger.info(f'df_report_result dtypes:\n{df_report_result.dtypes}')
+2025-03-07 04:59:43 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:43 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:43 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:43 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:43 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:47 : CRM-1230289 - send_email_report - ERROR : Error in Report Summary Email Block. Error:No Records found for Email Summary
+2025-03-07 04:59:47 : CRM-1230289 - send_opsgenie_jira_outlier_alert - INFO : Opsgenie Info Query:
+                SELECT rpt.*,
+                    mtd.data_lob, mtd.data_dmn,mtd.data_sub_dmn, mtd.db_name, mtd.src_tbl,mtd.meas_name,
+                    mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api_key, mtd.is_opsgenie_flg,mtd.jira_assignee
+                FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
+                INNER JOIN
+                (SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
+                WHERE rpt_ref_key = '20250307045611140848') rpt
+                ON mtd.prfl_id = rpt.prfl_id
+                WHERE upper(mtd.prfl_type) = 'CUSTOM_RULES'
 
-        ## Loading Table Level Report
-        self.utils.load_result_to_bq_report_table(
-            dq_bq_client=dbclient,
-            dq_credentials=db_creds,
-            dq_report_table_name=config.dqaas_profile_rpt,
-            df_load_data=df_report_result,
-            seq_name='rpt_seq_num',
-            column_details=self.custom_profile_report_columns
-        )
+2025-03-07 04:59:47 : CRM-1230289 - run_bq_sql - INFO :
+BQ Select Query:
+                SELECT rpt.*,
+                    mtd.data_lob, mtd.data_dmn,mtd.data_sub_dmn, mtd.db_name, mtd.src_tbl,mtd.meas_name,
+                    mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api_key, mtd.is_opsgenie_flg,mtd.jira_assignee
+                FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
+                INNER JOIN
+                (SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
+                WHERE rpt_ref_key = '20250307045611140848') rpt
+                ON mtd.prfl_id = rpt.prfl_id
+                WHERE upper(mtd.prfl_type) = 'CUSTOM_RULES'
 
-    except Exception as err:
-        self.logger.error(f" {err}")
+2025-03-07 04:59:47 : CRM-1230289 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-07 04:59:47 : CRM-1230289 - isTokenExpired - INFO : Token File Available
+2025-03-07 04:59:47 : CRM-1230289 - isTokenExpired - INFO : Access Token is Valid
+2025-03-07 04:59:47 : CRM-1230289 - bigquery_client - INFO : Setting environment variable...
+2025-03-07 04:59:47 : CRM-1230289 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-07 04:59:51 : CRM-1230289 - send_opsgenie_jira_outlier_alert - WARNING : No records found for Opsgenie alert
+(smartdq-venv) tdcldizcva002:/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment$
