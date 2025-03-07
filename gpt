@@ -1,13 +1,41 @@
-2025-03-06 21:18:57 : CRM-357530 - compare_historical_latest_dimensions - INFO : Latest Data Types AFTER conversion:
-data_dt                         object
-feature_name                    object
-grouped_columns                 object
-hr                             float64
-count_curr                       int64
-prfl_run_ts                     object
-weekday                        float64
-prfl_id                          int64
-insert_date        datetime64[ns, UTC]
-dtype: object
-2025-03-06 21:18:57 : CRM-357530 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error 'grouped_columns'
-2025-03-06 21:18:57 : CRM-357530 - main - ERROR : Error in Main Block. Error object of type 'NoneType' has no len()
+def compare_historical_latest_dimensions(self, df_tbl_hist_rec, df_tbl_latest_rec, comparison_type="WEEKDAYS", isHourly="N"):
+    
+    self.logger.info('------------------------------------------------------------------')
+
+    # Ensure grouped_columns exists in both DataFrames
+    if "grouped_columns" not in df_tbl_hist_rec.columns:
+        self.logger.warning("grouped_columns missing in df_tbl_hist_rec, adding with NaN values.")
+        df_tbl_hist_rec["grouped_columns"] = np.nan
+
+    if "grouped_columns" not in df_tbl_latest_rec.columns:
+        self.logger.warning("grouped_columns missing in df_tbl_latest_rec, adding with NaN values.")
+        df_tbl_latest_rec["grouped_columns"] = np.nan
+
+    # Fill missing grouped_columns values with 'UNKNOWN'
+    df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna('UNKNOWN').astype(str)
+    df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna('UNKNOWN').astype(str)
+
+    # Debugging log to verify column names before merging
+    self.logger.info(f"Columns in df_tbl_hist_rec: {df_tbl_hist_rec.columns}")
+    self.logger.info(f"Columns in df_tbl_latest_rec: {df_tbl_latest_rec.columns}")
+
+    ## Merging the Historical and Latest Records
+    self.logger.info('------------------------------------------------------------------')
+
+    join_list = ['prfl_id', 'feature_name', 'grouped_columns', 'weekday']
+    
+    if comparison_type == 'DTRAN_MONTHLY':
+        join_list.remove('weekday')
+
+    df_merge_rec = pd.merge(
+        df_tbl_hist_rec,
+        df_tbl_latest_rec,
+        on=join_list,
+        how='right'
+    )
+
+    self.logger.info(f'Length of the Merged Records : {len(df_merge_rec)}')
+    self.logger.info(f'\n{df_merge_rec.columns}\n{df_merge_rec.head()}')
+    self.logger.info('------------------------------------------------------------------')
+
+    return df_merge_rec
