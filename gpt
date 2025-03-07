@@ -1,3 +1,24 @@
+
+query = """
+SELECT *
+FROM `vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt`
+WHERE DATE(_PARTITIONTIME) = CURRENT_DATE
+ORDER BY _PARTITIONTIME DESC
+LIMIT 50
+"""
+df_recent = client.query(query).to_dataframe()
+
+import ace_tools as tools
+tools.display_dataframe_to_user(name="Recently Inserted Records", dataframe=df_recent)
+
+
+
+
+
+
+
+
+
 (smartdq-venv) tdcldizcva002:/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment$  python custom_metrics.py
 /apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment/../config/config.ini
 /apps/opt/application/smartdq/smartdq_gcp_migration/scripts/../config/config.ini
