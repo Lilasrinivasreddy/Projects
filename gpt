@@ -1,3 +1,49 @@
+import pandas as pd
+
+# Ensure date columns are properly formatted
+df_report_result['data_dt'] = pd.to_datetime(df_report_result['data_dt'], errors='coerce')
+df_report_result['insert_date'] = pd.to_datetime(df_report_result['insert_date'], errors='coerce')
+df_report_result['prfl_run_ts'] = pd.to_datetime(df_report_result['prfl_run_ts'], errors='coerce')
+
+# Convert numeric columns
+df_report_result['prfl_id'] = pd.to_numeric(df_report_result['prfl_id'], errors='coerce', downcast='integer')
+df_report_result['count_curr'] = pd.to_numeric(df_report_result['count_curr'], errors='coerce')
+df_report_result['weekday'] = pd.to_numeric(df_report_result['weekday'], errors='coerce', downcast='integer')
+df_report_result['rpt_seq_num'] = pd.to_numeric(df_report_result['rpt_seq_num'], errors='coerce', downcast='integer')
+df_report_result['dq_score'] = pd.to_numeric(df_report_result['dq_score'], errors='coerce', downcast='integer')
+
+# Convert statistical columns (ensure they are float)
+df_report_result['avg_count_prev'] = pd.to_numeric(df_report_result['avg_count_prev'], errors='coerce')
+df_report_result['variance_value'] = pd.to_numeric(df_report_result['variance_value'], errors='coerce')
+df_report_result['std_dev_value'] = pd.to_numeric(df_report_result['std_dev_value'], errors='coerce')
+df_report_result['sigma_2_value'] = pd.to_numeric(df_report_result['sigma_2_value'], errors='coerce')
+df_report_result['min_thresh_value'] = pd.to_numeric(df_report_result['min_thresh_value'], errors='coerce')
+df_report_result['max_thresh_value'] = pd.to_numeric(df_report_result['max_thresh_value'], errors='coerce')
+
+# Convert categorical columns to string
+df_report_result['feature_name'] = df_report_result['feature_name'].astype(str)
+df_report_result['grouped_columns'] = df_report_result['grouped_columns'].astype(str)
+df_report_result['prfl_type'] = df_report_result['prfl_type'].astype(str)
+df_report_result['src_tbl'] = df_report_result['src_tbl'].astype(str)
+df_report_result['dq_pillar'] = df_report_result['dq_pillar'].astype(str)
+df_report_result['meas_name'] = df_report_result['meas_name'].astype(str)
+df_report_result['dq_ind'] = df_report_result['dq_ind'].astype(str)
+df_report_result['rpt_ref_key'] = df_report_result['rpt_ref_key'].astype(str)
+
+# Check for missing values and replace with defaults
+df_report_result.fillna({'prfl_id': 0, 'count_curr': 0, 'weekday': 0, 'dq_score': 0}, inplace=True)
+df_report_result.fillna({'avg_count_prev': 0.0, 'variance_value': 0.0, 'std_dev_value': 0.0, 
+                         'sigma_2_value': 0.0, 'min_thresh_value': 0.0, 'max_thresh_value': 0.0}, inplace=True)
+
+# Print the final data types before inserting
+print(df_report_result.dtypes)
+
+# Now proceed with loading data into BigQuery
+load_result_to_bq_report_table(df_report_result)
+
+
+
+
 (smartdq-venv) tdcldizcva002:/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment$  python custom_metrics.py
 /apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment/../config/config.ini
 /apps/opt/application/smartdq/smartdq_gcp_migration/scripts/../config/config.ini
