@@ -1,119 +1,40 @@
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Historical DataFrame Columns: ['prfl_id', 'feature_name', 'grouped_columns', 'weekday', 'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value', 'sigma_2_value', 'min_thresh_value', 'max_thresh_value']
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Latest DataFrame Columns: ['data_dt', 'feature_name', 'grouped_columns', 'count_curr', 'insert_date', 'weekday', 'prfl_id', 'prfl_run_ts']
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Historical DataFrame Data Types:
-prfl_id               Int64
-feature_name         object
-grouped_columns      object
-weekday               Int64
-sum_count_prev       object
-avg_count_prev       object
-variance_value      float64
-std_dev_value       float64
-sigma_2_value       float64
-min_thresh_value    float64
-max_thresh_value    float64
-dtype: object
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Latest DataFrame Data Types:
-data_dt                         object
-feature_name                    object
-grouped_columns                 object
-count_curr                       int64
-insert_date        datetime64[ns, UTC]
-weekday                          int64
-prfl_id                          int64
-prfl_run_ts                     object
-dtype: object
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Historical DataFrame Sample:
-   prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
-0     7663  Tier1 Models            null        4  ...           0.0           0.0          494197.0          494197.0
-1     7664  Tier1 Models            null        4  ...           0.0           0.0           25556.0           25556.0
-2     7666  Tier1 Models            null        4  ...           0.0           0.0           27627.0           27627.0
-3     7667  Tier1 Models            null        4  ...           0.0           0.0           19513.0           19513.0
-4     7668  Tier1 Models            null        4  ...           0.0           0.0         1694284.0         1694284.0
+def compare_historical_latest_dimensions(self, df_tbl_hist_rec, df_tbl_latest_rec: pd.DataFrame, comparison_type="WEEKDAYS", isHourly="N"):
+    ## Historical Records
+    self.logger.info('------------------------------------------------------------------')
+    
+    # 🔹 Log column names
+    self.logger.info(f"Historical DataFrame Columns: {df_tbl_hist_rec.columns.tolist()}")
+    self.logger.info(f"Latest DataFrame Columns: {df_tbl_latest_rec.columns.tolist()}")
 
-[5 rows x 11 columns]
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Latest DataFrame Sample:
-      data_dt  feature_name grouped_columns  count_curr                      insert_date  weekday  prfl_id          prfl_run_ts
-0  2025-03-06  Tier1 Models            <NA>       24045 2025-03-07 15:47:21.570200+00:00        5     7662  2025-03-07 10:50:47
-1  2445-03-08  Tier1 Models            <NA>           2 2025-03-07 15:47:25.688491+00:00        4     7663  2025-03-07 10:50:47
-2  3116-03-01  Tier1 Models            <NA>           1 2025-03-07 15:47:25.688491+00:00        4     7663  2025-03-07 10:50:47
-3  4016-04-08  Tier1 Models            <NA>           1 2025-03-07 15:47:25.688491+00:00        6     7663  2025-03-07 10:50:47
-4  4017-08-08  Tier1 Models            <NA>           1 2025-03-07 15:47:25.688491+00:00        3     7663  2025-03-07 10:50:47
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 30
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO :
-Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
-       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
-       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
-      dtype='object')
-   prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
-0     7663  Tier1 Models            null        4  ...           0.0           0.0          494197.0          494197.0
-1     7664  Tier1 Models            null        4  ...           0.0           0.0           25556.0           25556.0
-2     7666  Tier1 Models            null        4  ...           0.0           0.0           27627.0           27627.0
-3     7667  Tier1 Models            null        4  ...           0.0           0.0           19513.0           19513.0
-4     7668  Tier1 Models            null        4  ...           0.0           0.0         1694284.0         1694284.0
+    # 🔹 Log data types before fixing
+    self.logger.info(f"Historical DataFrame Data Types:\n{df_tbl_hist_rec.dtypes}")
+    self.logger.info(f"Latest DataFrame Data Types:\n{df_tbl_latest_rec.dtypes}")
 
-[5 rows x 11 columns]
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 200
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO :
-Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
-       'insert_date', 'weekday', 'prfl_id', 'prfl_run_ts'],
-      dtype='object')
-      data_dt  feature_name  grouped_columns  count_curr                      insert_date  weekday  prfl_id          prfl_run_ts
-0  2025-03-06  Tier1 Models              NaN       24045 2025-03-07 15:47:21.570200+00:00        5     7662  2025-03-07 10:50:47
-1  2445-03-08  Tier1 Models              NaN           2 2025-03-07 15:47:25.688491+00:00        4     7663  2025-03-07 10:50:47
-2  3116-03-01  Tier1 Models              NaN           1 2025-03-07 15:47:25.688491+00:00        4     7663  2025-03-07 10:50:47
-3  4016-04-08  Tier1 Models              NaN           1 2025-03-07 15:47:25.688491+00:00        6     7663  2025-03-07 10:50:47
-4  4017-08-08  Tier1 Models              NaN           1 2025-03-07 15:47:25.688491+00:00        3     7663  2025-03-07 10:50:47
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Historical Dataframe ::     prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
-0      7663  Tier1 Models            null        4  ...           0.0           0.0          494197.0          494197.0
-1      7664  Tier1 Models            null        4  ...           0.0           0.0           25556.0           25556.0
-2      7666  Tier1 Models            null        4  ...           0.0           0.0           27627.0           27627.0
-3      7667  Tier1 Models            null        4  ...           0.0           0.0           19513.0           19513.0
-4      7668  Tier1 Models            null        4  ...           0.0           0.0         1694284.0         1694284.0
-5      7669  Tier1 Models            null        4  ...           0.0           0.0         5119079.0         5119079.0
-6      7670  Tier1 Models            null        4  ...           0.0           0.0         1104026.0         1104026.0
-7      7671  Tier1 Models            null        4  ...           0.0           0.0         4381791.0         4381791.0
-8      7676  Tier1 Models            null        4  ...           0.0           0.0         7279712.0         7279712.0
-9      7678  Tier1 Models            null        4  ...           0.0           0.0           48928.0           48928.0
-10     7681  Tier1 Models            null        4  ...           0.0           0.0           58020.0           58020.0
-11     7685  Tier1 Models            null        4  ...           0.0           0.0           96508.0           96508.0
-12     7686  Tier1 Models            null        4  ...           0.0           0.0            1229.0            1229.0
-13     7687  Tier1 Models            null        4  ...           0.0           0.0          731235.0          731235.0
-14     7695  Tier1 Models            null        4  ...           0.0           0.0         1430659.0         1430659.0
-15     7696  Tier1 Models            null        4  ...           0.0           0.0          742778.0          742778.0
-16     7697  Tier1 Models            null        4  ...           0.0           0.0          458977.0          458977.0
-17     7699  Tier1 Models            null        4  ...           0.0           0.0          280398.0          280398.0
-18     7700  Tier1 Models            null        4  ...           0.0           0.0           92819.0           92819.0
-19     7701  Tier1 Models            null        4  ...           0.0           0.0         1240742.0         1240742.0
-20     7702  Tier1 Models            null        4  ...           0.0           0.0          164558.0          164558.0
-21     7705  Tier1 Models            null        4  ...           0.0           0.0          800728.0          800728.0
-22     7708  Tier1 Models            null        4  ...           0.0           0.0         1077500.0         1077500.0
-23     7710  Tier1 Models            null        4  ...           0.0           0.0          536526.0          536526.0
-24     7711  Tier1 Models            null        4  ...           0.0           0.0          290520.0          290520.0
-25     7712  Tier1 Models            null        4  ...           0.0           0.0          468421.0          468421.0
-26     7713  Tier1 Models            null        4  ...           0.0           0.0         1039267.0         1039267.0
-27     7715  Tier1 Models            null        4  ...           0.0           0.0           72276.0           72276.0
-28     7716  Tier1 Models            null        4  ...           0.0           0.0          214813.0          214813.0
-29     7719  Tier1 Models            null        4  ...           0.0           0.0          537923.0          537923.0
+    # ✅ Fix only the required data types before merging
+    df_tbl_hist_rec['sum_count_prev'] = pd.to_numeric(df_tbl_hist_rec['sum_count_prev'], errors='coerce')
+    df_tbl_hist_rec['avg_count_prev'] = pd.to_numeric(df_tbl_hist_rec['avg_count_prev'], errors='coerce')
+    df_tbl_latest_rec['data_dt'] = pd.to_datetime(df_tbl_latest_rec['data_dt'], errors='coerce')
+    df_tbl_latest_rec['prfl_run_ts'] = pd.to_datetime(df_tbl_latest_rec['prfl_run_ts'], errors='coerce')
 
-[30 rows x 11 columns]
-2025-03-07 10:50:51 : CRM-1540955 - compare_historical_latest_dimensions - INFO : Latest Dataframe ::         data_dt  feature_name  grouped_columns  count_curr                      insert_date  weekday  prfl_id          prfl_run_ts
-0    2025-03-06  Tier1 Models              NaN       24045 2025-03-07 15:47:21.570200+00:00        5     7662  2025-03-07 10:50:47
-1    2445-03-08  Tier1 Models              NaN           2 2025-03-07 15:47:25.688491+00:00        4     7663  2025-03-07 10:50:47
-2    3116-03-01  Tier1 Models              NaN           1 2025-03-07 15:47:25.688491+00:00        4     7663  2025-03-07 10:50:47
-3    4016-04-08  Tier1 Models              NaN           1 2025-03-07 15:47:25.688491+00:00        6     7663  2025-03-07 10:50:47
-4    4017-08-08  Tier1 Models              NaN           1 2025-03-07 15:47:25.688491+00:00        3     7663  2025-03-07 10:50:47
-..          ...           ...              ...         ...                              ...      ...      ...                  ...
-195  2025-03-06  Tier1 Models              NaN     3162096 2025-03-07 15:50:23.875579+00:00        5     7716  2025-03-07 10:50:47
-196  2025-03-05  Tier1 Models              NaN      214813 2025-03-07 15:50:23.875579+00:00        4     7716  2025-03-07 10:50:47
-197  2025-03-07  Tier1 models              NaN         870 2025-03-07 15:50:28.700307+00:00        6     7718  2025-03-07 10:50:47
-198  2025-03-05  Tier1 Models              NaN      537923 2025-03-07 15:50:32.452254+00:00        4     7719  2025-03-07 10:50:47
-199  2025-03-07  Tier1 models              NaN   714082827 2025-03-07 15:50:37.516173+00:00        6     7721  2025-03-07 10:50:47
+    # 🔹 Log fixed data types before merging
+    self.logger.info(f"Fixed Historical DataFrame Data Types:\n{df_tbl_hist_rec.dtypes}")
+    self.logger.info(f"Fixed Latest DataFrame Data Types:\n{df_tbl_latest_rec.dtypes}")
 
-[200 rows x 8 columns]
-2025-03-07 10:50:51 : CRM-1540955 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error You are trying to merge on object and float64 columns. If you wish to proceed you should use pd.concat
-2025-03-07 10:50:51 : CRM-1540955 - main - ERROR : Error in Main Block. Error object of type 'NoneType' has no len()
-(smartdq-venv) tdcldizcva002:/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment$
+    ## Merging the Historical and Latest Records
+    self.logger.info('------------------------------------------------------------------')
+
+    join_list = ['prfl_id','feature_name','grouped_columns','weekday']
+    if comparison_type == 'DTRAN_MONTHLY':
+        join_list.remove('weekday')
+
+    df_merge_rec= pd.merge(
+        df_tbl_hist_rec,
+        df_tbl_latest_rec,
+        on=join_list,
+        how='right'
+    )
+
+    self.logger.info(f'Length of the Merged Records : {len(df_merge_rec)}')
+    self.logger.info(f'\n{df_merge_rec.columns}\n{df_merge_rec.head()}')
+    self.logger.info('------------------------------------------------------------------')
+    return df_merge_rec
