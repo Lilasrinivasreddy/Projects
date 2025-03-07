@@ -1,9 +1,13 @@
-if not df_tbl_hist_rec.empty:
-    for col in df_tbl_hist_rec.select_dtypes(include=['Int64']).columns:
-        self.logger.info(f"Converting column {col} in df_tbl_hist_rec from Int64Dtype to int64")
-        df_tbl_hist_rec[col] = df_tbl_hist_rec[col].fillna(0).astype(pd.Int64Dtype()).astype('int64')
-
-if not df_tbl_latest_rec.empty:
-    for col in df_tbl_latest_rec.select_dtypes(include=['Int64']).columns:
-        self.logger.info(f"Converting column {col} in df_tbl_latest_rec from Int64Dtype to int64")
-        df_tbl_latest_rec[col] = df_tbl_latest_rec[col].fillna(0).astype(pd.Int64Dtype()).astype('int64')
+2025-03-06 21:18:57 : CRM-357530 - compare_historical_latest_dimensions - INFO : Latest Data Types AFTER conversion:
+data_dt                         object
+feature_name                    object
+grouped_columns                 object
+hr                             float64
+count_curr                       int64
+prfl_run_ts                     object
+weekday                        float64
+prfl_id                          int64
+insert_date        datetime64[ns, UTC]
+dtype: object
+2025-03-06 21:18:57 : CRM-357530 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error 'grouped_columns'
+2025-03-06 21:18:57 : CRM-357530 - main - ERROR : Error in Main Block. Error object of type 'NoneType' has no len()
