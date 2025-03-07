@@ -1,7 +1,75 @@
-# Ensure 'grouped_columns' remains as object (string)
-df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].astype(str)
-df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].astype(str)
+ ## Comparing Hist and Current Records
+    def compare_historical_latest_dimensions(self, df_tbl_hist_rec, df_tbl_latest_rec: pd.DataFrame, comparison_type="WEEKDAYS", isHourly="N"):
+        
+        ## Historical Records
+        self.logger.info('------------------------------------------------------------------')
 
-# Replace NaNs with an empty string to avoid conversion to float
-df_tbl_hist_rec['grouped_columns'].fillna("", inplace=True)
-df_tbl_latest_rec['grouped_columns'].fillna("", inplace=True)
+        # Log column names
+        self.logger.info(f"Historical DataFrame Columns: {df_tbl_hist_rec.columns.tolist()}")
+        self.logger.info(f"Latest DataFrame Columns: {df_tbl_latest_rec.columns.tolist()}")
+
+        # Log data types
+        self.logger.info(f"Historical DataFrame Data Types:\n{df_tbl_hist_rec.dtypes}")
+        self.logger.info(f"Latest DataFrame Data Types:\n{df_tbl_latest_rec.dtypes}")
+
+        # Log first few rows
+        self.logger.info(f"Historical DataFrame Sample:\n{df_tbl_hist_rec.head()}")
+        self.logger.info(f"Latest DataFrame Sample:\n{df_tbl_latest_rec.head()}")
+
+        # Fix only the required data types before merging
+        df_tbl_hist_rec['sum_count_prev'] = pd.to_numeric(df_tbl_hist_rec['sum_count_prev'], errors='coerce')
+        df_tbl_hist_rec['avg_count_prev'] = pd.to_numeric(df_tbl_hist_rec['avg_count_prev'], errors='coerce')
+        df_tbl_latest_rec['data_dt'] = pd.to_datetime(df_tbl_latest_rec['data_dt'], errors='coerce')
+        df_tbl_latest_rec['prfl_run_ts'] = pd.to_datetime(df_tbl_latest_rec['prfl_run_ts'], errors='coerce')
+
+        # Ensure 'grouped_columns' remains as object (string)
+        df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].astype(str)
+        df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].astype(str)
+
+        # Replace NaNs with an empty string to avoid conversion to float
+        df_tbl_hist_rec['grouped_columns'].fillna("", inplace=True)
+        df_tbl_latest_rec['grouped_columns'].fillna("", inplace=True)
+
+        df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
+        # df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
+        df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
+        self.logger.info(f'Length of the historical Records : {len(df_tbl_hist_rec)}')
+        self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
+        
+        ## Latest Records
+        self.logger.info('------------------------------------------------------------------')
+        df_tbl_latest_rec = df_tbl_latest_rec.rename(columns={col: str(col).lower() for col in df_tbl_latest_rec.columns.tolist()})
+        # df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].astype(str).replace('<NA>',np.nan).replace('nan',np.nan)
+        df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
+        self.logger.info(f'Length of the latest Records : {len(df_tbl_latest_rec)}')
+        self.logger.info(f'\n{df_tbl_latest_rec.columns}\n{df_tbl_latest_rec.head()}')
+
+        # Log fixed data types before merging
+        self.logger.info(f"Fixed Historical DataFrame Data Types:\n{df_tbl_hist_rec.dtypes}")
+        self.logger.info(f"Fixed Latest DataFrame Data Types:\n{df_tbl_latest_rec.dtypes}")
+
+        ## Merging the Historical and Latest Records
+        self.logger.info('------------------------------------------------------------------')
+        
+        join_list = ['prfl_id','feature_name','grouped_columns','weekday']
+        
+        if comparison_type == 'DTRAN_MONTHLY':
+            join_list.remove('weekday')
+        
+        self.logger.info(f'Historical Dataframe :: {df_tbl_hist_rec}')
+        # df_tbl_hist_rec.to_csv('/apps/opt/application/smartdq/smartdq_gcp_migration/logs/hist_rec.csv', encoding='utf-8', index=False)
+        self.logger.info(f'Latest Dataframe :: {df_tbl_latest_rec}')
+        # df_tbl_latest_rec.to_csv('/apps/opt/application/smartdq/smartdq_gcp_migration/logs/latest_rec.csv', encoding='utf-8', index=False)
+                             
+        df_merge_rec= pd.merge(
+            df_tbl_hist_rec,
+            df_tbl_latest_rec,
+            on=join_list,
+            how='right'
+        )
+        
+        self.logger.info(f'Length of the Merged Records : {len(df_merge_rec)}')
+        self.logger.info(f'\n{df_merge_rec.columns}\n{df_merge_rec.head()}')
+        self.logger.info('------------------------------------------------------------------')
+        return df_merge_rec
+    
