@@ -1,11 +1,27 @@
-# Log column names
-self.logger.info(f"Historical DataFrame Columns: {df_tbl_hist_rec.columns.tolist()}")
-self.logger.info(f"Latest DataFrame Columns: {df_tbl_latest_rec.columns.tolist()}")
+# Convert 'prfl_id' to string for both DataFrames
+df_tbl_hist_rec['prfl_id'] = df_tbl_hist_rec['prfl_id'].astype(str)
+df_tbl_latest_rec['prfl_id'] = df_tbl_latest_rec['prfl_id'].astype(str)
 
-# Log data types
-self.logger.info(f"Historical DataFrame Data Types:\n{df_tbl_hist_rec.dtypes}")
-self.logger.info(f"Latest DataFrame Data Types:\n{df_tbl_latest_rec.dtypes}")
+# Convert 'grouped_columns' to string for both DataFrames
+df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].astype(str)
+df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].astype(str)
 
-# Log first few rows
-self.logger.info(f"Historical DataFrame Sample:\n{df_tbl_hist_rec.head()}")
-self.logger.info(f"Latest DataFrame Sample:\n{df_tbl_latest_rec.head()}")
+# Convert 'weekday' to integer for both DataFrames
+df_tbl_hist_rec['weekday'] = pd.to_numeric(df_tbl_hist_rec['weekday'], errors='coerce').astype('Int64')
+df_tbl_latest_rec['weekday'] = pd.to_numeric(df_tbl_latest_rec['weekday'], errors='coerce').astype('Int64')
+
+# Convert numerical columns in df_tbl_hist_rec (they are currently objects!)
+num_cols = ['sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value', 'sigma_2_value', 'min_thresh_value', 'max_thresh_value']
+for col in num_cols:
+    df_tbl_hist_rec[col] = pd.to_numeric(df_tbl_hist_rec[col], errors='coerce')
+
+# Convert 'count_curr' in df_tbl_latest_rec to float
+df_tbl_latest_rec['count_curr'] = pd.to_numeric(df_tbl_latest_rec['count_curr'], errors='coerce').astype(float)
+
+# Convert 'data_dt' and 'prfl_run_ts' in df_tbl_latest_rec to datetime
+df_tbl_latest_rec['data_dt'] = pd.to_datetime(df_tbl_latest_rec['data_dt'], errors='coerce')
+df_tbl_latest_rec['prfl_run_ts'] = pd.to_datetime(df_tbl_latest_rec['prfl_run_ts'], errors='coerce')
+
+# Log data types again after conversion
+self.logger.info(f"Fixed Historical DataFrame Data Types:\n{df_tbl_hist_rec.dtypes}")
+self.logger.info(f"Fixed Latest DataFrame Data Types:\n{df_tbl_latest_rec.dtypes}")
