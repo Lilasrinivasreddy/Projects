@@ -1,9 +1,804 @@
+/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment/../config/config.ini
+/apps/opt/application/smartdq/smartdq_gcp_migration/scripts/../config/config.ini
+name:CRM-3268670, path:/apps/opt/application/smartdq//smartdq_gcp_migration//logs/2025-03-09/CustomMetricsLogs-2025-03-09-03-15-21.log
+2025-03-09 03:15:21 : CRM-3268670 - laod_historical_report - INFO : Inside laod_historical_report
+2025-03-09 03:15:21 : CRM-3268670 - laod_historical_report - INFO : Fetch SQL executing:  select distinct mtd.prfl_id, mtd.prfl_type, mtd.dq_pillar, mtd.src_tbl, mtd.meas_name, mtd.feature_name, meas_rule_sql from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
+            left join vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt rpt
+            on mtd.prfl_id = rpt.prfl_id
+            where rpt.prfl_id is null
+            and upper(mtd.prfl_type) = 'CUSTOM_RULES'
+2025-03-09 03:15:21 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query:  select distinct mtd.prfl_id, mtd.prfl_type, mtd.dq_pillar, mtd.src_tbl, mtd.meas_name, mtd.feature_name, meas_rule_sql from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
+            left join vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt rpt
+            on mtd.prfl_id = rpt.prfl_id
+            where rpt.prfl_id is null
+            and upper(mtd.prfl_type) = 'CUSTOM_RULES'
+2025-03-09 03:15:21 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:21 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:21 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:21 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:21 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:15:25 : CRM-3268670 - laod_historical_report - INFO : Fetched new onboarded tables
+2025-03-09 03:15:25 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query:
+                SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd
+                WHERE upper(prfl_type) = 'CUSTOM_RULES'
+                and IS_ACTIVE_FLG = 'Y'
+
+                ORDER BY PRFL_ID;
+
+2025-03-09 03:15:25 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:25 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:25 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:25 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:25 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:15:29 : CRM-3268670 - get_metadata - INFO : Metadata Length: 37
+2025-03-09 03:15:29 : CRM-3268670 - main_metrics_execution - INFO :
+Request Reference:: 20250309031529099294
+Sub Domain:: Tier1_Models
+2025-03-09 03:15:29 : CRM-3268670 - run_metrics_engine - INFO : Comparison:: WEEKDAYS, Hourly:: N
+0     7662
+1     7663
+2     7664
+3     7666
+4     7667
+5     7668
+6     7669
+7     7670
+8     7671
+9     7672
+10    7674
+11    7676
+12    7678
+13    7681
+14    7685
+15    7686
+16    7687
+17    7690
+18    7695
+19    7696
+20    7697
+21    7699
+22    7700
+23    7701
+24    7702
+25    7703
+26    7705
+27    7708
+28    7710
+29    7711
+30    7712
+31    7713
+32    7715
+33    7716
+34    7718
+35    7719
+36    7721
+Name: prfl_id, dtype: Int64
+2025-03-09 03:15:29 : CRM-3268670 - run_metrics_engine - INFO : Profile ID List : 7681, 7685, 7686, 7687, 7690, 7695, 7696, 7697, 7699, 7700, 7701, 7702, 7703, 7705, 7708, 7710, 7711, 7712, 7713, 7715, 7716, 7718, 7719, 7721, 7662, 7663, 7664, 7666, 7667, 7668, 7669, 7670, 7671, 7672, 7674, 7676, 7678
+2025-03-09 03:15:29 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query:
+                select date(current_date-1) as run_dt,
+                extract(dayofweek from date(current_date-1)) as weekday;
+
+2025-03-09 03:15:29 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:29 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:29 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:29 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:29 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:15:32 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:32 : CRM-3268670 - profile_engine - INFO : Index:: 0, Rule ID:: 7662
+2025-03-09 03:15:32 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.service where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:15:32 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:32 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:32 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:32 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:32 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:15:36 : CRM-3268670 - profile_engine - INFO :
       data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
-0  2025-03-07  Tier1 models       <NA>         870 2025-03-07 19:12:32.815199+00:00        6     7718
-2025-03-07 14:12:35 : CRM-1695411 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:35 : CRM-1695411 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:35 : CRM-1695411 - profile_engine - INFO : Index:: 35, Rule ID:: 7719
-2025-03-07 14:12:35 : CRM-1695411 - run_bq_sql - INFO :
+0  2025-03-08  Tier1 Models       <NA>       24048 2025-03-09 07:15:33.611757+00:00        7     7662
+2025-03-09 03:15:36 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:36 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:36 : CRM-3268670 - profile_engine - INFO : Index:: 1, Rule ID:: 7663
+2025-03-09 03:15:36 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(event_date as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from event_date) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.scm_usage where cast(event_date as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:15:36 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:36 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:36 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:36 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:36 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:15:41 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>      504964 2025-03-09 07:15:37.686738+00:00        7     7663
+1  2025-03-07  Tier1 Models       <NA>      660005 2025-03-09 07:15:37.686738+00:00        6     7663
+2  2445-03-08  Tier1 Models       <NA>           2 2025-03-09 07:15:37.686738+00:00        4     7663
+3  3116-03-01  Tier1 Models       <NA>           1 2025-03-09 07:15:37.686738+00:00        4     7663
+4  4017-08-08  Tier1 Models       <NA>           1 2025-03-09 07:15:37.686738+00:00        3     7663
+5  4016-04-08  Tier1 Models       <NA>           1 2025-03-09 07:15:37.686738+00:00        6     7663
+6  4000-04-24  Tier1 Models       <NA>           2 2025-03-09 07:15:37.686738+00:00        2     7663
+2025-03-09 03:15:41 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:41 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:41 : CRM-3268670 - profile_engine - INFO : Index:: 2, Rule ID:: 7664
+2025-03-09 03:15:41 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(call_start_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from call_start_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.sa_drivers where cast(call_start_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:15:41 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:41 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:41 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:41 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:41 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:15:45 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>       54513 2025-03-09 07:15:42.214105+00:00        6     7664
+2025-03-09 03:15:45 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:45 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:45 : CRM-3268670 - profile_engine - INFO : Index:: 3, Rule ID:: 7666
+2025-03-09 03:15:45 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.port_sum_fact where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:15:45 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:45 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:45 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:45 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:45 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:15:51 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>       78680 2025-03-09 07:15:46.491101+00:00        7     7666
+1  2025-03-07  Tier1 Models       <NA>       28511 2025-03-09 07:15:46.491101+00:00        6     7666
+2025-03-09 03:15:51 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:51 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:51 : CRM-3268670 - profile_engine - INFO : Index:: 4, Rule ID:: 7667
+2025-03-09 03:15:51 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(pymnt_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from pymnt_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.payment_apo_decline where cast(pymnt_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:15:51 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:51 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:51 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:51 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:51 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:15:56 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>       21325 2025-03-09 07:15:52.366264+00:00        6     7667
+2025-03-09 03:15:56 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:56 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:15:56 : CRM-3268670 - profile_engine - INFO : Index:: 5, Rule ID:: 7668
+2025-03-09 03:15:56 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(pymnt_trans_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from pymnt_trans_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.payment where cast(pymnt_trans_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:15:56 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:15:56 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:15:56 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:15:56 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:15:56 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:00 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>     1685481 2025-03-09 07:15:56.895686+00:00        6     7668
+2025-03-09 03:16:00 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:00 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:00 : CRM-3268670 - profile_engine - INFO : Index:: 6, Rule ID:: 7669
+2025-03-09 03:16:00 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(trans_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from trans_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.mtn_occ_trans where cast(trans_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:00 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:00 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:00 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:00 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:00 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:06 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>       15337 2025-03-09 07:16:01.698702+00:00        7     7669
+1  2025-07-10  Tier1 Models       <NA>           1 2025-03-09 07:16:01.698702+00:00        5     7669
+2  2025-03-10  Tier1 Models       <NA>           1 2025-03-09 07:16:01.698702+00:00        2     7669
+3  2030-04-13  Tier1 Models       <NA>           1 2025-03-09 07:16:01.698702+00:00        7     7669
+4  2050-11-02  Tier1 Models       <NA>           1 2025-03-09 07:16:01.698702+00:00        4     7669
+5  2025-03-07  Tier1 Models       <NA>     1894674 2025-03-09 07:16:01.698702+00:00        6     7669
+2025-03-09 03:16:06 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:06 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:06 : CRM-3268670 - profile_engine - INFO : Index:: 7, Rule ID:: 7670
+2025-03-09 03:16:06 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(ivr_call_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from ivr_call_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.ivr_call where cast(ivr_call_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:06 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:06 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:06 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:06 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:06 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:10 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>     1134058 2025-03-09 07:16:06.987230+00:00        6     7670
+2025-03-09 03:16:10 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:10 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:10 : CRM-3268670 - profile_engine - INFO : Index:: 8, Rule ID:: 7671
+2025-03-09 03:16:10 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.install_loan_trans where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:10 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:10 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:10 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:10 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:10 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:17 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>     1192935 2025-03-09 07:16:11.817806+00:00        7     7671
+1  2025-03-07  Tier1 Models       <NA>     2648617 2025-03-09 07:16:11.817806+00:00        6     7671
+2025-03-09 03:16:17 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:17 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:17 : CRM-3268670 - profile_engine - INFO : Index:: 9, Rule ID:: 7672
+2025-03-09 03:16:17 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.fixed_5g_avail_cust_inquiry where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:17 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:17 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:17 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:17 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:17 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:23 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>    63779120 2025-03-09 07:16:18.535890+00:00        7     7672
+2025-03-09 03:16:23 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:23 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:23 : CRM-3268670 - profile_engine - INFO : Index:: 10, Rule ID:: 7674
+2025-03-09 03:16:23 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.ecpd_profile where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:23 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:23 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:23 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:23 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:23 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:28 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>     8516456 2025-03-09 07:16:24.544503+00:00        7     7674
+2025-03-09 03:16:28 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:28 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:28 : CRM-3268670 - profile_engine - INFO : Index:: 11, Rule ID:: 7676
+2025-03-09 03:16:28 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.dly_service_activity where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:28 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:28 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:28 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:28 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:28 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:34 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>     7553257 2025-03-09 07:16:29.262476+00:00        6     7676
+1  2025-03-08  Tier1 Models       <NA>     8200815 2025-03-09 07:16:29.262476+00:00        7     7676
+2025-03-09 03:16:34 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:34 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:34 : CRM-3268670 - profile_engine - INFO : Index:: 12, Rule ID:: 7678
+2025-03-09 03:16:34 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.dly_line_activity_pending where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:34 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:34 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:34 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:34 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:34 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:38 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>       71386 2025-03-09 07:16:34.888152+00:00        6     7678
+1  2025-03-08  Tier1 Models       <NA>       76345 2025-03-09 07:16:34.888152+00:00        7     7678
+2025-03-09 03:16:38 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:38 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:38 : CRM-3268670 - profile_engine - INFO : Index:: 13, Rule ID:: 7681
+2025-03-09 03:16:38 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(fcst_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from fcst_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.discos_fcst_js where cast(fcst_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:38 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:38 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:38 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:38 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:38 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:41 : CRM-3268670 - profile_engine - INFO :
+        data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0    2025-05-15  Tier1 Models       <NA>       31688 2025-03-09 07:16:39.138711+00:00        5     7681
+1    2025-03-17  Tier1 Models       <NA>       58952 2025-03-09 07:16:39.138711+00:00        2     7681
+2    2025-03-27  Tier1 Models       <NA>       58952 2025-03-09 07:16:39.138711+00:00        5     7681
+3    2025-06-22  Tier1 Models       <NA>       31688 2025-03-09 07:16:39.138711+00:00        1     7681
+4    2025-06-19  Tier1 Models       <NA>       31688 2025-03-09 07:16:39.138711+00:00        5     7681
+..          ...           ...        ...         ...                              ...      ...      ...
+111  2025-06-11  Tier1 Models       <NA>       31688 2025-03-09 07:16:39.138711+00:00        4     7681
+112  2025-05-05  Tier1 Models       <NA>       31688 2025-03-09 07:16:39.138711+00:00        2     7681
+113  2025-06-04  Tier1 Models       <NA>       31688 2025-03-09 07:16:39.138711+00:00        4     7681
+114  2025-06-10  Tier1 Models       <NA>       31688 2025-03-09 07:16:39.138711+00:00        3     7681
+115  2025-05-23  Tier1 Models       <NA>       31688 2025-03-09 07:16:39.138711+00:00        6     7681
+
+[116 rows x 7 columns]
+2025-03-09 03:16:41 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:41 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:41 : CRM-3268670 - profile_engine - INFO : Index:: 14, Rule ID:: 7685
+2025-03-09 03:16:41 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_svc_prod_trans where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:41 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:41 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:41 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:41 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:41 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:16:46 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>      120441 2025-03-09 07:16:42.749077+00:00        7     7685
+1  2025-03-07  Tier1 Models       <NA>      112169 2025-03-09 07:16:42.749077+00:00        6     7685
+2025-03-09 03:16:46 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:46 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:16:46 : CRM-3268670 - profile_engine - INFO : Index:: 15, Rule ID:: 7686
+2025-03-09 03:16:46 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_promo_activity where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:16:46 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:16:46 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:16:46 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:16:46 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:16:46 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:07 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>        1460 2025-03-09 07:16:47.373364+00:00        7     7686
+1  2025-03-09  Tier1 Models       <NA>         485 2025-03-09 07:16:47.373364+00:00        1     7686
+2  2025-03-07  Tier1 Models       <NA>        1572 2025-03-09 07:16:47.373364+00:00        6     7686
+2025-03-09 03:17:07 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:07 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:07 : CRM-3268670 - profile_engine - INFO : Index:: 16, Rule ID:: 7687
+2025-03-09 03:17:07 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_occ_trans where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:07 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:07 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:07 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:07 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:07 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:12 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>       20400 2025-03-09 07:17:08.309592+00:00        7     7687
+1  2025-03-07  Tier1 Models       <NA>      467533 2025-03-09 07:17:08.309592+00:00        6     7687
+2025-03-09 03:17:12 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:12 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:12 : CRM-3268670 - profile_engine - INFO : Index:: 17, Rule ID:: 7690
+2025-03-09 03:17:12 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_svc_prod_tran where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:12 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:12 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:12 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:12 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:12 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:19 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>  2018033685 2025-03-09 07:17:13.482171+00:00        7     7690
+2025-03-09 03:17:19 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:19 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:19 : CRM-3268670 - profile_engine - INFO : Index:: 18, Rule ID:: 7695
+2025-03-09 03:17:19 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_reg where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:19 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:19 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:19 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:19 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:19 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:24 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>     6306805 2025-03-09 07:17:20.567062+00:00        7     7695
+1  2025-03-07  Tier1 Models       <NA>     2387808 2025-03-09 07:17:20.567062+00:00        6     7695
+2025-03-09 03:17:24 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:24 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:24 : CRM-3268670 - profile_engine - INFO : Index:: 19, Rule ID:: 7696
+2025-03-09 03:17:24 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_promo where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:24 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:24 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:24 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:24 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:24 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:30 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>      194912 2025-03-09 07:17:25.423380+00:00        6     7696
+1  2025-03-08  Tier1 Models       <NA>      223983 2025-03-09 07:17:25.423380+00:00        7     7696
+2025-03-09 03:17:30 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:30 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:30 : CRM-3268670 - profile_engine - INFO : Index:: 20, Rule ID:: 7697
+2025-03-09 03:17:30 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_pplan_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:30 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:30 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:30 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:30 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:30 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:36 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>      496223 2025-03-09 07:17:31.825330+00:00        6     7697
+1  2025-03-08  Tier1 Models       <NA>      615837 2025-03-09 07:17:31.825330+00:00        7     7697
+2025-03-09 03:17:36 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:36 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:36 : CRM-3268670 - profile_engine - INFO : Index:: 21, Rule ID:: 7699
+2025-03-09 03:17:36 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_pplan where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:36 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:36 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:36 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:36 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:36 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:41 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>     1776288 2025-03-09 07:17:37.368097+00:00        7     7699
+1  2025-03-07  Tier1 Models       <NA>      281119 2025-03-09 07:17:37.368097+00:00        6     7699
+2025-03-09 03:17:41 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:41 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:41 : CRM-3268670 - profile_engine - INFO : Index:: 22, Rule ID:: 7700
+2025-03-09 03:17:41 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_email where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:41 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:41 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:41 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:41 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:41 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:46 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>      102700 2025-03-09 07:17:42.129076+00:00        7     7700
+1  2025-03-07  Tier1 Models       <NA>       88395 2025-03-09 07:17:42.129076+00:00        6     7700
+2025-03-09 03:17:46 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:46 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:46 : CRM-3268670 - profile_engine - INFO : Index:: 23, Rule ID:: 7701
+2025-03-09 03:17:46 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_dly_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:46 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:46 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:46 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:46 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:46 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:51 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>     1761614 2025-03-09 07:17:47.554927+00:00        7     7701
+1  2025-03-07  Tier1 Models       <NA>     1230003 2025-03-09 07:17:47.554927+00:00        6     7701
+2025-03-09 03:17:51 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:51 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:51 : CRM-3268670 - profile_engine - INFO : Index:: 24, Rule ID:: 7702
+2025-03-09 03:17:51 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_dim_dly_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:51 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:51 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:51 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:51 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:51 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:17:57 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>      224608 2025-03-09 07:17:52.707241+00:00        6     7702
+1  2025-03-08  Tier1 Models       <NA>      175071 2025-03-09 07:17:52.707241+00:00        7     7702
+2025-03-09 03:17:57 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:57 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:17:57 : CRM-3268670 - profile_engine - INFO : Index:: 25, Rule ID:: 7703
+2025-03-09 03:17:57 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(insert_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from insert_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line_cloud_usg where cast(insert_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:17:57 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:17:57 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:17:57 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:17:57 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:17:57 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:02 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>    38262595 2025-03-09 07:17:58.294875+00:00        7     7703
+2025-03-09 03:18:02 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:02 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:02 : CRM-3268670 - profile_engine - INFO : Index:: 26, Rule ID:: 7705
+2025-03-09 03:18:02 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_line where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:18:02 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:02 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:02 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:02 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:02 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:07 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>    10545036 2025-03-09 07:18:03.685404+00:00        7     7705
+1  2025-03-07  Tier1 Models       <NA>      810480 2025-03-09 07:18:03.685404+00:00        6     7705
+2025-03-09 03:18:07 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:07 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:07 : CRM-3268670 - profile_engine - INFO : Index:: 27, Rule ID:: 7708
+2025-03-09 03:18:07 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_dly_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:18:07 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:07 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:07 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:07 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:07 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:12 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>      887623 2025-03-09 07:18:08.363946+00:00        6     7708
+1  2025-03-08  Tier1 Models       <NA>      834441 2025-03-09 07:18:08.363946+00:00        7     7708
+2025-03-09 03:18:12 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:12 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:12 : CRM-3268670 - profile_engine - INFO : Index:: 28, Rule ID:: 7710
+2025-03-09 03:18:12 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_addr_dly_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:18:12 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:12 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:12 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:12 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:12 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:17 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>       83568 2025-03-09 07:18:13.198913+00:00        6     7710
+1  2025-03-08  Tier1 Models       <NA>       82935 2025-03-09 07:18:13.198913+00:00        7     7710
+2025-03-09 03:18:17 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:17 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:17 : CRM-3268670 - profile_engine - INFO : Index:: 29, Rule ID:: 7711
+2025-03-09 03:18:17 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_addr where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:18:17 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:17 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:17 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:17 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:17 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:21 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>       69416 2025-03-09 07:18:18.047279+00:00        7     7711
+1  2025-03-07  Tier1 Models       <NA>       68089 2025-03-09 07:18:18.047279+00:00        6     7711
+2025-03-09 03:18:21 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:21 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:21 : CRM-3268670 - profile_engine - INFO : Index:: 30, Rule ID:: 7712
+2025-03-09 03:18:21 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:18:21 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:21 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:21 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:21 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:21 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:27 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>     1411457 2025-03-09 07:18:22.630746+00:00        7     7712
+1  2025-03-07  Tier1 Models       <NA>    11579163 2025-03-09 07:18:22.630746+00:00        6     7712
+2025-03-09 03:18:27 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:27 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:27 : CRM-3268670 - profile_engine - INFO : Index:: 31, Rule ID:: 7713
+2025-03-09 03:18:27 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cjcm_case_hist where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:18:27 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:27 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:27 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:27 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:27 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:32 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-08  Tier1 Models       <NA>     1304330 2025-03-09 07:18:27.989248+00:00        7     7713
+1  2025-03-07  Tier1 Models       <NA>     1060159 2025-03-09 07:18:27.989248+00:00        6     7713
+2025-03-09 03:18:32 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:32 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:32 : CRM-3268670 - profile_engine - INFO : Index:: 32, Rule ID:: 7715
+2025-03-09 03:18:32 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(call_start_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from call_start_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.calls_driver_trans where cast(call_start_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:18:32 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:32 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:32 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:32 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:32 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:36 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>       23362 2025-03-09 07:18:32.938698+00:00        6     7715
+2025-03-09 03:18:36 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:36 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:36 : CRM-3268670 - profile_engine - INFO : Index:: 33, Rule ID:: 7716
+2025-03-09 03:18:36 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(last_upd_dt as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from last_upd_dt) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cacs_cust_acct_coll where cast(last_upd_dt as date)>= current_date -2 group by 1,2,3,5,6
+2025-03-09 03:18:36 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:36 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:36 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:36 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:36 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:42 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-07  Tier1 Models       <NA>      311401 2025-03-09 07:18:37.660751+00:00        6     7716
+1  2025-03-08  Tier1 Models       <NA>     2993904 2025-03-09 07:18:37.660751+00:00        7     7716
+2025-03-09 03:18:42 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:42 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:42 : CRM-3268670 - profile_engine - INFO : Index:: 34, Rule ID:: 7718
+2025-03-09 03:18:42 : CRM-3268670 - run_bq_sql - INFO :
+BQ Select Query: select cast(current_date as date)as profile_date,
+'Tier1 models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from current_date) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.acss_dept group by 1,2,3,5,6
+2025-03-09 03:18:42 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:42 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:42 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:42 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:42 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:46 : CRM-3268670 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-03-09  Tier1 models       <NA>         870 2025-03-09 07:18:42.860496+00:00        1     7718
+2025-03-09 03:18:46 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:46 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:46 : CRM-3268670 - profile_engine - INFO : Index:: 35, Rule ID:: 7719
+2025-03-09 03:18:46 : CRM-3268670 - run_bq_sql - INFO :
 BQ Select Query: select cast(acss_call_dt as date)as profile_date,
 'Tier1 Models' as feature_name,
 null as dimension,
@@ -11,19 +806,18 @@ count (*) as value,
 current_timestamp as insert_date,
 extract(dayofweek from acss_call_dt) as weekday
 from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.acss_call where cast(acss_call_dt as date)>= current_date -2 group by 1,2,3,5,6
-2025-03-07 14:12:35 : CRM-1695411 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
-2025-03-07 14:12:35 : CRM-1695411 - isTokenExpired - INFO : Token File Available
-2025-03-07 14:12:35 : CRM-1695411 - isTokenExpired - INFO : Access Token is Valid
-2025-03-07 14:12:35 : CRM-1695411 - bigquery_client - INFO : Setting environment variable...
-2025-03-07 14:12:35 : CRM-1695411 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-07 14:12:40 : CRM-1695411 - profile_engine - INFO :
+2025-03-09 03:18:46 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:46 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:46 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:46 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:46 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:51 : CRM-3268670 - profile_engine - INFO :
       data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
-0  2025-03-06  Tier1 Models       <NA>      535303 2025-03-07 19:12:35.899095+00:00        5     7719
-1  2025-03-05  Tier1 Models       <NA>      537922 2025-03-07 19:12:35.899095+00:00        4     7719
-2025-03-07 14:12:40 : CRM-1695411 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:40 : CRM-1695411 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:40 : CRM-1695411 - profile_engine - INFO : Index:: 36, Rule ID:: 7721
-2025-03-07 14:12:40 : CRM-1695411 - run_bq_sql - INFO :
+0  2025-03-07  Tier1 Models       <NA>      514628 2025-03-09 07:18:47.022692+00:00        6     7719
+2025-03-09 03:18:51 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:51 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:51 : CRM-3268670 - profile_engine - INFO : Index:: 36, Rule ID:: 7721
+2025-03-09 03:18:51 : CRM-3268670 - run_bq_sql - INFO :
 BQ Select Query: select cast(current_date as date)as profile_date,
 'Tier1 models' as feature_name,
 null as dimension,
@@ -31,27 +825,27 @@ count (*) as value,
 current_timestamp as insert_date,
 extract(dayofweek from current_date) as weekday
 from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_dmtbls_rd_v.dma_line_add group by 1,2,3,5,6
-2025-03-07 14:12:40 : CRM-1695411 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
-2025-03-07 14:12:40 : CRM-1695411 - isTokenExpired - INFO : Token File Available
-2025-03-07 14:12:40 : CRM-1695411 - isTokenExpired - INFO : Access Token is Valid
-2025-03-07 14:12:40 : CRM-1695411 - bigquery_client - INFO : Setting environment variable...
-2025-03-07 14:12:40 : CRM-1695411 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-07 14:12:46 : CRM-1695411 - profile_engine - INFO :
+2025-03-09 03:18:51 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:51 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:51 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:51 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:51 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:18:57 : CRM-3268670 - profile_engine - INFO :
       data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
-0  2025-03-07  Tier1 models       <NA>   714082507 2025-03-07 19:12:41.004139+00:00        6     7721
-2025-03-07 14:12:46 : CRM-1695411 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:46 : CRM-1695411 - profile_engine - INFO : Length of the Rules Result : 205
-2025-03-07 14:12:46 : CRM-1695411 - profile_engine - INFO :
+0  2025-03-09  Tier1 models       <NA>   714082507 2025-03-09 07:18:51.893440+00:00        1     7721
+2025-03-09 03:18:57 : CRM-3268670 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:18:57 : CRM-3268670 - profile_engine - INFO : Length of the Rules Result : 185
+2025-03-09 03:18:57 : CRM-3268670 - profile_engine - INFO :
 Index(['data_dt', 'feature_name', 'dimension', 'count_curr', 'insert_date',
        'weekday', 'prfl_id'],
       dtype='object')
       data_dt  feature_name dimension  count_curr                      insert_date  weekday  prfl_id
-0  2025-03-06  Tier1 Models      <NA>       24045 2025-03-07 19:09:34.824969+00:00        5     7662
-1  2025-03-06  Tier1 Models      <NA>      300863 2025-03-07 19:09:38.752681+00:00        5     7663
-2  2445-03-08  Tier1 Models      <NA>           2 2025-03-07 19:09:38.752681+00:00        4     7663
-3  3116-03-01  Tier1 Models      <NA>           1 2025-03-07 19:09:38.752681+00:00        4     7663
-4  4016-04-08  Tier1 Models      <NA>           1 2025-03-07 19:09:38.752681+00:00        6     7663
-2025-03-07 14:12:46 : CRM-1695411 - run_bq_sql - INFO :
+0  2025-03-08  Tier1 Models      <NA>       24048 2025-03-09 07:15:33.611757+00:00        7     7662
+1  2025-03-08  Tier1 Models      <NA>      504964 2025-03-09 07:15:37.686738+00:00        7     7663
+2  2025-03-07  Tier1 Models      <NA>      660005 2025-03-09 07:15:37.686738+00:00        6     7663
+3  2445-03-08  Tier1 Models      <NA>           2 2025-03-09 07:15:37.686738+00:00        4     7663
+4  3116-03-01  Tier1 Models      <NA>           1 2025-03-09 07:15:37.686738+00:00        4     7663
+2025-03-09 03:18:57 : CRM-3268670 - run_bq_sql - INFO :
 BQ Select Query:
             with top_records as
             (
@@ -75,29 +869,29 @@ BQ Select Query:
             group by prfl_id,feature_name,grouped_columns,WEEKDAY
             order by prfl_id,feature_name,grouped_columns,WEEKDAY;
 
-2025-03-07 14:12:46 : CRM-1695411 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
-2025-03-07 14:12:46 : CRM-1695411 - isTokenExpired - INFO : Token File Available
-2025-03-07 14:12:46 : CRM-1695411 - isTokenExpired - INFO : Access Token is Valid
-2025-03-07 14:12:46 : CRM-1695411 - bigquery_client - INFO : Setting environment variable...
-2025-03-07 14:12:46 : CRM-1695411 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-07 14:12:49 : CRM-1695411 - get_historical_details - INFO : Length of the historical groupby list : 30
-2025-03-07 14:12:49 : CRM-1695411 - get_historical_details - INFO :
+2025-03-09 03:18:57 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:18:57 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:18:57 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:18:57 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:18:57 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:19:01 : CRM-3268670 - get_historical_details - INFO : Length of the historical groupby list : 76
+2025-03-09 03:19:01 : CRM-3268670 - get_historical_details - INFO :
 Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
        'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
        'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
       dtype='object')
    prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
-0     7663  Tier1 Models            null        4  ...           0.0           0.0          494197.0          494197.0
-1     7664  Tier1 Models            null        4  ...           0.0           0.0           25556.0           25556.0
-2     7666  Tier1 Models            null        4  ...           0.0           0.0           27627.0           27627.0
-3     7667  Tier1 Models            null        4  ...           0.0           0.0           19513.0           19513.0
-4     7668  Tier1 Models            null        4  ...           0.0           0.0         1694284.0         1694284.0
+0     7662  Tier1 Models            null        5  ...           0.0           0.0           24045.0           24045.0
+1     7663  Tier1 Models            null        4  ...           0.0           0.0          494197.0          494197.0
+2     7663  Tier1 Models            null        5  ...           0.0           0.0          300864.0          300864.0
+3     7664  Tier1 Models            null        4  ...           0.0           0.0           25556.0           25556.0
+4     7666  Tier1 Models            null        4  ...           0.0           0.0           27627.0           27627.0
 
 [5 rows x 11 columns]
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Historical DataFrame Columns: ['prfl_id', 'feature_name', 'grouped_columns', 'weekday', 'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value', 'sigma_2_value', 'min_thresh_value', 'max_thresh_value']
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Latest DataFrame Columns: ['data_dt', 'feature_name', 'grouped_columns', 'count_curr', 'insert_date', 'weekday', 'prfl_id', 'prfl_run_ts']
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Historical DataFrame Data Types:
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Historical DataFrame Columns: ['prfl_id', 'feature_name', 'grouped_columns', 'weekday', 'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value', 'sigma_2_value', 'min_thresh_value', 'max_thresh_value']
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Latest DataFrame Columns: ['data_dt', 'feature_name', 'grouped_columns', 'count_curr', 'insert_date', 'weekday', 'prfl_id', 'prfl_run_ts']
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Historical DataFrame Data Types:
 prfl_id               Int64
 feature_name         object
 grouped_columns      object
@@ -110,7 +904,7 @@ sigma_2_value       float64
 min_thresh_value    float64
 max_thresh_value    float64
 dtype: object
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Latest DataFrame Data Types:
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Latest DataFrame Data Types:
 data_dt                         object
 feature_name                    object
 grouped_columns                 object
@@ -120,45 +914,45 @@ weekday                          int64
 prfl_id                          int64
 prfl_run_ts                     object
 dtype: object
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Historical DataFrame Sample:
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Historical DataFrame Sample:
    prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
-0     7663  Tier1 Models            null        4  ...           0.0           0.0          494197.0          494197.0
-1     7664  Tier1 Models            null        4  ...           0.0           0.0           25556.0           25556.0
-2     7666  Tier1 Models            null        4  ...           0.0           0.0           27627.0           27627.0
+0     7662  Tier1 Models            null        5  ...           0.0           0.0           24045.0           24045.0
+1     7663  Tier1 Models            null        4  ...           0.0           0.0          494197.0          494197.0
+2     7663  Tier1 Models            null        5  ...           0.0           0.0          300864.0          300864.0
 
 [3 rows x 11 columns]
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Latest DataFrame Sample:
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Latest DataFrame Sample:
       data_dt  feature_name grouped_columns  count_curr                      insert_date  weekday  prfl_id          prfl_run_ts
-0  2025-03-06  Tier1 Models            <NA>       24045 2025-03-07 19:09:34.824969+00:00        5     7662  2025-03-07 14:12:46
-1  2025-03-06  Tier1 Models            <NA>      300863 2025-03-07 19:09:38.752681+00:00        5     7663  2025-03-07 14:12:46
-2  2445-03-08  Tier1 Models            <NA>           2 2025-03-07 19:09:38.752681+00:00        4     7663  2025-03-07 14:12:46
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 30
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO :
+0  2025-03-08  Tier1 Models            <NA>       24048 2025-03-09 07:15:33.611757+00:00        7     7662  2025-03-09 03:18:57
+1  2025-03-08  Tier1 Models            <NA>      504964 2025-03-09 07:15:37.686738+00:00        7     7663  2025-03-09 03:18:57
+2  2025-03-07  Tier1 Models            <NA>      660005 2025-03-09 07:15:37.686738+00:00        6     7663  2025-03-09 03:18:57
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 76
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO :
 Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
        'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
        'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
       dtype='object')
    prfl_id  feature_name grouped_columns  weekday  sum_count_prev  ...  variance_value  std_dev_value  sigma_2_value  min_thresh_value  max_thresh_value
-0     7663  Tier1 Models            null        4        494197.0  ...             0.0            0.0            0.0          494197.0          494197.0
-1     7664  Tier1 Models            null        4         25556.0  ...             0.0            0.0            0.0           25556.0           25556.0
-2     7666  Tier1 Models            null        4         27627.0  ...             0.0            0.0            0.0           27627.0           27627.0
-3     7667  Tier1 Models            null        4         19513.0  ...             0.0            0.0            0.0           19513.0           19513.0
-4     7668  Tier1 Models            null        4       1694284.0  ...             0.0            0.0            0.0         1694284.0         1694284.0
+0     7662  Tier1 Models            null        5         24045.0  ...             0.0            0.0            0.0           24045.0           24045.0
+1     7663  Tier1 Models            null        4        494197.0  ...             0.0            0.0            0.0          494197.0          494197.0
+2     7663  Tier1 Models            null        5        300864.0  ...             0.0            0.0            0.0          300864.0          300864.0
+3     7664  Tier1 Models            null        4         25556.0  ...             0.0            0.0            0.0           25556.0           25556.0
+4     7666  Tier1 Models            null        4         27627.0  ...             0.0            0.0            0.0           27627.0           27627.0
 
 [5 rows x 11 columns]
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:49 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 205
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO :
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 185
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO :
 Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
        'insert_date', 'weekday', 'prfl_id', 'prfl_run_ts'],
       dtype='object')
      data_dt  feature_name grouped_columns  count_curr                      insert_date  weekday  prfl_id         prfl_run_ts
-0 2025-03-06  Tier1 Models                       24045 2025-03-07 19:09:34.824969+00:00        5     7662 2025-03-07 14:12:46
-1 2025-03-06  Tier1 Models                      300863 2025-03-07 19:09:38.752681+00:00        5     7663 2025-03-07 14:12:46
-2        NaT  Tier1 Models                           2 2025-03-07 19:09:38.752681+00:00        4     7663 2025-03-07 14:12:46
-3        NaT  Tier1 Models                           1 2025-03-07 19:09:38.752681+00:00        4     7663 2025-03-07 14:12:46
-4        NaT  Tier1 Models                           1 2025-03-07 19:09:38.752681+00:00        6     7663 2025-03-07 14:12:46
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Fixed Historical DataFrame Data Types:
+0 2025-03-08  Tier1 Models                       24048 2025-03-09 07:15:33.611757+00:00        7     7662 2025-03-09 03:18:57
+1 2025-03-08  Tier1 Models                      504964 2025-03-09 07:15:37.686738+00:00        7     7663 2025-03-09 03:18:57
+2 2025-03-07  Tier1 Models                      660005 2025-03-09 07:15:37.686738+00:00        6     7663 2025-03-09 03:18:57
+3        NaT  Tier1 Models                           2 2025-03-09 07:15:37.686738+00:00        4     7663 2025-03-09 03:18:57
+4        NaT  Tier1 Models                           1 2025-03-09 07:15:37.686738+00:00        4     7663 2025-03-09 03:18:57
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Fixed Historical DataFrame Data Types:
 prfl_id               Int64
 feature_name         object
 grouped_columns      object
@@ -171,7 +965,7 @@ sigma_2_value       float64
 min_thresh_value    float64
 max_thresh_value    float64
 dtype: object
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Fixed Latest DataFrame Data Types:
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Fixed Latest DataFrame Data Types:
 data_dt                 datetime64[ns]
 feature_name                    object
 grouped_columns                 object
@@ -181,76 +975,57 @@ weekday                          int64
 prfl_id                          int64
 prfl_run_ts             datetime64[ns]
 dtype: object
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Historical Dataframe ::     prfl_id  feature_name grouped_columns  weekday  sum_count_prev  ...  variance_value  std_dev_value  sigma_2_value  min_thresh_value  max_thresh_value
-0      7663  Tier1 Models            null        4        494197.0  ...             0.0            0.0            0.0          494197.0          494197.0
-1      7664  Tier1 Models            null        4         25556.0  ...             0.0            0.0            0.0           25556.0           25556.0
-2      7666  Tier1 Models            null        4         27627.0  ...             0.0            0.0            0.0           27627.0           27627.0
-3      7667  Tier1 Models            null        4         19513.0  ...             0.0            0.0            0.0           19513.0           19513.0
-4      7668  Tier1 Models            null        4       1694284.0  ...             0.0            0.0            0.0         1694284.0         1694284.0
-5      7669  Tier1 Models            null        4       5119079.0  ...             0.0            0.0            0.0         5119079.0         5119079.0
-6      7670  Tier1 Models            null        4       2208052.0  ...             0.0            0.0            0.0         1104026.0         1104026.0
-7      7671  Tier1 Models            null        4       4381791.0  ...             0.0            0.0            0.0         4381791.0         4381791.0
-8      7676  Tier1 Models            null        4       7279712.0  ...             0.0            0.0            0.0         7279712.0         7279712.0
-9      7678  Tier1 Models            null        4         48928.0  ...             0.0            0.0            0.0           48928.0           48928.0
-10     7681  Tier1 Models            null        4         58020.0  ...             0.0            0.0            0.0           58020.0           58020.0
-11     7685  Tier1 Models            null        4         96508.0  ...             0.0            0.0            0.0           96508.0           96508.0
-12     7686  Tier1 Models            null        4          1229.0  ...             0.0            0.0            0.0            1229.0            1229.0
-13     7687  Tier1 Models            null        4        731235.0  ...             0.0            0.0            0.0          731235.0          731235.0
-14     7695  Tier1 Models            null        4       1430659.0  ...             0.0            0.0            0.0         1430659.0         1430659.0
-15     7696  Tier1 Models            null        4        742778.0  ...             0.0            0.0            0.0          742778.0          742778.0
-16     7697  Tier1 Models            null        4        458977.0  ...             0.0            0.0            0.0          458977.0          458977.0
-17     7699  Tier1 Models            null        4        280398.0  ...             0.0            0.0            0.0          280398.0          280398.0
-18     7700  Tier1 Models            null        4         92819.0  ...             0.0            0.0            0.0           92819.0           92819.0
-19     7701  Tier1 Models            null        4       1240742.0  ...             0.0            0.0            0.0         1240742.0         1240742.0
-20     7702  Tier1 Models            null        4        164558.0  ...             0.0            0.0            0.0          164558.0          164558.0
-21     7705  Tier1 Models            null        4        800728.0  ...             0.0            0.0            0.0          800728.0          800728.0
-22     7708  Tier1 Models            null        4       1077500.0  ...             0.0            0.0            0.0         1077500.0         1077500.0
-23     7710  Tier1 Models            null        4        536526.0  ...             0.0            0.0            0.0          536526.0          536526.0
-24     7711  Tier1 Models            null        4        290520.0  ...             0.0            0.0            0.0          290520.0          290520.0
-25     7712  Tier1 Models            null        4        468421.0  ...             0.0            0.0            0.0          468421.0          468421.0
-26     7713  Tier1 Models            null        4       1039267.0  ...             0.0            0.0            0.0         1039267.0         1039267.0
-27     7715  Tier1 Models            null        4         72276.0  ...             0.0            0.0            0.0           72276.0           72276.0
-28     7716  Tier1 Models            null        4        214813.0  ...             0.0            0.0            0.0          214813.0          214813.0
-29     7719  Tier1 Models            null        4        537923.0  ...             0.0            0.0            0.0          537923.0          537923.0
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Historical Dataframe ::     prfl_id  feature_name grouped_columns  weekday  sum_count_prev  ...  variance_value  std_dev_value  sigma_2_value  min_thresh_value  max_thresh_value
+0      7662  Tier1 Models            null        5         24045.0  ...             0.0            0.0            0.0           24045.0           24045.0
+1      7663  Tier1 Models            null        4        494197.0  ...             0.0            0.0            0.0          494197.0          494197.0
+2      7663  Tier1 Models            null        5        300864.0  ...             0.0            0.0            0.0          300864.0          300864.0
+3      7664  Tier1 Models            null        4         25556.0  ...             0.0            0.0            0.0           25556.0           25556.0
+4      7666  Tier1 Models            null        4         27627.0  ...             0.0            0.0            0.0           27627.0           27627.0
+..      ...           ...             ...      ...             ...  ...             ...            ...            ...               ...               ...
+71     7716  Tier1 Models            null        4        214813.0  ...             0.0            0.0            0.0          214813.0          214813.0
+72     7716  Tier1 Models            null        5       3162096.0  ...             0.0            0.0            0.0         3162096.0         3162096.0
+73     7718  Tier1 models            null        6           870.0  ...             0.0            0.0            0.0             870.0             870.0
+74     7719  Tier1 Models            null        4        537923.0  ...             0.0            0.0            0.0          537923.0          537923.0
+75     7721  Tier1 models            null        6     714082827.0  ...             0.0            0.0            0.0       714082827.0       714082827.0
 
-[30 rows x 11 columns]
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Latest Dataframe ::        data_dt  feature_name grouped_columns  count_curr                      insert_date  weekday  prfl_id         prfl_run_ts
-0   2025-03-06  Tier1 Models                       24045 2025-03-07 19:09:34.824969+00:00        5     7662 2025-03-07 14:12:46
-1   2025-03-06  Tier1 Models                      300863 2025-03-07 19:09:38.752681+00:00        5     7663 2025-03-07 14:12:46
-2          NaT  Tier1 Models                           2 2025-03-07 19:09:38.752681+00:00        4     7663 2025-03-07 14:12:46
-3          NaT  Tier1 Models                           1 2025-03-07 19:09:38.752681+00:00        4     7663 2025-03-07 14:12:46
-4          NaT  Tier1 Models                           1 2025-03-07 19:09:38.752681+00:00        6     7663 2025-03-07 14:12:46
+[76 rows x 11 columns]
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Latest Dataframe ::        data_dt  feature_name grouped_columns  count_curr                      insert_date  weekday  prfl_id         prfl_run_ts
+0   2025-03-08  Tier1 Models                       24048 2025-03-09 07:15:33.611757+00:00        7     7662 2025-03-09 03:18:57
+1   2025-03-08  Tier1 Models                      504964 2025-03-09 07:15:37.686738+00:00        7     7663 2025-03-09 03:18:57
+2   2025-03-07  Tier1 Models                      660005 2025-03-09 07:15:37.686738+00:00        6     7663 2025-03-09 03:18:57
+3          NaT  Tier1 Models                           2 2025-03-09 07:15:37.686738+00:00        4     7663 2025-03-09 03:18:57
+4          NaT  Tier1 Models                           1 2025-03-09 07:15:37.686738+00:00        4     7663 2025-03-09 03:18:57
 ..         ...           ...             ...         ...                              ...      ...      ...                 ...
-200 2025-03-07  Tier1 Models                     3076808 2025-03-07 19:12:28.352164+00:00        6     7716 2025-03-07 14:12:46
-201 2025-03-07  Tier1 models                         870 2025-03-07 19:12:32.815199+00:00        6     7718 2025-03-07 14:12:46
-202 2025-03-06  Tier1 Models                      535303 2025-03-07 19:12:35.899095+00:00        5     7719 2025-03-07 14:12:46
-203 2025-03-05  Tier1 Models                      537922 2025-03-07 19:12:35.899095+00:00        4     7719 2025-03-07 14:12:46
-204 2025-03-07  Tier1 models                   714082507 2025-03-07 19:12:41.004139+00:00        6     7721 2025-03-07 14:12:46
+180 2025-03-07  Tier1 Models                      311401 2025-03-09 07:18:37.660751+00:00        6     7716 2025-03-09 03:18:57
+181 2025-03-08  Tier1 Models                     2993904 2025-03-09 07:18:37.660751+00:00        7     7716 2025-03-09 03:18:57
+182 2025-03-09  Tier1 models                         870 2025-03-09 07:18:42.860496+00:00        1     7718 2025-03-09 03:18:57
+183 2025-03-07  Tier1 Models                      514628 2025-03-09 07:18:47.022692+00:00        6     7719 2025-03-09 03:18:57
+184 2025-03-09  Tier1 models                   714082507 2025-03-09 07:18:51.893440+00:00        1     7721 2025-03-09 03:18:57
 
-[205 rows x 8 columns]
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO : Length of the Merged Records : 205
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO :
+[185 rows x 8 columns]
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : Length of the Merged Records : 185
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO :
 Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
        'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
        'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
        'count_curr', 'insert_date', 'prfl_run_ts'],
       dtype='object')
    prfl_id  feature_name grouped_columns  weekday  ...    data_dt  count_curr                      insert_date         prfl_run_ts
-0     7662  Tier1 Models                        5  ... 2025-03-06       24045 2025-03-07 19:09:34.824969+00:00 2025-03-07 14:12:46
-1     7663  Tier1 Models                        5  ... 2025-03-06      300863 2025-03-07 19:09:38.752681+00:00 2025-03-07 14:12:46
-2     7663  Tier1 Models                        4  ...        NaT           2 2025-03-07 19:09:38.752681+00:00 2025-03-07 14:12:46
-3     7663  Tier1 Models                        4  ...        NaT           1 2025-03-07 19:09:38.752681+00:00 2025-03-07 14:12:46
-4     7663  Tier1 Models                        6  ...        NaT           1 2025-03-07 19:09:38.752681+00:00 2025-03-07 14:12:46
+0     7662  Tier1 Models                        7  ... 2025-03-08       24048 2025-03-09 07:15:33.611757+00:00 2025-03-09 03:18:57
+1     7663  Tier1 Models                        7  ... 2025-03-08      504964 2025-03-09 07:15:37.686738+00:00 2025-03-09 03:18:57
+2     7663  Tier1 Models                        6  ... 2025-03-07      660005 2025-03-09 07:15:37.686738+00:00 2025-03-09 03:18:57
+3     7663  Tier1 Models                        4  ...        NaT           2 2025-03-09 07:15:37.686738+00:00 2025-03-09 03:18:57
+4     7663  Tier1 Models                        4  ...        NaT           1 2025-03-09 07:15:37.686738+00:00 2025-03-09 03:18:57
 
 [5 rows x 15 columns]
-2025-03-07 14:12:50 : CRM-1695411 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-09 03:19:01 : CRM-3268670 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
 calculate_percentage_change
 calculate_sigma_value
 calculate_dq_status
-2025-03-07 14:12:50 : CRM-1695411 - run_metrics_engine - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:50 : CRM-1695411 - run_metrics_engine - INFO : Length of the End Results : 205
-2025-03-07 14:12:50 : CRM-1695411 - run_metrics_engine - INFO :
+2025-03-09 03:19:01 : CRM-3268670 - run_metrics_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:19:01 : CRM-3268670 - run_metrics_engine - INFO : Length of the End Results : 185
+2025-03-09 03:19:01 : CRM-3268670 - run_metrics_engine - INFO :
 Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
        'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
        'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
@@ -260,20 +1035,20 @@ Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
        'dq_score', 'sigma_value', 'dq_ind'],
       dtype='object')
    prfl_id  feature_name grouped_columns  weekday  sum_count_prev  avg_count_prev  ...  is_hourly_flg  pct_change  consistency_score  dq_score  sigma_value dq_ind
-0     7662  Tier1 Models                        5             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
-1     7663  Tier1 Models                        5             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
-2     7663  Tier1 Models                        4             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
+0     7662  Tier1 Models                        7             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
+1     7663  Tier1 Models                        7             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
+2     7663  Tier1 Models                        6             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
 3     7663  Tier1 Models                        4             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
-4     7663  Tier1 Models                        6             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
+4     7663  Tier1 Models                        4             NaN             NaN  ...              N         NaN                0.0         0      outlier    LOW
 
 [5 rows x 28 columns]
-2025-03-07 14:12:50 : CRM-1695411 - run_metrics_engine - INFO : ------------------------------------------------------------------
-2025-03-07 14:12:50 : CRM-1695411 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
-2025-03-07 14:12:50 : CRM-1695411 - isTokenExpired - INFO : Token File Available
-2025-03-07 14:12:50 : CRM-1695411 - isTokenExpired - INFO : Access Token is Valid
-2025-03-07 14:12:50 : CRM-1695411 - bigquery_client - INFO : Setting environment variable...
-2025-03-07 14:12:50 : CRM-1695411 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-07 14:12:50 : CRM-1695411 - load_to_report_results - INFO : --------Data Types After Fixing:
+2025-03-09 03:19:01 : CRM-3268670 - run_metrics_engine - INFO : ------------------------------------------------------------------
+2025-03-09 03:19:01 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:19:01 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:19:01 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:19:01 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:19:01 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:19:01 : CRM-3268670 - load_to_report_results - INFO : --------Data Types After Fixing:
 prfl_id                            Int64
 feature_name                      object
 grouped_columns                   object
@@ -304,46 +1079,46 @@ sigma_value                       object
 dq_ind                            object
 rpt_ref_key                       object
 dtype: object
-2025-03-07 14:12:50 : CRM-1695411 - load_to_report_results - ERROR :  "['consistecy_score'] not in index"
-2025-03-07 14:12:50 : CRM-1695411 - send_email_report - INFO : Mail Query :
+2025-03-09 03:19:01 : CRM-3268670 - load_to_report_results - ERROR :  "['consistecy_score'] not in index"
+2025-03-09 03:19:01 : CRM-3268670 - send_email_report - INFO : Mail Query :
                 select rpt.*,
                 mtd.data_lob, mtd.db_name ,mtd.src_tbl ,mtd.dq_pillar
                 from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
                 inner join
                 (select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
-                where rpt_ref_key = '20250307140930604604' ) rpt
+                where rpt_ref_key = '20250309031529099294' ) rpt
                 on mtd.prfl_id = rpt.prfl_id
                 and upper(mtd.prfl_type) = 'CUSTOM_RULES'
 
-2025-03-07 14:12:50 : CRM-1695411 - run_bq_sql - INFO :
+2025-03-09 03:19:01 : CRM-3268670 - run_bq_sql - INFO :
 BQ Select Query:
                 select rpt.*,
                 mtd.data_lob, mtd.db_name ,mtd.src_tbl ,mtd.dq_pillar
                 from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
                 inner join
                 (select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
-                where rpt_ref_key = '20250307140930604604' ) rpt
+                where rpt_ref_key = '20250309031529099294' ) rpt
                 on mtd.prfl_id = rpt.prfl_id
                 and upper(mtd.prfl_type) = 'CUSTOM_RULES'
 
-2025-03-07 14:12:50 : CRM-1695411 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
-2025-03-07 14:12:50 : CRM-1695411 - isTokenExpired - INFO : Token File Available
-2025-03-07 14:12:50 : CRM-1695411 - isTokenExpired - INFO : Access Token is Valid
-2025-03-07 14:12:50 : CRM-1695411 - bigquery_client - INFO : Setting environment variable...
-2025-03-07 14:12:50 : CRM-1695411 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-07 14:12:54 : CRM-1695411 - send_email_report - ERROR : Error in Report Summary Email Block. Error:No Records found for Email Summary
-2025-03-07 14:12:54 : CRM-1695411 - send_opsgenie_jira_outlier_alert - INFO : Opsgenie Info Query:
+2025-03-09 03:19:01 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:19:01 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:19:01 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:19:01 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:19:01 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:19:04 : CRM-3268670 - send_email_report - ERROR : Error in Report Summary Email Block. Error:No Records found for Email Summary
+2025-03-09 03:19:04 : CRM-3268670 - send_opsgenie_jira_outlier_alert - INFO : Opsgenie Info Query:
                 SELECT rpt.*,
                     mtd.data_lob, mtd.data_dmn,mtd.data_sub_dmn, mtd.db_name, mtd.src_tbl,mtd.meas_name,
                     mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api_key, mtd.is_opsgenie_flg,mtd.jira_assignee
                 FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
                 INNER JOIN
                 (SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
-                WHERE rpt_ref_key = '20250307140930604604') rpt
+                WHERE rpt_ref_key = '20250309031529099294') rpt
                 ON mtd.prfl_id = rpt.prfl_id
                 WHERE upper(mtd.prfl_type) = 'CUSTOM_RULES'
 
-2025-03-07 14:12:54 : CRM-1695411 - run_bq_sql - INFO :
+2025-03-09 03:19:04 : CRM-3268670 - run_bq_sql - INFO :
 BQ Select Query:
                 SELECT rpt.*,
                     mtd.data_lob, mtd.data_dmn,mtd.data_sub_dmn, mtd.db_name, mtd.src_tbl,mtd.meas_name,
@@ -351,14 +1126,970 @@ BQ Select Query:
                 FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
                 INNER JOIN
                 (SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
-                WHERE rpt_ref_key = '20250307140930604604') rpt
+                WHERE rpt_ref_key = '20250309031529099294') rpt
                 ON mtd.prfl_id = rpt.prfl_id
                 WHERE upper(mtd.prfl_type) = 'CUSTOM_RULES'
 
-2025-03-07 14:12:54 : CRM-1695411 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
-2025-03-07 14:12:54 : CRM-1695411 - isTokenExpired - INFO : Token File Available
-2025-03-07 14:12:54 : CRM-1695411 - isTokenExpired - INFO : Access Token is Valid
-2025-03-07 14:12:54 : CRM-1695411 - bigquery_client - INFO : Setting environment variable...
-2025-03-07 14:12:54 : CRM-1695411 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-07 14:12:58 : CRM-1695411 - send_opsgenie_jira_outlier_alert - WARNING : No records found for Opsgenie alert
-(smartdq-venv) tdcldizcva002:/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segment$
+2025-03-09 03:19:04 : CRM-3268670 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-03-09 03:19:04 : CRM-3268670 - isTokenExpired - INFO : Token File Available
+2025-03-09 03:19:04 : CRM-3268670 - isTokenExpired - INFO : Access Token is Valid
+2025-03-09 03:19:04 : CRM-3268670 - bigquery_client - INFO : Setting environment variable...
+2025-03-09 03:19:04 : CRM-3268670 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-09 03:19:08 : CRM-3268670 - send_opsgenie_jira_outlier_alert - WARNING : No records found for Opsgenie alert
+(smartdq-venv) tdcldizcva002:/apps/opt/application/smartdq/smartdq_gcp_migration/customer_metrics_and_micro_segm
+
+============================================================================================
+
+
+import re
+import pandas as pd
+import numpy as np
+import os
+import logging
+import sys
+from datetime import datetime, timedelta
+from functools import reduce
+import warnings
+import math
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+
+## Importing User Defined Modules
+import config_params as config
+from send_email import SendEmail
+from common_handlers import CommonUtils, set_logger, get_args_parser
+
+from dqaas_opsgenie import Alert
+from dqaas_jira import Jira_ticket
+
+
+
+class CustomeMetrics:
+    def __init__(self, data_src = None) -> None:
+        self.__set_default_values()
+        self.logger: logging = set_logger(
+            logger_path=config.LOGS_DIR,
+            log_filename="CustomMetricsLogs",
+            process_name='CRM',
+            # no_date_yn="Y",
+        )
+        
+        self.utils = CommonUtils(config, self.logger)
+        self.df_email_distro= pd.DataFrame()
+        
+    ## Default Values
+    def __set_default_values(self):
+        self.rule_col_rename_list = {
+            'profile_date': 'data_dt',
+            'pageName': 'value',
+            'pageflow': 'value' ,
+            'value': 'count_curr',
+            'insert_dt': 'rule_run_ts',
+        }
+        
+        self.final_col_rename_list = {
+            'profile_date': 'data_dt',
+            'value': 'count_curr',
+            'dimension': 'grouped_columns',
+            'rule_run_ts': 'prfl_run_ts',
+        }
+        
+        self.custom_profile_report_columns = {
+            "NUMERIC": [
+                'avg_count_prev', 'variance_value', 'std_dev_value',
+                'pct_change', 'count_curr','sigma_2_value','dq_score',
+                'consistency_score',
+            ],
+            "INT64": ['prfl_id', 'weekday', 'rpt_seq_num', ],
+            "STRING": [
+                'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt',
+                'prfl_type', 'src_tbl', 'dq_pillar', 'meas_name', 'dq_ind'
+            ],
+            "TIMESTAMP": ['prfl_run_ts'],
+        }
+        
+        self.email_rename_cols = {
+            'prfl_run_ts': 'Run Profile Date',
+            'data_lob': 'LOB',
+            # 'data_bus_elem': 'Domain Name',
+            'db_name': 'DB Name',
+            'src_tbl': 'Table Name',
+            'feature_name': 'Feature Name',
+            'grouped_columns': 'Dimensions',
+            'dq_pillar': 'DQ Category',
+            'weekday': 'Weekday',
+            'count_curr': 'Value',
+            'avg_count_prev': 'Avg Value',
+            'pct_change': 'Percentage Change',
+            'variance_value': 'Variance',
+            'std_dev_value': "Std Deviation",
+            'sigma_value': 'Sigma Value',
+            'consistency_score': 'Consistency Score',
+            'dq_score': 'DQ Score',
+            'dq_ind': 'Status',
+        }
+        
+        ## Same order used in the Email
+        self.summary_cols = [
+            'prfl_run_ts', 'data_lob', 'db_name', 'src_tbl',
+            'feature_name', 'grouped_columns', 'dq_pillar',
+            'weekday', 'count_curr', 'avg_count_prev', 'pct_change',
+            'variance_value', 'std_dev_value', 'sigma_value','consistency_score',
+            'dq_score', 'dq_ind'
+        ]
+        
+        ## Columns used to round off the float values in Email, 
+        ## Applicable Columns :- Should be available in self.summary_cols
+        self.email_float_cols = [
+           'count_curr', 'avg_count_prev', 'pct_change',
+            'variance_value', 'std_dev_value',
+            'consistency_score','dq_score',
+        ]
+    
+    ## Historical Queries 
+    @staticmethod
+    def historical_queries(comparison_type: str='WEEKDAYS'):
+        query = {
+            
+            "WEEKDAYS": r"""
+            with top_records as 
+            (
+            select *,row_number() over (partition by prfl_id,feature_name,grouped_columns order by data_dt desc) as row_num 
+            from $rpt_table join 
+            unnest(GENERATE_DATE_ARRAY(date_sub($RUN_DT,INTERVAL 3 MONTH),$RUN_DT, INTERVAL 1 day)) as interval_Date
+            on data_dt = interval_Date
+            where prfl_id IN ($prfl_id_list)
+            and data_dt != $RUN_DT
+            order by prfl_id,feature_name, grouped_columns,data_dt desc
+            ) 
+            select prfl_id,feature_name,grouped_columns,WEEKDAY,
+            round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
+            round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
+            round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
+            round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
+            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value, 
+            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value, 
+            round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
+            from top_records 
+            group by prfl_id,feature_name,grouped_columns,WEEKDAY
+            order by prfl_id,feature_name,grouped_columns,WEEKDAY;
+            """,
+            
+            "DTRAN_MONTHLY": r"""
+            with top_records as 
+            (select *,row_number() over (partition by prfl_id,feature_name,grouped_columns order by data_dt desc) as row_num 
+            from $rpt_table join 
+            unnest(GENERATE_DATE_ARRAY(date_trunc(date_sub($RUN_DT,INTERVAL 3 MONTH), MONTH),$RUN_DT, INTERVAL 1 MONTH)) as interval_Date
+            on data_dt = interval_Date
+            where prfl_id IN ($prfl_id_list)
+            and data_dt != date_trunc(date($RUN_DT), MONTH)
+            order by prfl_id,feature_name, grouped_columns,data_dt desc) 
+            select prfl_id,feature_name,grouped_columns,
+            round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
+            round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
+            round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
+            round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
+            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value, 
+            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value, 
+            round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
+            from top_records 
+            group by prfl_id,feature_name,grouped_columns
+            order by prfl_id,feature_name,grouped_columns;
+            """,
+        }
+        if comparison_type is None:
+            return query['WEEKDAYS']
+        if comparison_type.upper() in query:
+            return query[comparison_type.upper()]
+        return query['WEEKDAYS']
+              
+    ## Historical Results 
+    def get_historical_details(self, prfl_id_list: list, run_date: str, comparison_type: str='WEEKDAYS'):
+        hist_record_query = self.historical_queries(comparison_type)
+        
+        placeholders = {
+            "$rpt_table": config.dqaas_profile_rpt,
+            "$prfl_id_list": prfl_id_list,
+            "$RUN_DT": run_date,
+        }
+        # hist_record_query = hist_record_query.format(placeholders)
+        hist_record_query = reduce(lambda sql, replace_str: sql.replace(*replace_str), [hist_record_query, *list(placeholders.items())])
+        df_tbl_hist_rec = self.utils.run_bq_sql(
+            bq_auth=config.dq_gcp_auth_payload,
+            select_query=hist_record_query
+        )
+        df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
+        self.logger.info(f'Length of the historical groupby list : {len(df_tbl_hist_rec)}')
+        self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
+
+        if len(df_tbl_hist_rec) == 0:
+            self.logger.warning("Historical Data Not found for Identifying the variance")
+        
+        return df_tbl_hist_rec
+
+        
+    ## Comparing Hist and Current Records
+    def compare_historical_latest_dimensions(self, df_tbl_hist_rec, df_tbl_latest_rec: pd.DataFrame, comparison_type="WEEKDAYS", isHourly="N"):
+        
+        ## Historical Records
+        self.logger.info('------------------------------------------------------------------')
+
+        # Log column names
+        self.logger.info(f"Historical DataFrame Columns: {df_tbl_hist_rec.columns.tolist()}")
+        self.logger.info(f"Latest DataFrame Columns: {df_tbl_latest_rec.columns.tolist()}")
+
+        # Log data types
+        self.logger.info(f"Historical DataFrame Data Types:\n{df_tbl_hist_rec.dtypes}")
+        self.logger.info(f"Latest DataFrame Data Types:\n{df_tbl_latest_rec.dtypes}")
+
+        # Log first few rows
+        self.logger.info(f"Historical DataFrame Sample:\n{df_tbl_hist_rec.head(3)}")
+        self.logger.info(f"Latest DataFrame Sample:\n{df_tbl_latest_rec.head(3)}")
+
+        # Fix only the required data types before merging
+        df_tbl_hist_rec['sum_count_prev'] = pd.to_numeric(df_tbl_hist_rec['sum_count_prev'], errors='coerce')
+        df_tbl_hist_rec['avg_count_prev'] = pd.to_numeric(df_tbl_hist_rec['avg_count_prev'], errors='coerce')
+        df_tbl_latest_rec['data_dt'] = pd.to_datetime(df_tbl_latest_rec['data_dt'], errors='coerce')
+        df_tbl_latest_rec['prfl_run_ts'] = pd.to_datetime(df_tbl_latest_rec['prfl_run_ts'], errors='coerce')
+
+        # Ensure 'grouped_columns' remains as string
+        df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna("").astype(str)
+        df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna("").astype(str)
+
+        df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
+        # df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
+        # df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
+        self.logger.info(f'Length of the historical Records : {len(df_tbl_hist_rec)}')
+        self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
+        
+        ## Latest Records
+        self.logger.info('------------------------------------------------------------------')
+        df_tbl_latest_rec = df_tbl_latest_rec.rename(columns={col: str(col).lower() for col in df_tbl_latest_rec.columns.tolist()})
+        # df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].astype(str).replace('<NA>',np.nan).replace('nan',np.nan)
+        # df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
+        self.logger.info(f'Length of the latest Records : {len(df_tbl_latest_rec)}')
+        self.logger.info(f'\n{df_tbl_latest_rec.columns}\n{df_tbl_latest_rec.head()}')
+
+        # Log fixed data types before merging
+        self.logger.info(f"Fixed Historical DataFrame Data Types:\n{df_tbl_hist_rec.dtypes}")
+        self.logger.info(f"Fixed Latest DataFrame Data Types:\n{df_tbl_latest_rec.dtypes}")
+
+        ## Merging the Historical and Latest Records
+        self.logger.info('------------------------------------------------------------------')
+        
+        join_list = ['prfl_id','feature_name','grouped_columns','weekday']
+        
+        if comparison_type == 'DTRAN_MONTHLY':
+            join_list.remove('weekday')
+        
+        self.logger.info(f'Historical Dataframe :: {df_tbl_hist_rec}')
+        # df_tbl_hist_rec.to_csv('/apps/opt/application/smartdq/smartdq_gcp_migration/logs/hist_rec.csv', encoding='utf-8', index=False)
+        self.logger.info(f'Latest Dataframe :: {df_tbl_latest_rec}')
+        # df_tbl_latest_rec.to_csv('/apps/opt/application/smartdq/smartdq_gcp_migration/logs/latest_rec.csv', encoding='utf-8', index=False)
+                             
+        df_merge_rec= pd.merge(
+            df_tbl_hist_rec,
+            df_tbl_latest_rec,
+            on=join_list,
+            how='right'
+        )
+        
+        self.logger.info(f'Length of the Merged Records : {len(df_merge_rec)}')
+        self.logger.info(f'\n{df_merge_rec.columns}\n{df_merge_rec.head()}')
+        self.logger.info('------------------------------------------------------------------')
+        return df_merge_rec
+    
+    #Create an opsgenie function
+    def send_opsgenie_jira_outlier_alert(self, reference_key: str):
+        try:
+            report_query = f"""                
+                SELECT rpt.*, 
+                    mtd.data_lob, mtd.data_dmn,mtd.data_sub_dmn, mtd.db_name, mtd.src_tbl,mtd.meas_name,
+                    mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api_key, mtd.is_opsgenie_flg,mtd.jira_assignee
+                FROM {config.dqaas_profile_mtd} mtd 
+                INNER JOIN 
+                (SELECT * FROM {config.dqaas_profile_rpt} 
+                WHERE rpt_ref_key = '{reference_key}') rpt
+                ON mtd.prfl_id = rpt.prfl_id
+                WHERE upper(mtd.prfl_type) = 'CUSTOM_RULES'
+            """
+            self.logger.info(f"Opsgenie Info Query: {report_query}")
+
+            report_df = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=report_query
+            )
+            
+            if len(report_df) == 0:
+                self.logger.warning("No records found for Opsgenie alert")
+                return
+            
+            self.logger.info(f"Report DataFrame for Opsgenie Alerts: {report_df}")
+
+            # self.logger.info(f"Report DataFrame head: {report_df.head()}")
+            # self.logger.info(f"Report DataFrame head: {report_df.columns}")
+            # self.logger.info(f"Report DataFrame head: {report_df.dtypes}")
+            #report_df.reset_index(drop=True)
+
+            for idx in report_df.index:
+                alert_type = None
+                priority = None
+
+                # print(f"idx: {idx}")
+                # print(report_df.loc[idx,])
+                # print(report_df.loc[idx, 'dq_ind'])
+
+                # Fetch records where dq_status = 'LOW' OR sigma_value = 'outlier'
+                if report_df.loc[idx, 'dq_ind'].upper() == "LOW" and report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_both_dq_status and sigma_value failed'
+                    priority = "P3"  
+
+                elif report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_outlier'
+                    priority = "P3" 
+                elif report_df.loc[idx, 'dq_ind'].upper() == "LOW":
+                    alert_type = 'custom_profile_dq_status failed'
+                    priority = "P3"
+                else:
+                    continue
+                
+                env = config.get_config_values('environment', 'env')
+                data_src = {report_df.loc[idx,'data_src']}
+                data_sub_dmn = {report_df.loc[idx,'data_sub_dmn']}
+                dq_pillar = {report_df.loc[idx,'dq_pillar']}
+                db_name = {report_df.loc[idx,'db_name']}
+                src_tbl = report_df.loc[idx,'src_tbl']
+
+                if report_df.loc[idx, 'is_opsgenie_flg'].upper() == "Y":
+                    profile_type = "custom"
+                    api_key = report_df.loc[idx, 'opsgenie_api_key']           
+                    # Use default API key
+                    if api_key in config.EMPTY_STR_LIST or (isinstance(api_key, float) and math.isnan(api_key)):
+                        api_key = config.get_config_values('opsgenie', 'api_key')
+
+                    renamed_report_df = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
+                    gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
+                
+                    opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
+                    
+                    # Send Opsgenie alert
+                    response, request_id, message = opsgenie_client.create_opsgenie_alert(
+                        renamed_report_df, 0, alert_type, priority, env, profile_type
+                    )
+
+                    self.logger.info(f"Opsgenie response code: {response}")
+                    self.logger.info(f"Opsgenie alert sent successfully for {alert_type}")
+
+                elif report_df.loc[idx, 'jira_assignee'] is not None: 
+                    try:
+                        JIRA_ASSIGNEE = report_df.loc[idx, 'jira_assignee']
+                        label = "DQaaS"
+                        summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {db_name} | Table: {src_tbl}" | {alert_type}
+                        description = f"DQ Issue detected for Table {src_tbl} on Run Date {report_df.loc[idx,'prfl_run_ts']}."
+                        jira_client = Jira_ticket()
+                        ticket_id = jira_client.create_jira_ticket(JIRA_ASSIGNEE, summary, description, label)
+                        self.logger.info(f"Jira ticket created: {ticket_id}")
+                    except Exception as err:
+                        self.logger.error(f"Error while creating JIRA ticket: {err}")
+        
+        except Exception as err:
+            self.logger.error(f"Error occurred while sending Opsgenie alert. Error: {err}")
+
+    ## Email distros
+    def email_distro(self, sub_domain:str): 
+        try:
+            self.df_email_distro: pd.DataFrame = self.utils.get_email_distros_from_table(data_sub_dmn_list=[sub_domain])
+            self.logger.info(f"Email Dataframe: \n{self.df_email_distro}")
+            
+            receipents_mail_group: list = self.utils.get_mail_distro(
+                df_val=self.df_email_distro,
+                persona='PERSONA_2',
+                sub_dmn=sub_domain
+            )
+            self.logger.info(f"Email Group: {receipents_mail_group}")
+            # receipents_mail_group.append(config.dqaas_default_email_distro)
+            receipents_mail_group += config.dqaas_default_email_distro
+            
+            self.logger.info(f"Final Email Receipents: {receipents_mail_group}")  
+            return receipents_mail_group
+        except Exception as err:
+            self.logger.error(f"Error in retrieving Email Distro. Assigning default email group. Error: {err}")
+        return config.dqaas_default_email_distro
+           
+    ## Summary Report Generation and Sending part
+    def send_email_report(self, reference_key: str, sub_domain: str):
+        try:
+            
+            report_query = f"""
+                select rpt.*, 
+                mtd.data_lob, mtd.db_name ,mtd.src_tbl ,mtd.dq_pillar 
+                from {config.dqaas_profile_mtd} mtd 
+                inner join 
+                (select * from {config.dqaas_profile_rpt} 
+                where rpt_ref_key = '{reference_key}' ) rpt
+                on mtd.prfl_id = rpt.prfl_id
+                and upper(mtd.prfl_type) = 'CUSTOM_RULES'
+            """
+            self.logger.info(f"Mail Query : {report_query}")
+
+            report_df = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=report_query
+            )
+            
+            if len(report_df) == 0:
+                raise Exception("No Records found for Email Summary")
+
+            
+            receipents_mail_group = self.email_distro(sub_domain=sub_domain)
+            
+            # report_df = report_df[['prfl_run_ts', 'feature_name',
+            #     'grouped_columns', 'weekday', 'count_curr', 'avg_count_prev', 'pct_change',
+            #     'variance_value', 'std_dev_value', 'sigma_value']]
+
+            # col = [
+            #     'count_curr', 'avg_count_prev', 'pct_change',
+            #     'variance_value', 'std_dev_value'
+            # ]
+            
+            report_df = report_df[self.summary_cols]
+            col = self.email_float_cols
+
+            for c in col:
+                report_df[c] = report_df[c].fillna(np.nan).astype('float64').map(self.utils.round_off)
+            
+            report_df['prfl_run_ts'] = pd.to_datetime(report_df['prfl_run_ts']).dt.date
+            report_df = report_df.rename(columns=self.email_rename_cols).reset_index(drop=True)
+            
+            style_format_dict = {
+                'Weekday': '{:,.0f}',
+                'Value': '{:,.2f}',
+                'Avg Value': '{:,.2f}',
+                'Percentage Change': '{:,.2f}',
+                'Variance': '{:,.2f}',
+                'Std Deviation': '{:,.2f}'
+            }
+
+            style_details_dict = {
+                'outlier': '{background-color:#BF3131; color:#FFF; font-weight:bold;}'
+            }
+            validate_column = 'Sigma Value'
+            
+
+            email = SendEmail(
+                smtp=config.SMTP_SERVER_NAME,
+                mail_from=config.SENDER_EMAIL_ID,
+                loggerObj=self.logger
+            )
+            current_date = datetime.strftime(datetime.now() - timedelta(days=1), '%Y-%m-%d')
+            email.send_summary_with_highlights(
+                email_template_filepath=os.path.join(config.TEMPLATE_DIR, "dq_summary_report_template_with_highlights.html"),
+                # mail_subject=f"{config.EMAIL_ENV} Custom profile summary for {sub_domain} - {current_date}",
+                mail_subject=f"Custom profile summary for {sub_domain} - {current_date}",
+                message='',
+                df_val=report_df,
+                receipents_email_id=receipents_mail_group,
+                style_format=style_format_dict,
+                style_details_dict=style_details_dict,
+                validate_column=validate_column
+            )
+        except Exception as err:
+            self.logger.error(f"Error in Report Summary Email Block. Error:{err}")
+    
+    ## Loading Results to Report Table
+    def load_to_report_results(self, df_report_result: pd.DataFrame, reference_key: str):
+        try:
+            ## BigQuery Client Connection
+            dbclient, db_creds = self.utils.bigquery_client(
+                auth=config.dq_gcp_auth_payload
+            )
+
+             # Remove duplicate columns
+            df_report_result = df_report_result.loc[:, ~df_report_result.columns.duplicated()]
+        
+            df_report_result["rpt_ref_key"] = reference_key
+
+            # #Ensure 'rpt_seq_num' exists
+            # if 'rpt_seq_num' not in df_report_result.columns:
+            #     df_report_result['rpt_seq_num'] = 0  # Default value
+
+            # Ensure 'rpt_ref_key' is assigned
+            reference_key = "20250307132142792994"  # Ensure dynamic value if applicable
+            df_report_result["rpt_ref_key"] = reference_key
+
+             # Convert Numeric Columns to Correct Data Types
+            numeric_columns = [
+                "avg_count_prev", "variance_value", "std_dev_value", "sigma_2_value",
+                "pct_change", "count_curr", "dq_score", "min_thresh_value", "max_thresh_value","consistecy_score"
+            ]
+            for col in numeric_columns:
+                if col in df_report_result.columns:
+                    df_report_result[col] = pd.to_numeric(df_report_result[col], errors='coerce')
+
+            # Convert Date/Datetime Columns
+            datetime_columns = ["data_dt", "insert_date", "prfl_run_ts"]
+            for col in datetime_columns:
+                if col in df_report_result.columns:
+                    df_report_result[col] = pd.to_datetime(df_report_result[col], errors='coerce')
+
+            # Convert Integer Columns
+            int_columns = ["weekday", "prfl_id", "rpt_seq_num"]
+            for col in int_columns:
+                if col in df_report_result.columns:
+                    df_report_result[col] = df_report_result[col].astype(pd.Int64Dtype(), errors='ignore')
+            self.logger.info("--------Data Types After Fixing:\n%s", df_report_result.dtypes)
+
+            # Validate Data Before Inserting
+            if df_report_result.empty:
+                self.logger.warning("No records to insert into BigQuery! Skipping load_to_report_results.")
+                return
+            
+            # Log if there are NaN values after conversion
+            if df_report_result[numeric_columns].isna().sum().sum() > 0:
+                self.logger.warning("Some numeric values couldn't be converted. Check for missing data.")
+
+            self.logger.info(f"Data Types Fixed Before BigQuery Load: \n{df_report_result.dtypes}")
+
+            
+            df_report_result = df_report_result.rename(columns={col: str(col).lower() for col in df_report_result.columns.tolist()})
+           
+            self.logger.info(f"Data Types Fixed After BigQuery Load: \n{df_report_result.dtypes}")
+            self.logger.info(f"DataFrame before BigQuery Load: \n{df_report_result.head()}")
+
+            ## Loading Table Level Report
+            self.utils.load_result_to_bq_report_table(
+                dq_bq_client=dbclient,
+                dq_credentials=db_creds,
+                dq_report_table_name=config.dqaas_profile_rpt,
+                df_load_data=df_report_result,
+                seq_name='rpt_seq_num',
+                column_details=self.custom_profile_report_columns
+            )
+            
+        except Exception as err:
+            self.logger.error(f" {err}")
+    
+    ## Consistency Score, DQ Score, Variation Percentage
+    @staticmethod
+    def calculate_percentage_change(df):
+        print("calculate_percentage_change")
+        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
+        df['avg_count_prev'] = df['avg_count_prev'].astype(float)
+        df['min_threshold'] = df['min_threshold'].fillna(config.CUST_MIN_THRESHOLD).astype(float)
+        df['max_threshold'] = df['max_threshold'].fillna(config.CUST_MAX_THRESHOLD).astype(float)
+        # df['pct_change'] = (((df['count_curr'] - df['avg_count_prev']) / df['count_curr']) * 100).round(2)
+        df['pct_change'] = np.where( 
+            df['count_curr'].fillna(0) == 0, 0,
+            (((df['count_curr'] - df['avg_count_prev']) / df['count_curr']) * 100).round(2)
+        )
+        # df['consistency_score'] = ((df['count_curr'] / df['avg_count_prev']) * 100).round(2)
+        df['consistency_score'] = np.where( 
+            df['avg_count_prev'].fillna(0).astype(float) == 0, 0,
+            ((df['count_curr'] / df['avg_count_prev']) * 100).round(2)
+        )
+        df['dq_score'] = np.where(
+            (df['min_threshold'] <= df['consistency_score']) & (df['consistency_score'] <= df['max_threshold']),
+            100 , 0
+        )
+
+    ## 3 Sigma Values
+    @staticmethod
+    def calculate_sigma_value( df):
+        print("calculate_sigma_value")
+        df['std_dev_value'] = df['std_dev_value'].astype(float)
+        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
+        df['avg_count_prev'] = df['avg_count_prev'].astype(float)    
+        conditions_null_dim = [
+            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 1 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 1 * df['std_dev_value'].fillna(0).astype(float)),
+            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 2 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 2 * df['std_dev_value'].fillna(0).astype(float)),
+            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 3 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 3 * df['std_dev_value'].fillna(0).astype(float)),
+            pd.isna(df['grouped_columns'])
+        ]
+        choices = [1, 2, 3, 'outlier']
+        df['sigma_value'] = np.select(conditions_null_dim, choices, default='outlier')
+       
+    ## DQ Status  
+    @staticmethod
+    def calculate_dq_status(df):
+        print("calculate_dq_status")
+        df['std_dev_value'] = df['std_dev_value'].astype(float)
+        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
+        df['avg_count_prev'] = df['avg_count_prev'].astype(float)
+        df['consistency_score'] = df['consistency_score'].fillna(0).astype(float)
+        df['min_thresh_value'] = df['min_thresh_value'].fillna(0).astype(float)
+        df['max_thresh_value'] = df['max_thresh_value'].fillna(0).astype(float)
+        df['min_threshold'] = df['min_threshold'].fillna(config.CUST_MIN_THRESHOLD).astype(float)
+        df['max_threshold'] = df['max_threshold'].fillna(config.CUST_MAX_THRESHOLD).astype(float)
+
+        main_condition = (
+            (df['count_curr'].fillna(0) != 0) & 
+            (df['max_thresh_value'] >= df['count_curr']) &
+            (df['min_thresh_value'] <= df['count_curr']) | 
+            (
+                (df['count_curr'] == df['avg_count_prev'].fillna(0).astype(float)) &
+                (df['std_dev_value'].fillna(0).astype(float) == df['avg_count_prev'].fillna(0).astype(float))
+            )
+        )
+        
+        dq_status_condition = [
+            main_condition & (( df['min_threshold'] <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold'])), 
+            
+            ( main_condition &  (df['consistency_score'] < df['min_threshold'] ) |
+            ( (df['count_curr'] != 0 & (df['count_curr'] < df['min_thresh_value'])) &
+            (df['consistency_score'] < df['min_threshold'] ) | 
+            (( df['min_threshold']  <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold'])) ) ),
+            
+            (  main_condition & (df['consistency_score'] > df['max_threshold']) |
+            ( (df['count_curr'] != 0 & (df['count_curr'] > df['max_thresh_value'])) &
+            (df['consistency_score'] > df['max_threshold']) | (( df['min_threshold']  <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold'])) ) )
+        ]
+        choices = ["PASS", "LOW", "HIGH"]
+        df['dq_ind'] = np.select(dq_status_condition, choices, default='NA')
+
+    ## Not in Use
+    def delete_current_null_records(self, prfl_id_list, business_date):
+        try:
+            delete_dup_record_query=f'''
+                delete from {config.dqaas_profile_rpt}
+                where date(rule_profile_dt)={business_date} 
+                and prfl_id in ({prfl_id_list}) 
+                and weekday = extract(dayofweek from {business_date})  
+                and avg_count_prev is null
+                and pct_change is null 
+                and variance_avg_count_prev is null 
+                and std_dev_value is null 
+                and sigma_value is null;
+            '''
+            
+            num_recs_deleted = self.utils.run_bq_dml_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                dml_query=delete_dup_record_query
+            )
+            
+            self.logger.info(f'Number of latest records deleted :  {num_recs_deleted}')
+        except Exception as err:
+            self.logger.error(f"Error in Deleting historical records. Error:{err}")
+        
+    ## Profile Engine 
+    def profile_engine(self, df_rules: pd.DataFrame, param_to_replace: dict = None, comparison_type="WEEKDAYS"):
+        
+        ## Profiling Rules
+        # df_result = pd.DataFrame()
+        df_result = []
+        for i in df_rules.index:
+            self.logger.info('------------------------------------------------------------------')
+
+            try:
+                result = pd.DataFrame()
+                
+                prfl_id = df_rules.loc[i, "prfl_id"]
+                rule_sql = df_rules.loc[i, "meas_rule_sql"]
+                data_src = df_rules.loc[i, "data_src"]
+                
+                # self.logger.info(f"Index: {i} : Rule ID:: {prfl_id}, \nquery: {query}\n")
+                self.logger.info(f"Index:: {i}, Rule ID:: {prfl_id}")
+                
+                rule_sql = reduce(lambda sql, replace_str: sql.replace(*replace_str), [rule_sql, *list(param_to_replace.items())])
+            
+                result = self.utils.get_query_data(
+                    data_src=data_src,
+                    dbname=df_rules.loc[i, "db_name"],
+                    select_query=rule_sql
+                )
+                
+                result = result \
+                .rename(columns={col: str(col).lower() for col in result.columns.tolist()}) \
+                .rename(columns=self.rule_col_rename_list)
+                
+                
+                if len(result) == 0:
+                    self.logger.info('No Records Found in Rules')
+                    # date_val = self.utils.run_bq_sql(
+                    #     bq_auth=config.dq_gcp_auth_payload,
+                    #     select_query=f'''select date({param_to_replace["RUN_DT"]}) as run_dt, extract(dayofweek from date({param_to_replace["RUN_DT"]})) as weekday;'''
+                    # )
+                    self.logger.info(f'Date Results :: \n{self.date_val}')
+                    result = pd.DataFrame.from_records([{
+                        "data_dt" : self.date_val.loc[0, "run_dt"],
+                        "feature_name" : df_rules.loc[i, "feature_name"],
+                        "dimension" : np.nan,
+                        "count_curr" : 0,
+                        "rule_run_ts" : datetime.now(),
+                        "weekday" : self.date_val.loc[0, "weekday"],
+                    }])
+
+                    if comparison_type == 'DTRAN_MONTHLY':
+                        result = result.drop(columns=["weekday"], errors='ignore', axis=1)
+                    
+                    # result["data_dt"] = date_val.loc[0, "run_dt"]
+                    # result["feature_name"] = df_rules.loc[i, "feature_name"]
+                    # result["dimension"] = np.nan
+                    # result["count_curr"] = 0
+                    # result["rule_run_ts"] = datetime.now()
+                    # result["weekday"] = date_val.loc[0, "weekday"]
+    
+                result["prfl_id"] = prfl_id
+                
+                self.logger.info(f'\n{result}')
+                # df_result = df_result.append(result)
+                res_val = []
+                res_val = result.to_dict("records")
+                df_result.extend(res_val)
+            except Exception as err:
+                self.logger.error(f"Error While Executing Rules: Error{err}")
+            
+            self.logger.info('------------------------------------------------------------------')
+            
+        dfEndRes = pd.DataFrame(df_result)
+        self.logger.info(f'Length of the Rules Result : {len(dfEndRes)}')
+        self.logger.info(f'\n{dfEndRes.columns}\n{dfEndRes.head()}')
+           
+        if len(dfEndRes) == 0:
+            raise ValueError("No Records Found in Custom Rule Profiling.")
+        
+        # dfEndRes = dfEndRes.rename(columns=self.final_col_rename_list).reset_index(drop=True)
+        return dfEndRes.rename(columns=self.final_col_rename_list).reset_index(drop=True)
+    
+    @staticmethod
+    def int_df_to_list(df):
+        int_list: list = [i for i in df['prfl_id']]
+        return list(set(int_list))
+    
+    ## Level 2 - Execution Layer : Run Rules, Get Hist Records, Compare the Results, and Find metrics
+    def run_metrics_engine(self, df_mtd: pd.DataFrame, start_date, end_date, val_replace_params:dict = None):
+        try:
+
+            df_mtd = df_mtd.reset_index(drop=True)
+            df_mtd["comparison_type"] = df_mtd["comparison_type"].fillna("WEEKDAYS")
+            df_mtd["is_hourly_flg"] = df_mtd["is_hourly_flg"].fillna("N")
+            comparisonType = df_mtd.loc[0,"comparison_type"]
+            isHourly = df_mtd.loc[0, 'is_hourly_flg']
+            self.logger.info(f"Comparison:: {comparisonType}, Hourly:: {isHourly}")
+            ## Creating Profile ID list for historical Load
+            # rule_id_list: list = []
+            # for i in df_mtd['prfl_id']:
+            #     rule_id_list.append(i)
+            
+            print(df_mtd['prfl_id'])
+            prfl_id_list = [int(i) for i in df_mtd['prfl_id']]
+            prfl_id_list = list(set(prfl_id_list))
+            prfl_id_list = f"{prfl_id_list}".replace('[', '').replace(']' ,'')
+            self.logger.info(f'Profile ID List : {prfl_id_list}')
+        
+            ## For null results, weekday and date will be included
+            self.date_val = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=f'''
+                select date({val_replace_params["RUN_DT"]}) as run_dt,
+                extract(dayofweek from date({val_replace_params["RUN_DT"]})) as weekday;
+                '''
+            )
+            
+            df_latest = self.profile_engine(
+                df_rules=df_mtd,
+                param_to_replace=val_replace_params,
+            )
+            # df_latest = pd.DataFrame(df_latest)
+            # df_latest = df_latest.rename(columns=self.final_col_rename_list).reset_index(drop=True)
+            df_latest["prfl_run_ts"] = datetime.now().strftime(config.DTM_FMT)
+            if isHourly == 'Y':
+                df_latest["hour"] = df_latest["grouped_columns"]
+                
+            # df_latest.to_csv("./cm_res_1.txt")
+            
+            df_historical = self.get_historical_details(
+                run_date=start_date,
+                prfl_id_list=prfl_id_list,
+                comparison_type=comparisonType
+            )
+            
+
+            df_merged_dimensions = self.compare_historical_latest_dimensions(
+                df_tbl_hist_rec=df_historical,
+                df_tbl_latest_rec=df_latest,
+                comparison_type=comparisonType,
+                isHourly=isHourly,
+            )
+            
+            # df_merged_dimensions.to_csv(os.path.join(os.path.dirname(__file__), "merged_results.txt"))
+            mtdCols = ['prfl_id', 'prfl_type', 'src_tbl', 'dq_pillar', 'meas_name', 'min_threshold', 'max_threshold', 'comparison_type', 'is_hourly_flg']
+            df_final_result = pd.merge(
+                df_merged_dimensions,
+                df_mtd[mtdCols],
+                on=['prfl_id'],
+                how='inner'
+            )
+            
+            
+            self.calculate_percentage_change(df_final_result)
+            self.calculate_sigma_value(df_final_result)
+            self.calculate_dq_status(df_final_result)
+            
+            # df_merged_dimensions.to_csv(os.path.join(os.path.dirname(__file__), "merged_results_final.txt"))
+
+            self.logger.info('------------------------------------------------------------------')
+            self.logger.info(f'Length of the End Results : {len(df_final_result)}')
+            self.logger.info(f'\n{df_final_result.columns}\n{df_final_result.head()}')
+            self.logger.info('------------------------------------------------------------------')
+            # df_final_result.to_csv(os.path.join(os.path.dirname(__file__), "cm_res_3.txt"))
+           
+            # self.delete_historical_records(hist_date=hist_date, prfl_id_list=prfl_id_list)
+            return df_final_result
+                
+        except Exception as err:
+            self.logger.error(f"Error in Run Metrics Main Block. Error {err}")
+    
+    ## Level 1 - Metrics Execution initiation - entry point for Time based and Engine Initiation - Main Block
+    def main_metrics_execution(self, df_mtd: pd.DataFrame, sub_domain: str, start_date: str, end_date: str):
+        
+        df_mtd = df_mtd.rename(columns={col: str(col).lower() for col in df_mtd.columns.tolist()})
+        
+        ## Reference Key -> For every new request one ID will be created
+        reference_key = datetime.now().strftime('%Y%m%d%H%M%S%f')
+        self.logger.info(f"\nRequest Reference:: {reference_key}\nSub Domain:: {sub_domain}")
+  
+        ## Placeholders for replacing the values in query during execution
+        replace_params_for_rules = {"RUN_DT": start_date, "$START_DATE": start_date, "$END_DATE":end_date,}
+        
+        ## Metrics Initiation
+        df_end_result = self.run_metrics_engine(
+            df_mtd=df_mtd,
+            start_date=start_date,
+            end_date=end_date,
+            val_replace_params=replace_params_for_rules
+        )
+        
+        if len(df_end_result) == 0 :
+            self.logger.error("No Records Found for Loading Custom Metrics")
+            return 
+        
+        ## Loading Results to Report
+        self.load_to_report_results(
+            df_report_result=df_end_result,
+            reference_key=reference_key
+        )
+        
+        ## Send Email
+        self.send_email_report(
+            reference_key=reference_key,
+            sub_domain=sub_domain
+        )
+
+        ## Send opsgenie alert
+        self.send_opsgenie_jira_outlier_alert(
+            reference_key=reference_key
+        )
+
+    ## Metadata Retrival    
+    def get_metadata(self, add_condition: str = None) -> pd.DataFrame:
+            if add_condition in config.EMPTY_STR_LIST:
+                add_condition = ""
+            
+            metadata_query = f"""
+                SELECT * FROM {config.dqaas_profile_mtd}
+                WHERE upper(prfl_type) = 'CUSTOM_RULES'    
+                and IS_ACTIVE_FLG = 'Y'    
+                {add_condition}                     
+                ORDER BY PRFL_ID;
+            """
+            
+            df_val = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=metadata_query
+            )
+            
+            self.logger.info(f"Metadata Length: {len(df_val)}")
+            
+            if len(df_val) == 0:
+                raise ValueError("No Records Found for Custom Metrics")
+            
+            df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
+            return df_val
+
+
+    def laod_historical_report(self):
+
+        source_data = ''
+
+        try:
+            self.logger.info(f"Inside laod_historical_report")
+
+            fetch_sql = f""" select distinct mtd.prfl_id, mtd.prfl_type, mtd.dq_pillar, mtd.src_tbl, mtd.meas_name, mtd.feature_name, meas_rule_sql from {config.dqaas_profile_mtd} mtd
+            left join {config.dqaas_profile_rpt} rpt
+            on mtd.prfl_id = rpt.prfl_id
+            where rpt.prfl_id is null
+            and upper(mtd.prfl_type) = 'CUSTOM_RULES'"""
+
+            self.logger.info(f"Fetch SQL executing: {fetch_sql}")
+
+            source_data = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=fetch_sql)
+
+            self.logger.info(f"Fetched new onboarded tables")
+
+        except Exception as err:
+                self.logger.error(f"Error While Executing fetch_sql: Error{err}")
+
+        try:
+            for index, row in source_data.iterrows():
+                prfl_id = row[0]
+                prfl_type = row[1]
+                dq_pillar = row[2]
+                src_tbl = row[3]
+                meas_name = row[4].replace(" ","_")
+                meas_rule_sql = row[6]
+
+                self.logger.info(f"Orginal meas_rule_sql : {meas_rule_sql}")
+
+                modified_sql = meas_rule_sql.replace("= RUN_DT","between current_date() -1 and current_date() - 92")
+                modified_sql = re.sub(r"(?i)null.* as.* dimension","'null' AS dimension", modified_sql)
+                modified_sql = re.sub(r"(?i)^SELECT\s",f"""Select 999999 as rpt_seq_num, {prfl_id} as prfl_id, '{prfl_type}' as prfl_type, '{dq_pillar}' as dq_pillar, '{src_tbl}' as src_tbl, '{meas_name}' as meas_name, """, modified_sql)
+                modified_sql = re.sub(r"(?i)date\s*\(\s*current_timestamp\s*\)","current_timestamp", modified_sql)
+                modified_sql = re.sub(r"(?i)extract.*\(.*date.*current_timestamp\s*\(\s*\)\s*\)","current_timestamp()", modified_sql)
+                modified_sql = re.sub(r"(?i)group\s* by\s*.*","group by 1,2,3,4,5,6,7,8,9,11,12;", modified_sql)
+
+                insert_sql = f"""insert into {config.dqaas_profile_rpt} (rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt,feature_name,grouped_columns,count_curr,prfl_run_ts,weekday) """ + modified_sql
+
+                self.logger.info(f"History SQL for {src_tbl} : {insert_sql}")
+
+                #job = self.utils.client.query(insert_sql)
+
+                insert_status = self.utils.run_bq_dml_sql(
+                    bq_auth=config.dq_gcp_auth_payload,
+                    dml_query=insert_sql
+                )
+
+                self.logger.info('insert_status')
+                self.logger.info(insert_status)
+
+        except Exception as err:
+                self.logger.error(f"Error While Executing insert_sql: Error{err}")
+
+
+    def main(self):
+        try:
+            self.laod_historical_report()
+            df_mtd = self.get_metadata()
+            
+            sub_domain_list = df_mtd['data_sub_dmn'].unique().tolist()
+            start_date = "current_date-1"
+            end_date = "current_date-1"
+            
+            for dmn in sub_domain_list:
+                self.main_metrics_execution(
+                    df_mtd=df_mtd,
+                    sub_domain=dmn,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+            
+        except ValueError as err:
+            self.logger.error(err)
+        except Exception as err:
+            self.logger.error(f"Error in Main Block. Error {err}")
+            
+            
+
+
+CustomeMetrics().main()
