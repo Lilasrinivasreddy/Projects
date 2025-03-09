@@ -10,10 +10,16 @@ def load_to_report_results(self, df_report_result: pd.DataFrame, reference_key: 
     
         df_report_result["rpt_ref_key"] = reference_key
 
+        # Debugging Step: Log existing columns before fixing
+        self.logger.info(f"Columns before checking 'consistecy_score': {df_report_result.columns.tolist()}")
+
         # Ensure 'consistecy_score' is present (Fixing the Error)
         if 'consistecy_score' not in df_report_result.columns:
             self.logger.warning("Column 'consistecy_score' missing, adding it with default value 0.")
             df_report_result['consistecy_score'] = 0.0  # Default value
+
+        # Debugging Step: Log existing columns after adding 'consistecy_score'
+        self.logger.info(f"Columns after fixing missing values: {df_report_result.columns.tolist()}")
 
         # Convert Numeric Columns to Correct Data Types
         numeric_columns = [
@@ -38,20 +44,13 @@ def load_to_report_results(self, df_report_result: pd.DataFrame, reference_key: 
 
         self.logger.info("--------Data Types After Fixing:\n%s", df_report_result.dtypes)
 
-        # Validate Data Before Inserting
-        if df_report_result.empty:
-            self.logger.warning("No records to insert into BigQuery! Skipping load_to_report_results.")
-            return
-        
-        # Log if there are NaN values after conversion
-        if df_report_result[numeric_columns].isna().sum().sum() > 0:
-            self.logger.warning("Some numeric values couldn't be converted. Check for missing data.")
+        # Debugging Step: Check for NaN values in numeric columns
+        nan_counts = df_report_result[numeric_columns].isna().sum().sum()
+        if nan_counts > 0:
+            self.logger.warning(f"Warning: Some numeric values contain NaNs! Count: {nan_counts}")
 
-        self.logger.info(f"Data Types Fixed Before BigQuery Load: \n{df_report_result.dtypes}")
-
-        df_report_result = df_report_result.rename(columns={col: str(col).lower() for col in df_report_result.columns.tolist()})
-
-        self.logger.info(f"DataFrame before BigQuery Load: \n{df_report_result.head()}")
+        # Debugging Step: Log columns before BigQuery Load
+        self.logger.info(f"Columns before BigQuery Load: {df_report_result.columns.tolist()}")
 
         ## Loading Table Level Report
         self.utils.load_result_to_bq_report_table(
@@ -65,12 +64,3 @@ def load_to_report_results(self, df_report_result: pd.DataFrame, reference_key: 
         
     except Exception as err:
         self.logger.error(f"Error in load_to_report_results: {err}")
-
-
-
-
-
-
-
-
-self.logger.info(f"Columns before BigQuery Load: {df_report_result.columns.tolist()}")
