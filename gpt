@@ -1,78 +1,12 @@
-def load_to_report_results(self, df_report_result: pd.DataFrame, reference_key: str):
-    """
-    Processes and loads the report results into BigQuery while fixing potential data type issues.
-    
-    Args:
-        df_report_result (pd.DataFrame): The DataFrame containing processed report data.
-        reference_key (str): The reference key for tracking the report.
-
-    Returns:
-        None
-    """
-    try:
-        ## Step 1: BigQuery Client Connection
-        dbclient, db_creds = self.utils.bigquery_client(auth=config.dq_gcp_auth_payload)
-
-        # Remove duplicate columns
-        df_report_result = df_report_result.loc[:, ~df_report_result.columns.duplicated()]
-
-        # Assign Reference Key
-        df_report_result["rpt_ref_key"] = reference_key
-
-        ## Step 2: Ensure 'consistecy_score' Exists (Fixing the Error)
-        if 'consistecy_score' not in df_report_result.columns:
-            self.logger.warning("Column 'consistecy_score' missing, adding it with default value 0.")
-            df_report_result['consistecy_score'] = 0.0  # Default value
-
-        ## Step 3: Convert Numeric Columns to Correct Data Types
-        numeric_columns = [
-            "avg_count_prev", "variance_value", "std_dev_value", "sigma_2_value",
-            "pct_change", "count_curr", "dq_score", "min_thresh_value", "max_thresh_value", "consistecy_score"
-        ]
-        for col in numeric_columns:
-            if col in df_report_result.columns:
-                df_report_result[col] = pd.to_numeric(df_report_result[col], errors='coerce').fillna(0)
-
-        ## Step 4: Convert Integer Columns (Fixing String Issue)
-        int_columns = ["weekday", "prfl_id", "rpt_seq_num", "dq_score"]
-        for col in int_columns:
-            if col in df_report_result.columns:
-                try:
-                    df_report_result[col] = pd.to_numeric(df_report_result[col], errors='coerce').fillna(0).astype(int)
-                except Exception as e:
-                    self.logger.error(f"❌ Error converting column '{col}' to int: {e}")
-                    self.logger.info(f"🔍 Problematic Column '{col}' Unique Values: {df_report_result[col].unique()}")
-
-        ## Step 5: Convert Date/Datetime Columns (Fixing 'NaT' Issues)
-        datetime_columns = ["data_dt", "insert_date", "prfl_run_ts"]
-        for col in datetime_columns:
-            if col in df_report_result.columns:
-                df_report_result[col] = pd.to_datetime(df_report_result[col], errors='coerce')
-
-        ## Step 6: Remove Future Dates (Avoids BigQuery Load Issues)
-        if "data_dt" in df_report_result.columns:
-            df_report_result = df_report_result[
-                (df_report_result["data_dt"] >= "2000-01-01") & (df_report_result["data_dt"] <= "2100-12-31")
-            ]
-
-        ## Step 7: Debugging - Check for NaN Values in Numeric Columns
-        nan_counts = df_report_result[numeric_columns].isna().sum().sum()
-        if nan_counts > 0:
-            self.logger.warning(f"⚠ Warning: Some numeric values contain NaNs! Count: {nan_counts}")
-
-        ## Step 8: Debugging - Log Columns Before BigQuery Load
-        self.logger.info(f"✅ Columns before BigQuery Load: {df_report_result.columns.tolist()}")
-        self.logger.info(f"📊 Data types before load:\n{df_report_result.dtypes}")
-
-        ## Step 9: Load Data into BigQuery
-        self.utils.load_result_to_bq_report_table(
-            dq_bq_client=dbclient,
-            dq_credentials=db_creds,
-            dq_report_table_name=config.dqaas_profile_rpt,
-            df_load_data=df_report_result,
-            seq_name='rpt_seq_num',
-            column_details=self.custom_profile_report_columns
-        )
-
-    except Exception as err:
-        self.logger.error(f"❌ Error in load_to_report_results: {err}")
+["""Select 9021082 as rpt_seq_num,
+1071 as prfl_id,
+'CUSTOM_RULES' as prfl_type,
+'Consistency' as dq_pillar,
+'BI_PROD_ACTIVITY_V' as src_tbl,
+'rule_VZPH' as meas_name,
+cast(TRANS_DT as date) as data_dt,
+'VZPH' as feature_name,
+null as grouped_columns,
+SUM(CASE WHEN PROD_OFF_PRODUCT_CD IN ('PR.0522') AND coalesce(EIS_INC_IND, 'Y') = 'Y' THEN PROD_BUNDLED_ACT_CNT ELSE 0 END) as count_curr,
+current_timestamp as prfl_run_ts,
+dayofweek(cast(TRANS_DT AS date)) AS weekday from NTL_PRD_ALLVM.BI_PROD_ACTIVITY_V where Cast(TRANS_DT AS DATE) >= CURRENT_DATE -90 group by 1,2,3,4,5,6,7,8,11,12""",]
