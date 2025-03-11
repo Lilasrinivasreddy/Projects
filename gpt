@@ -1,625 +1,89 @@
-from datetime import datetime, timedelta
-import pandas as pd
-import numpy as np
-import psutil
-import os
-import shutil
 import logging
-import croniter
-
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-## Added on 2024-03-26 for Connection issues
-import argparse
+import os
 import sys
+import argparse
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, registry
-from sqlalchemy import MetaData
-import stat
-import decimal
-
-## GCP Connection
 from google.cloud import bigquery
-import requests
-from requests.exceptions import HTTPError
-import json
 import google.auth
-import time
-import base64
-import pandas_gbq
 
+# Import configuration from the config folder
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../config')))
+from config import CONFIG  # Import config settings
 
-## Importing User Defined Modules
-# import config_params as config
+# Import CommonUtils class from your existing script
+from your_existing_script import CommonUtils  # Replace with your actual script name
 
+# Configure Logging
+logging.basicConfig(
+    format='%(asctime)s : %(levelname)s : %(message)s',
+    level=logging.INFO
+)
 
-class __Logger:
-    def __init__(self, name='', path=''):
-        self.log = self.logger_config(name, path)
-    
-    @staticmethod
-    def logger_config(name, path):
-        print('name:{}, path:{}'.format(name, path))
-        logger = logging.getLogger(name)
-        formatter = logging.Formatter('%(asctime)s : %(name)s - %(funcName)s - %(levelname)s : %(message)s','%Y-%m-%d %H:%M:%S')
-        file_handler = logging.FileHandler(path, mode='a')
-        file_handler.setFormatter(formatter)
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        stream_handler.setFormatter(formatter)
-        logger.setLevel(logging.INFO)
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
-        return logging.getLogger(name)
+class QueryExecutor:
+    def __init__(self, logger):
+        self.config = CONFIG  # Load configuration
+        self.logger = logger
+        self.utils = CommonUtils(self.config, logger)  # Use existing connection functions
 
-
-def __create_logger_obj(logger_path, logger_filename, process_name, date_format, no_date_yn="N"):
-    logger_date = datetime.strftime(datetime.now(),date_format)
-    log_dir = os.path.join(logger_path, datetime.now().strftime('%Y-%m-%d'))
-   
-    if not os.path.isdir(log_dir):
-        os.mkdir(log_dir, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
-               
-    fileName = f"{logger_filename}-{logger_date}.log"
-    if no_date_yn == 'Y':
-        fileName = f"{logger_filename}.log"
-    log_file_path =  os.path.join(log_dir, fileName)
-    return __Logger(name=f"{process_name}-{os.getpid()}", path=log_file_path).log
-
-## Set the logger instance
-def set_logger(
-    logger_path: str, log_filename: str, process_name: str, no_date_yn: str = 'N',
-    only_date_yn: str = "N", date_with_minutes_yn: str = "N", date_with_hourly_yn: str = "N"
-    ):
-
-    date_format = '%Y-%m-%d-%H-%M-%S'
-
-    if only_date_yn == 'Y':
-        date_format = '%Y-%m-%d'
-        
-    if date_with_minutes_yn == 'Y':
-        date_format = '%Y-%m-%d-%H-%M'
-
-    if date_with_hourly_yn == 'Y':
-        date_format = '%Y-%m-%d-%H-%M'
-  
-    return __create_logger_obj(logger_path, log_filename, process_name, date_format, no_date_yn)
-    
-def get_args_parser(parse_val):
-    if len(parse_val) > 0:
-        parser_args = argparse.ArgumentParser()
-        parser_args.add_argument('--csv_flag', dest='csv_flag', type=str, default='N')
-        parser_args.add_argument('--critical', dest='critical_flag_value', type=str, default=None)
-        parser_args.add_argument('--input_filepath', dest='input_filepath', type=str, default=None)
-        parser_args.add_argument('--data_sub_dmn', dest='data_sub_dmn', type=str, default=None)
-        parser_args.add_argument('--data_dmn', dest='data_dmn', type=str, default=None)
-        parser_args.add_argument('--data_bus_elem', dest='data_bus_elem', type=str, default=None)
-        parser_args.add_argument('--data_lob', dest='data_lob', type=str, default=None)
-        parser_args.add_argument('--data_src', dest='data_src', type=str, default=None)
-        parser_args.add_argument('--rule_id', dest='rule_id', type=str, default=None)
-        parser_args.add_argument('--prfl_tbl_id', dest='prfl_tbl_id', type=str, default=None)
-        parser_args.add_argument('--prfl_id', dest='prfl_id', type=str, default=None)
-        parser_args.add_argument('--profile_type', dest='profile_type', type=str, default=None)
-        return parser_args.parse_args()
-    return None
-
-class CommonUtils:
-    def __init__(self, config, logObj:logging = None):
-        self.logger: logging = logObj
-        self.config = config
-
-    ##  Round off to 2 decimal points
-    @staticmethod
-    def round_off(val):  
-        d = decimal.Decimal(val)
-        return d.quantize(decimal.Decimal('.01'), decimal.ROUND_DOWN)
-
-    ## Converts Decimal val with null to Zero
-    def zero_if_null(self, val):
-        return self.round_off(val) if val not in self.config.EMPTY_STR_LIST else 0
-
-    ## Wrapper / Decorator For Process Time and Usage
-    def function_execution_time(self, func):
-        def wrapper(*args, **kwargs):
-            process_id = os.getpid()
-            start_mem = psutil.Process(process_id).memory_full_info().uss
-            start_time = datetime.now()
-            self.logger.info(f'''
-            ==================================================================
-            #### Initiating Rule Profile Engine
-            Process ID      :   {process_id}
-            Requested Time  :   {start_time}
-            ==================================================================
-            ''')
-    
-            ## Wrapper Function
-            wrapper_result = func(*args, **kwargs)
-            
-            end_mem = psutil.Process(process_id).memory_full_info().uss
-            end_time = datetime.now()
-            
-            self.logger.info(f"""
-            ======================================================================================
-            Job Process Details:
-                Process ID              :   {process_id}
-                Started at              :   {start_time}
-                Ended by                :   {end_time}
-                Total Time Taken        :   {(end_time-start_time)}
-                Memory consumed (in MB) :   {(end_mem - start_mem) / (1024 * 1024 * 1024)}
-            ======================================================================================
-            """)
-            
-            return wrapper_result
-        return wrapper
-
-    ## GCP connection - Token Acitve / Expiry Verification
-    def isTokenExpired(self, path) -> bool:
-        try:
-            self.logger.info(f"Token file Path is {path}")
-            if(os.path.exists(path)):
-                self.logger.info("Token File Available")
-                with open(path,'r') as f:
-                    old_access_token = json.load(f)['access_token'].split('.')[1]
-                    old_access_token += '=' * (-len(old_access_token) % 4)
-                    old_token_json_decoded = json.loads(base64.b64decode(old_access_token).decode('utf8').replace("'",'"'))
-                    auth_time = old_token_json_decoded['auth_time']
-                    expires_in = old_token_json_decoded['expires_in']
-                    curr_epoch_time = int(time.time())
-                    if curr_epoch_time - auth_time < expires_in - 120:
-                        self.logger.info("Access Token is Valid")
-                        return False
-                    else:
-                        self.logger.info("Access Token is Invalid")
-            return True
-        except Exception as e:
-            raise e
-        
-    ##  GCP connection - Token Generation
-    def exchange_and_save_oidc_token_for_jwt(self, url: str, client_id: str, client_secret: str, oidc_token_file_name:str) -> None:
-        try:
-            self.logger.info('Retrieving JWT from OIDC provider...')
-            payload = {'grant_type': 'client_credentials', 'client_id': client_id,
-                        'client_secret': client_secret, 'scope': 'read'}
-        
-            response = requests.post(url=url, params=payload)
-            response.raise_for_status()
-            token = response.json()
-            self.logger.info('Saving token...')
-            # Serializing json
-            # oidc_token_file_name = "oidc_token.json"
-            oidc_token_path = oidc_token_file_name
-            if os.path.isfile(oidc_token_path):
-                os.remove(oidc_token_path)
-                time.sleep(7)
-
-            with open(oidc_token_path, 'w') as f:  # don't change the file name
-                json.dump(token, f)
-        except HTTPError as e:
-            raise HTTPError(f"Http Error. Error:{e}")
-        except Exception as e:
-            raise Exception(f"Error Ocurred in Generating the OIDC Token. Error:{e}")
-
-    ##  GCP connection - BigQuery Client Connection - Main GCP Connection - Returns Client and Credentials
-    def bigquery_client(self, auth: dict):
-        self.logger.debug(f'url={auth["token_url"]}, client_id={auth["client_id"]}, client_secret={auth["client_secret"]}')
-        
-        token_path = auth["oidc_token"]
-        if self.isTokenExpired(token_path):
-            self.exchange_and_save_oidc_token_for_jwt (
-                url=auth["token_url"],
-                client_id=auth["client_id"],
-                client_secret=auth["client_secret"],
-                oidc_token_file_name = token_path
-            )
-        self.logger.info('Setting environment variable...')
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = auth["sa_json_file_dtls"]
-        os.environ['GOOGLE_CLOUD_PROJECT'] = auth["conn_project_id"]
-        
-        credentials, _ = google.auth.default()
-        
-        client = bigquery.Client(credentials=credentials, project=auth["conn_project_id"])
-        self.logger.info(f'Connected to {auth["conn_project_id"]} project space')
-        
-        return client, credentials
-    
-    
-    ##  GCP connection - Execute BigQuery Select SQL
-    def run_bq_sql(self, bq_auth: dict, select_query: str):
-        try:
-            self.logger.info(f"\nBQ Select Query: {select_query}")
-            bq_client, _ = self.bigquery_client( auth=bq_auth )
-
-            result = bq_client.query(select_query).to_dataframe()
-            return result
-            
-        except Exception as e:
-            self.logger.error(f"Error While executing the BigQuery SQL. Error: {e}")
-            
-        return pd.DataFrame()  
-    
-    ##  GCP connection - Execute BigQuery DML Queries
-    def run_bq_dml_sql(self, bq_auth: dict, dml_query: str):
-        try:
-            self.logger.info(f"\nBQ DML Query: {dml_query}")
-            bq_client, _ = self.bigquery_client( auth=bq_auth )
-
-            result = bq_client.query(dml_query)
-            result.result()
-            return result.num_dml_affected_rows
-            
-        except Exception as e:
-            self.logger.error(f"Error While executing the BigQuery SQL. Error: {e}")
-            
-        return -1  
-            
-    ## Teradata Client Connection - Return DB Engine
-    def teradata_client(self, auth: dict, td_db_name):
-        try:
-            connect = f'teradatasql://{auth["uid"]}:{auth["pwd"]}@{auth["hostname"]}/{td_db_name}?encryptdata=true'
-            # print(connect)
-            dbclient = create_engine(connect)
-            return dbclient
-        except Exception as err:
-            self.logger.error(f"Error while connecting to database ({td_db_name}). error:{err}")
-        
-        return None
-
-
-    ## Execute Teradata Select SQL
-    def run_teradata_sql(self, td_auth:dict, db_name, query: str):
-        try:
-
-            td_engine = self.teradata_client(
-                auth=td_auth,
-                td_db_name=db_name
-            )
-            
-            td_engine.dispose()
-            
-            self.logger.info(f"Teradata DB: {db_name}, \nQuery: {query}")
-            with td_engine.connect() as td_conn:
-                result = pd.read_sql(query, td_conn)
-                return result
-            
-        except Exception as e:
-            self.logger.error(f"Error While executing the Teradata SQL. Error: {e}")
-            
-        return pd.DataFrame()  
-
-
-    ## Execute Teradata / BigQuery Select SQL - Data Source
-    def get_query_data(self, data_src: str, dbname: str, select_query:str):
-        if data_src.upper() == 'TD':
-            dfval = self.run_teradata_sql(
-                td_auth=self.config.src_tbl_db_config,
-                db_name=dbname,
-                query=select_query
-            ) 
-            return dfval
-        
-        if data_src.upper() in ('GCP', 'BQ'):
-            dfval = self.run_bq_sql(
-                bq_auth=self.config.dq_gcp_auth_payload,
-                select_query=select_query
-            ) 
-            return dfval
-        
-        return pd.DataFrame()
-        
-
-    ## Write DF to CSV - File path, Filename and dataframe is requried
-    @staticmethod
-    def write_df_to_csv(filepath: str, filename: str, df_val: pd.DataFrame) -> str:
-        # temp_csv_filename = os.path.join(self.config.TEMP_DIR, f"{filename}.csv")
-        temp_csv_filename = os.path.join(filepath, f"{filename}.csv")
-        df_val.to_csv(temp_csv_filename)
-        return temp_csv_filename
-
-            
-    ## Remove CSV - Filename and path to be given
-    @staticmethod
-    def remove_temp_csv(filepath: str, filename: str) -> str:
-        # temp_csv_filename = os.path.join(self.config.TEMP_DIR, f"{filename}.csv")
-        temp_csv_filename = os.path.join(filepath, f"{filename}.csv")
-        if os.path.isfile(temp_csv_filename):
-            os.remove(temp_csv_filename)
-            
-            
-    ## Get MAX sequence for the give table
-    def get_bq_max_sequence(self, bq_client: bigquery.Client, sq_column: str, bq_tablename: str) -> int:
-        self.logger.info(f"sq_column: {sq_column} \n bq_tablename : {bq_tablename}")
-        try:
-            if bq_client is None:
-                raise Exception("BQ Client not Found")
-            
-            bq_query = f"select IFNULL(MAX({sq_column}), 0) from {bq_tablename}"
-            self.logger.info(f"BQ query: {bq_query}")
-            
-            count = bq_client.query(bq_query).to_dataframe()
-            self.logger.info(f"count: {count}")
-            
-            rpt_max_sequence = 0
-            if len(count) > 0 :
-                rpt_max_sequence = count.iloc[0, 0]
-                
-            self.logger.info(f'Max Sequence: {rpt_max_sequence}')
-            
-            return rpt_max_sequence
-        except Exception as err:
-            self.logger.error(f'Error While Finding Max Sequence for the Table {bq_tablename}. Error: {err}')
-        return -1
-
-
-    ## Load Results to BigQuery Report Table
-    def load_result_to_bq_report_table(
-        self, dq_bq_client, dq_report_table_name:str, dq_credentials,
-        df_load_data: pd.DataFrame, seq_name:str, column_details: dict, 
-        seq_gen_yn: str = 'Y'
-    ) -> None:
-        try:
-            
-            self.logger.info(f"""
-            ======================================================================================            
-            Load Result Started for Table : {dq_report_table_name}
-            Sequence Column: {seq_name}
-            Records Length: {len(df_load_data)}
-            Report Columns: {df_load_data.columns}
-            ======================================================================================       
-            """)
-            
-            if seq_gen_yn == 'Y':
-                rpt_max_sequence = self.get_bq_max_sequence(
-                    bq_client=dq_bq_client,
-                    bq_tablename=dq_report_table_name,
-                    sq_column=seq_name
-                )
-
-                df_load_data = df_load_data.assign(PRFL_NUM=[rpt_max_sequence +i for i in range(1, len(df_load_data)+1)])
-                df_load_data = df_load_data.rename(columns={'PRFL_NUM': seq_name})
-            
-            df_column_list = df_load_data.columns.to_list()
-            required_columns: list[str] = []
-            
-            for col_type in column_details:
-                if len(column_details[col_type]) > 0:
-                    # required_columns.extend(column_details[col_type])
-                    required_columns.extend([colname for colname in column_details[col_type] if colname in df_column_list])
-                    
-            self.logger.info(f"""
-            Dataframe Columns:{df_column_list}
-            Requried Columns: {required_columns}
-            """)
-                
-            # required_columns = column_details.get('STRING', []) + column_details.get('NUMERIC', []) + column_details.get('INTEGER', []) + column_details.get('DATETIME', [])
-            # print(required_columns)
-            df_load_data = df_load_data.loc[:, df_load_data.columns.isin(required_columns)]
-            self.logger.info(f"Columns for : {required_columns}")
-            
-            # print(df_load_data)
-            
-            self.logger.info(df_load_data.info())
-            
-            self.logger.info("String.................")
-            for col in column_details.get('STRING', []):
-                # print(col)
-                if col in df_column_list:
-                    # df_load_data[col] = df_load_data[col].fillna(np.nan).astype(str).replace('nan',np.nan).replace('<NA>',np.nan)
-                    df_load_data[col] = df_load_data[col].fillna(np.nan).astype(str).replace('nan',np.nan).replace('<NA>',np.nan)
-                
-            # df_load_data = df_load_data.drop(columns=column_details.get('STRING', []), axis=1, errors='ignore')
-            
-            self.logger.info("Numeric................")
-            for col in column_details.get('NUMERIC', []):
-                # print(col)
-                if col in df_column_list:
-                    df_load_data[col] = df_load_data[col].fillna(np.nan).astype('float64').map(self.round_off)
-            
-            # df_load_data = df_load_data.drop(columns=column_details.get('NUMERIC', []), axis=1, errors='ignore')
-            
-            self.logger.info("Integer................")
-            for col in column_details.get('INT64', []):
-                # print(col)
-                if col in df_column_list:
-                    # df_load_data[col] = df_load_data[col].fillna(np.nan).astype('float64').map(int)
-                    #df_load_data[col] = df_load_data[col].fillna(np.nan).map(float).map(int)
-                    df_load_data[col] = df_load_data[col].where(pd.notna(df_load_data[col]),None)
-                
-            # df_load_data = df_load_data.drop(columns=column_details.get('INTEGER', []), axis=1, errors='ignore')
-            
-            self.logger.info("Datetime...............")
-            for col in column_details.get('DATETIME', []):
-                # print(col)
-                if col in df_column_list:
-                    df_load_data[col] = df_load_data[col].astype("datetime64[ns]")
-                    # df_load_data[col] = pd.to_datetime(arg=df_load_data[col], format='%Y-%m-%d').dt.strftime('%Y-%m-%d %H:%M:%S')
-                    
-            self.logger.info("TIMESTAMP...............")
-            for col in column_details.get('TIMESTAMP', []):
-                # print(col)
-                if col in df_column_list:
-                    df_load_data[col] = df_load_data[col].astype("datetime64[ns]")
-                    # df_load_data[col] = pd.to_datetime(arg=df_load_data[col], format='%Y-%m-%d').dt.strftime('%Y-%m-%d %H:%M:%S')
-            
-            # df_load_data = df_load_data.drop(columns=column_details.get('DATETIME', []), axis=1, errors='ignore')  
-            self.logger.info("Completed..............")
-            self.logger.info(df_load_data.info())
-            # print(df_load_data)
-            
-            # df_load_data.to_csv(os.path.join(self.config.TEMP_DIR, f"{dq_report_table_name}_{datetime.now().date()}.csv"))
-            pandas_gbq.to_gbq(
-                dataframe=df_load_data,
-                destination_table=dq_report_table_name,
-                if_exists='append',
-                credentials=dq_credentials,
-                project_id=self.config.DQ_GCP_CONN_PROJECT_ID,
-            )
-            self.logger.info(f"Loaded Result to {dq_report_table_name}")
-        except Exception as err:
-            self.logger.error(f"Error Occurred while loading Results to BigQuery Table. Error: {err}")
-            self.logger.info(f"Load Result Error {dq_report_table_name} table")
-
-
-    ## Get Email Distros from the table
-    def get_email_distros_from_table(self, data_sub_dmn_list: list) -> pd.DataFrame:
-        try:
-            mail_distro_query = f"""
-            select * from {self.config.dqaas_bus_elem_mtd} 
-            where DATA_BUS_ELEM in ('{"','".join(data_sub_dmn_list)}')
-            """
-            df_val = self.run_bq_sql(
-                bq_auth=self.config.dq_gcp_auth_payload,
-                select_query=mail_distro_query  
-            )
-            
-            df_val = df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
-            self.logger.info(f"Distro Details:{len(df_val)}\n {df_val}")
-            return df_val
-        except Exception as err:
-            self.logger.errror(f"Error Occurred in Email Distro Retrieval Block. Error: {err}")
-        
-        return pd.DataFrame()
-
-
-    ## Convert Mail distro into list - Retrieve Persona Mails from the Dataframe
-    def get_mail_distro(self, df_val:pd.DataFrame, sub_dmn:str, persona: str) -> list:
-        try:
-            self.logger.info(f"Sub Domain: {sub_dmn}, Persona: {persona}")
-            self.logger.info(f"Mail Distro Dataframe: \n{df_val}")
-            
-            mail_distro_str = df_val.query(f"DATA_BUS_ELEM == '{sub_dmn}'")[persona].tolist()
-            
-            self.logger.info(f"Mail Distro: {mail_distro_str}")
-            if len(mail_distro_str) > 0:
-                return self.config.convert_str_to_list(mail_distro_str[0]) 
-            
-        except Exception as err:
-            self.logger.error(f"Error Occured while getting the Mail Distro. Error:{err}")
-
-        return [] 
-        
-
-    ## Get Start Date Range for Cron Validation
-    def get_minute_range(self):
-        current_time = datetime.now()
-        current_minute = current_time.strftime('%M')
-        # minute_range = [[0, 14], [15, 29], [30, 44], [45, 59]]
-        minute_range = [(0,29), (30,59)]
-        self.logger.info(f'Current Time: {current_time}, Current Minute: {current_minute}')
-        start_range = end_range = 0
-        for i in range(0, len(minute_range)):
-            if minute_range[i][0] <= int(current_minute) <= minute_range[i][1]:
-                start_range, end_range = minute_range[i][0], minute_range[i][1]
-                
-        # if start_range == 0:
-        #     start_range = '00'
-        self.logger.info(f'Start Range: {start_range}, End Range: {end_range}')
-        return start_range, end_range
-    
-
-    ## Validate Cron Formatter
-    def validate_croniter(self, cron_schd_format: str, start_min_range: int):
-        cron_trigger_yn = "N"
-        try:
-            self.logger.info(f"Scheduled Cron: {cron_schd_format}")
-            
-            current_time = datetime.strptime(datetime.now().strftime(f"%Y-%m-%d %H:%M"), "%Y-%m-%d %H:%M")
-            current_time = current_time.replace(minute=start_min_range, second=0, microsecond=0)
-            
-            buffer_time = current_time + timedelta(minutes=29)
-            buffer_time = buffer_time.replace(second=59, microsecond=0)
-            
-            cron = croniter.croniter(cron_schd_format, current_time)
-            next_run = cron.get_next(datetime)
-            
-            self.logger.info(f"Current Time:{current_time}, Buffer Time: {buffer_time}, Next Run: {next_run}")
-            
-            if current_time <= next_run <= buffer_time:
-                cron_trigger_yn = "Y"
-
-            self.logger.info(f"Scheduled Run: {next_run}, Trigger YN: {cron_trigger_yn}")
-        except Exception as err:
-            cron_trigger_yn = "E"
-            self.logger.error(f"Error occurred in Cron Validator. Error: {err}")
-            
-        return cron_trigger_yn
-    
-    def get_profile_type(self, types):
-        return self.config.profile_types.get(types.upper())
-    
-class TableWatcher(CommonUtils):
-    def __init__(self, logObj, config):
-        self.logger: logging = logObj
-        self.config = config
-        CommonUtils.__init__(self, config=config, logObj=logObj)
-        
-    ## Validating all the crons
-    def cron_validation(self, cron_scheduler_list: list):
-        self.logger.info(f"Scheduler List: {cron_scheduler_list}")
-
-        start_min, end_min = self.get_minute_range()
-        self.logger.info('-------------------------------------------------------------')
-        cron_schd_for_curr_run: list = []
-        for cron_schd in cron_scheduler_list:
-
-            cron_trigger_yn = self.validate_croniter(
-                cron_schd_format=cron_schd,
-                start_min_range=start_min
-            )
-            
-            if cron_trigger_yn == 'Y':
-                cron_schd_for_curr_run.append(cron_schd)
-            
-            self.logger.info('-------------------------------------------------------------')
-        
-        return cron_schd_for_curr_run 
-
-    def get_metadata(self, profile_type: str):
-        mtd_query = f"""
-            select *
-            from {self.config.dqaas_profile_mtd}
-            WHERE   upper(IS_ACTIVE_FLG) = 'Y'
-            AND     upper(PRFL_TYPE) = upper('{profile_type}')
-            AND     (PRFL_SCHD_TS IS NOT NULL OR PRFL_SCHD_TS <> '')
-            ORDER BY PRFL_ID;
+    def execute_query(self, db_type, query):
         """
-        
-        df_val = self.run_bq_sql(
-            bq_auth=self.config.dq_gcp_auth_payload,
-            select_query=mtd_query
-        )
-        
-        if len(df_val) == 0:
-            raise ValueError('No Metadata found for Table Watcher')
-        
-        return df_val.rename(columns={col: str(col).upper() for col in df_val.columns.tolist()})
-     
-    def runner(self, df_mtd: pd.DataFrame, cron_schd_col: str) -> pd.DataFrame:
-        cron_col_list = df_mtd[cron_schd_col][~df_mtd[cron_schd_col].isna()].unique().tolist()
-        cron_details_for_execution = self.cron_validation(cron_scheduler_list=cron_col_list)
-        return df_mtd[df_mtd[cron_schd_col].isin(cron_details_for_execution)].reset_index(drop=True) 
-==================================================
-insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
- (prfl_id,data_dt,feature_name,count_curr,prfl_run_ts,weekday,rpt_seq_num)
-select 9999 as prfl_id,src_publs_dt AS data_dt,
- 'CDP_EQUIPMENT_UPGRADE' AS feature_name,
- count(distinct concat(cust_id,acct_num,mtn)) AS count_curr,
- current_timestamp as prfl_run_ts ,
- extract(dayofweek from DATE(src_publs_dt) ) AS weekday,
-  1269639 as rpt_seq_num
- from `vz-it-pr-hukv-cdwldo-0.vzw_cdp_prd_tbls_rd_v.nrt_vzw_cust_acct_line_equip_upgrd_evnt_hist`
- where src_publs_dt > current_date -100--between current_date and current_date - 92
- group by 1,2,3,5,6,7;
+        Execute Query based on the database type.
+        :param db_type: 'TD' for Teradata, 'GCP' for BigQuery
+        :param query: SQL query to execute
+        """
+        try:
+            if db_type.upper() == "TD":
+                return self.execute_teradata_query(query)
+            elif db_type.upper() in ["GCP", "BQ"]:
+                return self.execute_bigquery_query(query)
+            else:
+                self.logger.error(f"Invalid database type: {db_type}")
+        except Exception as e:
+            self.logger.error(f"Error executing query for {db_type}: {e}")
 
+    def execute_teradata_query(self, query):
+        """Execute SQL query in Teradata"""
+        td_engine = self.utils.teradata_client(self.config["teradata"], self.config["teradata"]["database"])
+        if not td_engine:
+            self.logger.error("Failed to connect to Teradata.")
+            return None
+        try:
+            self.logger.info(f"Executing Teradata Query: {query}")
+            with td_engine.connect() as conn:
+                conn.execute(query)
+            self.logger.info("Teradata Query Execution Successful")
+        except Exception as e:
+            self.logger.error(f"Error executing Teradata Query: {e}")
+        finally:
+            td_engine.dispose()
 
+    def execute_bigquery_query(self, query):
+        """Execute SQL query in BigQuery"""
+        bq_client, _ = self.utils.bigquery_client(self.config["bigquery"])
+        if not bq_client:
+            self.logger.error("Failed to connect to BigQuery.")
+            return None
+        try:
+            self.logger.info(f"Executing BigQuery Query: {query}")
+            query_job = bq_client.query(query)
+            query_job.result()  # Waits for the query to finish
+            self.logger.info("BigQuery Query Execution Successful")
+        except Exception as e:
+            self.logger.error(f"Error executing BigQuery Query: {e}")
 
+if __name__ == "__main__":
+    # Initialize Logger
+    logger = logging.getLogger("QueryExecutor")
 
-insert into vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt (rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt,feature_name,grouped_columns,count_curr,prfl_run_ts,weekday)
-["""Select 9021082 as rpt_seq_num, 1071 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'BI_PROD_ACTIVITY_V' as src_tbl, 'rule_VZPH' as meas_name,
-cast(TRANS_DT as date) as data_dt, 
-'VZPH' as feature_name, 
-null as grouped_columns, 
-SUM(CASE WHEN PROD_OFF_PRODUCT_CD IN ('PR.0522') AND coalesce(EIS_INC_IND, 'Y') = 'Y' THEN PROD_BUNDLED_ACT_CNT ELSE 0 END) as count_curr, 
-current_timestamp as prfl_run_ts, 
-dayofweek(cast(TRANS_DT AS date)) AS weekday
-from NTL_PRD_ALLVM.BI_PROD_ACTIVITY_V where Cast(TRANS_DT AS DATE) >= CURRENT_DATE -90 group by 1,2,3,4,5,6,7,8,11,12""",]
+    # Initialize Query Executor
+    executor = QueryExecutor(logger)
+
+    # Setup Argument Parser
+    parser = argparse.ArgumentParser(description="Execute SQL Queries Dynamically")
+    parser.add_argument("--db_type", required=True, help="Database type: TD (Teradata) or GCP (BigQuery)")
+    parser.add_argument("--query", required=True, help="SQL query to execute (enclose in quotes)")
+
+    args = parser.parse_args()
+
+    # Execute the query dynamically based on input
+    executor.execute_query(args.db_type, args.query)
