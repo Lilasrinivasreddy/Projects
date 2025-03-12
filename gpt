@@ -1,33 +1,51 @@
-name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-12-12-34-23.log
-Internal Server Error: /mle/ExecuteHistorySQL/
-Traceback (most recent call last):
-  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 505, in post
-    self.logger.error("No file uploaded.")
-AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
+@method_decorator(csrf_exempt, name='dispatch')    
+class ExecuteHistorySQL(CredentialsandConnectivity):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)  # Call parent constructor
+    
+        # Initialize logger
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s") 
+# Handling file upload and processing SQL queries
+    def post(self, request, *args, **kwargs):
+        try:
+            if 'file' not in request.FILES:
+                self.logger.error("No file uploaded.")
+                return HttpResponse("No file uploaded.", status=400)
 
-During handling of the above exception, another exception occurred:
+            file = request.FILES['file']
+            self.logger.info(f"Received file: {file.name}")
 
-Traceback (most recent call last):
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/exception.py", line 55, in inner
-    response = get_response(request)
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
-    return view_func(*args, **kwargs)
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/generic/base.py", line 104, in view
-    return self.dispatch(request, *args, **kwargs)
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/utils/decorators.py", line 46, in _wrapper
-    return bound_method(*args, **kwargs)
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
-    return view_func(*args, **kwargs)
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 509, in dispatch
-    response = self.handle_exception(exc)
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 469, in handle_exception
-    self.raise_uncaught_exception(exc)
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
-    raise exc
-  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 506, in dispatch
-    response = handler(request, *args, **kwargs)
-  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 520, in post
-    self.logger.error(f"Error processing request: {e}")
-AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
+            queries = self.read_queries_from_uploaded_file(file)
+            if not queries:
+                self.logger.error("No valid queries found.")
+                return HttpResponse("No valid queries found.", status=400)
+
+            self.execute_queries(queries)
+            return HttpResponse("File uploaded and queries executed successfully.", status=200)
+
+        except Exception as e:
+            self.logger.error(f"Error processing request: {e}")
+            return HttpResponse("Error processing request.", status=500)
+
+    # Execute queries in BQ
+    def execute_queries(self, queries):
+        self.dq_bigquery_client()
+        for query in queries:
+            try:
+                query_job = self.client.query(query)
+                query_job.result()
+                self.logger.info("Query executed successfully.")
+            except Exception as e:
+                self.logger.error(f"Query execution error: {e}")
+
+        # Read SQL queries from text file
+    def read_queries_from_uploaded_file(self, file):
+        try:
+            content = file.read().decode('utf-8')
+            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
+            self.logger.info(f"Read {len(queries)} queries from file.")
+            return queries
+        except Exception as e:
+            self.logger.error(f"Error reading file: {e}")
+            return []
