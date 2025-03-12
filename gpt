@@ -1,189 +1,299 @@
-import os
-import re
-import json
-import time
-import base64
-import logging
-from google.cloud import bigquery
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-import google.auth
+---------------- Email Object Constructor ----------------
+2025-03-12 10:14:55:(ML_Profiler::<module>):INFO: start_mem: 271.9609375 (in MB) start_time: 2025-03-12 10:14:55.790163
+2025-03-12 10:14:55:(ML_Profiler::<module>):INFO: start_mem: 271.9609375 (in MB) start_time: 2025-03-12 10:14:55.790163
+2025-03-12 10:14:55:(ML_Profiler::<module>):INFO: start_mem: 271.9609375 (in MB) start_time: 2025-03-12 10:14:55.790163
+2025-03-12 10:14:55:(ML_Profiler::<module>):INFO: start_mem: 271.9609375 (in MB) start_time: 2025-03-12 10:14:55.790163
+2025-03-12 10:14:55:(ML_Profiler::<module>):INFO: start_mem: 271.9609375 (in MB) start_time: 2025-03-12 10:14:55.790163
+/apps/opt/application/smartdq/dq_api/onecorp_restart_scripts/onecorpdata/config/config_daily.ini
+name:1CorpAdhocRerun, path:/apps/opt/application/smartdq/dq_api/onecorp_restart_scripts/onecorpdata/logs/AdhocRerunRequest_2025-03-12.log
+name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-12-10-14-55.log
+{'sub_domain': 'Test_custom'}
+select *  from  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd where data_sub_dmn = 'Test_custom'
+The Token File Path is /apps/opt/application/smartdq/dq_api/config/dq_oidc_token.json
+Token File Available
+Access Token is Valid
+Setting environment variable...
+project_id=vz-it-np-izcv-dev-idmcdo-0, credentials=<google.auth.identity_pool.Credentials object at 0x7f8f644ac160>
+name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-12-10-15-02.log
+{'sub_domain': 'Chat'}
+select *  from  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd where data_sub_dmn = 'Chat'
+The Token File Path is /apps/opt/application/smartdq/dq_api/config/dq_oidc_token.json
+Token File Available
+Access Token is Valid
+Setting environment variable...
+project_id=vz-it-np-izcv-dev-idmcdo-0, credentials=<google.auth.identity_pool.Credentials object at 0x7f8ef7086a90>
+results Row((23, 'CUSTOM_RULES', 'VBG', 'LivePerson', 'Service', 'Chat', 'TD', 'Optio Custom metric', 'Chat Msg Daily Trend', 'NTL_PRD_SECVM', 'CHAT_MSG_ACTIVITY_VBG_V', 'CHAT_START_DT_EST', None, None, 'rule_LP_MSG_Completeness_1\t', 'select CHAT_START_DT_EST AS Profile_date, \'Chat Msg Daily Trend\' AS feature_name,\n\'CHAT_START_DT_EST\' AS dimension, count(distinct chat_conversation_id) AS "Value",\ncurrent_date as insert_dt , dayofweek (CHAT_START_DT_EST - 2) AS weekday \nfrom NTL_PRD_SECVM.CHAT_MSG_ACTIVITY_VBG_V \nwhere CHAT_START_DT_EST = current_date - 2 \ngroup by 1,2,3,5,6;', None, None, None, None, 90.0, 95.0, 'N', None, None, None, None, None, None, None, None, None, 'N', 'N', 'Y', None, datetime.datetime(2024, 9, 12, 7, 41, 59, 12971, tzinfo=datetime.timezone.utc), datetime.datetime(2024, 9, 12, 7, 41, 59, 12971, tzinfo=datetime.timezone.utc), 'I', None, 'jayabmu'), {'prfl_id': 0, 'prfl_type': 1, 'data_lob': 2, 'data_bus_elem': 3, 'data_dmn': 4, 'data_sub_dmn': 5, 'data_src': 6, 'dq_pillar': 7, 'feature_name': 8, 'db_name': 9, 'src_tbl': 10, 'src_col': 11, 'incr_dt_col': 12, 'incr_dt_cond': 13, 'meas_name': 14, 'meas_rule_sql': 15, 'micro_segment_columns': 16, 'aggregated_column': 17, 'comparison_type': 18, 'micro_segment_threshold': 19, 'max_threshold': 20, 'min_threshold': 21, 'is_hourly_flg': 22, 'run_hour': 23, 'add_param_clause': 24, 'pass_param_1': 25, 'pass_param_2': 26, 'pass_param_3': 27, 'pass_param_4': 28, 'pass_param_5': 29, 'prfl_schd_ts': 30, 'email_distros': 31, 'is_active_flg': 32, 'is_critical_flg': 33, 'is_opsgenie_flg': 34, 'opsgenie_api_key': 35, 'update_made_ts': 36, 'entry_made_ts': 37, 'record_ind': 38, 'hourly_col': 39, 'jira_assignee': 40})
+results Row((24, 'CUSTOM_RULES', 'VBG', 'LivePerson', 'Service', 'Chat', 'TD', 'Optio Custom metric', 'Chat summary Daily Trend', 'NTL_PRD_SECVM', 'CHAT_SESSION_SUMMARY_VBG_V', 'CHAT_START_DT_EST', None, None, 'rule_LP_SESSION_Completeness_1', 'select CHAT_START_DT_EST AS Profile_date, \'Chat summary Daily Trend\' AS feature_name,\n\'CHAT_START_DT_EST\' AS dimension, count(distinct chat_conversation_id) AS "Value",\ncurrent_date as insert_dt , dayofweek (CHAT_START_DT_EST) AS weekday \nfrom NTL_PRD_SECVM.CHAT_SESSION_SUMMARY_VBG_V \nwhere CHAT_START_DT_EST = current_date - 2 \ngroup by 1,2,3,5,6;', None, None, None, None, 90.0, 95.0, 'N', None, None, None, None, None, None, None, None, None, 'N', 'N', 'Y', None, datetime.datetime(2024, 9, 12, 7, 41, 59, 12971, tzinfo=datetime.timezone.utc), datetime.datetime(2024, 9, 12, 7, 41, 59, 12971, tzinfo=datetime.timezone.utc), 'I', None, 'jayabmu'), {'prfl_id': 0, 'prfl_type': 1, 'data_lob': 2, 'data_bus_elem': 3, 'data_dmn': 4, 'data_sub_dmn': 5, 'data_src': 6, 'dq_pillar': 7, 'feature_name': 8, 'db_name': 9, 'src_tbl': 10, 'src_col': 11, 'incr_dt_col': 12, 'incr_dt_cond': 13, 'meas_name': 14, 'meas_rule_sql': 15, 'micro_segment_columns': 16, 'aggregated_column': 17, 'comparison_type': 18, 'micro_segment_threshold': 19, 'max_threshold': 20, 'min_threshold': 21, 'is_hourly_flg': 22, 'run_hour': 23, 'add_param_clause': 24, 'pass_param_1': 25, 'pass_param_2': 26, 'pass_param_3': 27, 'pass_param_4': 28, 'pass_param_5': 29, 'prfl_schd_ts': 30, 'email_distros': 31, 'is_active_flg': 32, 'is_critical_flg': 33, 'is_opsgenie_flg': 34, 'opsgenie_api_key': 35, 'update_made_ts': 36, 'entry_made_ts': 37, 'record_ind': 38, 'hourly_col': 39, 'jira_assignee': 40})
+results Row((25, 'CUSTOM_RULES', 'VBG', 'LivePerson', 'Service', 'Chat', 'TD', 'Optio Custom metric', 'Chat Agent activity Daily Trend', 'NTL_PRD_SECVM', 'CHAT_AGENT_ACTIVITY_VBG_V', 'CHAT_START_DT_EST', None, None, 'rule_LP_AGENT_Completeness_1', 'select CHAT_START_DT_EST AS Profile_date, \'Chat Agent activity Daily Trend\' AS feature_name,\n\'CHAT_START_DT_EST\' AS dimension, count(distinct chat_conversation_id) AS "Value",\ncurrent_date as insert_dt , dayofweek (CHAT_START_DT_EST) AS weekday \nfrom NTL_PRD_SECVM.CHAT_AGENT_ACTIVITY_VBG_V \nwhere CHAT_START_DT_EST = current_date - 2 \ngroup by 1,2,3,5,6;', None, None, None, None, 90.0, 95.0, 'N', None, None, None, None, None, None, None, None, None, 'N', 'N', 'Y', None, datetime.datetime(2024, 9, 12, 7, 41, 59, 12971, tzinfo=datetime.timezone.utc), datetime.datetime(2024, 9, 12, 7, 41, 59, 12971, tzinfo=datetime.timezone.utc), 'I', None, 'jayabmu'), {'prfl_id': 0, 'prfl_type': 1, 'data_lob': 2, 'data_bus_elem': 3, 'data_dmn': 4, 'data_sub_dmn': 5, 'data_src': 6, 'dq_pillar': 7, 'feature_name': 8, 'db_name': 9, 'src_tbl': 10, 'src_col': 11, 'incr_dt_col': 12, 'incr_dt_cond': 13, 'meas_name': 14, 'meas_rule_sql': 15, 'micro_segment_columns': 16, 'aggregated_column': 17, 'comparison_type': 18, 'micro_segment_threshold': 19, 'max_threshold': 20, 'min_threshold': 21, 'is_hourly_flg': 22, 'run_hour': 23, 'add_param_clause': 24, 'pass_param_1': 25, 'pass_param_2': 26, 'pass_param_3': 27, 'pass_param_4': 28, 'pass_param_5': 29, 'prfl_schd_ts': 30, 'email_distros': 31, 'is_active_flg': 32, 'is_critical_flg': 33, 'is_opsgenie_flg': 34, 'opsgenie_api_key': 35, 'update_made_ts': 36, 'entry_made_ts': 37, 'record_ind': 38, 'hourly_col': 39, 'jira_assignee': 40})
+results Row((26, 'CUSTOM_RULES', 'VBG', 'LivePerson', 'Service', 'Chat', 'TD', 'Optio Custom metric', 'Chat Transfer activity Daily Trend', 'NTL_PRD_SECVM', 'CHAT_TRANSFER_ACTIVITY_VBG_V', 'CHAT_START_DT_EST', None, None, 'rule_LP_TRANSFER_Completeness_1', 'select CHAT_START_DT_EST AS Profile_date, \'Chat Transfer activity Daily Trend\' AS feature_name,\n\'CHAT_START_DT_EST\' AS dimension, count(distinct chat_conversation_id) AS "Value",\ncurrent_date as insert_dt , dayofweek (CHAT_START_DT_EST) AS weekday \nfrom NTL_PRD_SECVM.CHAT_TRANSFER_ACTIVITY_VBG_V \nwhere CHAT_START_DT_EST = current_date - 2 \ngroup by 1,2,3,5,6;', None, None, None, None, 90.0, 95.0, 'N', None, None, None, None, None, None, None, None, None, 'N', 'N', 'Y', None, datetime.datetime(2024, 9, 12, 7, 41, 59, 12971, tzinfo=datetime.timezone.utc), datetime.datetime(2024, 9, 12, 7, 41, 59, 12971, tzinfo=datetime.timezone.utc), 'I', None, 'jayabmu'), {'prfl_id': 0, 'prfl_type': 1, 'data_lob': 2, 'data_bus_elem': 3, 'data_dmn': 4, 'data_sub_dmn': 5, 'data_src': 6, 'dq_pillar': 7, 'feature_name': 8, 'db_name': 9, 'src_tbl': 10, 'src_col': 11, 'incr_dt_col': 12, 'incr_dt_cond': 13, 'meas_name': 14, 'meas_rule_sql': 15, 'micro_segment_columns': 16, 'aggregated_column': 17, 'comparison_type': 18, 'micro_segment_threshold': 19, 'max_threshold': 20, 'min_threshold': 21, 'is_hourly_flg': 22, 'run_hour': 23, 'add_param_clause': 24, 'pass_param_1': 25, 'pass_param_2': 26, 'pass_param_3': 27, 'pass_param_4': 28, 'pass_param_5': 29, 'prfl_schd_ts': 30, 'email_distros': 31, 'is_active_flg': 32, 'is_critical_flg': 33, 'is_opsgenie_flg': 34, 'opsgenie_api_key': 35, 'update_made_ts': 36, 'entry_made_ts': 37, 'record_ind': 38, 'hourly_col': 39, 'jira_assignee': 40})
+name:METRICS API, path:/apps/opt/application/smartdq/dq_api/api_logs/metrics_logs/metrics_logs_2025-03-12-10-15-55.log
+/apps/opt/application/smartdq/dq_api/config/config.ini
+/apps/opt/application/smartdq/dq_api/ml_profiler/logs/
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-15-57.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 163.765625 (in MB) start_time: 2025-03-12 10:15:57.007966
+/apps/opt/application/smartdq/dq_api/config/config.ini
+/apps/opt/application/smartdq/dq_api/ml_profiler/logs/
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-15-57.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 189.30859375 (in MB) start_time: 2025-03-12 10:15:57.406216
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 189.30859375 (in MB) start_time: 2025-03-12 10:15:57.406216
+/apps/opt/application/smartdq/dq_api/config/config.ini
+html 1
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-15-57.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 191.5 (in MB) start_time: 2025-03-12 10:15:57.426563
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 191.5 (in MB) start_time: 2025-03-12 10:15:57.426563
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 191.5 (in MB) start_time: 2025-03-12 10:15:57.426563
+/apps/opt/application/smartdq/dq_api/config/config.ini
+/apps/opt/application/smartdq/dq_api/ml_profiler/logs/
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-15-57.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 193.32421875 (in MB) start_time: 2025-03-12 10:15:57.452352
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 193.32421875 (in MB) start_time: 2025-03-12 10:15:57.452352
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 193.32421875 (in MB) start_time: 2025-03-12 10:15:57.452352
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 193.32421875 (in MB) start_time: 2025-03-12 10:15:57.452352
+/apps/opt/application/smartdq/dq_api/config/config.ini
+/apps/opt/application/smartdq/dq_api/ml_profiler/logs/
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-15-57.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 195.3515625 (in MB) start_time: 2025-03-12 10:15:57.475817
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 195.3515625 (in MB) start_time: 2025-03-12 10:15:57.475817
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 195.3515625 (in MB) start_time: 2025-03-12 10:15:57.475817
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 195.3515625 (in MB) start_time: 2025-03-12 10:15:57.475817
+2025-03-12 10:15:57:(ML_Profiler::<module>):INFO: start_mem: 195.3515625 (in MB) start_time: 2025-03-12 10:15:57.475817
+/apps/opt/application/smartdq/dq_api/onecorp_restart_scripts/onecorpdata/config/config_daily.ini
+name:1CorpAdhocRerun, path:/apps/opt/application/smartdq/dq_api/onecorp_restart_scripts/onecorpdata/logs/AdhocRerunRequest_2025-03-12.log
+The Token File Path is /apps/opt/application/smartdq/dq_api/config/dq_oidc_token.json
+Token File Available
+Access Token is Valid
+Setting environment variable...
+project_id=vz-it-np-izcv-dev-idmcdo-0, credentials=<google.auth.identity_pool.Credentials object at 0x7f8ef712df10>
+[2025-03-12 10:16:14 +0000] [2341923] [INFO] Worker reloading: /apps/opt/application/smartdq/dq_api/MLE/views.py modified
+[2025-03-12 10:16:14 +0000] [2341923] [INFO] Worker exiting (pid: 2341923)
+[2025-03-12 06:16:15 -0400] [2346521] [INFO] Booting worker with pid: 2346521
+[2025-03-12 10:16:15 +0000] [2341919] [INFO] Worker reloading: /apps/opt/application/smartdq/dq_api/MLE/views.py modified
+[2025-03-12 10:16:15 +0000] [2341919] [INFO] Worker exiting (pid: 2341919)
+[2025-03-12 06:16:15 -0400] [2346526] [INFO] Booting worker with pid: 2346526
+[2025-03-12 06:33:02 -0400] [2219687] [INFO] Handling signal: term
+[2025-03-12 10:33:02 +0000] [2346526] [INFO] Worker exiting (pid: 2346526)
+[2025-03-12 10:33:02 +0000] [2346521] [INFO] Worker exiting (pid: 2346521)
+[2025-03-12 10:33:02 +0000] [2341917] [INFO] Worker exiting (pid: 2341917)
+[2025-03-12 06:33:03 -0400] [2219687] [INFO] Shutting down: Master
+/usr/bin/python3.9: can't open file '/apps/opt/application/smartdq/dq_api/gunicorn': [Errno 2] No such file or directory
+/usr/bin/python3.9: can't open file '/apps/opt/application/smartdq/dq_api/gunicorn': [Errno 2] No such file or directory
+/usr/bin/python3.9: can't open file '/home/anilpa2/gunicorn': [Errno 2] No such file or directory
+/usr/bin/python3.9: can't open file '/home/anilpa2/gunicorn': [Errno 2] No such file or directory
+[2025-03-12 06:41:20 -0400] [2365428] [INFO] Starting gunicorn 21.2.0
+[2025-03-12 06:41:20 -0400] [2365428] [INFO] Listening at: https://10.145.203.2:8001 (2365428)
+[2025-03-12 06:41:20 -0400] [2365428] [INFO] Using worker: sync
+[2025-03-12 06:41:20 -0400] [2365429] [INFO] Booting worker with pid: 2365429
+name:METRICS API, path:/apps/opt/application/smartdq/dq_api/api_logs/metrics_logs/metrics_logs_2025-03-12-10-41-38.log
+/apps/opt/application/smartdq/dq_api/config/config.ini
+/apps/opt/application/smartdq/dq_api/ml_profiler/logs/
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-41-39.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:41:39:(ML_Profiler::<module>):INFO: start_mem: 230.2890625 (in MB) start_time: 2025-03-12 10:41:39.826977
+/apps/opt/application/smartdq/dq_api/config/config.ini
+/apps/opt/application/smartdq/dq_api/ml_profiler/logs/
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-41-40.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 271.5703125 (in MB) start_time: 2025-03-12 10:41:40.323450
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 271.5703125 (in MB) start_time: 2025-03-12 10:41:40.323450
+/apps/opt/application/smartdq/dq_api/config/config.ini
+html 1
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-41-40.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 273.765625 (in MB) start_time: 2025-03-12 10:41:40.340760
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 273.765625 (in MB) start_time: 2025-03-12 10:41:40.340760
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 273.765625 (in MB) start_time: 2025-03-12 10:41:40.340760
+/apps/opt/application/smartdq/dq_api/config/config.ini
+/apps/opt/application/smartdq/dq_api/ml_profiler/logs/
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-41-40.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 275.59765625 (in MB) start_time: 2025-03-12 10:41:40.362313
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 275.59765625 (in MB) start_time: 2025-03-12 10:41:40.362313
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 275.59765625 (in MB) start_time: 2025-03-12 10:41:40.362313
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 275.59765625 (in MB) start_time: 2025-03-12 10:41:40.362313
+/apps/opt/application/smartdq/dq_api/config/config.ini
+/apps/opt/application/smartdq/dq_api/ml_profiler/logs/
+name:ML_Profiler, path:/apps/opt/application/smartdq/dq_api/ml_profiler/logs/ML_Profiler_2025-03-12-10-41-40.log
+---------------- Email Object Constructor ----------------
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 277.6171875 (in MB) start_time: 2025-03-12 10:41:40.383524
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 277.6171875 (in MB) start_time: 2025-03-12 10:41:40.383524
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 277.6171875 (in MB) start_time: 2025-03-12 10:41:40.383524
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 277.6171875 (in MB) start_time: 2025-03-12 10:41:40.383524
+2025-03-12 10:41:40:(ML_Profiler::<module>):INFO: start_mem: 277.6171875 (in MB) start_time: 2025-03-12 10:41:40.383524
+/apps/opt/application/smartdq/dq_api/onecorp_restart_scripts/onecorpdata/config/config_daily.ini
+name:1CorpAdhocRerun, path:/apps/opt/application/smartdq/dq_api/onecorp_restart_scripts/onecorpdata/logs/AdhocRerunRequest_2025-03-12.log
+Not Found: /static/css/images/verizon-red-icon-black (1).png
+Not Found: /static/css/images/DQaaSlogo (1) (1).png
+Not Found: /static/css/images/beta3 (2) (1).png
+Not Found: /static/fonts/NHaasGroteskTXW01-75Bd.ttf
+Not Found: /static/css/images/verizon.png
+Not Found: /static/css/images/verizon-red-icon-black (1).png
+name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-12-10-57-44.log
+Internal Server Error: /mle/ExecuteHistorySQL/
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 505, in post
+    self.logger.error("No file uploaded.")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
 
-# ==========================
-# ✅ Custom Logger Setup
-# ==========================
-class Logger:
-    def __init__(self, name='', path=''):
-        self.log = self.logger_config(name, path)
+During handling of the above exception, another exception occurred:
 
-    @staticmethod
-    def logger_config(name, path):
-        logger = logging.getLogger(name)
-        formatter = logging.Formatter('%(asctime)s : %(name)s - %(funcName)s - %(levelname)s : %(message)s', '%Y-%m-%d %H:%M:%S')
-        file_handler = logging.FileHandler(path, mode='a')
-        file_handler.setFormatter(formatter)
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        stream_handler.setFormatter(formatter)
-        logger.setLevel(logging.INFO)
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
-        return logger
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/utils/decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 520, in post
+    self.logger.error(f"Error processing request: {e}")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
+name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-12-11-02-28.log
+Internal Server Error: /mle/ExecuteHistorySQL/
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 505, in post
+    self.logger.error("No file uploaded.")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
 
-# ==========================
-# ✅ BigQuery Query Execution Class
-# ==========================
-class ExecuteUploadedQueries:
-    def __init__(self, auth_config, logger_path):
-        self.config = auth_config  # BigQuery Authentication Config
-        self.logger = Logger(name="BQ_EXECUTOR", path=logger_path).log  # Initialize Logger
-        self.client = None  # Placeholder for BigQuery Client
+During handling of the above exception, another exception occurred:
 
-    # ==========================
-    # ✅ Check if Token is Expired
-    # ==========================
-    def is_token_expired(self, path):
-        try:
-            self.logger.info(f"Checking token file at {path}")
-            if os.path.exists(path):
-                with open(path, 'r') as f:
-                    old_access_token = json.load(f)['access_token'].split('.')[1]
-                    old_access_token += '=' * (-len(old_access_token) % 4)
-                    old_token_json_decoded = json.loads(base64.b64decode(old_access_token))
-                    auth_time = old_token_json_decoded['auth_time']
-                    expires_in = old_token_json_decoded['expires_in']
-                    curr_epoch_time = int(time.time())
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/utils/decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 520, in post
+    self.logger.error(f"Error processing request: {e}")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
+name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-12-11-04-32.log
+Internal Server Error: /mle/ExecuteHistorySQL/
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 505, in post
+    self.logger.error("No file uploaded.")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
 
-                    if curr_epoch_time - auth_time < expires_in - 120:
-                        self.logger.info("Token is valid.")
-                        return False
-                    else:
-                        self.logger.info("Token is expired.")
-            return True
-        except Exception as e:
-            self.logger.error(f"Error checking token expiration: {e}")
-            return True  # Assume expired if any error occurs
+During handling of the above exception, another exception occurred:
 
-    # ==========================
-    # ✅ Initialize BigQuery Client
-    # ==========================
-    def initialize_bigquery_client(self):
-        if self.is_token_expired(self.config["oidc_token"]):
-            self.logger.info("Refreshing token...")
-            self.refresh_token()
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/utils/decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 520, in post
+    self.logger.error(f"Error processing request: {e}")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
+name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-12-11-10-15.log
+Internal Server Error: /mle/ExecuteHistorySQL/
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 505, in post
+    self.logger.error("No file uploaded.")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
 
-        self.logger.info("Setting Google Cloud environment variables...")
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.config["sa_json_file"]
-        os.environ["GOOGLE_CLOUD_PROJECT"] = self.config["project_id"]
+During handling of the above exception, another exception occurred:
 
-        credentials, _ = google.auth.default()
-        self.client = bigquery.Client(credentials=credentials, project=self.config["project_id"])
-        self.logger.info(f"Connected to BigQuery Project: {self.config['project_id']}")
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/utils/decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 520, in post
+    self.logger.error(f"Error processing request: {e}")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
+name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-12-11-49-58.log
+Internal Server Error: /mle/ExecuteHistorySQL/
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 505, in post
+    self.logger.error("No file uploaded.")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
 
-    # ==========================
-    # ✅ Read Queries from Uploaded File
-    # ==========================
-    def read_queries_from_uploaded_file(self, file):
-        try:
-            content = file.read().decode('utf-8')
-            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
-            self.logger.info(f"Read {len(queries)} queries from file.")
-            return queries
-        except Exception as e:
-            self.logger.error(f"Error reading file: {e}")
-            return []
+During handling of the above exception, another exception occurred:
 
-    # ==========================
-    # ✅ Execute Queries in BigQuery
-    # ==========================
-    def execute_queries(self, queries):
-        self.initialize_bigquery_client()  # Ensure BigQuery client is set up
-
-        for query in queries:
-            try:
-                self.logger.info(f"Executing Query:\n{query}")
-                query_job = self.client.query(query)
-                query_job.result()  # Wait for execution to complete
-                self.logger.info("Query executed successfully.")
-            except Exception as e:
-                self.logger.error(f"Query execution error: {e}")
-
-    # ==========================
-    # ✅ Django API Endpoint: Handle File Upload & Execute Queries
-    # ==========================
-    @method_decorator(csrf_exempt, name='dispatch')
-    def post(self, request, *args, **kwargs):
-        try:
-            if 'file' not in request.FILES:
-                self.logger.error("No file uploaded.")
-                return HttpResponse("No file uploaded.", status=400)
-
-            file = request.FILES['file']
-            self.logger.info(f"Received file: {file.name}")
-
-            queries = self.read_queries_from_uploaded_file(file)
-            if not queries:
-                self.logger.error("No valid queries found.")
-                return HttpResponse("No valid queries found.", status=400)
-
-            self.execute_queries(queries)  # Execute SQL Queries in BigQuery
-            return HttpResponse("File uploaded and queries executed successfully.", status=200)
-
-        except Exception as e:
-            self.logger.error(f"Error processing request: {e}")
-            return HttpResponse("Error processing request.", status=500)
-===========================
-import os
-import re
-from google.cloud import bigquery
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-
-class ExecuteUploadedQueries(CredentialsandConnectivity):
-
-    # Read SQL queries from the uploaded text file
-    def read_queries_from_uploaded_file(self, file):
-        try:
-            content = file.read().decode('utf-8')
-            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
-            self.logger.info(f"Read {len(queries)} queries from file.")
-            return queries
-        except Exception as e:
-            self.logger.error(f"Error reading file: {e}")
-            return []
-
-    # Handle file upload and process SQL queries
-    @method_decorator(csrf_exempt, name='dispatch')
-    def post(self, request, *args, **kwargs):
-        try:
-            if 'file' not in request.FILES:
-                self.logger.error("No file uploaded.")
-                return HttpResponse("No file uploaded.", status=400)
-
-            file = request.FILES['file']
-            self.logger.info(f"Received file: {file.name}")
-
-            queries = self.read_queries_from_uploaded_file(file)
-            if not queries:
-                self.logger.error("No valid queries found.")
-                return HttpResponse("No valid queries found.", status=400)
-
-            self.execute_queries(queries)
-            return HttpResponse("File uploaded and queries executed successfully.", status=200)
-
-        except Exception as e:
-            self.logger.error(f"Error processing request: {e}")
-            return HttpResponse("Error processing request.", status=500)
-
-    # Execute queries in BigQuery
-    def execute_queries(self, queries):
-        self.dq_bigquery_client()
-        for query in queries:
-            try:
-                query_job = self.client.query(query)
-                query_job.result()
-                self.logger.info("Query executed successfully.")
-            except Exception as e:
-                self.logger.error(f"Query execution error: {e}")
+Traceback (most recent call last):
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/generic/base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/utils/decorators.py", line 46, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/apps/opt/application/smartdq/envs/smartdq-venv/lib/python3.9/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "/apps/opt/application/smartdq/dq_api/MLE/views.py", line 520, in post
+    self.logger.error(f"Error processing request: {e}")
+AttributeError: 'ExecuteHistorySQL' object has no attribute 'logger'
