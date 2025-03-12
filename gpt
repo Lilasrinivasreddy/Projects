@@ -1,2 +1,63 @@
-Not Found: /mle/ExecuteHistorySQL/
-2025-03-12 12:22:05,852 - WARNING - Not Found: /mle/ExecuteHistorySQL/
+import logging
+import re
+from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from django.views import View
+
+@method_decorator(csrf_exempt, name='dispatch')    
+class ExecuteHistorySQL(CredentialsandConnectivity): 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)  # Call parent constructor
+        
+        # Initialize logger
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+    def post(self, request, *args, **kwargs):
+        try:
+            if not hasattr(self, 'logger'):
+                print("Logger not found. Initializing logger.")
+                self.logger = logging.getLogger(__name__)
+
+            if 'file' not in request.FILES:
+                self.logger.error("No file uploaded.")
+                return HttpResponse("No file uploaded.", status=400)
+
+            file = request.FILES['file']
+            self.logger.info(f"Received file: {file.name}")
+
+            queries = self.read_queries_from_uploaded_file(file)
+            if not queries:
+                self.logger.error("No valid queries found.")
+                return HttpResponse("No valid queries found.", status=400)
+
+            self.execute_queries(queries)
+            return HttpResponse("File uploaded and queries executed successfully.", status=200)
+
+        except Exception as e:
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Error processing request: {e}")
+            else:
+                print(f"Error processing request: {e}")  # Fallback logging
+            return HttpResponse("Error processing request.", status=500)
+
+    def execute_queries(self, queries):
+        self.dq_bigquery_client()
+        for query in queries:
+            try:
+                query_job = self.client.query(query)
+                query_job.result()
+                self.logger.info("Query executed successfully.")
+            except Exception as e:
+                self.logger.error(f"Query execution error: {e}")
+
+    def read_queries_from_uploaded_file(self, file):
+        try:
+            content = file.read().decode('utf-8')
+            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
+            self.logger.info(f"Read {len(queries)} queries from file.")
+            return queries
+        except Exception as e:
+            self.logger.error(f"Error reading file: {e}")
+            return []
