@@ -1,8 +1,5 @@
-insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt (rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt,feature_name,grouped_columns,count_curr,prfl_run_ts,weekday)
-(select 1000005 as rpt_seq_num, 1403 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'cust_acct_addr' as src_tbl,'LAST_UPD_DT' as meas_name, cast(LAST_UPD_DT as date)as profile_date,
-'Tier1 Models' as feature_name,
-null as dimension,
-count (*) as value,
-current_timestamp as insert_date,
-extract(dayofweek from LAST_UPD_DT) as weekday
-from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_addr where cast(LAST_UPD_DT as date)>= current_date -90 group by 1,2,3,4,5,6,7,8,11,12)
+SELECT * 
+FROM `vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt`
+WHERE rpt_seq_num = 1000005
+ORDER BY prfl_run_ts DESC
+LIMIT 10;
