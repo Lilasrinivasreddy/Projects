@@ -1,3 +1,8 @@
+name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-13-07-39-40.log
+2025-03-13 07:39:40,402 - ERROR - No file uploaded.
+Bad Request: /mle/ExecuteHistorySQL/
+2025-03-13 07:39:40,402 - WARNING - Bad Request: /mle/ExecuteHistorySQL/
+
 import json
 import logging
 import re
