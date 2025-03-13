@@ -1,80 +1,33 @@
-name:MTDT, path:/apps/opt/application/smartdq/dq_api/MLE/logs/metadata/meta_dt_upload_2025-03-13-07-39-40.log
-2025-03-13 07:39:40,402 - ERROR - No file uploaded.
-Bad Request: /mle/ExecuteHistorySQL/
-2025-03-13 07:39:40,402 - WARNING - Bad Request: /mle/ExecuteHistorySQL/
-
-import json
-import logging
-import re
-from django.http import JsonResponse, HttpResponse
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from django.views import View
-
-@method_decorator(csrf_exempt, name='dispatch')    
-class ExecuteHistorySQL(CredentialsandConnectivity): 
-    # Initialize Logger in dispatch()
-    def dispatch(self, request, *args, **kwargs):
+def post(self, request, *args, **kwargs):
+    try:
         if not hasattr(self, 'logger'):
             self.logger = logging.getLogger(__name__)
-            logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-        return super().dispatch(request, *args, **kwargs)
 
-    # Handle File Upload and Query Execution
-    def post(self, request, *args, **kwargs):
-        try:
-            if not hasattr(self, 'logger'):
-                self.logger = logging.getLogger(__name__)
+        # 🔹 DEBUGGING: Print request method and content type
+        print(f"DEBUG - Request method: {request.method}, Content Type: {request.content_type}")
+        print(f"DEBUG - request.FILES: {request.FILES}")  # Log what Django receives
 
-            # Check if file is uploaded
-            if 'file' not in request.FILES:
-                self.logger.error("No file uploaded.")
-                return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
+        # 🔹 Check if file is uploaded
+        if 'file' not in request.FILES or not request.FILES['file']:
+            self.logger.error("No file uploaded.")
+            return JsonResponse({"status": "failure", "message": "No file uploaded. Make sure you are sending the request as multipart/form-data."}, status=400)
 
-            file = request.FILES['file']
-            self.logger.info(f"Received file: {file.name}")
+        file = request.FILES['file']
+        self.logger.info(f"Received file: {file.name}")
 
-            # Read queries from file
-            queries = self.read_queries_from_uploaded_file(file)
-            if not queries:
-                self.logger.error("No valid queries found.")
-                return JsonResponse({"status": "failure", "message": "No valid queries found."}, status=400)
+        # 🔹 Read queries from file
+        queries = self.read_queries_from_uploaded_file(file)
+        if not queries:
+            self.logger.error("No valid queries found.")
+            return JsonResponse({"status": "failure", "message": "No valid queries found in the file."}, status=400)
 
-            # Execute Queries
-            execution_status = self.execute_queries(queries)
-            if execution_status["status"] == "failure":
-                return JsonResponse(execution_status, status=500)
+        # 🔹 Execute Queries
+        execution_status = self.execute_queries(queries)
+        if execution_status["status"] == "failure":
+            return JsonResponse(execution_status, status=500)
 
-            return JsonResponse({"status": "success", "message": "File uploaded and queries executed successfully."}, status=200)
+        return JsonResponse({"status": "success", "message": "File uploaded and queries executed successfully."}, status=200)
 
-        except Exception as e:
-            self.logger.error(f"Error processing request: {e}")
-            return JsonResponse({"status": "failure", "message": f"Error processing request: {str(e)}"}, status=500)
-
-    # Execute Queries in BigQuery
-    def execute_queries(self, queries):
-        try:
-            self.dq_bigquery_client()
-            for query in queries:
-                try:
-                    query_job = self.client.query(query)
-                    query_job.result()
-                    self.logger.info("Query executed successfully.")
-                except Exception as e:
-                    self.logger.error(f"Query execution error: {e}")
-                    return {"status": "failure", "message": f"Query execution error: {str(e)}"}
-            return {"status": "success", "message": "All queries executed successfully."}
-        except Exception as e:
-            self.logger.error(f"Error initializing BigQuery client: {e}")
-            return {"status": "failure", "message": f"Error initializing BigQuery client: {str(e)}"}
-
-    # Read SQL Queries from Uploaded File
-    def read_queries_from_uploaded_file(self, file):
-        try:
-            content = file.read().decode('utf-8')
-            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
-            self.logger.info(f"Read {len(queries)} queries from file.")
-            return queries
-        except Exception as e:
-            self.logger.error(f"Error reading file: {e}")
-            return []
+    except Exception as e:
+        self.logger.error(f"Error processing request: {e}")
+        return JsonResponse({"status": "failure", "message": f"Error processing request: {str(e)}"}, status=500)
