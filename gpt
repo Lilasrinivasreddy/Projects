@@ -1,18 +1,82 @@
-INSERT INTO vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt 
+insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt 
 (rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt, feature_name, grouped_columns, count_curr, prfl_run_ts, weekday)
-SELECT 
-    50009 AS rpt_seq_num, 
-    7851 AS prfl_id, 
-    'CUSTOM_RULES' AS prfl_type, 
-    'Consistency' AS dq_pillar, 
-    'CUST_ACCT_LINE_ADDR_V' AS src_tbl, 
-    'CUST_ACCT_LINE_ADDR_V Table count' AS meas_name, 
-    CAST(LAST_UPD_DT AS DATE) AS data_dt, 
-    'Tier1 Models' AS feature_name, 
-    NULL AS grouped_columns, 
-    COUNT(*) AS count_curr, 
-    CURRENT_TIMESTAMP() AS prfl_run_ts, 
-    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE)) AS weekday 
-FROM NTL_PRD_ALLVM.CUST_ACCT_LINE_ADDR_V 
-WHERE CAST(LAST_UPD_DT AS DATE) >= CURRENT_DATE() - 90 
-GROUP BY data_dt, feature_name, prfl_run_ts, weekday;
+(select 50009 as rpt_seq_num, 7851 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'CUST_ACCT_LINE_ADDR_V' as src_tbl,'CUST_ACCT_LINE_ADDR_V Table count' as meas_name, 
+cast(LAST_UPD_DT as date) as data_dt,'Tier1 Models' as feature_name, null as grouped_columns,count (*) as count_curr, current_timestamp as prfl_run_ts, 
+dayofweek(cast(LAST_UPD_DT as date)) as weekday from NTL_PRD_ALLVM.CUST_ACCT_LINE_ADDR_V where cast(LAST_UPD_DT as date)>= current_date -90 
+group by 1,2,3,4,5,6,7,8,11,12);
+====================
+
+@method_decorator(csrf_exempt, name='dispatch')    
+class ExecuteHistorySQL(CredentialsandConnectivity): 
+    # Initialize Logger
+    def dispatch(self, request, *args, **kwargs):
+        if not hasattr(self, 'logger'):
+            self.logger = logging.getLogger(__name__)
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+        return super().dispatch(request, *args, **kwargs)
+
+    # File handling and Query execution
+    def post(self, request, *args, **kwargs):
+        try:
+            if not hasattr(self, 'logger'):
+                self.logger = logging.getLogger(__name__)
+
+            print(f"DEBUG - Request method: {request.method}, Content Type: {request.content_type}")
+            print(f"DEBUG - request.FILES: {request.FILES}") 
+
+            #'file' to 'fileName'
+            file_key = 'fileName' if 'fileName' in request.FILES else 'file' 
+
+            #Check if file is uploaded
+            if file_key not in request.FILES or not request.FILES[file_key]:
+                self.logger.error("No file uploaded.")
+                return JsonResponse({"status": "failure", "message": "No file uploaded. Ensure the correct file key is used."}, status=400)
+
+            file = request.FILES[file_key] 
+            self.logger.info(f"Received file: {file.name}")
+
+            #Read queries from file
+            queries = self.read_queries_from_uploaded_file(file)
+            if not queries:
+                self.logger.error("No valid queries found.")
+                return JsonResponse({"status": "failure", "message": "No valid queries found in the file."}, status=400)
+
+            # Execute Queries
+            execution_status = self.execute_queries(queries)
+            if execution_status["status"] == "failure":
+                return JsonResponse(execution_status, status=500)
+
+            return JsonResponse({"status": "success", "message": "File uploaded and queries executed successfully."}, status=200)
+
+        except Exception as e:
+            self.logger.error(f"Error processing request: {e}")
+            return JsonResponse({"status": "failure", "message": f"Error processing request: {str(e)}"}, status=500)
+                    
+                 
+            # Execute Queries in BigQuery
+    def execute_queries(self, queries):
+        try:
+            self.dq_bigquery_client()
+            for query in queries:
+                try:
+                    query_job = self.client.query(query)
+                    query_job.result()
+                    self.logger.info("Query executed successfully.")
+                except Exception as e:
+                    self.logger.error(f"Query execution error: {e}")
+                    return {"status": "failure", "message": f"Query execution error: {str(e)}"}
+            return {"status": "success", "message": "All queries executed successfully."}
+        except Exception as e:
+            self.logger.error(f"Error initializing BigQuery client: {e}")
+            return {"status": "failure", "message": f"Error initializing BigQuery client: {str(e)}"}
+
+    # Read SQL Queries from Uploaded File
+    def read_queries_from_uploaded_file(self, file):
+        try:
+            content = file.read().decode('utf-8')
+            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
+            self.logger.info(f"Read {len(queries)} queries from file.")
+            return queries
+        except Exception as e:
+            self.logger.error(f"Error reading file: {e}")
+            return []
