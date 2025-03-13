@@ -1,55 +1,22 @@
-rpt_seq_num
-rpt_ref_key
-prfl_id
-prfl_run_ts
-data_dt
-prfl_type
-validation_level
-src_tbl
-dq_pillar
-feature_name
-meas_name
-grouped_columns
-count_curr
-avg_count_prev
-count_diff
-pct_change
-col_data
-weekday
-std_dev_value
-variance_value
-sigma_value
-dq_score
-hour
-col_tot_cnt
-col_vld_cnt
-col_invld_cnt
-col_vld_pct
-col_invld_pct
-dq_ind
-sigma_2_value
-consistency_score
-
-
-
-insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt
+insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt 
 (rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt, feature_name, grouped_columns, count_curr, prfl_run_ts, weekday)
-(select 
+select 
     50009 as rpt_seq_num, 
     7851 as prfl_id, 
     'CUSTOM_RULES' as prfl_type, 
     'Consistency' as dq_pillar, 
     'CUST_ACCT_LINE_ADDR_V' as src_tbl, 
-    'LAST_UPD_DT' as meas_name, 
-    cast(LAST_UPD_DT as date) as profile_date, 
+    'CUST_ACCT_LINE_ADDR_V Table count' as meas_name, 
+    cast(LAST_UPD_DT as date) as data_dt, 
     'Tier1 Models' as feature_name, 
-    null as dimension, 
-    count(*) as value, 
-    current_timestamp as insert_date, 
+    null as grouped_columns, 
+    count(*) as count_curr, 
+    current_timestamp() as prfl_run_ts, 
     extract(dayofweek from LAST_UPD_DT) as weekday 
 from NTL_PRD_ALLVM.CUST_ACCT_LINE_ADDR_V 
-where cast(LAST_UPD_DT as date) >= current_date -90 
-group by 1,2,3,4,5,6,7,8,11,12);
+where cast(LAST_UPD_DT as date) >= current_date() - 90 
+group by data_dt, feature_name, prfl_run_ts, weekday;
+
 
 
 
