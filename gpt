@@ -1,3 +1,151 @@
+@method_decorator(csrf_exempt, name='dispatch')    
+class DropdownSubdmnCustomMtd(CredentialsandConnectivity):
+    
+    def get(self, request, *args, **kwargs):
+        query = f"""SELECT distinct(data_sub_dmn) FROM  {self.dq_project_id}.dga_dq_tbls.dqaas_profile_mtd"""
+        print(query) 
+        self.dq_bigquery_client()
+        query_job = self.client.query(query)
+        results = query_job.result()
+        distinct_db = [dict(row) for row in results]
+        return JsonResponse({'distinct_db':distinct_db})
+    def post(self, request,*args, **kwargs):  
+        if request.content_type == 'application/json':
+            data = json.loads(request.body.decode('utf-8'))
+            print(data)
+        else:
+            data = request.POST
+            print(data)
+        data_sub_dmn = data.get("sub_domain")
+        query = f"""select *  from  {self.dq_project_id}.dga_dq_tbls.dqaas_profile_mtd where data_sub_dmn = '{data_sub_dmn}'"""
+        print(query)
+        self.dq_bigquery_client()
+        query_job = self.client.query(query)
+        results = query_job.result()
+        
+        rows_list = []
+        for row in results:
+            print("results", row)
+            row_dict = dict(row)
+            rows_list.append(row_dict)
+        return JsonResponse(rows_list, safe=False) 
+
+@method_decorator(csrf_exempt, name='dispatch')    
+class SaveCustomMtd(CredentialsandConnectivity): 
+    def post(self, request,*args, **kwargs):  
+        if request.content_type == 'application/json':
+            data = json.loads(request.body.decode('utf-8'))
+            print("post data",data)
+        else:
+            data = request.POST
+            print("post data",data)   
+        for key in data:
+            if data[key] == None:
+                data[key] ='Null'
+        prfl_id = data.get("prfl_id")
+        prfl_type = data.get("prfl_type")
+        data_lob = data.get("data_lob")
+        data_bus_elem = data.get("data_bus_elem")
+        data_dmn = data.get("data_dmn")
+        data_sub_dmn = data.get("data_sub_dmn")
+        data_src = data.get("data_src")
+        dq_pillar = data.get("dq_pillar")
+        feature_name = data.get("feature_name")
+        db_name = data.get("db_name")
+        src_tbl = data.get("src_tbl")
+        src_col = data.get("src_col")
+        incr_dt_col = data.get("incr_dt_col")
+        incr_dt_cond = data.get("incr_dt_cond")
+        meas_name = data.get("meas_name")
+        meas_rule_sql = data.get("meas_rule_sql")
+        micro_segment_columns = data.get("micro_segment_columns")
+        aggregated_column = data.get("aggregated_column")
+        comparison_type = data.get("comparison_type")
+        micro_segment_threshold = data.get("micro_segment_threshold")
+        max_threshold = data.get("max_threshold")
+        min_threshold = data.get("min_threshold")
+        is_hourly_flg = data.get("is_hourly_flg")
+        run_hour = data.get("run_hour")
+        add_param_clause = data.get("add_param_clause")
+        pass_param_1 = data.get("pass_param_1")
+        pass_param_2 = data.get("pass_param_2")
+        pass_param_3 = data.get("pass_param_3")
+        pass_param_4 = data.get("pass_param_4")
+        pass_param_5 = data.get("pass_param_5")
+        prfl_schd_ts = data.get("prfl_schd_ts")
+        is_active_flg = data.get("is_active_flg")
+        is_critical_flg = data.get("is_critical_flg")
+        is_opsgenie_flg = data.get("is_opsgenie_flg")
+        opsgenie_api_key = data.get("opsgenie_api_key")
+        record_ind = data.get("record_ind")
+        hourly_col = data.get("hourly_col")
+        jira_assignee = data.get("jira_assignee")
+
+        query = f"""update {self.dq_project_id}.dga_dq_tbls.dqaas_profile_mtd set data_sub_dmn = '{data_sub_dmn}',  data_lob='{data_lob}',data_bus_elem='{data_bus_elem}',data_dmn='{data_dmn}',dq_pillar ='{dq_pillar}',feature_name ='{feature_name}'  ,data_src='{data_src}',src_col='{src_col}',incr_dt_col='{incr_dt_col}',incr_dt_cond={incr_dt_cond},meas_name='{meas_name}',meas_rule_sql='''{meas_rule_sql}''',micro_segment_columns='{micro_segment_columns}',aggregated_column='{aggregated_column}',is_active_flg='{is_active_flg}',comparison_type='{comparison_type}',micro_segment_threshold={micro_segment_threshold},max_threshold={max_threshold},min_threshold={min_threshold},is_hourly_flg='{is_hourly_flg}',run_hour={run_hour},add_param_clause='{add_param_clause}',pass_param_1={pass_param_1},pass_param_2={pass_param_2},pass_param_3={pass_param_3},pass_param_4={pass_param_4},pass_param_5={pass_param_5},update_made_ts=current_timestamp(),is_opsgenie_flg='{is_opsgenie_flg}',opsgenie_api_key='{opsgenie_api_key}',prfl_schd_ts='{prfl_schd_ts}' where prfl_id = {prfl_id} and db_name = '{db_name}' and src_tbl='{src_tbl}' """
+        print(query)
+        self.dq_bigquery_client()
+        query_job = self.client.query(query)
+        return JsonResponse({'status':'success','message':'Data Updated succesfully'}, safe=False)
+
+
+
+
+@method_decorator(csrf_exempt, name='dispatch')    
+class ExecuteHistorySQL(CredentialsandConnectivity): 
+# Handling file upload and processing SQL queries
+
+    def dispatch(self, request, *args, **kwargs):
+        # logger 
+        if not hasattr(self, 'logger'):
+            self.logger = logging.getLogger(__name__)
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            if not hasattr(self, 'logger'):
+                self.logger = logging.getLogger(__name__)
+            if 'file' not in request.FILES:
+                self.logger.info("file uploaded.")
+                return HttpResponse("file uploaded.", status=400)
+
+            file = request.FILES['file']
+            self.logger.info(f"Received file: {file.name}")
+
+            queries = self.read_queries_from_uploaded_file(file)
+            if not queries:
+                self.logger.error("No valid queries found.")
+                return HttpResponse("No valid queries found.", status=400)
+
+            self.execute_queries(queries)
+            return HttpResponse("File uploaded and queries executed successfully.", status=200)
+
+        except Exception as e:
+            self.logger.error(f"Error processing request: {e}")
+            return HttpResponse("Error processing request.", status=500)
+
+    # Execute queries in BQ
+    def execute_queries(self, queries):
+        self.dq_bigquery_client()
+        for query in queries:
+            try:
+                query_job = self.client.query(query)
+                query_job.result()
+                self.logger.info("Query executed successfully.")
+            except Exception as e:
+                self.logger.error(f"Query execution error: {e}")
+
+    # Read SQL queries from text file
+    def read_queries_from_uploaded_file(self, file):
+        try:
+            content = file.read().decode('utf-8')
+            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
+            self.logger.info(f"Read {len(queries)} queries from file.")
+            return queries
+        except Exception as e:
+            self.logger.error(f"Error reading file: {e}")
+            return []
 SELECT * 
 FROM `vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt`
 WHERE rpt_seq_num = 1000005
