@@ -1,36 +1,17 @@
-def post(self, request, *args, **kwargs):
-    try:
-        if not hasattr(self, 'logger'):
-            self.logger = logging.getLogger(__name__)
+insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt (rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt,feature_name,grouped_columns,count_curr,prfl_run_ts,weekday)
+(select 1000005 as rpt_seq_num, 1403 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'cust_acct_addr' as src_tbl,'LAST_UPD_DT' as meas_name, cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_addr where cast(LAST_UPD_DT as date)>= current_date -90 group by 1,2,3,4,5,6,7,8,11,12)
 
-        # Debugging: Print what Django receives
-        print(f"DEBUG - Request method: {request.method}, Content Type: {request.content_type}")
-        print(f"DEBUG - request.FILES: {request.FILES}")  
 
-        # 🔹 Correcting key name from 'file' to 'fileName'
-        file_key = 'fileName' if 'fileName' in request.FILES else 'file'  
-
-        # 🔹 Check if file is uploaded
-        if file_key not in request.FILES or not request.FILES[file_key]:
-            self.logger.error("No file uploaded.")
-            return JsonResponse({"status": "failure", "message": "No file uploaded. Ensure the correct file key is used."}, status=400)
-
-        file = request.FILES[file_key]  # Retrieve file using correct key
-        self.logger.info(f"Received file: {file.name}")
-
-        # 🔹 Read queries from file
-        queries = self.read_queries_from_uploaded_file(file)
-        if not queries:
-            self.logger.error("No valid queries found.")
-            return JsonResponse({"status": "failure", "message": "No valid queries found in the file."}, status=400)
-
-        # 🔹 Execute Queries
-        execution_status = self.execute_queries(queries)
-        if execution_status["status"] == "failure":
-            return JsonResponse(execution_status, status=500)
-
-        return JsonResponse({"status": "success", "message": "File uploaded and queries executed successfully."}, status=200)
-
-    except Exception as e:
-        self.logger.error(f"Error processing request: {e}")
-        return JsonResponse({"status": "failure", "message": f"Error processing request: {str(e)}"}, status=500)
+select 1000006 as rpt_seq_num, 1404 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'cust_acct_addr_dly_hist' as src_tbl,'LAST_UPD_DT' as meas_name, cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.cust_acct_addr_dly_hist where cast(LAST_UPD_DT as date)>= current_date -90 group by 1,2,3,4,5,6,7,8,11,12
