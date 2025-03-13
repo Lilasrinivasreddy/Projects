@@ -1,6 +1,21 @@
-insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt 
-(rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt, feature_name, grouped_columns, count_curr, prfl_run_ts, weekday)
-(select 50009 as rpt_seq_num, 7851 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'CUST_ACCT_LINE_ADDR_V' as src_tbl,'CUST_ACCT_LINE_ADDR_V Table count' as meas_name, 
-cast(LAST_UPD_DT as date) as data_dt,'Tier1 Models' as feature_name, null as grouped_columns,count (*) as count_curr, current_timestamp as prfl_run_ts, 
-dayofweek(cast(LAST_UPD_DT as date)) as weekday from NTL_PRD_ALLVM.CUST_ACCT_LINE_ADDR_V where cast(LAST_UPD_DT as date)>= current_date -90 
-group by 1,2,3,4,5,6,7,8,11,12);
+INSERT INTO `vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt`
+(
+    rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt, 
+    feature_name, grouped_columns, count_curr, prfl_run_ts, weekday
+)
+SELECT 
+    50009 AS rpt_seq_num, 
+    7851 AS prfl_id, 
+    'CUSTOM_RULES' AS prfl_type, 
+    'Consistency' AS dq_pillar, 
+    'CUST_ACCT_LINE_ADDR_V' AS src_tbl,
+    'CUST_ACCT_LINE_ADDR_V Table count' AS meas_name, 
+    CAST(LAST_UPD_DT AS DATE) AS data_dt,
+    'Tier1 Models' AS feature_name, 
+    NULL AS grouped_columns,
+    COUNT(*) AS count_curr, 
+    CURRENT_TIMESTAMP() AS prfl_run_ts, 
+    EXTRACT(DAYOFWEEK FROM CAST(LAST_UPD_DT AS DATE)) AS weekday
+FROM `vz-it-np-izcv-dev-idmcdo-0.NTL_PRD_ALLVM.CUST_ACCT_LINE_ADDR_V`
+WHERE CAST(LAST_UPD_DT AS DATE) >= CURRENT_DATE() - INTERVAL 90 DAY
+GROUP BY 1,2,3,4,5,6,7,8,11,12;
