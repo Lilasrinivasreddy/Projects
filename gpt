@@ -72,3 +72,96 @@ class ExecuteHistorySQL(CredentialsandConnectivity):
         except Exception as e:
             self.logger.error(f"Error reading file: {e}")
             return []
+
+===================================
+import load_result_to_bq as load_bq
+import pandas as pd
+import os 
+from datetime import datetime
+
+dqaas_profile_rpt = {
+'INTEGER':['prfl_id','weekday','rpt_seq_num'],
+'DATE':['data_dt'],
+'STRING':['feature_name'],
+'NUMERIC':['count_curr'],
+'TIMESTAMP':['prfl_run_ts']
+}
+src_query = ["""select 1000001 as rpt_seq_num, 1397 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'base_address_all_acct_hist' as src_tbl,'LAST_UPDT_TS' as meas_name, cast(rpt_dt as date) as data_dt,
+'Tier1 Models' as feature_name,
+null as grouped_columns,
+count (*) as count_curr,
+current_timestamp as prfl_run_ts,
+extract(dayofweek from rpt_dt) as weekday
+from vz-it-pr-gk1v-cwlspr-0.vzw_uda_prd_tbls.base_address_all_acct_hist where cast(rpt_dt as date)>= current_date -90 group by 1,2,3,4,5,6,7,8,11,12""",]
+
+ 
+dqaas_profile_rpt_tbl = "vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
+
+def load_td_to_gcp():
+    for query in src_query:
+        try:
+            td_engine, _ = load_bq.teradata_client(load_bq.dq_td_config)
+            td_query = query
+            td_res = pd.read_sql(td_query, td_engine)
+            td_res = td_res.rename(columns={str(col): str(col).lower() for col in td_res.columns.to_list()})
+            print(len(td_res))
+            
+            bq_client, bq_creds = load_bq.bigquery_client(load_bq.dq_config)
+            load_bq.load_result_to_bq_table(
+                column_details=dqaas_profile_rpt,
+                df_load_data=td_res,
+                dq_bq_client=bq_client,
+                dq_credentials=bq_creds,
+                dq_dest_table_name=dqaas_profile_rpt_tbl
+            )
+        except Exception as e:
+            print(f"Query Execution Failed :::: {query} :::: {e}")
+            pass
+    
+if __name__ == "__main__":
+    load_td_to_gcp()
+    ============================================================
+import load_result_to_bq as load_bq
+import pandas as pd
+import os 
+from datetime import datetime
+
+dqaas_profile_rpt = {
+'INTEGER':['prfl_id','weekday','rpt_seq_num'],
+'DATE':['data_dt'],
+'STRING':['feature_name'],
+'NUMERIC':['count_curr'],
+'TIMESTAMP':['prfl_run_ts']
+}
+src_query = ["""select 1000001 as rpt_seq_num, 1397 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'base_address_all_acct_hist' as src_tbl,'LAST_UPDT_TS' as meas_name, cast(rpt_dt as date) as data_dt,
+'Tier1 Models' as feature_name,
+null as grouped_columns,
+count (*) as count_curr,
+current_timestamp as prfl_run_ts,
+extract(dayofweek from rpt_dt) as weekday
+from vz-it-pr-gk1v-cwlspr-0.vzw_uda_prd_tbls.base_address_all_acct_hist where cast(rpt_dt as date)>= current_date -90 group by 1,2,3,4,5,6,7,8,11,12""",]
+
+ 
+dqaas_profile_rpt_tbl = "vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
+
+def load_td_to_gcp():
+    for query in src_query:
+        try:
+            bq_client, bq_creds = load_bq.bigquery_client(load_bq.dq_config)
+            df_results = bq_client.query(query).to_dataframe()
+            print(len(df_results))
+                        
+            load_bq.load_result_to_bq_table(
+                column_details=dqaas_profile_rpt,
+                df_load_data=df_results,
+                dq_bq_client=bq_client,
+                dq_credentials=bq_creds,
+                dq_dest_table_name=dqaas_profile_rpt_tbl
+            )
+        except Exception as e:
+            print(f"Query Execution Failed :::: {query} :::: {e}")
+            pass
+    
+if __name__ == "__main__":
+    load_td_to_gcp()
+    
