@@ -52,25 +52,27 @@ class ExecuteHistorySQL(View):
 
     def execute_queries(self, queries):
         """
-        Dynamically execute queries either on Teradata or BigQuery based on the query type.
-        If the query needs data from Teradata, it first fetches the data and then loads it into BigQuery.
+        Dynamically execute queries either on Teradata or BigQuery based on query content.
+        If the query requires fetching data from Teradata, it first fetches the data and then loads it into BigQuery.
         """
         try:
+            # Initialize BigQuery client
             bq_client, bq_creds = load_bq.bigquery_client(load_bq.dq_config)
-            td_engine = None  # Initialize Teradata engine
-            
+            td_engine = None  # Initialize Teradata connection placeholder
+
             for query in queries:
                 try:
-                    if "from vz-it-pr-gk1v-cwlspr-0" in query.lower():  # Identify Teradata queries
+                    # Identify if the query is for Teradata
+                    if "from vz-it-pr-gk1v-cwlspr-0" in query.lower():  # Adjust condition for Teradata queries
                         if td_engine is None:
                             td_engine, _ = load_bq.teradata_client(load_bq.dq_td_config)
-                        
-                        self.logger.info("Executing query in Teradata...")
+
+                        self.logger.info("Executing query on Teradata...")
                         df_results = pd.read_sql(query, td_engine)
                         df_results = df_results.rename(columns={str(col): str(col).lower() for col in df_results.columns.to_list()})
-                    
+
                     else:  # Execute in BigQuery
-                        self.logger.info("Executing query in BigQuery...")
+                        self.logger.info("Executing query on BigQuery...")
                         df_results = bq_client.query(query).to_dataframe()
 
                     self.logger.info(f"Fetched {len(df_results)} rows.")
@@ -85,7 +87,7 @@ class ExecuteHistorySQL(View):
                     )
 
                     self.logger.info("Query executed and data loaded into BigQuery successfully.")
-                
+
                 except Exception as e:
                     self.logger.error(f"Query execution error: {e}")
                     return {"status": "failure", "message": f"Query execution error: {str(e)}"}
@@ -126,175 +128,3 @@ class ExecuteHistorySQL(View):
         Returns the target BigQuery table name.
         """
         return "vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
-=====================
-======================
-=======================
-
-
-@method_decorator(csrf_exempt, name='dispatch')    
-class ExecuteHistorySQL(CredentialsandConnectivity): 
-    # Initialize Logger
-    def dispatch(self, request, *args, **kwargs):
-        if not hasattr(self, 'logger'):
-            self.logger = logging.getLogger(__name__)
-            logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-        return super().dispatch(request, *args, **kwargs)
-
-    # File handling and Query execution
-    def post(self, request, *args, **kwargs):
-        try:
-            if not hasattr(self, 'logger'):
-                self.logger = logging.getLogger(__name__)
-
-            print(f"DEBUG - Request method: {request.method}, Content Type: {request.content_type}")
-            print(f"DEBUG - request.FILES: {request.FILES}") 
-
-            #'file' to 'fileName'
-            file_key = 'fileName' if 'fileName' in request.FILES else 'file' 
-
-            #Check if file is uploaded
-            if file_key not in request.FILES or not request.FILES[file_key]:
-                self.logger.error("No file uploaded.")
-                return JsonResponse({"status": "failure", "message": "No file uploaded. Ensure the correct file key is used."}, status=400)
-
-            file = request.FILES[file_key] 
-            self.logger.info(f"Received file: {file.name}")
-
-            #Read queries from file
-            queries = self.read_queries_from_uploaded_file(file)
-            if not queries:
-                self.logger.error("No valid queries found.")
-                return JsonResponse({"status": "failure", "message": "No valid queries found in the file."}, status=400)
-
-            # Execute Queries
-            execution_status = self.execute_queries(queries)
-            if execution_status["status"] == "failure":
-                return JsonResponse(execution_status, status=500)
-
-            return JsonResponse({"status": "success", "message": "File uploaded and queries executed successfully."}, status=200)
-
-        except Exception as e:
-            self.logger.error(f"Error processing request: {e}")
-            return JsonResponse({"status": "failure", "message": f"Error processing request: {str(e)}"}, status=500)
-                    
-                 
-            # Execute Queries in BigQuery
-    def execute_queries(self, queries):
-        try:
-            self.dq_bigquery_client()
-            for query in queries:
-                try:
-                    query_job = self.client.query(query)
-                    query_job.result()
-                    self.logger.info("Query executed successfully.")
-                except Exception as e:
-                    self.logger.error(f"Query execution error: {e}")
-                    return {"status": "failure", "message": f"Query execution error: {str(e)}"}
-            return {"status": "success", "message": "All queries executed successfully."}
-        except Exception as e:
-            self.logger.error(f"Error initializing BigQuery client: {e}")
-            return {"status": "failure", "message": f"Error initializing BigQuery client: {str(e)}"}
-
-    # Read SQL Queries from Uploaded File
-    def read_queries_from_uploaded_file(self, file):
-        try:
-            content = file.read().decode('utf-8')
-            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
-            self.logger.info(f"Read {len(queries)} queries from file.")
-            return queries
-        except Exception as e:
-            self.logger.error(f"Error reading file: {e}")
-            return []
-
-===================================
-import load_result_to_bq as load_bq
-import pandas as pd
-import os 
-from datetime import datetime
-
-dqaas_profile_rpt = {
-'INTEGER':['prfl_id','weekday','rpt_seq_num'],
-'DATE':['data_dt'],
-'STRING':['feature_name'],
-'NUMERIC':['count_curr'],
-'TIMESTAMP':['prfl_run_ts']
-}
-src_query = ["""select 1000001 as rpt_seq_num, 1397 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'base_address_all_acct_hist' as src_tbl,'LAST_UPDT_TS' as meas_name, cast(rpt_dt as date) as data_dt,
-'Tier1 Models' as feature_name,
-null as grouped_columns,
-count (*) as count_curr,
-current_timestamp as prfl_run_ts,
-extract(dayofweek from rpt_dt) as weekday
-from vz-it-pr-gk1v-cwlspr-0.vzw_uda_prd_tbls.base_address_all_acct_hist where cast(rpt_dt as date)>= current_date -90 group by 1,2,3,4,5,6,7,8,11,12""",]
-
- 
-dqaas_profile_rpt_tbl = "vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
-
-def load_td_to_gcp():
-    for query in src_query:
-        try:
-            td_engine, _ = load_bq.teradata_client(load_bq.dq_td_config)
-            td_query = query
-            td_res = pd.read_sql(td_query, td_engine)
-            td_res = td_res.rename(columns={str(col): str(col).lower() for col in td_res.columns.to_list()})
-            print(len(td_res))
-            
-            bq_client, bq_creds = load_bq.bigquery_client(load_bq.dq_config)
-            load_bq.load_result_to_bq_table(
-                column_details=dqaas_profile_rpt,
-                df_load_data=td_res,
-                dq_bq_client=bq_client,
-                dq_credentials=bq_creds,
-                dq_dest_table_name=dqaas_profile_rpt_tbl
-            )
-        except Exception as e:
-            print(f"Query Execution Failed :::: {query} :::: {e}")
-            pass
-    
-if __name__ == "__main__":
-    load_td_to_gcp()
-    ============================================================
-import load_result_to_bq as load_bq
-import pandas as pd
-import os 
-from datetime import datetime
-
-dqaas_profile_rpt = {
-'INTEGER':['prfl_id','weekday','rpt_seq_num'],
-'DATE':['data_dt'],
-'STRING':['feature_name'],
-'NUMERIC':['count_curr'],
-'TIMESTAMP':['prfl_run_ts']
-}
-src_query = ["""select 1000001 as rpt_seq_num, 1397 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'base_address_all_acct_hist' as src_tbl,'LAST_UPDT_TS' as meas_name, cast(rpt_dt as date) as data_dt,
-'Tier1 Models' as feature_name,
-null as grouped_columns,
-count (*) as count_curr,
-current_timestamp as prfl_run_ts,
-extract(dayofweek from rpt_dt) as weekday
-from vz-it-pr-gk1v-cwlspr-0.vzw_uda_prd_tbls.base_address_all_acct_hist where cast(rpt_dt as date)>= current_date -90 group by 1,2,3,4,5,6,7,8,11,12""",]
-
- 
-dqaas_profile_rpt_tbl = "vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
-
-def load_td_to_gcp():
-    for query in src_query:
-        try:
-            bq_client, bq_creds = load_bq.bigquery_client(load_bq.dq_config)
-            df_results = bq_client.query(query).to_dataframe()
-            print(len(df_results))
-                        
-            load_bq.load_result_to_bq_table(
-                column_details=dqaas_profile_rpt,
-                df_load_data=df_results,
-                dq_bq_client=bq_client,
-                dq_credentials=bq_creds,
-                dq_dest_table_name=dqaas_profile_rpt_tbl
-            )
-        except Exception as e:
-            print(f"Query Execution Failed :::: {query} :::: {e}")
-            pass
-    
-if __name__ == "__main__":
-    load_td_to_gcp()
-    
