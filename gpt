@@ -1,14 +1,18 @@
 import logging
-import re
 import pandas as pd
+import traceback
+import re
 from django.http import JsonResponse
-from django.utils.decorators import method_decorator
 from django.views import View
+from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-import load_result_to_bq as load_bq  # Custom module for database interactions
+import load_result_to_bq as load_bq  # Custom module for BigQuery & Teradata connections
 
 @method_decorator(csrf_exempt, name='dispatch')
-class ExecuteHistorySQL(View):  
+class ExecuteSQL(View):
+    """Handles SQL file uploads, executes queries on Teradata or BigQuery, and loads results into BigQuery"""
+
+    # Initialize Logger
     def dispatch(self, request, *args, **kwargs):
         if not hasattr(self, 'logger'):
             self.logger = logging.getLogger(__name__)
@@ -16,16 +20,21 @@ class ExecuteHistorySQL(View):
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        """Handles SQL file upload and execution on GCP or Teradata"""
         try:
             if not hasattr(self, 'logger'):
                 self.logger = logging.getLogger(__name__)
 
             print(f"DEBUG - Request method: {request.method}, Content Type: {request.content_type}")
-            print(f"DEBUG - request.FILES: {request.FILES}") 
+            print(f"DEBUG - request.FILES: {request.FILES}")
 
-            # File key handling
-            file_key = 'fileName' if 'fileName' in request.FILES else 'file' 
+            # Get execution type: 'bigquery' or 'teradata'
+            execution_type = request.POST.get('execution_type', 'bigquery').lower()  # Default: BigQuery
 
+            # Determine file key ('file' or 'fileName')
+            file_key = 'fileName' if 'fileName' in request.FILES else 'file'
+
+            # Check if file is uploaded
             if file_key not in request.FILES or not request.FILES[file_key]:
                 self.logger.error("No file uploaded.")
                 return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
@@ -39,8 +48,12 @@ class ExecuteHistorySQL(View):
                 self.logger.error("No valid queries found.")
                 return JsonResponse({"status": "failure", "message": "No valid queries found in the file."}, status=400)
 
-            # Execute Queries
-            execution_status = self.execute_queries(queries)
+            # Execute Queries based on execution type
+            if execution_type == "teradata":
+                execution_status = self.execute_queries_on_teradata(queries)
+            else:  # Default: BigQuery
+                execution_status = self.execute_queries_on_bigquery(queries)
+
             if execution_status["status"] == "failure":
                 return JsonResponse(execution_status, status=500)
 
@@ -50,58 +63,89 @@ class ExecuteHistorySQL(View):
             self.logger.error(f"Error processing request: {e}")
             return JsonResponse({"status": "failure", "message": f"Error processing request: {str(e)}"}, status=500)
 
-    def execute_queries(self, queries):
-        """
-        Dynamically execute queries either on Teradata or BigQuery based on query content.
-        If the query requires fetching data from Teradata, it first fetches the data and then loads it into BigQuery.
-        """
+    def execute_queries_on_teradata(self, queries):
+        """Executes queries on Teradata and loads results into BigQuery"""
         try:
-            # Initialize BigQuery client
+            # Connect to Teradata
+            td_engine, _ = load_bq.teradata_client(load_bq.dq_td_config)
+            if td_engine is None:
+                self.logger.error("Teradata connection failed.")
+                return {"status": "failure", "message": "Teradata connection failed."}
+
+            # Connect to BigQuery
             bq_client, bq_creds = load_bq.bigquery_client(load_bq.dq_config)
-            td_engine = None  # Initialize Teradata connection placeholder
+            if bq_client is None:
+                self.logger.error("BigQuery connection failed.")
+                return {"status": "failure", "message": "BigQuery connection failed."}
+
+            # Define target BigQuery table
+            bq_table = "vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
 
             for query in queries:
                 try:
-                    # Identify if the query is for Teradata
-                    if "from vz-it-pr-gk1v-cwlspr-0" in query.lower():  # Adjust condition for Teradata queries
-                        if td_engine is None:
-                            td_engine, _ = load_bq.teradata_client(load_bq.dq_td_config)
+                    self.logger.info(f"Executing Teradata query: {query}")
+                    
+                    # Execute SQL query on Teradata
+                    td_res = pd.read_sql(query, td_engine)
 
-                        self.logger.info("Executing query on Teradata...")
-                        df_results = pd.read_sql(query, td_engine)
-                        df_results = df_results.rename(columns={str(col): str(col).lower() for col in df_results.columns.to_list()})
+                    # Rename columns to lowercase
+                    td_res = td_res.rename(columns={col: col.lower() for col in td_res.columns})
 
-                    else:  # Execute in BigQuery
-                        self.logger.info("Executing query on BigQuery...")
-                        df_results = bq_client.query(query).to_dataframe()
+                    if td_res.empty:
+                        self.logger.warning("Query returned no data. Skipping.")
+                        continue
 
-                    self.logger.info(f"Fetched {len(df_results)} rows.")
+                    self.logger.info(f"Rows fetched: {len(td_res)}")
 
-                    # Load results into BigQuery
+                    # Load data into BigQuery
                     load_bq.load_result_to_bq_table(
-                        column_details=self.get_bq_schema(),
-                        df_load_data=df_results,
+                        column_details=self.get_column_mapping(),
+                        df_load_data=td_res,
                         dq_bq_client=bq_client,
                         dq_credentials=bq_creds,
-                        dq_dest_table_name=self.get_bq_table()
+                        dq_dest_table_name=bq_table
                     )
-
-                    self.logger.info("Query executed and data loaded into BigQuery successfully.")
 
                 except Exception as e:
                     self.logger.error(f"Query execution error: {e}")
                     return {"status": "failure", "message": f"Query execution error: {str(e)}"}
 
+            # Close connections
+            td_engine.dispose()
+            bq_client.close()
+
             return {"status": "success", "message": "All queries executed successfully."}
 
         except Exception as e:
-            self.logger.error(f"Error initializing database connection: {e}")
-            return {"status": "failure", "message": f"Error initializing database connection: {str(e)}"}
+            self.logger.error(f"Error initializing Teradata or BigQuery: {e}")
+            return {"status": "failure", "message": f"Error initializing Teradata or BigQuery: {str(e)}"}
+
+    def execute_queries_on_bigquery(self, queries):
+        """Executes queries directly on Google BigQuery"""
+        try:
+            # Connect to BigQuery
+            bq_client, _ = load_bq.bigquery_client(load_bq.dq_config)
+            if bq_client is None:
+                self.logger.error("BigQuery connection failed.")
+                return {"status": "failure", "message": "BigQuery connection failed."}
+
+            for query in queries:
+                try:
+                    query_job = bq_client.query(query)
+                    query_job.result()
+                    self.logger.info("Query executed successfully in BigQuery.")
+                except Exception as e:
+                    self.logger.error(f"BigQuery execution error: {e}")
+                    return {"status": "failure", "message": f"BigQuery execution error: {str(e)}"}
+
+            return {"status": "success", "message": "All queries executed successfully in BigQuery."}
+
+        except Exception as e:
+            self.logger.error(f"Error initializing BigQuery client: {e}")
+            return {"status": "failure", "message": f"Error initializing BigQuery client: {str(e)}"}
 
     def read_queries_from_uploaded_file(self, file):
-        """
-        Reads SQL queries from an uploaded file and returns a list of queries.
-        """
+        """Reads SQL queries from the uploaded file"""
         try:
             content = file.read().decode('utf-8')
             queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
@@ -111,10 +155,8 @@ class ExecuteHistorySQL(View):
             self.logger.error(f"Error reading file: {e}")
             return []
 
-    def get_bq_schema(self):
-        """
-        Returns the schema for BigQuery table.
-        """
+    def get_column_mapping(self):
+        """Returns column mapping for BigQuery"""
         return {
             'INTEGER': ['prfl_id', 'weekday', 'rpt_seq_num'],
             'DATE': ['data_dt'],
@@ -122,9 +164,3 @@ class ExecuteHistorySQL(View):
             'NUMERIC': ['count_curr'],
             'TIMESTAMP': ['prfl_run_ts']
         }
-
-    def get_bq_table(self):
-        """
-        Returns the target BigQuery table name.
-        """
-        return "vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
