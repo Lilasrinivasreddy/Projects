@@ -1,3 +1,206 @@
+import argparse
+import logging
+import inspect
+import uuid  # For unique job_id generation
+from datetime import datetime
+from google.cloud import bigquery
+import sys
+import os
+
+# Import necessary modules
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+from scripts.auto_profile import AutoProfileEngine
+import scripts.config_params as config
+from scripts.common_handlers import CommonUtils
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+
+class JobMonitoring:
+    def __init__(self, data_src):
+        """
+        Initialize BigQuery client and logging.
+        """
+        self.client = bigquery.Client()
+        self.data_src = data_src
+        self.utils = CommonUtils(logObj=logging)
+        self.project_id = config.dq_gcp_data_project_id
+        self.dataset_name = config.dq_bq_dataset
+
+        # Table Names (Loaded from config)
+        self.job_monitor_table = config.dqaas_job_monitor_report  # Job Monitoring Table
+        self.rule_ctrl_table = config.dqaas_run_rule_ctrl_tbl  # Rule Control Table
+        self.metadata_table = config.dqaas_mtd  # Metadata Table
+
+        logging.info("JobMonitoring initialized.")
+
+    def get_current_function(self):
+        """
+        Gets the function name 
+        """
+        return inspect.stack()[1].function
+
+    def log_job_monitoring(self, job_id, job_name, job_start_ts, job_end_ts, comments, user_id="system"):
+        """
+        Logs job monitoring details into `dqaas_job_monitor_report`
+        """
+        step_code = self.get_current_function()  
+
+        query = f"""
+        INSERT INTO `{self.project_id}.{self.dataset_name}.{self.job_monitor_table}`
+        (job_id, job_name, job_start_ts, job_end_ts, step_code, comments, user_id)
+        VALUES (@job_id, @job_name, @job_start_ts, @job_end_ts, @step_code, @comments, @user_id)
+        """
+
+        params = {
+            "job_id": job_id,
+            "job_name": job_name,
+            "job_start_ts": job_start_ts,
+            "job_end_ts": job_end_ts,
+            "step_code": step_code,
+            "comments": comments or "N/A",
+            "user_id": user_id
+        }
+
+        logging.info(f"Logging job monitoring: {params}")
+        try:
+            self.client.query(query, params).result()
+            logging.info(f"Inserted job monitoring details into `{self.job_monitor_table}`.")
+        except Exception as e:
+            logging.error(f"Error logging job monitoring: {str(e)}")
+
+    def insert_initial_metadata(self):
+        """
+        Inserts initial metadata records into `dqaas_run_rule_ctrl_tbl` at the start of the day.
+        """
+        try:
+            logging.info("Inserting initial metadata records into rule control table")
+
+            query = f"""
+            INSERT INTO `{self.project_id}.{self.dataset_name}.{self.rule_ctrl_table}`
+            (profile_id, table_name, run_status, profile_date)
+            SELECT profile_id, table_name, 'Pending', CURRENT_DATE()
+            FROM `{self.project_id}.{self.dataset_name}.{self.metadata_table}`
+            WHERE active_flag = 'Y'
+            """
+            self.client.query(query).result()
+            logging.info("Initial metadata records inserted into rule control table.")
+
+        except Exception as e:
+            logging.error(f"Error inserting initial metadata records: {str(e)}")
+
+    def update_rule_ctrl_table(self, profile_id, run_status, comments):
+        """
+        Update the rule control table with success/failure status.
+        """
+        try:
+            query = f"""
+            UPDATE `{self.project_id}.{self.dataset_name}.{self.rule_ctrl_table}`
+            SET run_status = @run_status, comments = @comments
+            WHERE profile_id = @profile_id AND profile_date = CURRENT_DATE()
+            """
+
+            params = {
+                "profile_id": profile_id,
+                "run_status": run_status,
+                "comments": comments
+            }
+
+            self.client.query(query, params).result()
+            logging.info(f"Updated rule control table for profile_id {profile_id} with status {run_status}.")
+        except Exception as e:
+            logging.error(f"Error updating rule control table: {str(e)}")
+
+    def run_auto_profile(self):
+        """
+        Run AutoProfileEngine to capture monitoring data.
+        """
+        job_id = str(uuid.uuid4())  # Lila will check on job_id
+        job_name = "AutoProfileEngine"
+        job_start_ts = datetime.now()
+
+        try:
+            logging.info("Running AutoProfileEngine...")
+            auto_profile = AutoProfileEngine(data_src=self.data_src)
+
+            # Insert Initial Metadata at Start of Day
+            self.insert_initial_metadata()
+
+            # Process the AutoProfile
+            auto_profile.process_main()
+            job_end_ts = datetime.now()
+            comments = "AutoProfileEngine executed successfully."
+
+            # Log Job Monitoring 
+            self.log_job_monitoring(job_id, job_name, job_start_ts, job_end_ts, comments)
+
+            # Update Rule Control Table 
+            self.update_rule_ctrl_table(profile_id="ALL", run_status="Success", comments=comments)
+
+        except Exception as e:
+            job_end_ts = datetime.now()
+            error_message = f"AutoProfileEngine failed: {str(e)}"
+            logging.error(error_message)
+
+            # Log Job Monitoring (Failure)
+            self.log_job_monitoring(job_id, job_name, job_start_ts, job_end_ts, error_message)
+
+            # Update Rule Control Table (Failure)
+            self.update_rule_ctrl_table(profile_id="ALL", run_status="Failure", comments=error_message)
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Log monitoring details into BigQuery.")
+    parser.add_argument("--data_src", required=True, help="Data Source (TD/GCP)")
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    monitor = JobMonitoring(args.data_src)
+    monitor.run_auto_profile()
+
+
+
+
+
+# Monitor Table
+def log_monitor_table(self, job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments):
+    """
+    Log the job step into the monitor table, including the user ID.
+    """
+    # Handle NULL job_end_ts properly
+    if job_end_ts is None or str(job_end_ts).lower() == 'null':
+        query = f"""
+        INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table} 
+        (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
+        VALUES ({job_id}, '{job_name}', '{job_start_ts}', NULL, '{entry_ts}', '{user_id}', '{step_code}', '{comments}')"""
+    else:
+        query = f"""
+        INSERT INTO {self.dq_gcp_data_project_id}.{self.dq_bq_dataset}.{self.monitor_table} 
+        (job_id, job_name, job_start_ts, job_end_ts, entry_ts, user_id, step_code, comments)
+        VALUES ({job_id}, '{job_name}', '{job_start_ts}', timestamp('{job_end_ts}'), '{entry_ts}', '{user_id}', '{step_code}', '{comments}')"""
+
+    # Log the query for debugging
+    self.logger.info(f"Executing Query: {query}")
+
+    try:
+        # Execute the query
+        self.client.query(query).result()
+        self.logger.info(f"Inserted into monitor table: {comments}")
+    except Exception as e:
+        self.logger.error(f"Error logging to monitor table: {str(e)}")
+        raise
+
+
+
+
+
+
+
+
+
 import os
 import json
 import logging
