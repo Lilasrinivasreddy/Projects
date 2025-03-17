@@ -1,3 +1,210 @@
+import logging
+import re
+import pandas as pd
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
+from sqlalchemy import create_engine
+from google.cloud import bigquery
+import google.auth
+import pandas_gbq
+from io import TextIOWrapper
+import os
+
+class ExecuteHistorySQL(View):
+    """
+    API to:
+    1. Accept an SQL file uploaded via UI.
+    2. Detect if queries belong to Teradata or BigQuery.
+    3. Execute queries accordingly:
+        - Teradata → Load result into BigQuery.
+        - BigQuery → Execute directly.
+    """
+
+    def dispatch(self, request, *args, **kwargs):
+        if not hasattr(self, 'logger'):
+            self.logger = logging.getLogger(__name__)
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+        return super().dispatch(request, *args, **kwargs)
+
+    @method_decorator(csrf_exempt)
+    def post(self, request, *args, **kwargs):
+        try:
+            if not hasattr(self, 'logger'):
+                self.logger = logging.getLogger(__name__)
+
+            self.logger.info(f"Request method: {request.method}, Content Type: {request.content_type}")
+
+            # Check if a file is uploaded
+            if 'file' not in request.FILES:
+                self.logger.error("No file uploaded.")
+                return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
+
+            file = request.FILES['file']
+            self.logger.info(f"Received file: {file.name}")
+
+            # Read queries from file
+            queries = self.read_queries_from_uploaded_file(file)
+            if not queries:
+                self.logger.error("No valid queries found.")
+                return JsonResponse({"status": "failure", "message": "No valid queries found in the file."}, status=400)
+
+            # Detect Query Type (Teradata or BigQuery)
+            is_teradata = self.detect_teradata_queries(queries)
+
+            if is_teradata:
+                self.logger.info("Detected Teradata queries. Executing on Teradata and loading into BigQuery...")
+                execution_status = self.execute_teradata_to_bigquery(queries)
+            else:
+                self.logger.info("Detected BigQuery queries. Executing directly on BigQuery...")
+                execution_status = self.execute_bigquery_queries(queries)
+
+            if execution_status["status"] == "failure":
+                return JsonResponse(execution_status, status=500)
+
+            return JsonResponse({"status": "success", "message": execution_status["message"]}, status=200)
+
+        except Exception as e:
+            self.logger.error(f"Error processing request: {e}")
+            return JsonResponse({"status": "failure", "message": f"Error processing request: {str(e)}"}, status=500)
+
+    def detect_teradata_queries(self, queries):
+        """
+        Determines if the queries should be executed on Teradata.
+        - Looks for Teradata-specific keywords (e.g., "DATABASE", "HELP TABLE").
+        - Returns True if at least one query is for Teradata.
+        """
+        teradata_keywords = ["DATABASE", "HELP TABLE", "SHOW TABLES"]
+        return any(any(keyword in query.upper() for keyword in teradata_keywords) for query in queries)
+
+    def execute_teradata_to_bigquery(self, queries):
+        """
+        1. Connects to Teradata.
+        2. Executes queries.
+        3. Fetches results and loads them into BigQuery.
+        """
+        try:
+            # Connect to Teradata
+            teradata_db, teradata_conn = self.teradata_client()
+            if not teradata_conn:
+                self.logger.error("Failed to connect to Teradata.")
+                return {"status": "failure", "message": "Teradata connection failed."}
+
+            # Connect to BigQuery
+            bq_client, bq_credentials = self.bigquery_client()
+
+            for query in queries:
+                try:
+                    self.logger.info(f"Executing Teradata query: {query}")
+                    df = pd.read_sql(query, teradata_conn)
+                    
+                    if df.empty:
+                        self.logger.warning(f"No data returned for query: {query}")
+                        continue
+
+                    # Convert column names to lowercase
+                    df.columns = df.columns.str.lower()
+
+                    # Define BigQuery table name (Change this as needed)
+                    table_name = "your_project.your_dataset.teradata_results"
+
+                    # Load data into BigQuery
+                    self.load_result_to_bq_table(df, table_name, bq_client, bq_credentials)
+
+                except Exception as e:
+                    self.logger.error(f"Teradata query execution error: {e}")
+                    return {"status": "failure", "message": f"Teradata query execution error: {str(e)}"}
+
+            return {"status": "success", "message": "All Teradata queries executed and loaded successfully."}
+
+        except Exception as e:
+            self.logger.error(f"Error initializing Teradata client: {e}")
+            return {"status": "failure", "message": f"Error initializing Teradata client: {str(e)}"}
+
+    def execute_bigquery_queries(self, queries):
+        """
+        Executes SQL queries directly on BigQuery.
+        """
+        try:
+            bq_client, _ = self.bigquery_client()
+
+            for query in queries:
+                try:
+                    self.logger.info(f"Executing BigQuery SQL: {query}")
+                    query_job = bq_client.query(query)
+                    query_job.result()  # Wait for execution
+                    self.logger.info("BigQuery query executed successfully.")
+                except Exception as e:
+                    self.logger.error(f"BigQuery execution error: {e}")
+                    return {"status": "failure", "message": f"BigQuery execution error: {str(e)}"}
+
+            return {"status": "success", "message": "All BigQuery queries executed successfully."}
+
+        except Exception as e:
+            self.logger.error(f"BigQuery client initialization error: {e}")
+            return {"status": "failure", "message": f"BigQuery client initialization error: {str(e)}"}
+
+    def teradata_client(self):
+        """
+        Establishes a connection to Teradata.
+        """
+        try:
+            teradata_config = {
+                "hostname": os.getenv("TERADATA_HOST"),
+                "uid": os.getenv("TERADATA_USER"),
+                "pwd": os.getenv("TERADATA_PASSWORD"),
+                "dbname": os.getenv("TERADATA_DB")
+            }
+            connect_str = f'teradatasql://{teradata_config["uid"]}:{teradata_config["pwd"]}@{teradata_config["hostname"]}/{teradata_config["dbname"]}?encryptdata=true'
+            engine = create_engine(connect_str)
+            return engine, engine.connect()
+
+        except Exception as err:
+            self.logger.error(f"Teradata connection error: {err}")
+            return None, None
+
+    def bigquery_client(self):
+        """
+        Establishes a connection to BigQuery.
+        """
+        try:
+            credentials, _ = google.auth.default()
+            client = bigquery.Client(credentials=credentials, project="your_project_id")
+            return client, credentials
+        except Exception as err:
+            self.logger.error(f"BigQuery connection error: {err}")
+            return None, None
+
+    def load_result_to_bq_table(self, df, table_name, bq_client, bq_credentials):
+        """
+        Loads Teradata query results into BigQuery.
+        """
+        try:
+            pandas_gbq.to_gbq(df, table_name, if_exists='append', credentials=bq_credentials, project_id="your_project_id")
+            self.logger.info(f"Successfully loaded data into {table_name}")
+
+        except Exception as err:
+            self.logger.error(f"Error loading results into BigQuery: {err}")
+            raise
+
+    def read_queries_from_uploaded_file(self, file):
+        """
+        Reads SQL queries from an uploaded text file.
+        """
+        try:
+            content = TextIOWrapper(file, encoding='utf-8').read()
+            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
+            self.logger.info(f"Read {len(queries)} queries from file.")
+            return queries
+        except Exception as e:
+            self.logger.error(f"Error reading file: {e}")
+            return []
+==
+===========
+--======
+
+
 import pandas as pd
 import numpy as np
 import os
