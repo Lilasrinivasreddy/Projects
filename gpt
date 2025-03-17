@@ -2,7 +2,6 @@ import os
 import json
 import logging
 import pandas as pd
-import numpy as np
 import re
 from google.cloud import bigquery
 import google.auth
@@ -24,13 +23,17 @@ logger = logging.getLogger(__name__)
 
 # BigQuery Client Initialization
 def bigquery_client():
+    """Initialize BigQuery Client."""
     credentials, _ = google.auth.default()
     return bigquery.Client(credentials=credentials), credentials
 
 # Teradata Client Initialization
 def teradata_client():
+    """Initialize Teradata connection using SQLAlchemy."""
     try:
-        connection_str = f"teradatasql://{TD_CONFIG['uid']}:{TD_CONFIG['pwd']}@{TD_CONFIG['hostname']}/{TD_CONFIG['dbname']}?encryptdata=true"
+        connection_str = (
+            f"teradatasql://{TD_CONFIG['uid']}:{TD_CONFIG['pwd']}@{TD_CONFIG['hostname']}/{TD_CONFIG['dbname']}?encryptdata=true"
+        )
         td_engine = create_engine(connection_str)
         return td_engine
     except Exception as err:
@@ -39,6 +42,7 @@ def teradata_client():
 
 # Execute Queries in BigQuery
 def execute_bigquery(queries):
+    """Execute a list of queries in BigQuery."""
     try:
         client, _ = bigquery_client()
         for query in queries:
@@ -52,6 +56,7 @@ def execute_bigquery(queries):
 
 # Load Teradata Query Results to BigQuery
 def load_td_to_bq(td_query, bq_table):
+    """Execute a Teradata query and insert results into BigQuery."""
     try:
         td_engine = teradata_client()
         if not td_engine:
@@ -77,6 +82,7 @@ def load_td_to_bq(td_query, bq_table):
 
 # Read Queries from Uploaded File
 def read_queries_from_file(file):
+    """Read SQL queries from an uploaded file."""
     try:
         content = file.read().decode("utf-8")
         queries = [q.strip() for q in re.split(r";\s*\n", content) if q.strip()]
@@ -88,7 +94,9 @@ def read_queries_from_file(file):
 
 # Django API View for File Upload & Query Execution
 @method_decorator(csrf_exempt, name="dispatch")
-class ExecuteSQL(View):
+class ExecuteHistorySQL(View):
+    """Django API to upload an SQL file, execute queries, and load results to BigQuery."""
+
     def post(self, request):
         try:
             if "file" not in request.FILES:
@@ -123,6 +131,7 @@ class ExecuteSQL(View):
 
 
 
+
 {
   "teradata": {
     "hostname": "TDDP.TDC.VZWCORP.COM",
@@ -132,7 +141,7 @@ class ExecuteSQL(View):
   }
 }
 
-
+===================
 
 
 @method_decorator(csrf_exempt, name='dispatch')    
