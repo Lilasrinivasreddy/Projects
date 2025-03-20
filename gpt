@@ -1,130 +1,325 @@
+import pandas as pd
+import numpy as np
 import os
 import json
-import logging
-import pandas as pd
-import re
+import requests
+from requests.exceptions import HTTPError
 from google.cloud import bigquery
 import google.auth
 import pandas_gbq
+import decimal
+import time
 from sqlalchemy import create_engine
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-from django.views import View
+from sqlalchemy.orm import sessionmaker, registry
+from sqlalchemy import MetaData
 
-# Load Teradata Configuration from Config File
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
-with open(CONFIG_PATH, "r") as f:
-    TD_CONFIG = json.load(f)["teradata"]
 
-# Initialize Logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
 
-# BigQuery Client Initialization
-def bigquery_client():
-    """Initialize BigQuery Client."""
+current_path = os.path.dirname(__file__)
+
+dq_config = {
+"proxy": "http://proxy.ebiz.verizon.com:80/",
+"token_url": "https://ssologin.verizon.com/ngauth/oauth2/realms/root/realms/employee/access_token",    
+"client_id": "27472_izcv_gcp_gz_oauth2client",
+"client_secret": "27472IZCV",
+"sa_json_file_dtls": os.path.join(current_path, "sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json"),
+"conn_project_id": "vz-it-pr-izcv-idmcdo-0",
+}
+
+dq_td_config = {
+"hostname": "TDDP.TDC.VZWCORP.COM",
+"uid": "IDQPRDLD",    
+"pwd": "Newpass#969",
+"dbname": "idq_prd_tbls"
+}
+
+## Generate OIDC token for GCP credentials
+def exchange_and_save_oidc_token_for_jwt(url: str, client_id: str, client_secret: str) -> None:
+    print("Retrieving JWT from OIDC provider...")
+    payload = {"grant_type": "client_credentials", "client_id": client_id,
+               "client_secret": client_secret, "scope": "read"}
+    try:
+        response = requests.post(url=url, params=payload)
+        response.raise_for_status()
+        token = response.json()
+        print("Saving token...")
+        # Serializing json
+        oidc_token_file_name = "/apps/opt/application/smartdq/1corpdata/prod_connect_test/TD_GCP_scripts/dq_oidc_token.json"
+        if os.path.isfile(oidc_token_file_name):
+            os.remove(oidc_token_file_name)
+            time.sleep(7)
+
+        print(f"path: {oidc_token_file_name}")
+        with open(oidc_token_file_name, "w") as f:
+            json.dump(token, f)
+    except HTTPError as e:
+        raise e
+    
+
+## Create BigQuery instance, returns BigQuery Client (Query Execution) and Credentials(Loading Operation - pandas_gbq)
+def bigquery_client(auth: dict):
+    """
+    Purpose: Creates BigQuery instance
+    Returns: BigQuery Client (Query Execution) and Credentials(Loading Operation - pandas_gbq)
+    """
+    print(f'url={auth["token_url"]}, client_id={auth["client_id"]}, client_secret={auth["client_secret"]}')
+    
+    exchange_and_save_oidc_token_for_jwt (
+        url=auth["token_url"],
+        client_id=auth["client_id"],
+        client_secret=auth["client_secret"]
+    )
+    
+    print('Setting environment variable...')
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = auth["sa_json_file_dtls"]
+    os.environ['GOOGLE_CLOUD_PROJECT'] = auth["conn_project_id"]
+    
     credentials, _ = google.auth.default()
-    return bigquery.Client(credentials=credentials), credentials
+    
+    client = bigquery.Client(credentials=credentials, project=auth["conn_project_id"])
+    print(f'Connected to {auth["conn_project_id"]} project space')
+    
+    return client, credentials
 
-# Teradata Client Initialization
-def teradata_client():
-    """Initialize Teradata connection using SQLAlchemy."""
+def teradata_client_1():
+    """
+    Purpose: Creates Teradata instance
+    Returns: Database engine (Query Execution) and Connection engine (Loading Operation for inserting records from dataframe)
+    """
+    
     try:
-        connection_str = (
-            f"teradatasql://{TD_CONFIG['uid']}:{TD_CONFIG['pwd']}@{TD_CONFIG['hostname']}/{TD_CONFIG['dbname']}?encryptdata=true"
-        )
-        td_engine = create_engine(connection_str)
-        return td_engine
+        dbclient = create_engine(f'teradatasql://{dq_td_config["uid"]}:{dq_td_config["pwd"]}@{dq_td_config["hostname"]}/{dq_td_config["dbname"]}?encryptdata=true')
+        return dbclient
     except Exception as err:
-        logger.error(f"Error while connecting to Teradata: {err}")
-        return None
+        print(f"Error while connecting to database ({dq_td_config['hostname']}). error:{err}")
+    
+    return None
 
-# Execute Queries in BigQuery
-def execute_bigquery(queries):
-    """Execute a list of queries in BigQuery."""
+def teradata_client(auth: dict):
+    """
+    Purpose: Creates Teradata instance
+    Returns: Database engine (Query Execution) and Connection engine (Loading Operation for inserting records from dataframe)
+    """
+    
     try:
-        client, _ = bigquery_client()
-        for query in queries:
-            query_job = client.query(query)
-            query_job.result()
-            logger.info("Query executed successfully in BigQuery.")
-        return {"status": "success", "message": "All BigQuery queries executed successfully."}
-    except Exception as e:
-        logger.error(f"BigQuery execution error: {e}")
-        return {"status": "failure", "message": str(e)}
+        connect = f'teradatasql://{auth["uid"]}:{auth["pwd"]}@{auth["hostname"]}/{auth["dbname"]}?encryptdata=true'
+        print(connect)
+        dbclient = create_engine(connect)
+        return dbclient, dbclient.connect()
+    except Exception as err:
+        print(f"Error while connecting to database ({auth['dbname']}). error:{err}")
+    
+    return None, None
 
-# Load Teradata Query Results to BigQuery
-def load_td_to_bq(td_query, bq_table):
-    """Execute a Teradata query and insert results into BigQuery."""
+##  Round off to 2 decimal points
+def round_off(val):  
+    d = decimal.Decimal(val)
+    return d.quantize(decimal.Decimal('.01'), decimal.ROUND_DOWN)
+
+
+def load_result_to_bq_table(
+    dq_bq_client, dq_dest_table_name:str, dq_credentials,
+    df_load_data: pd.DataFrame, column_details: dict
+):
     try:
-        td_engine = teradata_client()
-        if not td_engine:
-            return {"status": "failure", "message": "Teradata connection failed."}
+        print(f"Load Result Start {dq_dest_table_name} ===========================================")
+        print(f"dq_dest_table_name: {dq_dest_table_name}")
 
-        # Fetch data from Teradata
-        td_res = pd.read_sql(td_query, td_engine)
-        td_res = td_res.rename(columns={col: col.lower() for col in td_res.columns})
-
-        # Connect to BigQuery
-        bq_client, bq_creds = bigquery_client()
+        
+        required_columns: list[str] = []
+        for col_type in column_details:
+            if len(column_details[col_type]) > 0:
+                required_columns.extend(column_details[col_type])
+        print(required_columns)
+             
+        # required_columns = column_details.get('STRING', []) + column_details.get('NUMERIC', []) + column_details.get('INTEGER', []) + column_details.get('DATETIME', [])
+        # print(required_columns)
+        df_load_data = df_load_data.loc[:, df_load_data.columns.isin(required_columns)]
+        
+        # print(df_load_data)
+        # df_load_data = df_load_data.drop(columns=column_details.get('DATE', []), axis=1, errors='ignore')
+        
+        print(df_load_data.info())
+        
+        print("String.................")
+        for col in column_details.get('STRING', []):
+            print(col)
+            # df_load_data[col] = df_load_data[col].fillna(np.nan).astype(str).replace('nan',np.nan).replace('<NA>',np.nan)
+            print(col)
+            try:
+                print(col)
+                df_load_data[col] = df_load_data[col].fillna(np.nan).astype(str).replace('nan',np.nan).replace('<NA>',np.nan)
+                # df_load_data[col] = df_load_data[col].astype(object).replace('nan',np.nan).replace('<NA>',np.nan)
+            except Exception as e:
+                print(e)
+                raise Exception(e)
+            
+            
+        # df_load_data = df_load_data.drop(columns=column_details.get('STRING', []), axis=1, errors='ignore')
+        
+        print("Numeric................")
+        for col in column_details.get('NUMERIC', []):
+            print(col)
+            df_load_data[col] = df_load_data[col].fillna(np.nan).astype('float64') #.map(round_off)
+        
+        # df_load_data = df_load_data.drop(columns=column_details.get('NUMERIC', []), axis=1, errors='ignore')
+        
+        print("Integer................")
+        for col in column_details.get('INTEGER', []):
+            print(col)
+            # df_load_data[col] = df_load_data[col].fillna(np.nan).astype('float64').map(int)
+            df_load_data[col] = df_load_data[col].fillna(np.nan).map(float).map(int)
+            
+        # df_load_data = df_load_data.drop(columns=column_details.get('INTEGER', []), axis=1, errors='ignore')
+        
+        print("Datetime...............")
+        # for col in column_details.get('DATETIME', []):
+        #     print(col)
+        #     df_load_data[col] = pd.to_datetime(arg=df_load_data[col], format='%Y-%m-%d').dt.strftime('%Y-%m-%d %H:%M:%S')
+          
+        # df_load_data = df_load_data.drop(columns=column_details.get('DATETIME', []), axis=1, errors='ignore')  
+        
+        # print("Timestamp...............")
+        # for col in column_details.get("TIMESTAMP", []):
+        #     df_load_data[col] = pd.to_datetime(df_load_data[col], format='%Y-%m-%d %H:%M:%S.%f %Z', errors='coerce').dt.strftime("%Y-%m-%d %H:%M:%S:%f %Z")
+        #     df_load_data[col] = df_load_data[col].astype("datetime64[ns]")
+        
+        print("Completed..............")
+        print(df_load_data.info())
+        # print(df_load_data)
+        
         pandas_gbq.to_gbq(
-            dataframe=td_res,
-            destination_table=bq_table,
-            if_exists="append",
-            credentials=bq_creds
+            dataframe=df_load_data,
+            destination_table=dq_dest_table_name,
+            if_exists='append',
+            credentials=dq_credentials,
+            project_id=dq_config["conn_project_id"],
         )
+        print(f"Loaded Result to {dq_dest_table_name} ===========================================")
+    except Exception as err:
+        print(f"Error Occurred while loading Results to BigQuery Table. Error: {err}")
+        print(f"Load Result Error {dq_dest_table_name} table=====================================")
+=============================================================================================================================================
 
-        return {"status": "success", "message": f"Data from Teradata inserted into {bq_table}."}
-    except Exception as e:
-        logger.error(f"Error loading Teradata data to BigQuery: {e}")
-        return {"status": "failure", "message": str(e)}
+======================================================================================================================================================
+import load_result_to_bq as load_bq
+import pandas as pd
+import os 
+from datetime import datetime
 
-# Read Queries from Uploaded File
-def read_queries_from_file(file):
-    """Read SQL queries from an uploaded file."""
-    try:
-        content = file.read().decode("utf-8")
-        queries = [q.strip() for q in re.split(r";\s*\n", content) if q.strip()]
-        logger.info(f"Read {len(queries)} queries from file.")
-        return queries
-    except Exception as e:
-        logger.error(f"Error reading query file: {e}")
-        return []
+dqaas_profile_rpt = {
+'INTEGER':['prfl_id','weekday','rpt_seq_num'],
+'DATE':['data_dt'],
+'STRING':['feature_name'],
+'NUMERIC':['count_curr'],
+'TIMESTAMP':['prfl_run_ts']
+}
+src_query = ["""select 1000001 as rpt_seq_num, 1397 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'base_address_all_acct_hist' as src_tbl,'LAST_UPDT_TS' as meas_name, cast(rpt_dt as date) as data_dt,
+'Tier1 Models' as feature_name,
+null as grouped_columns,
+count (*) as count_curr,
+current_timestamp as prfl_run_ts,
+extract(dayofweek from rpt_dt) as weekday
+from vz-it-pr-gk1v-cwlspr-0.vzw_uda_prd_tbls.base_address_all_acct_hist where cast(rpt_dt as date)>= current_date -90 group by 1,2,3,4,5,6,7,8,11,12""",]
 
-# Django API View for File Upload & Query Execution
-@method_decorator(csrf_exempt, name="dispatch")
-class ExecuteHistorySQL(View):
-    """Django API to upload an SQL file, execute queries, and load results to BigQuery."""
+ 
+dqaas_profile_rpt_tbl = "vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
 
-    def post(self, request):
+def load_td_to_gcp():
+    for query in src_query:
         try:
-            if "file" not in request.FILES:
-                return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
+            td_engine, _ = load_bq.teradata_client(load_bq.dq_td_config)
+            td_query = query
+            td_res = pd.read_sql(td_query, td_engine)
+            td_res = td_res.rename(columns={str(col): str(col).lower() for col in td_res.columns.to_list()})
+            print(len(td_res))
+            
+            bq_client, bq_creds = load_bq.bigquery_client(load_bq.dq_config)
+            load_bq.load_result_to_bq_table(
+                column_details=dqaas_profile_rpt,
+                df_load_data=td_res,
+                dq_bq_client=bq_client,
+                dq_credentials=bq_creds,
+                dq_dest_table_name=dqaas_profile_rpt_tbl
+            )
+        except Exception as e:
+            print(f"Query Execution Failed :::: {query} :::: {e}")
+            pass
+    
+if __name__ == "__main__":    
+    load_td_to_gcp()
+    =======================================================================
+@method_decorator(csrf_exempt, name='dispatch')    
+class ExecuteHistorySQL(CredentialsandConnectivity): 
+    # Initialize Logger
+    def dispatch(self, request, *args, **kwargs):
+        if not hasattr(self, 'logger'):
+            self.logger = logging.getLogger(__name__)
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+        return super().dispatch(request, *args, **kwargs)
 
-            file = request.FILES["file"]
-            queries = read_queries_from_file(file)
+    # File handling and Query execution
+    def post(self, request, *args, **kwargs):
+        try:
+            if not hasattr(self, 'logger'):
+                self.logger = logging.getLogger(__name__)
+
+            print(f"DEBUG - Request method: {request.method}, Content Type: {request.content_type}")
+            print(f"DEBUG - request.FILES: {request.FILES}") 
+
+            #'file' to 'fileName'
+            file_key = 'fileName' if 'fileName' in request.FILES else 'file' 
+
+            #Check if file is uploaded
+            if file_key not in request.FILES or not request.FILES[file_key]:
+                self.logger.error("No file uploaded.")
+                return JsonResponse({"status": "failure", "message": "No file uploaded. Ensure the correct file key is used."}, status=400)
+
+            file = request.FILES[file_key] 
+            self.logger.info(f"Received file: {file.name}")
+
+            #Read queries from file
+            queries = self.read_queries_from_uploaded_file(file)
             if not queries:
-                return JsonResponse({"status": "failure", "message": "No valid queries found."}, status=400)
+                self.logger.error("No valid queries found.")
+                return JsonResponse({"status": "failure", "message": "No valid queries found in the file."}, status=400)
 
-            # Split Queries for GCP and Teradata
-            gcp_queries = [q for q in queries if not q.lower().startswith("select")]
-            td_queries = [q for q in queries if q.lower().startswith("select")]
+            # Execute Queries
+            execution_status = self.execute_queries(queries)
+            if execution_status["status"] == "failure":
+                return JsonResponse(execution_status, status=500)
 
-            results = {}
-
-            # Execute BigQuery Queries
-            if gcp_queries:
-                results["bigquery"] = execute_bigquery(gcp_queries)
-
-            # Execute Teradata Queries & Insert Results to BQ
-            if td_queries:
-                bq_table = "your_project.your_dataset.teradata_results"  # Define BigQuery table for TD results
-                for td_query in td_queries:
-                    results[f"teradata_{td_query[:30]}"] = load_td_to_bq(td_query, bq_table)
-
-            return JsonResponse({"status": "success", "results": results}, status=200)
+            return JsonResponse({"status": "success", "message": "File uploaded and queries executed successfully."}, status=200)
 
         except Exception as e:
-            logger.error(f"Error processing request: {e}")
-            return JsonResponse({"status": "failure", "message": str(e)}, status=500)
+            self.logger.error(f"Error processing request: {e}")
+            return JsonResponse({"status": "failure", "message": f"Error processing request: {str(e)}"}, status=500)
+                    
+                 
+            # Execute Queries in BigQuery
+    def execute_queries(self, queries):
+        try:
+            self.dq_bigquery_client()
+            for query in queries:
+                try:
+                    query_job = self.client.query(query)
+                    query_job.result()
+                    self.logger.info("Query executed successfully.")
+                except Exception as e:
+                    self.logger.error(f"Query execution error: {e}")
+                    return {"status": "failure", "message": f"Query execution error: {str(e)}"}
+            return {"status": "success", "message": "All queries executed successfully."}
+        except Exception as e:
+            self.logger.error(f"Error initializing BigQuery client: {e}")
+            return {"status": "failure", "message": f"Error initializing BigQuery client: {str(e)}"}
+
+    # Read SQL Queries from Uploaded File
+    def read_queries_from_uploaded_file(self, file):
+        try:
+            content = file.read().decode('utf-8')
+            queries = [q.strip() for q in re.split(r';\s*\n', content) if q.strip()]
+            self.logger.info(f"Read {len(queries)} queries from file.")
+            return queries
+        except Exception as e:
+            self.logger.error(f"Error reading file: {e}")
+            return []
