@@ -1,12 +1,10 @@
-import sys
 import os
 import json
 import logging
 import pandas as pd
-import re
-import decimal
 import time
 import requests
+import teradatasql
 from requests.exceptions import HTTPError
 from google.cloud import bigquery
 import google.auth
@@ -15,30 +13,16 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
-import json
-import requests
-from requests.exceptions import HTTPError
-from google.cloud import bigquery
-import google.auth
-import pandas_gbq
-import decimal
-import time
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, registry
-from sqlalchemy import MetaData
 
-
-# Ensure the script directory is in the system path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# Hardcoded Teradata Configuration
+# Teradata Configuration
 dq_td_config = {
-    "hostname": "TDDP.TDC.VZWCORP.COM",
-    "uid": "IDQPRDLD",
-    "pwd": "Newpass#969",
-    "dbname": "idq_prd_tbls"
+    "hostname": "TDDP.TDC.VZWCORP.COM",  # Replace with actual Teradata host
+    "uid": "IDQPRDLD",  # Replace with your Teradata username
+    "pwd": "Newpass#969",  # Replace with your Teradata password
+    "dbname": "idq_prd_tbls"  # Replace with your database name
 }
 
+# GCP BigQuery Configuration
 dq_config = {
     "proxy": "http://proxy.ebiz.verizon.com:80/",
     "token_url": "https://ssologin.verizon.com/ngauth/oauth2/realms/root/realms/employee/access_token",    
@@ -80,17 +64,22 @@ def bigquery_client():
     credentials, _ = google.auth.default()
     return bigquery.Client(credentials=credentials, project=dq_config["conn_project_id"]), credentials
 
-# Teradata Client Initialization
+# Teradata Client Initialization - FIXED to use `teradatasql`
 def teradata_client():
     try:
-        connection_str = f"teradatasql://{dq_td_config['uid']}:{dq_td_config['pwd']}@{dq_td_config['hostname']}/{dq_td_config['dbname']}?encryptdata=true"
-        return create_engine(connection_str)
+        conn = teradatasql.connect(
+            host=dq_td_config["hostname"],
+            user=dq_td_config["uid"],
+            password=dq_td_config["pwd"],
+            database=dq_td_config["dbname"]
+        )
+        return conn
     except Exception as err:
-        logger.error(f"Error while connecting to Teradata: {err}")
+        logger.error(f"❌ Error while connecting to Teradata: {err}")
         return None
 
-# Load Result to BigQuery
-def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_data, column_details):
+# Load DataFrame into BigQuery
+def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_data):
     try:
         logger.info(f"Loading results into BigQuery table: {dq_dest_table_name}")
         df_load_data = df_load_data.rename(columns={col: col.lower() for col in df_load_data.columns})
@@ -101,43 +90,59 @@ def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_
             credentials=dq_credentials,
             project_id=dq_config["conn_project_id"],
         )
-        logger.info(f"Successfully loaded data into {dq_dest_table_name}")
+        logger.info(f"✅ Successfully loaded data into {dq_dest_table_name}")
     except Exception as err:
-        logger.error(f"Error loading results into BigQuery: {err}")
+        logger.error(f"❌ Error loading results into BigQuery: {err}")
 
+# Django View to Process SQL File Upload
 @method_decorator(csrf_exempt, name="dispatch")
 class ExecuteHistorySQL(View):
     def post(self, request):
         try:
-            print(f"Received FILES: {request.FILES}")
+            logger.info(f"Received FILES: {request.FILES}")
+
+            # Validate file input
             if "file" not in request.FILES:
                 return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
+
             file = request.FILES["file"]
             queries = file.read().decode("utf-8").split(";")
             results = {}
-            
+
             for query in queries:
                 query = query.strip()
                 if not query:
                     continue
-                if "select" in query.lower():  # TD to GCP
-                    td_engine = teradata_client()
-                    df = pd.read_sql(query, td_engine)
+
+                if "select" in query.lower():  # Teradata Query Execution
+                    conn = teradata_client()
+                    if conn is None:
+                        return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
+
+                    cursor = conn.cursor()
+                    cursor.execute(query)
+                    df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
+
+                    # Load to BigQuery
                     bq_client, bq_creds = bigquery_client()
                     load_result_to_bq(
                         dq_bq_client=bq_client,
                         dq_dest_table_name="your_project.your_dataset.teradata_results",
                         dq_credentials=bq_creds,
-                        df_load_data=df,
-                        column_details={"STRING": df.columns.tolist()}
+                        df_load_data=df
                     )
+
                     results[query[:30]] = "TD to GCP Query executed successfully."
-                else:  # GCP to GCP
+                    cursor.close()
+                    conn.close()
+
+                else:  # BigQuery Query Execution
                     bq_client, _ = bigquery_client()
                     bq_client.query(query).result()
                     results[query[:30]] = "GCP to GCP Query executed successfully."
-            
+
             return JsonResponse({"status": "success", "results": results}, status=200)
+
         except Exception as e:
-            logger.error(f"Error processing request: {e}")
+            logger.error(f"❌ Error processing request: {e}")
             return JsonResponse({"status": "failure", "message": str(e)}, status=500)
