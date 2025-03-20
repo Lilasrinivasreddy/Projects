@@ -249,6 +249,34 @@ def load_td_to_gcp():
 if __name__ == "__main__":    
     load_td_to_gcp()
     =======================================================================
+
+import os
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views import View
+from django.conf import settings
+from google.cloud import bigquery
+import base64
+import time
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from rest_framework.views import APIView
+import subprocess
+from django.http import HttpResponse
+from django.contrib import messages
+from configparser import ConfigParser
+from requests.exceptions import HTTPError
+from utils.mtd_logger import Logger
+from datetime import datetime
+import requests
+import json
+import google.auth
+from pathlib import Path
+from sqlalchemy import create_engine
+import pandas as pd
+from sqlalchemy import text
+import logging
+import re
 @method_decorator(csrf_exempt, name='dispatch')    
 class ExecuteHistorySQL(CredentialsandConnectivity): 
     # Initialize Logger
