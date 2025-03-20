@@ -1,80 +1,40 @@
-March 20, 2025 - 23:24:23
-Django version 5.1.1, using settings 'dqaas_api.settings'
-Starting development server at http://127.0.0.1:8000/
-Quit the server with CTRL-BREAK.
+INSERT INTO "vz-it-np-izcv-dev-idmcdo-0"."dga_dq_tbls"."dqaas_profile_rpt"
+(
+    rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name,
+    data_dt, feature_name, grouped_columns, count_curr, prfl_run_ts, weekday
+)
+SELECT
+    CAST(900098 AS INTEGER) AS rpt_seq_num,
+    CAST(7851 AS INTEGER) AS prfl_id,
+    'CUSTOM_RULES' AS prfl_type,
+    'Consistency' AS dq_pillar,
+    'CUST_ACCT_LINE_ADDR_V' AS src_tbl,
+    'CUST_ACCT_LINE_ADDR_V Table count' AS meas_name,
+    CAST(LAST_UPD_DT AS DATE) AS data_dt,
+    'Tier1 Models' AS feature_name,
+    NULL AS grouped_columns,
+    COUNT(*) AS count_curr,
+    CURRENT_TIMESTAMP AS prfl_run_ts,
+    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE)) AS weekday
+FROM "NTL_PRD_ALLVM"."CUST_ACCT_LINE_ADDR_V"
+WHERE CAST(LAST_UPD_DT AS DATE) >= CURRENT_DATE - 90
+GROUP BY
+    CAST(LAST_UPD_DT AS DATE),
+    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE));
 
-2025-03-20 23:25:06,277 - INFO - 📂 Received FILES: <MultiValueDict: {'file': [<InMemoryUploadedFile: file.txt (text/plain)>]}>
-2025-03-20 23:25:06,278 - INFO - 📌 Executing Query:
-INSERT INTO ""vz-it-np-izcv-dev-idmcdo-0"".""dga_dq_tbls"".""dqaas_profile_rpt""
-(
-    rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name,
-    data_dt, feature_name, grouped_columns, count_curr, prfl_run_ts, weekday
-)
-SELECT
-    CAST(900098 AS INTEGER) AS rpt_seq_num,
-    CAST(7851 AS INTEGER) AS prfl_id,
-    'CUSTOM_RULES' AS prfl_type,
-    'Consistency' AS dq_pillar,
-    '"CUST_ACCT_LINE_ADDR_V"' AS src_tbl,
-    '"CUST_ACCT_LINE_ADDR_V" Table count' AS meas_name,
-    CAST(LAST_UPD_DT AS DATE) AS data_dt,
-    'Tier1 Models' AS feature_name,
-    NULL AS grouped_columns,
-    COUNT(*) AS count_curr,
-    CURRENT_TIMESTAMP AS prfl_run_ts,
-    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE)) AS weekday
-FROM ""NTL_PRD_ALLVM"".""CUST_ACCT_LINE_ADDR_V""
-WHERE CAST(LAST_UPD_DT AS DATE) >= CURRENT_DATE - 90
-GROUP BY
-    CAST(LAST_UPD_DT AS DATE),
-    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE))
-2025-03-20 23:25:06,279 - INFO - 🔄 Connecting to Teradata...
-2025-03-20 23:25:08,054 - INFO - ✅ Teradata connection successful!
-2025-03-20 23:25:08,086 - ERROR - ❌ Query execution failed: INSERT INTO ""vz-it-np-izcv-dev-idmcdo-0"".""dga_dq_tbls"".""dqaas_profile_rpt""
-(
-    rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name,
-    data_dt, feature_name, grouped_columns, count_curr, prfl_run_ts, weekday
-)
-SELECT
-    CAST(900098 AS INTEGER) AS rpt_seq_num,
-    CAST(7851 AS INTEGER) AS prfl_id,
-    'CUSTOM_RULES' AS prfl_type,
-    'Consistency' AS dq_pillar,
-    '"CUST_ACCT_LINE_ADDR_V"' AS src_tbl,
-    '"CUST_ACCT_LINE_ADDR_V" Table count' AS meas_name,
-    CAST(LAST_UPD_DT AS DATE) AS data_dt,
-    'Tier1 Models' AS feature_name,
-    NULL AS grouped_columns,
-    COUNT(*) AS count_curr,
-    CURRENT_TIMESTAMP AS prfl_run_ts,
-    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE)) AS weekday
-FROM ""NTL_PRD_ALLVM"".""CUST_ACCT_LINE_ADDR_V""
-WHERE CAST(LAST_UPD_DT AS DATE) >= CURRENT_DATE - 90
-GROUP BY
-    CAST(LAST_UPD_DT AS DATE),
-    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE))
-Error: [Version 20.0.0.15] [Session 243685566] [Teradata Database] [Error 3706] Syntax error: Blank name in quotation marks.
- at gosqldriver/teradatasql.formatError ErrorUtil.go:91
- at gosqldriver/teradatasql.(*teradataConnection).formatDatabaseError ErrorUtil.go:251
- at gosqldriver/teradatasql.(*teradataConnection).makeChainedDatabaseError ErrorUtil.go:267
- at gosqldriver/teradatasql.(*teradataConnection).processErrorParcel TeradataConnection.go:715
- at gosqldriver/teradatasql.(*TeradataRows).processResponseBundle TeradataRows.go:2308
- at gosqldriver/teradatasql.(*TeradataRows).executeSQLRequest TeradataRows.go:874
- at gosqldriver/teradatasql.newTeradataRows TeradataRows.go:720
- at gosqldriver/teradatasql.(*teradataStatement).QueryContext TeradataStatement.go:122
- at gosqldriver/teradatasql.(*teradataConnection).QueryContext TeradataConnection.go:1225
- at database/sql.ctxDriverQuery ctxutil.go:48
- at database/sql.(*DB).queryDC.func1 sql.go:1776
- at database/sql.withLock sql.go:3530
- at database/sql.(*DB).queryDC sql.go:1771
- at database/sql.(*Conn).QueryContext sql.go:2027
- at main.createRows goside.go:783
- at main.goCreateRows goside.go:662
- at _cgoexp_97cde1c53cf8_goCreateRows _cgo_gotypes.go:389
- at runtime.cgocallbackg1 cgocall.go:420
- at runtime.cgocallbackg cgocall.go:339
- at runtime.cgocallback asm_amd64.s:1079
- at runtime.goexit asm_amd64.s:1695
-Internal Server Error: /mle/ExecuteHistorySQL/
-2025-03-20 23:25:08,090 - ERROR - Internal Server Error: /mle/ExecuteHistorySQL/
-[20/Mar/2025 23:25:08] "POST /mle/ExecuteHistorySQL/ HTTP/1.1" 500 1426
+
+def fix_query_format(query):
+    """
+    Fixes schema, table, and column names formatting.
+    Ensures double quotes only wrap schema and table names.
+    """
+    print(f"🔍 Original Query Before Fixing:\n{query}\n")
+
+    # ✅ Ensure schema and table names are correctly formatted
+    fixed_query = query.replace('""', '"')  # Remove extra quotes
+    fixed_query = re.sub(r'(["\'])(\w+-\w+-\w+-\w+-\w+)(["\'])', r'"\2"', fixed_query)  # Fix schema names
+    fixed_query = re.sub(r'(["\'])(\w+\.\w+)(["\'])', r'"\2"', fixed_query)  # Fix table names
+    fixed_query = re.sub(r'(["\'])(\w+\s\w+)(["\'])', r"'\2'", fixed_query)  # Fix column values
+
+    print(f"✅ Fixed Query:\n{fixed_query}\n")
+    return fixed_query
