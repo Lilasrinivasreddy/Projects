@@ -1,1 +1,157 @@
-{"status": "failure", "message": "[Version 20.0.0.15] [Session 243683084] [Teradata Database] [Error 3707] Syntax error, expected something like a 'SELECT' keyword or a 'TRANSACTIONTIME' keyword or a 'NONTEMPORAL' keyword or 'AS' keyword between the word 'dga_dq_tbls' and '.'.\n at gosqldriver/teradatasql.formatError ErrorUtil.go:91\n at gosqldriver/teradatasql.(*teradataConnection).formatDatabaseError ErrorUtil.go:251\n at gosqldriver/teradatasql.(*teradataConnection).makeChainedDatabaseError ErrorUtil.go:267\n at gosqldriver/teradatasql.(*teradataConnection).processErrorParcel TeradataConnection.go:715\n at gosqldriver/teradatasql.(*TeradataRows).processResponseBundle TeradataRows.go:2308\n at gosqldriver/teradatasql.(*TeradataRows).executeSQLRequest TeradataRows.go:874\n at gosqldriver/teradatasql.newTeradataRows TeradataRows.go:720\n at gosqldriver/teradatasql.(*teradataStatement).QueryContext TeradataStatement.go:122\n at gosqldriver/teradatasql.(*teradataConnection).QueryContext TeradataConnection.go:1225\n at database/sql.ctxDriverQuery ctxutil.go:48\n at database/sql.(*DB).queryDC.func1 sql.go:1776\n at database/sql.withLock sql.go:3530\n at database/sql.(*DB).queryDC sql.go:1771\n at database/sql.(*Conn).QueryContext sql.go:2027\n at main.createRows goside.go:783\n at main.goCreateRows goside.go:662\n at _cgoexp_97cde1c53cf8_goCreateRows _cgo_gotypes.go:389\n at runtime.cgocallbackg1 cgocall.go:420\n at runtime.cgocallbackg cgocall.go:339\n at runtime.cgocallback asm_amd64.s:1079\n at runtime.goexit asm_amd64.s:1695"}
+import os
+import json
+import logging
+import pandas as pd
+import requests
+import teradatasql
+from google.cloud import bigquery
+import google.auth
+import pandas_gbq
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
+import re
+
+# ✅ Teradata Configuration
+dq_td_config = {
+    "hostname": "TDDP.TDC.VZWCORP.COM",
+    "uid": "IDQPRDLD",
+    "pwd": "Newpass#969",
+    "dbname": "idq_prd_tbls"
+}
+
+# ✅ Google BigQuery Configuration
+dq_config = {
+    "sa_json_file_dtls": os.path.join(os.path.dirname(__file__), "sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json"),
+    "conn_project_id": "vz-it-pr-izcv-idmcdo-0",
+    "bq_table_name": "your_project.your_dataset.dqaas_profile_rpt"  # ✅ Replace with actual BigQuery table
+}
+
+# ✅ Initialize Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+# ✅ Connect to Teradata
+def teradata_client():
+    try:
+        logger.info("🔄 Connecting to Teradata...")
+        conn = teradatasql.connect(
+            host=dq_td_config["hostname"],
+            user=dq_td_config["uid"],
+            password=dq_td_config["pwd"],
+            database=dq_td_config["dbname"]
+        )
+        logger.info("✅ Teradata connection successful!")
+        return conn
+    except Exception as err:
+        logger.error(f"❌ Teradata connection failed: {err}")
+        return None
+
+# ✅ Connect to Google BigQuery
+def bigquery_client():
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = dq_config["sa_json_file_dtls"]
+    os.environ['GOOGLE_CLOUD_PROJECT'] = dq_config["conn_project_id"]
+    credentials, _ = google.auth.default()
+    return bigquery.Client(credentials=credentials, project=dq_config["conn_project_id"]), credentials
+
+# ✅ Function to Load DataFrame to BigQuery
+def load_result_to_bq(df_load_data):
+    try:
+        logger.info(f"📌 Loading results into BigQuery table: {dq_config['bq_table_name']}")
+        
+        if df_load_data.empty:
+            logger.warning(f"⚠️ No data to insert into BigQuery for table {dq_config['bq_table_name']}")
+            return
+        
+        df_load_data = df_load_data.rename(columns={col: col.lower() for col in df_load_data.columns})
+        
+        pandas_gbq.to_gbq(
+            dataframe=df_load_data,
+            destination_table=dq_config["bq_table_name"],
+            if_exists="append",
+            project_id=dq_config["conn_project_id"],
+        )
+        logger.info(f"✅ Successfully loaded {len(df_load_data)} rows into {dq_config['bq_table_name']}")
+    except Exception as err:
+        logger.error(f"❌ Error loading results into BigQuery: {err}")
+
+# ✅ Process SQL File Upload and Execute Queries
+@method_decorator(csrf_exempt, name="dispatch")
+class ExecuteHistorySQL(View):
+    def post(self, request):
+        try:
+            logger.info(f"📂 Received FILES: {request.FILES}")
+
+            if "file" not in request.FILES:
+                return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
+
+            file = request.FILES["file"]
+            queries = file.read().decode("utf-8").strip().split(";")
+            results = {}
+
+            for query in queries:
+                query = query.strip()
+                if not query:
+                    continue
+
+                # ✅ Fix schema/table names
+                query = query.replace("vz-it-np-izcv-dev-idmcdo-0", '"vz-it-np-izcv-dev-idmcdo-0"')
+                query = query.replace("dga_dq_tbls", '"dga_dq_tbls"')
+                query = query.replace("dqaas_profile_rpt", '"dqaas_profile_rpt"')
+                query = query.replace("NTL_PRD_ALLVM", '"NTL_PRD_ALLVM"')
+                query = query.replace("CUST_ACCT_LINE_ADDR_V", '"CUST_ACCT_LINE_ADDR_V"')
+
+                logger.info(f"📌 Executing Query:\n{query}")
+
+                try:
+                    conn = teradata_client()
+                    if conn is None:
+                        return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
+
+                    cursor = conn.cursor()
+
+                    # ✅ Execute SQL Query
+                    cursor.execute(query)
+                    conn.commit()
+                    cursor.close()
+                    conn.close()
+
+                    logger.info(f"✅ Query executed successfully.")
+                    results[query[:30]] = "✅ Query executed successfully."
+
+                except Exception as e:
+                    logger.error(f"❌ Query execution failed: {query}\nError: {e}")
+                    return JsonResponse({"status": "failure", "message": str(e)}, status=500)
+
+            return JsonResponse({"status": "success", "results": results}, status=200)
+
+        except Exception as e:
+            logger.error(f"❌ Error processing request: {e}")
+            return JsonResponse({"status": "failure", "message": str(e)}, status=500)
+
+
+
+INSERT INTO "vz-it-np-izcv-dev-idmcdo-0"."dga_dq_tbls"."dqaas_profile_rpt"
+(
+    rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, 
+    data_dt, feature_name, grouped_columns, count_curr, prfl_run_ts, weekday
+)
+SELECT 
+    CAST(900098 AS INTEGER) AS rpt_seq_num, 
+    CAST(7851 AS INTEGER) AS prfl_id, 
+    'CUSTOM_RULES' AS prfl_type, 
+    'Consistency' AS dq_pillar, 
+    'CUST_ACCT_LINE_ADDR_V' AS src_tbl, 
+    'CUST_ACCT_LINE_ADDR_V Table count' AS meas_name, 
+    CAST(LAST_UPD_DT AS DATE) AS data_dt, 
+    'Tier1 Models' AS feature_name, 
+    NULL AS grouped_columns, 
+    COUNT(*) AS count_curr, 
+    CURRENT_TIMESTAMP AS prfl_run_ts, 
+    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE)) AS weekday 
+FROM "NTL_PRD_ALLVM"."CUST_ACCT_LINE_ADDR_V" 
+WHERE CAST(LAST_UPD_DT AS DATE) >= CURRENT_DATE - 90 
+GROUP BY 
+    CAST(LAST_UPD_DT AS DATE), 
+    DAYOFWEEK(CAST(LAST_UPD_DT AS DATE));
