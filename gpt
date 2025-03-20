@@ -1,12 +1,30 @@
-PS C:\Users\reddyvu\Desktop\smartdq\dq_api> pip install teradatasql
-Requirement already satisfied: teradatasql in c:\users\reddyvu\appdata\local\programs\python\python312\lib\site-packages (20.0.0.15)
-Requirement already satisfied: pycryptodome in c:\users\reddyvu\appdata\local\programs\python\python312\lib\site-packages (from teradatasql) (3.20.0)
-PS C:\Users\reddyvu\Desktop\smartdq\dq_api> pip install teradatasqlalchemy
-WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ProtocolError('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))': /simple/teradatasqlalchemy/        
-WARNING: Retrying (Retry(total=3, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ProtocolError('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))': /simple/teradatasqlalchemy/        
-WARNING: Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ProtocolError('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))': /simple/teradatasqlalchemy/        
-WARNING: Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ProtocolError('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))': /simple/teradatasqlalchemy/        
-WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ProtocolError('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))': /simple/teradatasqlalchemy/        
-ERROR: Could not find a version that satisfies the requirement teradatasqlalchemy (from versions: none)
-ERROR: No matching distribution found for teradatasqlalchemy
-PS C:\Users\reddyvu\Desktop\smartdq\dq_api> 
+import teradatasql
+
+# Define your Teradata connection parameters
+HOST = "your_teradata_host"
+USER = "your_username"
+PASSWORD = "your_password"
+DATABASE = "your_database"  # Optional, if needed
+
+try:
+    # Establish connection to Teradata
+    conn = teradatasql.connect(host=HOST, user=USER, password=PASSWORD)
+    print("✅ Connection to Teradata successful!")
+
+    # Create a cursor object to execute SQL queries
+    cursor = conn.cursor()
+
+    # Example Query: Fetch first 5 rows from a table
+    cursor.execute("SELECT TOP 5 * FROM your_table")
+
+    # Fetch results
+    results = cursor.fetchall()
+    for row in results:
+        print(row)  # Print each row
+
+    # Close the cursor and connection
+    cursor.close()
+    conn.close()
+
+except Exception as e:
+    print(f"❌ Error connecting to Teradata: {e}")
