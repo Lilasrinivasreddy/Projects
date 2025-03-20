@@ -1,1 +1,4 @@
-{"status": "failure", "message": "File C:\\Users\\reddyvu\\Desktop\\smartdq\\dq_api\\MLE\\sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json was not found."}
+dq_config = {
+    "sa_json_file_dtls": "C:\\Users\\reddyvu\\Desktop\\smartdq\\dq_api\\config\\sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json",
+    "conn_project_id": "vz-it-pr-izcv-idmcdo-0",
+}
