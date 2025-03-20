@@ -1,1 +1,15 @@
-{"status": "failure", "message": "This library only supports credentials from google-auth-library-python. See https://google-auth.readthedocs.io/en/latest/ for help on authentication with this library."}
+from google.cloud import bigquery
+from google.oauth2 import service_account
+
+# Correct path to your service account JSON file
+SERVICE_ACCOUNT_FILE = "C:\\Users\\reddyvu\\Desktop\\smartdq\\dq_api\\config\\sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json"
+
+def bigquery_client():
+    credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+    client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+    return client, credentials
+
+
+
+
+pip install google-auth google-auth-oauthlib google-auth-httplib2 google-auth-library-python google-cloud-bigquery
