@@ -16,10 +16,10 @@ from django.views import View
 
 # ✅ Teradata Configuration
 dq_td_config = {
-    "hostname": "TDDP.TDC.VZWCORP.COM",  # Replace with actual Teradata host
-    "uid": "IDQPRDLD",  # Replace with your Teradata username
-    "pwd": "Newpass#969",  # Replace with your Teradata password
-    "dbname": "idq_prd_tbls"  # Replace with your database name
+    "hostname": "TDDP.TDC.VZWCORP.COM",
+    "uid": "IDQPRDLD",
+    "pwd": "Newpass#969",
+    "dbname": "idq_prd_tbls"
 }
 
 # ✅ GCP BigQuery Configuration
@@ -35,29 +35,7 @@ dq_config = {
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# ✅ Generate OIDC Token for GCP authentication
-def exchange_and_save_oidc_token_for_jwt():
-    try:
-        payload = {
-            "grant_type": "client_credentials",
-            "client_id": dq_config["client_id"],
-            "client_secret": dq_config["client_secret"],
-            "scope": "read"
-        }
-        response = requests.post(url=dq_config["token_url"], params=payload)
-        response.raise_for_status()
-        return response.json()["access_token"]
-    except HTTPError as e:
-        raise e
-
-# ✅ Initialize BigQuery Client
-def bigquery_client():
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = dq_config["sa_json_file_dtls"]
-    os.environ['GOOGLE_CLOUD_PROJECT'] = dq_config["conn_project_id"]
-    credentials, _ = google.auth.default()
-    return bigquery.Client(credentials=credentials, project=dq_config["conn_project_id"]), credentials
-
-# ✅ Initialize Teradata Client (Using `teradatasql`)
+# ✅ Initialize Teradata Client
 def teradata_client():
     try:
         conn = teradatasql.connect(
@@ -71,16 +49,22 @@ def teradata_client():
         logger.error(f"❌ Error while connecting to Teradata: {err}")
         return None
 
-# ✅ Function to Load DataFrame to BigQuery
+# ✅ Initialize BigQuery Client
+def bigquery_client():
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = dq_config["sa_json_file_dtls"]
+    os.environ['GOOGLE_CLOUD_PROJECT'] = dq_config["conn_project_id"]
+    credentials, _ = google.auth.default()
+    return bigquery.Client(credentials=credentials, project=dq_config["conn_project_id"]), credentials
+
+# ✅ Load Data into BigQuery
 def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_data):
     try:
-        logger.info(f"📌 Loading results into BigQuery: {dq_dest_table_name}")
-        df_load_data = df_load_data.rename(columns={col: col.lower() for col in df_load_data.columns})
-        
         if df_load_data.empty:
             logger.warning(f"⚠️ No data to insert into BigQuery for table {dq_dest_table_name}")
             return
-        
+
+        logger.info(f"📌 DataFrame before inserting into BigQuery:\n{df_load_data}")
+
         pandas_gbq.to_gbq(
             dataframe=df_load_data,
             destination_table=dq_dest_table_name,
@@ -92,7 +76,7 @@ def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_
     except Exception as err:
         logger.error(f"❌ Error loading results into BigQuery: {err}")
 
-# ✅ Django View to Process SQL File Upload
+# ✅ Process SQL File Upload and Execute Queries
 @method_decorator(csrf_exempt, name="dispatch")
 class ExecuteHistorySQL(View):
     def post(self, request):
@@ -111,12 +95,10 @@ class ExecuteHistorySQL(View):
                 if not query:
                     continue
 
-                # ✅ Log the exact query for debugging
                 logger.info(f"📌 Executing query: {query}")
 
-                # ✅ Ensure only SELECT queries are executed on Teradata
                 if not query.lower().startswith("select"):
-                    logger.error(f"⚠️ Skipping invalid query: {query}")
+                    logger.error(f"⚠️ Skipping non-SELECT query: {query}")
                     continue
 
                 try:
@@ -130,6 +112,8 @@ class ExecuteHistorySQL(View):
                     cursor.execute(query)
                     results_list = cursor.fetchall()
 
+                    logger.info(f"✅ Query executed successfully. Rows fetched: {len(results_list)}")
+
                     if not results_list:
                         logger.warning(f"⚠️ Query returned no data: {query}")
                         continue  # Skip processing if no results
@@ -137,6 +121,9 @@ class ExecuteHistorySQL(View):
                     df = pd.DataFrame(results_list, columns=[desc[0] for desc in cursor.description])
                     cursor.close()
                     conn.close()
+
+                    # ✅ Print DataFrame before inserting
+                    logger.info(f"📌 DataFrame from Teradata:\n{df}")
 
                     # ✅ Load results to BigQuery
                     bq_client, bq_creds = bigquery_client()
