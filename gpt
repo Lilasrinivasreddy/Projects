@@ -1,17 +1,152 @@
+import os
+import json
+import logging
+import pandas as pd
+import requests
+import teradatasql
+from google.cloud import bigquery
+import google.auth
+import pandas_gbq
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
 import re
 
+# ✅ Teradata Configuration
+dq_td_config = {
+    "hostname": "TDDP.TDC.VZWCORP.COM",
+    "uid": "IDQPRDLD",
+    "pwd": "Newpass#969",
+    "dbname": "idq_prd_tbls"
+}
+
+# ✅ Initialize Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+# ✅ Initialize Teradata Client
+def teradata_client():
+    try:
+        print("🔄 Connecting to Teradata...")
+        conn = teradatasql.connect(
+            host=dq_td_config["hostname"],
+            user=dq_td_config["uid"],
+            password=dq_td_config["pwd"],
+            database=dq_td_config["dbname"]
+        )
+        print("✅ Teradata connection successful!")
+        return conn
+    except Exception as err:
+        print(f"❌ Teradata connection failed: {err}")
+        return None
+
+# ✅ Function to Fix Query Formatting
 def fix_query_format(query):
     """
-    Properly formats schema and table names for Teradata SQL execution.
-    This ensures hyphenated and special character-containing names are wrapped in double quotes.
+    Ensure schema and table names with hyphens are properly formatted in double quotes.
+    Example:
+    Before: insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt ...
+    After:  insert into "vz-it-np-izcv-dev-idmcdo-0"."dga_dq_tbls"."dqaas_profile_rpt" ...
     """
-    # ✅ Correctly format schema.table names for Teradata
+    print(f"🔍 Original Query Before Fixing:\n{query}\n")
+
     fixed_query = re.sub(r'(\b[a-zA-Z0-9_-]+)\.(\b[a-zA-Z0-9_-]+)',
                          r'"\1"." \2"', query)
 
-    # ✅ Remove accidental spaces inside quotes
     fixed_query = re.sub(r'"\s+', '"', fixed_query)  # Remove spaces after opening quote
     fixed_query = re.sub(r'\s+"', '"', fixed_query)  # Remove spaces before closing quote
 
-    print(f"🔍 Fixed Query Format:\n{fixed_query}\n")
+    print(f"✅ Fixed Query:\n{fixed_query}\n")
     return fixed_query
+
+# ✅ Process SQL File Upload and Execute Queries
+@method_decorator(csrf_exempt, name="dispatch")
+class ExecuteHistorySQL(View):
+    def post(self, request):
+        try:
+            print(f"📂 Received FILES: {request.FILES}")
+
+            if "file" not in request.FILES:
+                print("❌ No file uploaded.")
+                return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
+
+            file = request.FILES["file"]
+            file_content = file.read().decode("utf-8").strip()
+            print(f"📄 File content:\n{file_content}")
+
+            queries = file_content.split(";")
+            results = {}
+
+            for query in queries:
+                query = query.strip()
+                if not query:
+                    continue
+
+                # ✅ Fix query formatting
+                query = fix_query_format(query)
+                print(f"📌 Executing Fixed Query:\n{query}")
+
+                if query.lower().startswith("insert"):
+                    try:
+                        print("🔄 Connecting to Teradata for INSERT query...")
+                        conn = teradata_client()
+                        if conn is None:
+                            print("❌ Teradata connection failed.")
+                            return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
+
+                        cursor = conn.cursor()
+                        print(f"📌 Running INSERT query:\n{query}")
+                        cursor.execute(query)
+                        conn.commit()
+                        cursor.close()
+                        conn.close()
+
+                        print(f"✅ INSERT query executed successfully.")
+                        results[query[:30]] = "INSERT query executed successfully."
+                        continue  
+
+                    except Exception as e:
+                        print(f"❌ INSERT query execution failed: {query}\nError: {e}")
+                        return JsonResponse({"status": "failure", "message": str(e)}, status=500)
+
+                elif query.lower().startswith("select"):
+                    try:
+                        print("🔄 Connecting to Teradata for SELECT query...")
+                        conn = teradata_client()
+                        if conn is None:
+                            print("❌ Teradata connection failed.")
+                            return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
+
+                        cursor = conn.cursor()
+                        print(f"📌 Running SELECT query:\n{query}")
+                        cursor.execute(query)
+                        results_list = cursor.fetchall()
+
+                        print(f"✅ SELECT query executed. Rows fetched: {len(results_list)}")
+
+                        if not results_list:
+                            print(f"⚠️ SELECT query returned no data: {query}")
+                            continue
+
+                        df = pd.DataFrame(results_list, columns=[desc[0] for desc in cursor.description])
+                        cursor.close()
+                        conn.close()
+
+                        print("📌 DataFrame from Teradata:")
+                        print(df.head())
+
+                        results[query[:30]] = f"SELECT executed. {len(df)} rows fetched."
+
+                    except Exception as e:
+                        print(f"❌ SELECT query execution failed: {query}\nError: {e}")
+                        return JsonResponse({"status": "failure", "message": str(e)}, status=500)
+
+                else:
+                    print(f"⚠️ Skipping unrecognized query type: {query}")
+
+            return JsonResponse({"status": "success", "results": results}, status=200)
+
+        except Exception as e:
+            print(f"❌ Error processing request: {e}")
+            return JsonResponse({"status": "failure", "message": str(e)}, status=500)
