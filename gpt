@@ -1,45 +1,130 @@
-Here’s a draft for your Jira ticket:
+import os
+import json
+import logging
+import pandas as pd
+import re
+from google.cloud import bigquery
+import google.auth
+import pandas_gbq
+from sqlalchemy import create_engine
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
 
+# Load Teradata Configuration from Config File
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
+with open(CONFIG_PATH, "r") as f:
+    TD_CONFIG = json.load(f)["teradata"]
 
----
+# Initialize Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
-Title: Unable to Trigger Packages Despite Installed Libraries
+# BigQuery Client Initialization
+def bigquery_client():
+    """Initialize BigQuery Client."""
+    credentials, _ = google.auth.default()
+    return bigquery.Client(credentials=credentials), credentials
 
-Description:
-I am experiencing an issue where I am unable to trigger the required packages. Upon investigation, I have observed that the necessary libraries are installed, but the packages are still not functioning as expected.
+# Teradata Client Initialization
+def teradata_client():
+    """Initialize Teradata connection using SQLAlchemy."""
+    try:
+        connection_str = (
+            f"teradatasql://{TD_CONFIG['uid']}:{TD_CONFIG['pwd']}@{TD_CONFIG['hostname']}/{TD_CONFIG['dbname']}?encryptdata=true"
+        )
+        td_engine = create_engine(connection_str)
+        return td_engine
+    except Exception as err:
+        logger.error(f"Error while connecting to Teradata: {err}")
+        return None
 
-Steps to Reproduce:
+# Execute Queries in BigQuery
+def execute_bigquery(queries):
+    """Execute a list of queries in BigQuery."""
+    try:
+        client, _ = bigquery_client()
+        for query in queries:
+            query_job = client.query(query)
+            query_job.result()
+            logger.info("Query executed successfully in BigQuery.")
+        return {"status": "success", "message": "All BigQuery queries executed successfully."}
+    except Exception as e:
+        logger.error(f"BigQuery execution error: {e}")
+        return {"status": "failure", "message": str(e)}
 
-1. Attempted to trigger the packages.
+# Load Teradata Query Results to BigQuery
+def load_td_to_bq(td_query, bq_table):
+    """Execute a Teradata query and insert results into BigQuery."""
+    try:
+        td_engine = teradata_client()
+        if not td_engine:
+            return {"status": "failure", "message": "Teradata connection failed."}
 
+        # Fetch data from Teradata
+        td_res = pd.read_sql(td_query, td_engine)
+        td_res = td_res.rename(columns={col: col.lower() for col in td_res.columns})
 
-2. Verified that the required libraries are installed.
+        # Connect to BigQuery
+        bq_client, bq_creds = bigquery_client()
+        pandas_gbq.to_gbq(
+            dataframe=td_res,
+            destination_table=bq_table,
+            if_exists="append",
+            credentials=bq_creds
+        )
 
+        return {"status": "success", "message": f"Data from Teradata inserted into {bq_table}."}
+    except Exception as e:
+        logger.error(f"Error loading Teradata data to BigQuery: {e}")
+        return {"status": "failure", "message": str(e)}
 
-3. Despite the presence of installed libraries, the packages are not executing properly.
+# Read Queries from Uploaded File
+def read_queries_from_file(file):
+    """Read SQL queries from an uploaded file."""
+    try:
+        content = file.read().decode("utf-8")
+        queries = [q.strip() for q in re.split(r";\s*\n", content) if q.strip()]
+        logger.info(f"Read {len(queries)} queries from file.")
+        return queries
+    except Exception as e:
+        logger.error(f"Error reading query file: {e}")
+        return []
 
+# Django API View for File Upload & Query Execution
+@method_decorator(csrf_exempt, name="dispatch")
+class ExecuteHistorySQL(View):
+    """Django API to upload an SQL file, execute queries, and load results to BigQuery."""
 
+    def post(self, request):
+        try:
+            if "file" not in request.FILES:
+                return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
 
-Expected Behavior:
-The packages should trigger successfully since the required dependencies are installed.
+            file = request.FILES["file"]
+            queries = read_queries_from_file(file)
+            if not queries:
+                return JsonResponse({"status": "failure", "message": "No valid queries found."}, status=400)
 
-Observed Behavior:
-The packages fail to trigger even though the required libraries are installed.
+            # Split Queries for GCP and Teradata
+            gcp_queries = [q for q in queries if not q.lower().startswith("select")]
+            td_queries = [q for q in queries if q.lower().startswith("select")]
 
-Additional Information:
+            results = {}
 
-Checked logs but did not find any conclusive errors.
+            # Execute BigQuery Queries
+            if gcp_queries:
+                results["bigquery"] = execute_bigquery(gcp_queries)
 
-System details: [Provide any relevant details such as environment, OS, etc.]
+            # Execute Teradata Queries & Insert Results to BQ
+            if td_queries:
+                bq_table = "your_project.your_dataset.teradata_results"  # Define BigQuery table for TD results
+                for td_query in td_queries:
+                    results[f"teradata_{td_query[:30]}"] = load_td_to_bq(td_query, bq_table)
 
-Any recent changes or deployments: [Mention if applicable]
+            return JsonResponse({"status": "success", "results": results}, status=200)
 
-
-Request:
-Kindly investigate the issue and suggest potential resolutions. Let me know if any additional details are required.
-
-
----
-
-Would you like to add any logs or system environment details to support the ticket?
-
+        except Exception as e:
+            logger.error(f"Error processing request: {e}")
+            return JsonResponse({"status": "failure", "message": str(e)}, status=500)
