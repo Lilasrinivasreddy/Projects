@@ -1,6 +1,2 @@
-Received FILES: <MultiValueDict: {'file': [<InMemoryUploadedFile: file.txt (text/plain)>]}>
-2025-03-20 17:05:52,322 - ERROR - Error while connecting to Teradata: Can't load plugin: sqlalchemy.dialects:teradatasql
-2025-03-20 17:05:52,323 - ERROR - Error processing request: 'NoneType' object has no attribute 'cursor'
-Internal Server Error: /mle/ExecuteHistorySQL/
-2025-03-20 17:05:52,325 - ERROR - Internal Server Error: /mle/ExecuteHistorySQL/
-[20/Mar/2025 17:05:52] "POST /mle/ExecuteHistorySQL/ HTTP/1.1" 500 79
+import sqlalchemy.dialects
+print(dir(sqlalchemy.dialects))
