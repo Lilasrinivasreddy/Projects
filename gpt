@@ -1,22 +1,6 @@
-2025-03-20 16:38:12,876 - ERROR - Error while connecting to Teradata: Can't load plugin: sqlalchemy.dialects:teradatasql
-2025-03-20 16:38:12,877 - ERROR - Error processing request: 'NoneType' object has no attribute 'cursor'
-
-
-
-pip install teradatasqlalchemy teradatasql
-
-
-from sqlalchemy import create_engine
-
-try:
-    engine = create_engine("teradatasql://user:password@host")
-    connection = engine.connect()
-except Exception as e:
-    print(f"Error connecting to Teradata: {e}")
-    connection = None
-
-if connection is None:
-    print("Failed to establish connection.")
-else:
-    cursor = connection.cursor()
-    cursor.execute("SELECT 1")
+Received FILES: <MultiValueDict: {'file': [<InMemoryUploadedFile: file.txt (text/plain)>]}>
+2025-03-20 17:05:52,322 - ERROR - Error while connecting to Teradata: Can't load plugin: sqlalchemy.dialects:teradatasql
+2025-03-20 17:05:52,323 - ERROR - Error processing request: 'NoneType' object has no attribute 'cursor'
+Internal Server Error: /mle/ExecuteHistorySQL/
+2025-03-20 17:05:52,325 - ERROR - Internal Server Error: /mle/ExecuteHistorySQL/
+[20/Mar/2025 17:05:52] "POST /mle/ExecuteHistorySQL/ HTTP/1.1" 500 79
