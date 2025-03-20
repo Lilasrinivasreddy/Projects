@@ -11,7 +11,6 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
-import re
 
 # ✅ Teradata Configuration
 dq_td_config = {
@@ -19,6 +18,12 @@ dq_td_config = {
     "uid": "IDQPRDLD",
     "pwd": "Newpass#969",
     "dbname": "idq_prd_tbls"
+}
+
+# ✅ GCP BigQuery Configuration
+dq_config = {
+    "sa_json_file_dtls": os.path.join(os.path.dirname(__file__), "sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json"),
+    "conn_project_id": "vz-it-pr-izcv-idmcdo-0",
 }
 
 # ✅ Initialize Logging
@@ -38,27 +43,36 @@ def teradata_client():
         print("✅ Teradata connection successful!")
         return conn
     except Exception as err:
-        print(f"❌ Teradata connection failed: {err}")
+        print(f"❌ Error connecting to Teradata: {err}")
         return None
 
-# ✅ Function to Fix Query Formatting
-def fix_query_format(query):
-    """
-    Ensure schema and table names with hyphens are properly formatted in double quotes.
-    Example:
-    Before: insert into vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt ...
-    After:  insert into "vz-it-np-izcv-dev-idmcdo-0"."dga_dq_tbls"."dqaas_profile_rpt" ...
-    """
-    print(f"🔍 Original Query Before Fixing:\n{query}\n")
+# ✅ Initialize BigQuery Client
+def bigquery_client():
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = dq_config["sa_json_file_dtls"]
+    os.environ['GOOGLE_CLOUD_PROJECT'] = dq_config["conn_project_id"]
+    credentials, _ = google.auth.default()
+    return bigquery.Client(credentials=credentials, project=dq_config["conn_project_id"]), credentials
 
-    fixed_query = re.sub(r'(\b[a-zA-Z0-9_-]+)\.(\b[a-zA-Z0-9_-]+)',
-                         r'"\1"." \2"', query)
+# ✅ Load Data into BigQuery
+def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_data):
+    try:
+        if df_load_data.empty:
+            print(f"⚠️ No data to insert into BigQuery for table {dq_dest_table_name}")
+            return
 
-    fixed_query = re.sub(r'"\s+', '"', fixed_query)  # Remove spaces after opening quote
-    fixed_query = re.sub(r'\s+"', '"', fixed_query)  # Remove spaces before closing quote
+        print("📌 DataFrame before inserting into BigQuery:")
+        print(df_load_data.head())
 
-    print(f"✅ Fixed Query:\n{fixed_query}\n")
-    return fixed_query
+        pandas_gbq.to_gbq(
+            dataframe=df_load_data,
+            destination_table=dq_dest_table_name,
+            if_exists="append",
+            credentials=dq_credentials,
+            project_id=dq_config["conn_project_id"],
+        )
+        print(f"✅ Successfully loaded {len(df_load_data)} rows into {dq_dest_table_name}")
+    except Exception as err:
+        print(f"❌ Error loading results into BigQuery: {err}")
 
 # ✅ Process SQL File Upload and Execute Queries
 @method_decorator(csrf_exempt, name="dispatch")
@@ -83,28 +97,30 @@ class ExecuteHistorySQL(View):
                 if not query:
                     continue
 
-                # ✅ Fix query formatting
-                query = fix_query_format(query)
-                print(f"📌 Executing Fixed Query:\n{query}")
+                print(f"📌 Executing query: {query}")
 
                 if query.lower().startswith("insert"):
                     try:
-                        print("🔄 Connecting to Teradata for INSERT query...")
                         conn = teradata_client()
                         if conn is None:
-                            print("❌ Teradata connection failed.")
                             return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
 
                         cursor = conn.cursor()
                         print(f"📌 Running INSERT query:\n{query}")
                         cursor.execute(query)
                         conn.commit()
+
+                        # ✅ Verify the data was inserted
+                        table_name = query.split("INTO")[1].split("(")[0].strip()
+                        verify_query = f'SELECT COUNT(*) FROM {table_name}'
+                        cursor.execute(verify_query)
+                        row_count = cursor.fetchone()[0]
+
                         cursor.close()
                         conn.close()
 
-                        print(f"✅ INSERT query executed successfully.")
-                        results[query[:30]] = "INSERT query executed successfully."
-                        continue  
+                        print(f"✅ INSERT query executed. {row_count} rows inserted.")
+                        results[query[:30]] = f"INSERT executed successfully. {row_count} rows inserted."
 
                     except Exception as e:
                         print(f"❌ INSERT query execution failed: {query}\nError: {e}")
@@ -112,10 +128,8 @@ class ExecuteHistorySQL(View):
 
                 elif query.lower().startswith("select"):
                     try:
-                        print("🔄 Connecting to Teradata for SELECT query...")
                         conn = teradata_client()
                         if conn is None:
-                            print("❌ Teradata connection failed.")
                             return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
 
                         cursor = conn.cursor()
@@ -123,7 +137,7 @@ class ExecuteHistorySQL(View):
                         cursor.execute(query)
                         results_list = cursor.fetchall()
 
-                        print(f"✅ SELECT query executed. Rows fetched: {len(results_list)}")
+                        print(f"✅ SELECT executed. Rows fetched: {len(results_list)}")
 
                         if not results_list:
                             print(f"⚠️ SELECT query returned no data: {query}")
@@ -136,14 +150,20 @@ class ExecuteHistorySQL(View):
                         print("📌 DataFrame from Teradata:")
                         print(df.head())
 
-                        results[query[:30]] = f"SELECT executed. {len(df)} rows fetched."
+                        # ✅ Load results to BigQuery
+                        bq_client, bq_creds = bigquery_client()
+                        load_result_to_bq(
+                            dq_bq_client=bq_client,
+                            dq_dest_table_name="your_project.your_dataset.teradata_results",
+                            dq_credentials=bq_creds,
+                            df_load_data=df
+                        )
+
+                        results[query[:30]] = f"SELECT executed successfully. {len(df)} rows inserted."
 
                     except Exception as e:
                         print(f"❌ SELECT query execution failed: {query}\nError: {e}")
                         return JsonResponse({"status": "failure", "message": str(e)}, status=500)
-
-                else:
-                    print(f"⚠️ Skipping unrecognized query type: {query}")
 
             return JsonResponse({"status": "success", "results": results}, status=200)
 
