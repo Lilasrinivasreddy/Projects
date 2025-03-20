@@ -1,6 +1,143 @@
-Received FILES: <MultiValueDict: {'file': [<InMemoryUploadedFile: file.txt (text/plain)>]}>
-2025-03-20 17:53:28,823 - ERROR - Error while connecting to Teradata: Can't load plugin: sqlalchemy.dialects:teradatasql
-2025-03-20 17:53:28,831 - ERROR - Error processing request: 'NoneType' object has no attribute 'cursor'
-Internal Server Error: /mle/ExecuteHistorySQL/
-2025-03-20 17:53:28,833 - ERROR - Internal Server Error: /mle/ExecuteHistorySQL/
-[20/Mar/2025 17:53:28] "POST /mle/ExecuteHistorySQL/ HTTP/1.1" 500 79
+import sys
+import os
+import json
+import logging
+import pandas as pd
+import re
+import decimal
+import time
+import requests
+from requests.exceptions import HTTPError
+from google.cloud import bigquery
+import google.auth
+import pandas_gbq
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
+import json
+import requests
+from requests.exceptions import HTTPError
+from google.cloud import bigquery
+import google.auth
+import pandas_gbq
+import decimal
+import time
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, registry
+from sqlalchemy import MetaData
+
+
+# Ensure the script directory is in the system path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Hardcoded Teradata Configuration
+dq_td_config = {
+    "hostname": "TDDP.TDC.VZWCORP.COM",
+    "uid": "IDQPRDLD",
+    "pwd": "Newpass#969",
+    "dbname": "idq_prd_tbls"
+}
+
+dq_config = {
+    "proxy": "http://proxy.ebiz.verizon.com:80/",
+    "token_url": "https://ssologin.verizon.com/ngauth/oauth2/realms/root/realms/employee/access_token",    
+    "client_id": "27472_izcv_gcp_gz_oauth2client",
+    "client_secret": "27472IZCV",
+    "sa_json_file_dtls": os.path.join(os.path.dirname(__file__), "sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json"),
+    "conn_project_id": "vz-it-pr-izcv-idmcdo-0",
+}
+
+# Initialize Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+# Generate OIDC Token for GCP credentials
+def exchange_and_save_oidc_token_for_jwt(url, client_id, client_secret):
+    try:
+        payload = {"grant_type": "client_credentials", "client_id": client_id, "client_secret": client_secret, "scope": "read"}
+        response = requests.post(url=url, params=payload)
+        response.raise_for_status()
+        token = response.json()
+        oidc_token_file_name = "/apps/opt/application/smartdq/1corpdata/prod_connect_test/TD_GCP_scripts/dq_oidc_token.json"
+        if os.path.isfile(oidc_token_file_name):
+            os.remove(oidc_token_file_name)
+            time.sleep(7)
+        with open(oidc_token_file_name, "w") as f:
+            json.dump(token, f)
+    except HTTPError as e:
+        raise e
+
+# BigQuery Client Initialization
+def bigquery_client():
+    exchange_and_save_oidc_token_for_jwt(
+        url=dq_config["token_url"],
+        client_id=dq_config["client_id"],
+        client_secret=dq_config["client_secret"]
+    )
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = dq_config["sa_json_file_dtls"]
+    os.environ['GOOGLE_CLOUD_PROJECT'] = dq_config["conn_project_id"]
+    credentials, _ = google.auth.default()
+    return bigquery.Client(credentials=credentials, project=dq_config["conn_project_id"]), credentials
+
+# Teradata Client Initialization
+def teradata_client():
+    try:
+        connection_str = f"teradatasql://{dq_td_config['uid']}:{dq_td_config['pwd']}@{dq_td_config['hostname']}/{dq_td_config['dbname']}?encryptdata=true"
+        return create_engine(connection_str)
+    except Exception as err:
+        logger.error(f"Error while connecting to Teradata: {err}")
+        return None
+
+# Load Result to BigQuery
+def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_data, column_details):
+    try:
+        logger.info(f"Loading results into BigQuery table: {dq_dest_table_name}")
+        df_load_data = df_load_data.rename(columns={col: col.lower() for col in df_load_data.columns})
+        pandas_gbq.to_gbq(
+            dataframe=df_load_data,
+            destination_table=dq_dest_table_name,
+            if_exists="append",
+            credentials=dq_credentials,
+            project_id=dq_config["conn_project_id"],
+        )
+        logger.info(f"Successfully loaded data into {dq_dest_table_name}")
+    except Exception as err:
+        logger.error(f"Error loading results into BigQuery: {err}")
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ExecuteHistorySQL(View):
+    def post(self, request):
+        try:
+            print(f"Received FILES: {request.FILES}")
+            if "file" not in request.FILES:
+                return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
+            file = request.FILES["file"]
+            queries = file.read().decode("utf-8").split(";")
+            results = {}
+            
+            for query in queries:
+                query = query.strip()
+                if not query:
+                    continue
+                if "select" in query.lower():  # TD to GCP
+                    td_engine = teradata_client()
+                    df = pd.read_sql(query, td_engine)
+                    bq_client, bq_creds = bigquery_client()
+                    load_result_to_bq(
+                        dq_bq_client=bq_client,
+                        dq_dest_table_name="your_project.your_dataset.teradata_results",
+                        dq_credentials=bq_creds,
+                        df_load_data=df,
+                        column_details={"STRING": df.columns.tolist()}
+                    )
+                    results[query[:30]] = "TD to GCP Query executed successfully."
+                else:  # GCP to GCP
+                    bq_client, _ = bigquery_client()
+                    bq_client.query(query).result()
+                    results[query[:30]] = "GCP to GCP Query executed successfully."
+            
+            return JsonResponse({"status": "success", "results": results}, status=200)
+        except Exception as e:
+            logger.error(f"Error processing request: {e}")
+            return JsonResponse({"status": "failure", "message": str(e)}, status=500)
