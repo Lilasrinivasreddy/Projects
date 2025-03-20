@@ -76,6 +76,11 @@ def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_
     try:
         logger.info(f"📌 Loading results into BigQuery: {dq_dest_table_name}")
         df_load_data = df_load_data.rename(columns={col: col.lower() for col in df_load_data.columns})
+        
+        if df_load_data.empty:
+            logger.warning(f"⚠️ No data to insert into BigQuery for table {dq_dest_table_name}")
+            return
+        
         pandas_gbq.to_gbq(
             dataframe=df_load_data,
             destination_table=dq_dest_table_name,
@@ -83,7 +88,7 @@ def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_
             credentials=dq_credentials,
             project_id=dq_config["conn_project_id"],
         )
-        logger.info(f"✅ Successfully loaded data into {dq_dest_table_name}")
+        logger.info(f"✅ Successfully loaded {len(df_load_data)} rows into {dq_dest_table_name}")
     except Exception as err:
         logger.error(f"❌ Error loading results into BigQuery: {err}")
 
@@ -123,8 +128,13 @@ class ExecuteHistorySQL(View):
 
                     # ✅ Execute query
                     cursor.execute(query)
-                    df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
+                    results_list = cursor.fetchall()
 
+                    if not results_list:
+                        logger.warning(f"⚠️ Query returned no data: {query}")
+                        continue  # Skip processing if no results
+
+                    df = pd.DataFrame(results_list, columns=[desc[0] for desc in cursor.description])
                     cursor.close()
                     conn.close()
 
@@ -137,7 +147,7 @@ class ExecuteHistorySQL(View):
                         df_load_data=df
                     )
 
-                    results[query[:30]] = "TD to GCP Query executed successfully."
+                    results[query[:30]] = f"TD to GCP Query executed successfully. {len(df)} rows inserted."
 
                 except Exception as e:
                     logger.error(f"❌ Query execution failed: {query}\nError: {e}")
