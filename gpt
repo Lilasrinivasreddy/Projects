@@ -20,6 +20,12 @@ dq_td_config = {
     "dbname": "idq_prd_tbls"
 }
 
+# ✅ BigQuery Configuration
+dq_config = {
+    "sa_json_file_dtls": os.path.join(os.path.dirname(__file__), "sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json"),
+    "conn_project_id": "vz-it-pr-izcv-idmcdo-0",
+}
+
 # ✅ Initialize Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -37,8 +43,34 @@ def teradata_client():
         print("✅ Teradata connection successful!")
         return conn
     except Exception as err:
-        print(f"❌ Error connecting to Teradata: {err}")
+        print(f"❌ Teradata connection failed: {err}")
         return None
+
+# ✅ Initialize BigQuery Client
+def bigquery_client():
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = dq_config["sa_json_file_dtls"]
+    os.environ['GOOGLE_CLOUD_PROJECT'] = dq_config["conn_project_id"]
+    credentials, _ = google.auth.default()
+    return bigquery.Client(credentials=credentials, project=dq_config["conn_project_id"]), credentials
+
+# ✅ Load Data into BigQuery
+def load_result_to_bq(dq_bq_client, dq_dest_table_name, dq_credentials, df_load_data):
+    try:
+        if df_load_data.empty:
+            print(f"⚠️ No data to insert into BigQuery for {dq_dest_table_name}")
+            return
+
+        print(f"📌 Inserting {len(df_load_data)} rows into BigQuery: {dq_dest_table_name}")
+        pandas_gbq.to_gbq(
+            dataframe=df_load_data,
+            destination_table=dq_dest_table_name,
+            if_exists="append",
+            credentials=dq_credentials,
+            project_id=dq_config["conn_project_id"],
+        )
+        print(f"✅ Successfully inserted {len(df_load_data)} rows into BigQuery.")
+    except Exception as err:
+        print(f"❌ BigQuery Insertion Failed: {err}")
 
 # ✅ Process SQL File Upload and Execute Queries
 @method_decorator(csrf_exempt, name="dispatch")
@@ -65,7 +97,7 @@ class ExecuteHistorySQL(View):
 
                 print(f"📌 Executing query: {query}")
 
-                # ✅ Allow INSERT queries
+                # ✅ Handle INSERT Queries
                 if query.lower().startswith("insert"):
                     print(f"⚡ Executing INSERT query: {query}")
                     try:
@@ -87,38 +119,48 @@ class ExecuteHistorySQL(View):
                         print(f"❌ INSERT query execution failed: {query}\nError: {e}")
                         return JsonResponse({"status": "failure", "message": str(e)}, status=500)
 
-                # ✅ Only execute SELECT queries for BigQuery
-                if not query.lower().startswith("select"):
-                    print(f"⚠️ Skipping non-SELECT query: {query}")
-                    continue
+                # ✅ Handle SELECT Queries
+                if query.lower().startswith("select"):
+                    print(f"🔍 Running SELECT query on Teradata: {query}")
+                    try:
+                        conn = teradata_client()
+                        if conn is None:
+                            return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
 
-                try:
-                    conn = teradata_client()
-                    if conn is None:
-                        return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
+                        cursor = conn.cursor()
+                        cursor.execute(query)
+                        results_list = cursor.fetchall()
 
-                    cursor = conn.cursor()
-                    cursor.execute(query)
-                    results_list = cursor.fetchall()
+                        print(f"✅ SELECT query executed. Rows fetched: {len(results_list)}")
 
-                    print(f"✅ SELECT query executed successfully. Rows fetched: {len(results_list)}")
+                        if not results_list:
+                            print(f"⚠️ SELECT query returned no data: {query}")
+                            continue
 
-                    if not results_list:
-                        print(f"⚠️ Query returned no data: {query}")
-                        continue  # Skip processing if no results
+                        df = pd.DataFrame(results_list, columns=[desc[0] for desc in cursor.description])
+                        cursor.close()
+                        conn.close()
 
-                    df = pd.DataFrame(results_list, columns=[desc[0] for desc in cursor.description])
-                    cursor.close()
-                    conn.close()
+                        print("📌 DataFrame from Teradata:")
+                        print(df.head())
 
-                    print("📌 DataFrame from Teradata:")
-                    print(df.head())
+                        # ✅ Load results to BigQuery
+                        bq_client, bq_creds = bigquery_client()
+                        load_result_to_bq(
+                            dq_bq_client=bq_client,
+                            dq_dest_table_name="your_project.your_dataset.teradata_results",
+                            dq_credentials=bq_creds,
+                            df_load_data=df
+                        )
 
-                    results[query[:30]] = f"TD to GCP Query executed successfully. {len(df)} rows inserted."
+                        results[query[:30]] = f"SELECT executed. {len(df)} rows inserted into BigQuery."
 
-                except Exception as e:
-                    print(f"❌ Query execution failed: {query}\nError: {e}")
-                    return JsonResponse({"status": "failure", "message": str(e)}, status=500)
+                    except Exception as e:
+                        print(f"❌ SELECT query execution failed: {query}\nError: {e}")
+                        return JsonResponse({"status": "failure", "message": str(e)}, status=500)
+
+                else:
+                    print(f"⚠️ Skipping unrecognized query type: {query}")
 
             return JsonResponse({"status": "success", "results": results}, status=200)
 
