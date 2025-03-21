@@ -1,16 +1,166 @@
-SELECT 
-  9000051 AS rpt_seq_num, 
-  1397 AS prfl_id, 
-  'CUSTOM_RULES' AS prfl_type,
-  'Consistency' AS dq_pillar, 
-  'base_address_all_acct_hist' AS src_tbl,
-  'LAST_UPDT_TS' AS meas_name, 
-  CAST(rpt_dt AS DATE) AS data_dt,
-  'Tier1 Models' AS feature_name, 
-  NULL AS grouped_columns,
-  COUNT(*) AS count_curr, 
-  CURRENT_TIMESTAMP AS prfl_run_ts,
-  EXTRACT(DAY FROM rpt_dt) AS weekday
-FROM vz-it-pr-gk1v-cwlspr-0.vzw_uda_prd_tbls.base_address_all_acct_hist
-WHERE CAST(rpt_dt AS DATE) >= CURRENT_DATE - 90
-GROUP BY 1,2,3,4,5,6,7,8,11,12;
+import os
+import logging
+import pandas as pd
+import teradatasql
+from google.cloud import bigquery
+from google.oauth2 import service_account
+import pandas_gbq
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views import View
+
+# ✅ Teradata Configuration
+dq_td_config = {
+    "hostname": "TDDP.TDC.VZWCORP.COM",
+    "uid": "IDQPRDLD",
+    "pwd": "Newpass#969",
+    "dbname": "idq_prd_tbls"
+}
+
+# ✅ GCP BigQuery Configuration
+SERVICE_ACCOUNT_FILE = "C:\\Users\\reddyvu\\Desktop\\smartdq\\dq_api\\config\\sa-pr-izcv-app-idmcdo-0-oidc-27472-config.json"
+BQ_PROJECT_ID = "vz-it-pr-izcv-idmcdo-0"
+BQ_DEST_TABLE = "vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt"
+
+# ✅ Expected Columns for Validation
+REQUIRED_COLUMNS = [
+    "rpt_seq_num", "prfl_id", "prfl_type", "dq_pillar", "src_tbl",
+    "meas_name", "data_dt", "feature_name", "grouped_columns",
+    "count_curr", "prfl_run_ts", "weekday"
+]
+
+# ✅ Logging Setup
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
+# ✅ Initialize BigQuery Client
+def bigquery_client():
+    try:
+        credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+        client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+        logger.info("✅ Connected to BigQuery")
+        return client, credentials
+    except Exception as err:
+        logger.error(f"❌ Error connecting to BigQuery: {err}")
+        return None, None
+
+# ✅ Initialize Teradata Client
+def teradata_client():
+    try:
+        conn = teradatasql.connect(
+            host=dq_td_config["hostname"],
+            user=dq_td_config["uid"],
+            password=dq_td_config["pwd"],
+            database=dq_td_config["dbname"]
+        )
+        logger.info("✅ Teradata connection established")
+        return conn
+    except Exception as err:
+        logger.error(f"❌ Error connecting to Teradata: {err}")
+        return None
+
+# ✅ Load DataFrame to BigQuery
+def load_result_to_bq(dq_bq_client, df_load_data):
+    try:
+        logger.info(f"📌 Loading results into BigQuery: {BQ_DEST_TABLE}")
+
+        if df_load_data.empty:
+            logger.warning(f"⚠️ No data to insert into BigQuery for table {BQ_DEST_TABLE}")
+            return 0
+
+        pandas_gbq.to_gbq(
+            dataframe=df_load_data,
+            destination_table=BQ_DEST_TABLE,
+            if_exists="append",
+            credentials=dq_bq_client,
+            project_id=BQ_PROJECT_ID
+        )
+        logger.info(f"✅ Successfully loaded {len(df_load_data)} rows into {BQ_DEST_TABLE}")
+        return len(df_load_data)
+    except Exception as err:
+        logger.error(f"❌ Error loading results into BigQuery: {err}")
+        return 0
+
+# ✅ Django View to Process SQL File Upload
+@method_decorator(csrf_exempt, name="dispatch")
+class ExecuteHistorySQL(View):
+    def post(self, request):
+        try:
+            logger.info("📂 File Upload Received")
+
+            # ✅ Check if file is uploaded
+            if "file" not in request.FILES:
+                return JsonResponse({"status": "failure", "message": "No file uploaded."}, status=400)
+
+            file = request.FILES["file"]
+            file_content = file.read().decode("utf-8").strip()
+            logger.info(f"📂 File Content: {file_content}")
+
+            queries = file_content.split(";")
+            results = {}
+
+            for query in queries:
+                query = query.strip()
+                if not query:
+                    continue
+
+                logger.info(f"📌 Extracted Query: {query}")
+
+                try:
+                    conn = teradata_client()
+                    if conn is None:
+                        return JsonResponse({"status": "failure", "message": "Teradata connection failed."}, status=500)
+
+                    cursor = conn.cursor()
+
+                    # ✅ Execute the query
+                    logger.info(f"🚀 Running Query: {query}")
+                    cursor.execute(query)
+                    logger.info(f"✅ Query executed successfully")
+
+                    # ✅ If it's a SELECT query, process results
+                    if query.lower().startswith("select"):
+                        result_data = cursor.fetchall()
+
+                        if not result_data:
+                            logger.warning(f"⚠️ Query returned no data: {query}")
+                            continue
+
+                        df = pd.DataFrame(result_data, columns=[desc[0].lower() for desc in cursor.description])
+                        logger.info(f"📊 DataFrame Extracted with {len(df)} rows")
+
+                        # ✅ Validate required columns
+                        missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+                        if missing_cols:
+                            logger.error(f"❌ Missing columns in query result: {missing_cols}")
+                            return JsonResponse({
+                                "status": "failure",
+                                "message": f"Missing columns: {missing_cols}"
+                            }, status=400)
+
+                        # ✅ Load to BigQuery
+                        bq_client, bq_creds = bigquery_client()
+                        if not bq_client:
+                            return JsonResponse({"status": "failure", "message": "BigQuery connection failed."}, status=500)
+
+                        rows_inserted = load_result_to_bq(dq_bq_client=bq_creds, df_load_data=df)
+
+                        results[query[:50]] = {
+                            "message": "Query executed and loaded successfully.",
+                            "rows_inserted": rows_inserted,
+                            "columns": df.columns.tolist()
+                        }
+
+                    cursor.close()
+                    conn.close()
+
+                except Exception as e:
+                    logger.error(f"❌ Query execution failed: {query}\nError: {e}")
+                    return JsonResponse({"status": "failure", "message": str(e)}, status=500)
+
+            return JsonResponse({"status": "success", "results": results}, status=200)
+
+        except Exception as e:
+            logger.error(f"❌ Error processing request: {e}")
+            return JsonResponse({"status": "failure", "message": str(e)}, status=500)
