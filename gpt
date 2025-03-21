@@ -1,3 +1,12 @@
+2025-03-21 08:21:46,477 - INFO - ✅ Teradata connection established
+2025-03-21 08:21:46,478 - INFO - 🚀 Running Query: (select 50009 as rpt_seq_num, 7851 as prfl_id, 'CUSTOM_RULES' as prfl_type, 'Consistency' as dq_pillar, 'CUST_ACCT_LINE_ADDR_V' as src_tbl,'CUST_ACCT_LINE_ADDR_V Table count' as meas_name,
+cast(LAST_UPD_DT as date) as data_dt,'Tier1 Models' as feature_name, null as grouped_columns,count (*) as count_curr, current_timestamp as prfl_run_ts,
+dayofweek(cast(LAST_UPD_DT as date)) as weekday from NTL_PRD_ALLVM.CUST_ACCT_LINE_ADDR_V where cast(LAST_UPD_DT as date)>= current_date -90
+group by 1,2,3,4,5,6,7,8,11,12)
+2025-03-21 08:21:47,401 - INFO - ✅ Query executed successfully
+[21/Mar/2025 08:21:47] "POST /mle/ExecuteHistorySQL/ HTTP/1.1" 200 36
+
+
 March 21, 2025 - 08:17:38
 Django version 5.1.1, using settings 'dqaas_api.settings'
 Starting development server at http://127.0.0.1:8000/
