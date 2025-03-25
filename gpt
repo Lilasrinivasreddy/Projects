@@ -1,19 +1,92 @@
-report_df.columns = [col.lower() for col in report_df.columns]  # Ensures lowercase
+def send_opsgenie_jira_alert(self, reference_key: str):
+        try:
+            
+            report_query = f"""                
+                select rpt.*, 
+                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
+                from {config.dqaas_mtd} mtd 
+                inner join 
+                (select * from 
+                {config.dqaas_profile_rpt} 
+                where rpt_ref_key = '{reference_key}' ) rpt
+                on mtd.profile_id = rpt.profile_id
+                and upper(mtd.profile_type) = 'RULE_CUSTOM'
+            """
+            self.logger.info(f"opsgenie info Query : {report_query}")
 
-for idx in report_df.index:
-    try:
-        table_name = report_df.loc[idx, 'table_name']
-        prfl_run_ts = report_df.loc[idx, 'prfl_run_ts']
-        jira_assignee = report_df.loc[idx, 'jira_assignee']
+            report_df = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=report_query
+            )
+            
+            if len(report_df) == 0:
+                raise Exception("No Records found for opsgenie alert")
+            
+            self.logger.info(f"report_df: {report_df}")
 
-        summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {database_name} | Table: {table_name} | {alert_type}"
-        description = f"DQ has failed for Table : {table_name} on Run date : {prfl_run_ts}. DQ status is LOW"
+            for idx in report_df.index:
+                alert_type = None
+                priority = None
 
-        # Create ticket
-        jira_client = Jira_ticket()
-        ticket_id = jira_client.create_jira_ticket(jira_assignee, summary, description, "DQaaS")
+                # print(f"idx: {idx}")
+                # print(report_df.loc[idx,])
+                # print(report_df.loc[idx, 'dq_status'])
 
-        self.logger.info(f"Jira Id created: {ticket_id}")
+                # Fetch records where dq_status = 'LOW' OR sigma_value = 'outlier'
+                if report_df.loc[idx, 'dq_status'].upper() == "LOW" and report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_both_dq_status and sigma_value failed'
+                    priority = "P3"  
 
-    except Exception as err:
-        self.logger.error(f"Error occurred while creating JIRA tickets {err}")
+                elif report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_outlier'
+                    priority = "P3" 
+                elif report_df.loc[idx, 'dq_status'].upper() == "LOW":
+                    alert_type = 'custom_profile_dq_status failed'
+                    priority = "P3"
+                else:
+                    continue
+                
+                env = config.get_config_values('environment', 'env')
+                data_src = {report_df.loc[idx,'data_src']}
+                data_sub_dmn = {report_df.loc[idx,'data_sub_dmn']}
+                dq_pillar = {report_df.loc[idx,'dq_pillar']}
+                database_name = {report_df.loc[idx,'database_name']}
+                src_tbl = report_df.loc[idx,'table_name']
+
+                if report_df.loc[idx, 'opsgenie_flag'].upper() == "Y":
+                    profile_type = "custom"
+                    api_key = report_df.loc[idx, 'opsgenie_api_key']           
+                    # Use default API key
+                    if api_key in config.EMPTY_STR_LIST or (isinstance(api_key, float) and math.isnan(api_key)):
+                        api_key = config.get_config_values('opsgenie', 'api_key')
+
+                    report_df = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
+                    gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
+                
+                    opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
+                    
+                    # Send Opsgenie alert
+                    response, request_id, message = opsgenie_client.create_opsgenie_alert(
+                        report_df, 0, alert_type, priority, env, profile_type
+                    )
+
+                    self.logger.info(f"Opsgenie response code: {response}")
+                    self.logger.info(f"Opsgenie alert sent successfully for {alert_type}")
+                elif report_df.loc[idx,'jira_assignee'] is not None: 
+                    try:
+                        JIRA_ASSIGNEE = report_df.loc[idx,'jira_assignee']
+                        lable = "DQaaS"
+                        self.logger.info(f"Calling Jira Module for: {report_df.loc[idx,'TABLE_NAME']}")
+                        self.logger.info(f"dq_status: {report_df.loc[idx,'dq_status']}")                                                                        
+                        # summary = f"LensX|DQ Failure|Table: {report_df.loc[idx,'TABLE_NAME']} DQ status is LOW"
+                        summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {database_name} | Table: {src_tbl} | {alert_type}"
+                        description = f"DQ has failed for Table : {report_df.loc[idx,'table_name']} on Run date : {report_df.loc[idx,'PRFL_RUN_DT']}. DQ status is LOW"
+                        jira_client = Jira_ticket()
+                        ticket_id=jira_client.create_jira_ticket(JIRA_ASSIGNEE,summary, description,lable)
+                        self.logger.info(f"Jira Id created: {ticket_id}")
+                    except Exception as err:
+                        self.logger.error(f"Error occured while creating JIRA tickets {err}")
+            
+        except Exception as err:
+            self.logger.error(f"Error occured while creating opsgenie alert. Error: {err}")
+         
