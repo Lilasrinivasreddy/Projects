@@ -1,1 +1,1 @@
-description = f"DQ has failed for Table : {report_df.loc[idx,'table_name']} on Run date : {report_df.loc[idx,'PRFL_RUN_DT']}. DQ status is LOW"
+summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {database_name} | Table: {src_tbl}" | {alert_type}
