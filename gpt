@@ -1,1 +1,1 @@
-summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {database_name} | Table: {src_tbl}" | {alert_type}
+summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {database_name} | Table: {src_tbl} | {alert_type}"
