@@ -1,5 +1,1 @@
-2025-03-25 10:43:29 : CRM-195253 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
-2025-03-25 10:43:29 : CRM-195253 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
-2025-03-25 10:43:29 : CRM-195253 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
-(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$  ^C
-(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$
+description = f"DQ has failed for Table : {report_df.loc[idx,'table_name']} on Run date : {report_df.loc[idx,'PRFL_RUN_DT']}. DQ status is LOW"
