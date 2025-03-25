@@ -1,3 +1,7 @@
-2025-03-25 09:30:59 : CRM-159513 - run_bq_sql - ERROR : Error While executing the BigQuery SQL. Error: File /apps/opt/application/dev_smartdq/dev/dqaas//keys/sa-dev-izcv-app-idmcdo-0-oidc-27472-config.json was not found.
-2025-03-25 09:30:59 : CRM-159513 - get_metadata - INFO : Metadata Length: 0
-2025-03-25 09:30:59 : CRM-159513 - main - ERROR : No Records Found for Custom Metrics
+2025-03-25 09:52:51 : CRM-170008 - run_bq_sql - ERROR : Error While executing the BigQuery SQL. Error: 400 Invalid integer literal: 20250325095223762052 at [8:37]
+
+Location: US
+Job ID: 08110095-62b8-46de-b3d3-a55b84eee8ed
+
+2025-03-25 09:52:51 : CRM-170008 - send_opsgenie_jira_alert - ERROR : Error occured while creating opsgenie alert. Error: No Records found for opsgenie alert
+(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$
