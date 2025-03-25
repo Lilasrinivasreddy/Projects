@@ -1,38 +1,19 @@
-2025-03-25 10:58:02 : CRM-202399 - send_opsgenie_jira_alert - INFO : opsgenie info Query :
-                select rpt.*,
-                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
-                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
-                inner join
-                (select * from
-                vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-                where rpt_ref_key = '20250325_105736' ) rpt
-                on mtd.profile_id = rpt.profile_id
-                and upper(mtd.profile_type) = 'RULE_CUSTOM'
+report_df.columns = [col.lower() for col in report_df.columns]  # Ensures lowercase
 
-2025-03-25 10:58:02 : CRM-202399 - run_bq_sql - INFO :
-BQ Select Query:
-                select rpt.*,
-                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
-                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
-                inner join
-                (select * from
-                vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-                where rpt_ref_key = '20250325_105736' ) rpt
-                on mtd.profile_id = rpt.profile_id
-                and upper(mtd.profile_type) = 'RULE_CUSTOM'
+for idx in report_df.index:
+    try:
+        table_name = report_df.loc[idx, 'table_name']
+        prfl_run_ts = report_df.loc[idx, 'prfl_run_ts']
+        jira_assignee = report_df.loc[idx, 'jira_assignee']
 
-2025-03-25 10:58:02 : CRM-202399 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-03-25 10:58:02 : CRM-202399 - isTokenExpired - INFO : Token File Available
-2025-03-25 10:58:02 : CRM-202399 - isTokenExpired - INFO : Access Token is Valid
-2025-03-25 10:58:02 : CRM-202399 - bigquery_client - INFO : Setting environment variable...
-2025-03-25 10:58:02 : CRM-202399 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-25 10:58:06 : CRM-202399 - send_opsgenie_jira_alert - INFO : report_df:    rpt_seq_num      rpt_ref_key  profile_id               prfl_run_ts     data_dt  ... data_src  dq_pillar_1 opsgenie_api opsgenie_flag jira_assignee
-0           36  20250325_105736        7444 2025-03-25 10:57:42+00:00  2025-03-24  ...       TD  Consistency         None             N       redvi1f
-1           37  20250325_105736        7475 2025-03-25 10:57:42+00:00  2025-03-24  ...       TD  Consistency         None             N       redvi1f
-2           38  20250325_105736        7478 2025-03-25 10:57:42+00:00  2025-03-24  ...       TD  Consistency         None             N       redvi1f
+        summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {database_name} | Table: {table_name} | {alert_type}"
+        description = f"DQ has failed for Table : {table_name} on Run date : {prfl_run_ts}. DQ status is LOW"
 
-[3 rows x 32 columns]
-2025-03-25 10:58:06 : CRM-202399 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
-2025-03-25 10:58:06 : CRM-202399 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
-2025-03-25 10:58:06 : CRM-202399 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
-(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$
+        # Create ticket
+        jira_client = Jira_ticket()
+        ticket_id = jira_client.create_jira_ticket(jira_assignee, summary, description, "DQaaS")
+
+        self.logger.info(f"Jira Id created: {ticket_id}")
+
+    except Exception as err:
+        self.logger.error(f"Error occurred while creating JIRA tickets {err}")
