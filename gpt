@@ -1,7 +1,5 @@
-a_dt  ...           table_name_1 data_src  dq_pillar_1 opsgenie_api opsgenie_flag
-0           21  20250325_102727        7444 2025-03-25 10:27:32+00:00  2025-03-24  ...            CUST_ACCT_V       TD  Consistency         None             N
-1           22  20250325_102727        7475 2025-03-25 10:27:32+00:00  2025-03-24  ...    EDGE_ELIG_RESULTS_V       TD  Consistency         None             N
-2           23  20250325_102727        7478 2025-03-25 10:27:32+00:00  2025-03-24  ...  FIXED_5G_DVC_DETAIL_V       TD  Consistency         None             N
-
-[3 rows x 31 columns]
-2025-03-25 10:27:55 : CRM-187417 - send_opsgenie_jira_alert - ERROR : Error occured while creating opsgenie alert. Error: 'JIRA_ASSIGNEE'
+2025-03-25 10:43:29 : CRM-195253 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
+2025-03-25 10:43:29 : CRM-195253 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
+2025-03-25 10:43:29 : CRM-195253 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'TABLE_NAME'
+(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$  ^C
+(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$
