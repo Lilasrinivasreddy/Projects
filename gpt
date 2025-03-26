@@ -1,10 +1,1015 @@
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - INFO : Calling Jira Module for: CUST_ACCT_V
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - INFO : dq_status: LOW
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'PRFL_RUN_DT'
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - INFO : Calling Jira Module for: EDGE_ELIG_RESULTS_V
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - INFO : dq_status: LOW
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'PRFL_RUN_DT'
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - INFO : Calling Jira Module for: FIXED_5G_DVC_DETAIL_V
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - INFO : dq_status: LOW
-2025-03-25 11:24:21 : CRM-215337 - send_opsgenie_jira_alert - ERROR : Error occured while creating JIRA tickets 'PRFL_RUN_DT'
-(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$
+select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_auto_rule_prfl_product_mtd
+
+
+select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta
+
+
+
+data_lob,data_dmn,product_type,data_sub_dmn,product_area,data_bus_elem,product_name,business_program,update_made_ts,entry_made_ts
+,,,,,,VBG Product Launches,,2024-11-28 13:05:09.141648 UTC,2024-11-28 13:05:09.141648 UTC
+,,,,,,GCP,Data Intelligence,2024-09-16 06:57:46.238216 UTC,2024-08-16 06:18:15.742634 UTC
+VCG,Adaptive Auth,,Adaptive Auth,,Marketing,,,2024-09-16 06:57:46.238216 UTC,2024-03-18 10:30:29.940922 UTC
+VCG,LLF,,LLF_TEST,,LLF_TEST,,,2024-10-04 12:36:50.129913 UTC,2024-10-04 12:36:50.129913 UTC
+VBG,GROWTH,,Marketing Capability,,RTM/PEGA,,,2024-09-16 06:57:46.238216 UTC,2024-06-06 11:23:52.019567 UTC
+Network,Network-asset,,Network-asset-domain,,RAN_carr_score_summarized_raw_v1,,,2024-09-16 06:57:46.238216 UTC,2024-03-21 11:47:26.131684 UTC
+VBG,POS,,PERFORMANCE,,FTL,RTM/Pega/Artemis,,2024-11-18 14:48:03.509015 UTC,2024-11-18 14:48:03.509015 UTC
+VBG,POS,,PERFORMANCE,,FTL,FTL,,2024-11-18 14:41:46.961579 UTC,2024-11-18 14:41:46.961579 UTC
+VCG,Service,Deliver Experience,Personalization,,Service-PCT,NBX Service,NBX Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-04 15:46:54.496869 UTC
+VCG,Service,,Personalization,,Service-PCT,,,2024-09-16 06:57:46.238216 UTC,2024-07-01 06:20:31.572256 UTC
+VCG,Service,,Personalization_dev10,,Service-PCT_dev10,,,2024-09-16 06:57:46.238216 UTC,2024-07-08 15:15:31.279593 UTC
+VCG,TEST2,,TEST_NEW1,,TEST_NEW1,,,2024-09-16 06:57:46.238216 UTC,2024-08-12 10:28:12.418587 UTC
+TEST,TEST,,connect test,,connect test,,,2024-09-16 06:57:46.238216 UTC,2024-08-05 15:38:21.136216 UTC
+VCG,pr1,PType,,AOP1,DBE1,ProductName,BP1,2024-09-16 06:57:46.238216 UTC,2024-09-11 14:35:43.310532 UTC
+VCG,Adaptive Auth,Adaptive Auth,Adaptive Auth,Adaptive Auth,Marketing,Adaptive Auth,Adaptive Auth,2024-09-16 06:57:46.238216 UTC,2024-04-03 07:53:29.666914 UTC
+VCG,GROWTH,Grow Revenue,TRACFONE_GCR,Base Management,TRACFONE_GCR,Value,Tracfone-GCR,2024-09-16 06:57:46.238216 UTC,2024-03-08 13:40:44.218781 UTC
+VCG,GROWTH,Grow Revenue,TRACFONE_GCR_dev,Base Management,TRACFONE_GCR,Value,Tracfone-GCR,2024-09-16 06:57:46.238216 UTC,2024-07-04 14:25:29.663958 UTC
+VCG,GROWTH,Personalization,PZAI_bill_shock_v1_model,"Base Mgmt,Acquisition & Personalization",PZAI_bill_shock_v1,GROW REVENUE,PZAI_bill_shock_v1,2024-09-16 06:57:46.238216 UTC,2024-08-14 12:00:22.005057 UTC
+VCG,GROWTH,Personalization,TP_im_model,"Base Mgmt,Acquisition & Personalization",TP_im,GROW REVENUE,TP_im,2024-09-16 06:57:46.238216 UTC,2024-08-14 12:00:22.005057 UTC
+VCG,GROWTH,Personalization,pre_bill_shock_p_model,"Base Mgmt,Acquisition & Personalization",pre_bill_shock_p,GROW REVENUE,pre_bill_shock_p,2024-09-16 06:57:46.238216 UTC,2024-08-14 12:00:22.005057 UTC
+VCG,GROWTH,Personalization,uirf_model,"Base Mgmt,Acquisition & Personalization",uirf,GROW REVENUE,uirf,2024-09-16 06:57:46.238216 UTC,2024-08-14 12:00:22.005057 UTC
+VCG,GROWTH,Grow Revenue,5100_C H U R N_FIOS _MODEL,"Base Mgmt,Acquisition & Personlaisation",5100_C H U R N_FIOS,Churn & Marketing Campaigns,5100_C H U R N_FIOS _MODEL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,8301_C H U R N_FIOS _MODEL,"Base Mgmt,Acquisition & Personlaisation",8301_C H U R N_FIOS,Churn & Marketing Campaigns,8301_C H U R N_FIOS _MODEL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,8886_C H U R N_FIOS _MODEL,"Base Mgmt,Acquisition & Personlaisation",8886_C H U R N_FIOS,Churn & Marketing Campaigns,8886_C H U R N_FIOS _MODEL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,8889_C H U R N_FIOS _MODEL,"Base Mgmt,Acquisition & Personlaisation",8889_C H U R N_FIOS,Churn & Marketing Campaigns,8889_C H U R N_FIOS _MODEL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,C H U R N_CUBE,"Base Mgmt,Acquisition & Personlaisation",CHURN_CUBE,Churn & Marketing Campaigns,C H U R N_CUBE,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,CJA_ACCT_DL,"Base Mgmt,Acquisition & Personlaisation",CJA_ACCT_DL,Churn & Marketing Campaigns,CJA_ACCT_DL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,CJA_ACCT_PO,"Base Mgmt,Acquisition & Personlaisation",CJA_ACCT_PO,Churn & Marketing Campaigns,CJA_ACCT_PO,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,CJA_DEFFERED_DL,"Base Mgmt,Acquisition & Personlaisation",CJA_DEFFERED_DL,Churn & Marketing Campaigns,CJA_DEFFERED_DL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,CJA_DL,"Base Mgmt,Acquisition & Personlaisation",CJA_DL,Churn & Marketing Campaigns,CJA_DL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,CJA_DL_WK,"Base Mgmt,Acquisition & Personlaisation",CJA_DL_WK,Churn & Marketing Campaigns,CJA_DL_WK,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,CJA_PO_WLY,"Base Mgmt,Acquisition & Personlaisation",CJA_PO_WLY,Churn & Marketing Campaigns,CJA_PO_WLY,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,CJA_TRANSFORMER_C H U R N_FIOS,"Base Mgmt,Acquisition & Personlaisation",CJA_TRANSFORMER_C H U R N_FIOS,Churn & Marketing Campaigns,CJA_TRANSFORMER_C H U R N_FIOS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,IN_MKT_V13 Model,"Base Mgmt,Acquisition & Personlaisation",IN_MKT_V13,GROW REVENUE,IN_MKT_V13,2024-09-16 06:57:46.238216 UTC,2024-07-04 07:58:11.462649 UTC
+VCG,GROWTH,Grow Revenue,IN_MKT_WK_MODEL,"Base Mgmt,Acquisition & Personlaisation",IN_MKT_WK,Churn & Marketing Campaigns,IN_MKT_WK_MODEL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,PO_V7,"Base Mgmt,Acquisition & Personlaisation",PO_V7,GROW REVENUE,PO_V7,2024-09-16 06:57:46.238216 UTC,2024-07-04 15:18:41.452434 UTC
+VCG,Growth,Churn & Marketing Campaigns,PO_V7,"Base Mgmt,Acquisition & Personlaisation",PO_V7,GROW REVENUE,PO_V7,2024-09-16 06:57:46.238216 UTC,2024-07-03 07:35:31.461636 UTC
+VCG,GROWTH,Grow Revenue,PO_WLY_MODEL,"Base Mgmt,Acquisition & Personlaisation",PO_WLY,Churn & Marketing Campaigns,PO_WLY_MODEL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,PRICING_C H U R N_FIOS _MODEL,"Base Mgmt,Acquisition & Personlaisation",PRICING_C H U R N_FIOS,Churn & Marketing Campaigns,PRICING_C H U R N_FIOS _MODEL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS,"Base Mgmt,Acquisition & Personlaisation",Marketing Capability,Swift_Dropship,PROMOTIONS,2024-09-16 06:57:46.238216 UTC,2024-07-15 06:52:19.855224 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS,"Base Mgmt,Acquisition & Personlaisation",Marketing Capability,Promotion_Trade_In,PROMOTIONS,2024-09-16 06:57:46.238216 UTC,2024-03-18 09:12:55.482848 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS,"Base Mgmt,Acquisition & Personlaisation",Marketing Capability,Midnight_Perks,PROMOTIONS,2024-09-16 06:57:46.238216 UTC,2024-08-06 10:18:18.379015 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS_dev_1015,"Base Mgmt,Acquisition & Personlaisation",Marketing Capability,Promotion_Trade_In,PROMOTIONS,2024-10-15 10:24:30.743972 UTC,2024-10-15 10:24:30.743972 UTC
+VCG,Platforms and EcoSystems,Grow Revenue,Predictors,"Base Mgmt,Acquisition & Personlaisation",ADM,NBX and Proactive,Predictors,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,REVENUE,"Base Mgmt,Acquisition & Personlaisation",LTV,Churn & Marketing Campaigns,CHURN REVENUE,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v26,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v30,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v17,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v14,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v25,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v3,GROW REVENUE,Unified_Churn v5,2024-09-16 06:57:46.238216 UTC,2024-07-09 12:24:45.963056 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v22,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v4,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v21,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v27,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v12,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v29,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v18,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v20,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v3,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v5,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v24,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v23,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v13,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v10,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v28,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v11,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v15,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v19,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v6,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,Growth,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified Model Churn v5,GROW REVENUE,Unified Model Churn v5,2024-09-16 06:57:46.238216 UTC,2024-07-09 14:54:05.679178 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v7,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v9,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v8,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-20 12:20:03.356133 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v5,GROW REVENUE,Unified_Churn v5,2024-09-16 06:57:46.238216 UTC,2024-07-09 12:24:45.963056 UTC
+VCG,Growth,Churn & Marketing Campaigns,Unified Model ,"Base Mgmt,Acquisition & Personlaisation",Unified Model Churn v5,GROW REVENUE,Unified Model Churn v5,2024-09-16 06:57:46.238216 UTC,2024-07-09 14:54:05.679178 UTC
+VCG,Growth,Churn & Marketing Campaigns,Unified Model Churn v3,"Base Mgmt,Acquisition & Personlaisation",Unified Model Churn v3,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-06-03 15:18:47.525828 UTC
+VCG,GROWTH,Churn & Marketing Campaigns,Unified Model_dev,"Base Mgmt,Acquisition & Personlaisation",Unified_churn_v3,GROW REVENUE,Unified_Churn v3,2024-09-16 06:57:46.238216 UTC,2024-05-27 12:37:31.846096 UTC
+VCG,GROWTH,Grow Revenue,TRACFONE_GCR,Business Management,TRACFONE_GCR,Value,TRACFONE_GCR,2024-09-16 06:57:46.238216 UTC,2024-08-08 13:22:22.930188 UTC
+VCG,GROWTH,Grow Revenue,TRACFONE_GCR_dev,Business Management,TRACFONE_GCR_dev,Value,TRACFONE_GCR_dev,2024-09-16 06:57:46.238216 UTC,2024-08-19 11:46:46.913235 UTC
+VCG,GROWTH,Grow Revenue,TRACFONE_GCR_dev,Business Management,TRACFONE_GCR,Value,TRACFONE_GCR,2024-09-16 06:57:46.238216 UTC,2024-08-08 10:26:39.085314 UTC
+VCG,GROWTH,Grow Revenue,TRACFONE_GCR_dev5,Business Management,TRACFONE_GCR,Value,TRACFONE_GCR,2024-09-16 06:57:46.238216 UTC,2024-08-27 15:33:27.184987 UTC
+VBG,JOURNEY,Business warehouse,TFS_DEV,Business related informations,TFS_DEV,TFS,TFS_DEV,2024-12-04 07:52:28.651941 UTC,2024-12-04 07:52:28.651941 UTC
+VBG,JOURNEY,Business warehouse,TFS_DEV,Business warehouse,TFS_DEV,TFS,TFS_DEV,2024-12-04 07:52:28.651941 UTC,2024-12-04 07:52:28.651941 UTC
+VCG,CDP,GROWTH,Marketing,CORE DATA ASSETS,Growth,CDP,CDP_DEV1,2024-09-16 06:57:46.238216 UTC,2024-09-03 08:28:40.276760 UTC
+VCG,CDP,GROWTH,Marketing,CORE DATA ASSETS,Growth,CDP,CDP_DEV,2024-09-16 06:57:46.238216 UTC,2024-09-03 08:24:17.764755 UTC
+VCG,CDP,GROWTH,Marketing,CORE DATA ASSETS,Growth,CDP,Growth,2024-09-16 06:57:46.238216 UTC,2024-09-04 13:55:55.337607 UTC
+VCG,CDP,GROWTH,Marketing_DEV,CORE DATA ASSETS,Growth,CDP,CDP_DEV,2024-12-04 15:49:16.739594 UTC,2024-12-04 15:49:16.739594 UTC
+VCG,CDP,GROWTH,Marketing_dev,CORE DATA ASSETS,Growth,CDP,Growth,2024-09-16 06:57:46.238216 UTC,2024-09-05 08:56:15.526553 UTC
+VCG,CDP,GROWTH,Marketing_dev,CORE DATA ASSETS,Growth,CDP,CDP_DEV,2024-09-16 06:57:46.238216 UTC,2024-09-11 08:27:59.921701 UTC
+VCG,CDP,GROWTH,Marketing_dev_2,CORE DATA ASSETS,Growth,CDP,CDP_DEV,2024-09-16 06:57:46.238216 UTC,2024-09-11 12:00:31.667582 UTC
+VCG,CDP,GROWTH,Marketing_dev_310,CORE DATA ASSETS,Growth,CDP,CDP_DEV,2024-10-03 13:27:35.642812 UTC,2024-10-03 13:27:35.642812 UTC
+VCG,Marketing,TIER1,5G_REPORTING_TIER1,CORE SERVICES,5G_REPORTING_TIER1,5G,5G_Reporting_Tier1,2024-09-16 06:57:46.238216 UTC,2024-02-08 08:34:56.489114 UTC
+VCG,Marketing,TIER1,5G_Tradein_Emp_REPORTING_TIER1,CORE SERVICES,5G_Tradein_Emp_REPORTING_TIER1,5G_Tradein_Emp,5G_Tradein_Emp_Reporting_Tier1,2024-09-16 06:57:46.238216 UTC,2024-02-08 08:34:56.489114 UTC
+VCG,Finance,TIER1,Core_services_REPORTING_TIER1,CORE SERVICES,Core_services_REPORTING_TIER1,Core_Services,Core_Services_Reporting_Tier1,2024-09-16 06:57:46.238216 UTC,2024-02-08 08:34:56.489114 UTC
+VCG,Finance,TIER1,DAPR_REPORTING_TIER1,CORE SERVICES,DAPR_REPORTING_TIER1,DAPR,Dapr_Reporting_Tier1,2024-09-16 06:57:46.238216 UTC,2024-02-08 08:34:56.489114 UTC
+VCG,FINANCE,TIER1,EXECUTIVE_REPORTING_TIER1,CORE SERVICES,EXECUTIVE_REPORTING_TIER1,Executive_Reporting,Executive_Reporting_Tier1,2024-09-16 06:57:46.238216 UTC,2024-02-08 08:34:56.489114 UTC
+VCG,Marketing,TIER1,Live_PSN_chat_REPORTING_TIER1,CORE SERVICES,Live_PSN_chat_REPORTING_TIER1,Live_PSN_Chat,Live_Psn_Chat_Reporting_Tier1,2024-09-16 06:57:46.238216 UTC,2024-02-08 08:34:56.489114 UTC
+VCG,Corporate,TIER1,One_ex_KPI,CORE SERVICES,One_ex_Model_DQ_TIER1,One_Ex,One_ex_Model_DQ_TIER1,2025-02-14 12:43:21.708491 UTC,2025-02-14 12:43:21.708490 UTC
+VCG,Finance,TIER1,One_ex_Model_DQ_TIER1,CORE SERVICES,One_ex_Model_DQ_TIER1,One_Ex,One_Ex_Reporting_Tier1,2024-09-16 06:57:46.238216 UTC,2024-02-08 08:34:56.489114 UTC
+VCG,Corporate,TIER1,One_ex_TEST_DEV,CORE SERVICES,One_ex_Model_DQ_TIER1,One_Ex,One_ex_Model_DQ_TIER1,2025-02-13 11:42:09.641313 UTC,2025-02-13 11:10:46.931190 UTC
+VCG,Corporate,TIER1,One_ex_TEST_NEW,CORE SERVICES,One_ex_Model_DQ_TIER1,One_Ex,One_ex_Model_DQ_TIER1,2025-02-13 15:00:38.687880 UTC,2025-02-13 15:00:38.687879 UTC
+VCG,Corporate,TIER1,One_ex_TEST_SET1,CORE SERVICES,One_ex_Model_DQ_TIER1,One_Ex,One_ex_Model_DQ_TIER1,2025-02-14 11:24:32.157606 UTC,2025-02-14 11:24:32.157605 UTC
+VCG,Corporate,TIER1,One_ex_TEST_SET2,CORE SERVICES,One_ex_Model_DQ_TIER1,One_Ex,One_ex_Model_DQ_TIER1,2025-02-14 12:54:56.292070 UTC,2025-02-14 12:54:56.292069 UTC
+VCG,Corporate,TIER1,One_ex_TIER1,CORE SERVICES,One_ex_Model_DQ_TIER1,One_Ex,One_ex_Model_DQ_TIER1,2025-01-02 10:37:00.908728 UTC,2024-12-10 13:41:11.824918 UTC
+VCG,MARKETING,TIER1,Promotion_Model_DQ_TIER1,CORE SERVICES,Promotion_Model_DQ_TIER1,Promotion,Promotion_Reporting_Tier1,2024-09-16 06:57:46.238216 UTC,2024-02-08 08:34:56.489114 UTC
+VBG_TEST,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_DTRAN,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_DTRAN,2024-11-12 11:31:50.635764 UTC,2024-11-05 16:47:56.765838 UTC
+VBG_TEST,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_DTRAN_NEW,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_DTRAN,2024-11-12 12:13:39.983457 UTC,2024-11-12 12:13:39.983456 UTC
+VBG_TEST,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_TEST1,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_TEST,CUSTOM_TEST,2024-11-05 14:53:43.658887 UTC,2024-11-05 14:53:43.658886 UTC
+VCG,churn,Base  management,,Churn,churn,Growth,churn,2024-09-16 06:57:46.238216 UTC,2024-09-12 06:18:09.862015 UTC
+VCG,Churn,base management,,Churn,Churn,Growth,Churn,2024-09-16 06:57:46.238216 UTC,2024-09-12 06:09:14.868851 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",8889_C H U R N_FIOS _MODEL,Churn & Marketing Campaigns,8889_C H U R N_FIOS,Grow Revenue,8889_C H U R N_FIOS _MODEL,2024-09-16 06:57:46.238216 UTC,2024-03-04 12:08:56.396269 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS,Core Data Assests,PROMOTIONS,Promo/Product Launches,PROMOTIONS,2025-01-21 13:30:20.665850 UTC,2025-01-21 13:30:20.665850 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS_dev,Core Data Assests,PROMOTIONS,Promo/Product Launches,PROMOTIONS,2025-01-20 11:17:39.527504 UTC,2025-01-20 11:17:39.527504 UTC
+VCG,GROWTH,Marketing,CDP,Core Data Assets,Growth,CDP,Growth,2024-09-16 06:57:46.238216 UTC,2024-09-03 08:15:06.909927 UTC
+VBG,,Grow Revenue,Dummy_SIT_DQ_ext,Core Data Assets,,RTM/Pega/Artemis,,2024-11-19 10:14:47.824848 UTC,2024-11-19 10:14:47.824848 UTC
+VBG,,Grow Revenue,Dummy_SIT_DQ_ext_2,Core Data Assets,,RTM/Pega/Artemis,,2024-11-19 10:18:44.656453 UTC,2024-11-19 10:18:44.656453 UTC
+VCG,Marketing Capability,GROWTH,GROWTH,Core Data Assets,PROMOTIONS,Promo launches,Fandom,2024-12-19 07:44:59.333026 UTC,2024-12-19 07:44:59.333026 UTC
+VCG,CDP_dev_test_1,Grow Revenue,Grow Revenue_dev_test_1,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_101,Grow Revenue,Grow Revenue_dev_test_101,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_102,Grow Revenue,Grow Revenue_dev_test_102,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_103,Grow Revenue,Grow Revenue_dev_test_103,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_104,Grow Revenue,Grow Revenue_dev_test_104,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_105,Grow Revenue,Grow Revenue_dev_test_105,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_106,Grow Revenue,Grow Revenue_dev_test_106,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_107,Grow Revenue,Grow Revenue_dev_test_107,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_108,Grow Revenue,Grow Revenue_dev_test_108,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_109,Grow Revenue,Grow Revenue_dev_test_109,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_11,Grow Revenue,Grow Revenue_dev_test_11,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_110,Grow Revenue,Grow Revenue_dev_test_110,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_111,Grow Revenue,Grow Revenue_dev_test_111,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_112,Grow Revenue,Grow Revenue_dev_test_112,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_113,Grow Revenue,Grow Revenue_dev_test_113,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_114,Grow Revenue,Grow Revenue_dev_test_114,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_115,Grow Revenue,Grow Revenue_dev_test_115,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_116,Grow Revenue,Grow Revenue_dev_test_116,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_117,Grow Revenue,Grow Revenue_dev_test_117,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_118,Grow Revenue,Grow Revenue_dev_test_118,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_119,Grow Revenue,Grow Revenue_dev_test_119,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_12,Grow Revenue,Grow Revenue_dev_test_12,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_120,Grow Revenue,Grow Revenue_dev_test_120,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_121,Grow Revenue,Grow Revenue_dev_test_121,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_122,Grow Revenue,Grow Revenue_dev_test_122,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_123,Grow Revenue,Grow Revenue_dev_test_123,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_124,Grow Revenue,Grow Revenue_dev_test_124,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_126,Grow Revenue,Grow Revenue_dev_test_126,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_127,Grow Revenue,Grow Revenue_dev_test_127,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_128,Grow Revenue,Grow Revenue_dev_test_128,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_13,Grow Revenue,Grow Revenue_dev_test_13,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_130,Grow Revenue,Grow Revenue_dev_test_130,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_131,Grow Revenue,Grow Revenue_dev_test_131,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_132,Grow Revenue,Grow Revenue_dev_test_132,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_133,Grow Revenue,Grow Revenue_dev_test_133,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_134,Grow Revenue,Grow Revenue_dev_test_134,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_135,Grow Revenue,Grow Revenue_dev_test_135,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_136,Grow Revenue,Grow Revenue_dev_test_136,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_137,Grow Revenue,Grow Revenue_dev_test_137,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_138,Grow Revenue,Grow Revenue_dev_test_138,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_14,Grow Revenue,Grow Revenue_dev_test_14,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_140,Grow Revenue,Grow Revenue_dev_test_140,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_141,Grow Revenue,Grow Revenue_dev_test_141,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_142,Grow Revenue,Grow Revenue_dev_test_142,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_143,Grow Revenue,Grow Revenue_dev_test_143,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_144,Grow Revenue,Grow Revenue_dev_test_144,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_145,Grow Revenue,Grow Revenue_dev_test_145,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_146,Grow Revenue,Grow Revenue_dev_test_146,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_147,Grow Revenue,Grow Revenue_dev_test_147,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_148,Grow Revenue,Grow Revenue_dev_test_148,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_149,Grow Revenue,Grow Revenue_dev_test_149,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_15,Grow Revenue,Grow Revenue_dev_test_15,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_150,Grow Revenue,Grow Revenue_dev_test_150,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_151,Grow Revenue,Grow Revenue_dev_test_151,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_152,Grow Revenue,Grow Revenue_dev_test_152,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_153,Grow Revenue,Grow Revenue_dev_test_153,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_154,Grow Revenue,Grow Revenue_dev_test_154,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_155,Grow Revenue,Grow Revenue_dev_test_155,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_156,Grow Revenue,Grow Revenue_dev_test_156,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_157,Grow Revenue,Grow Revenue_dev_test_157,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_158,Grow Revenue,Grow Revenue_dev_test_158,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_159,Grow Revenue,Grow Revenue_dev_test_159,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_16,Grow Revenue,Grow Revenue_dev_test_16,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_160,Grow Revenue,Grow Revenue_dev_test_160,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_161,Grow Revenue,Grow Revenue_dev_test_161,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_162,Grow Revenue,Grow Revenue_dev_test_162,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_163,Grow Revenue,Grow Revenue_dev_test_163,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_164,Grow Revenue,Grow Revenue_dev_test_164,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_165,Grow Revenue,Grow Revenue_dev_test_165,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_166,Grow Revenue,Grow Revenue_dev_test_166,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_167,Grow Revenue,Grow Revenue_dev_test_167,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_168,Grow Revenue,Grow Revenue_dev_test_168,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_169,Grow Revenue,Grow Revenue_dev_test_169,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_17,Grow Revenue,Grow Revenue_dev_test_17,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_170,Grow Revenue,Grow Revenue_dev_test_170,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_171,Grow Revenue,Grow Revenue_dev_test_171,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_172,Grow Revenue,Grow Revenue_dev_test_172,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_173,Grow Revenue,Grow Revenue_dev_test_173,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_174,Grow Revenue,Grow Revenue_dev_test_174,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_175,Grow Revenue,Grow Revenue_dev_test_175,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_176,Grow Revenue,Grow Revenue_dev_test_176,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_18,Grow Revenue,Grow Revenue_dev_test_18,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_19,Grow Revenue,Grow Revenue_dev_test_19,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_2,Grow Revenue,Grow Revenue_dev_test_2,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_20,Grow Revenue,Grow Revenue_dev_test_20,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_21,Grow Revenue,Grow Revenue_dev_test_21,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_22,Grow Revenue,Grow Revenue_dev_test_22,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_23,Grow Revenue,Grow Revenue_dev_test_23,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_24,Grow Revenue,Grow Revenue_dev_test_24,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_2409,Grow Revenue,Grow Revenue_dev_test_2409,Core Data Assets,Growth,CDP,Growth,2024-09-24 17:21:11.267126 UTC,2024-09-24 17:21:11.267126 UTC
+VCG,CDP_dev_test_25,Grow Revenue,Grow Revenue_dev_test_25,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_26,Grow Revenue,Grow Revenue_dev_test_26,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_27,Grow Revenue,Grow Revenue_dev_test_27,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_28,Grow Revenue,Grow Revenue_dev_test_28,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_29,Grow Revenue,Grow Revenue_dev_test_29,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_3,Grow Revenue,Grow Revenue_dev_test_3,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_30,Grow Revenue,Grow Revenue_dev_test_30,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_31,Grow Revenue,Grow Revenue_dev_test_31,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_32,Grow Revenue,Grow Revenue_dev_test_32,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_33,Grow Revenue,Grow Revenue_dev_test_33,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_34,Grow Revenue,Grow Revenue_dev_test_34,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_35,Grow Revenue,Grow Revenue_dev_test_35,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_36,Grow Revenue,Grow Revenue_dev_test_36,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_37,Grow Revenue,Grow Revenue_dev_test_37,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_38,Grow Revenue,Grow Revenue_dev_test_38,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_39,Grow Revenue,Grow Revenue_dev_test_39,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_4,Grow Revenue,Grow Revenue_dev_test_4,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_40,Grow Revenue,Grow Revenue_dev_test_40,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_41,Grow Revenue,Grow Revenue_dev_test_41,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_42,Grow Revenue,Grow Revenue_dev_test_42,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_43,Grow Revenue,Grow Revenue_dev_test_43,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_44,Grow Revenue,Grow Revenue_dev_test_44,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_45,Grow Revenue,Grow Revenue_dev_test_45,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_46,Grow Revenue,Grow Revenue_dev_test_46,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_47,Grow Revenue,Grow Revenue_dev_test_47,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_48,Grow Revenue,Grow Revenue_dev_test_48,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_49,Grow Revenue,Grow Revenue_dev_test_49,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_5,Grow Revenue,Grow Revenue_dev_test_5,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_50,Grow Revenue,Grow Revenue_dev_test_50,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_51,Grow Revenue,Grow Revenue_dev_test_51,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_52,Grow Revenue,Grow Revenue_dev_test_52,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_53,Grow Revenue,Grow Revenue_dev_test_53,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_54,Grow Revenue,Grow Revenue_dev_test_54,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_55,Grow Revenue,Grow Revenue_dev_test_55,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_56,Grow Revenue,Grow Revenue_dev_test_56,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_57,Grow Revenue,Grow Revenue_dev_test_57,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_58,Grow Revenue,Grow Revenue_dev_test_58,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_59,Grow Revenue,Grow Revenue_dev_test_59,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_6,Grow Revenue,Grow Revenue_dev_test_6,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_60,Grow Revenue,Grow Revenue_dev_test_60,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_61,Grow Revenue,Grow Revenue_dev_test_61,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_62,Grow Revenue,Grow Revenue_dev_test_62,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_63,Grow Revenue,Grow Revenue_dev_test_63,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_64,Grow Revenue,Grow Revenue_dev_test_64,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_65,Grow Revenue,Grow Revenue_dev_test_65,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_66,Grow Revenue,Grow Revenue_dev_test_66,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_67,Grow Revenue,Grow Revenue_dev_test_67,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_68,Grow Revenue,Grow Revenue_dev_test_68,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_69,Grow Revenue,Grow Revenue_dev_test_69,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_7,Grow Revenue,Grow Revenue_dev_test_7,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_70,Grow Revenue,Grow Revenue_dev_test_70,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_71,Grow Revenue,Grow Revenue_dev_test_71,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_72,Grow Revenue,Grow Revenue_dev_test_72,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_73,Grow Revenue,Grow Revenue_dev_test_73,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_74,Grow Revenue,Grow Revenue_dev_test_74,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_75,Grow Revenue,Grow Revenue_dev_test_75,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_76,Grow Revenue,Grow Revenue_dev_test_76,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_77,Grow Revenue,Grow Revenue_dev_test_77,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_78,Grow Revenue,Grow Revenue_dev_test_78,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_79,Grow Revenue,Grow Revenue_dev_test_79,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_8,Grow Revenue,Grow Revenue_dev_test_8,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_80,Grow Revenue,Grow Revenue_dev_test_80,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_81,Grow Revenue,Grow Revenue_dev_test_81,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_82,Grow Revenue,Grow Revenue_dev_test_82,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_83,Grow Revenue,Grow Revenue_dev_test_83,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_84,Grow Revenue,Grow Revenue_dev_test_84,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_85,Grow Revenue,Grow Revenue_dev_test_85,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_86,Grow Revenue,Grow Revenue_dev_test_86,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_87,Grow Revenue,Grow Revenue_dev_test_87,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_88,Grow Revenue,Grow Revenue_dev_test_88,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_89,Grow Revenue,Grow Revenue_dev_test_89,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_9,Grow Revenue,Grow Revenue_dev_test_9,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_90,Grow Revenue,Grow Revenue_dev_test_90,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_91,Grow Revenue,Grow Revenue_dev_test_91,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_92,Grow Revenue,Grow Revenue_dev_test_92,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_93,Grow Revenue,Grow Revenue_dev_test_93,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_94,Grow Revenue,Grow Revenue_dev_test_94,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_95,Grow Revenue,Grow Revenue_dev_test_95,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_96,Grow Revenue,Grow Revenue_dev_test_96,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_97,Grow Revenue,Grow Revenue_dev_test_97,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_98,Grow Revenue,Grow Revenue_dev_test_98,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP_dev_test_99,Grow Revenue,Grow Revenue_dev_test_99,Core Data Assets,Growth,CDP,Growth,2024-09-24 16:22:55.220760 UTC,2024-09-24 16:22:55.220760 UTC
+VCG,CDP,Marketing,Marketing,Core Data Assets,Growth,CDP,Growth,2024-09-16 06:57:46.238216 UTC,2024-09-03 08:15:06.909927 UTC
+VCG,CDP,Marketing,Marketing_927_dev,Core Data Assets,Growth,CDP,Growth,2024-09-27 18:33:17.516170 UTC,2024-09-27 18:33:17.516170 UTC
+VCG,CDP,Marketing,Marketing_dev,Core Data Assets,Growth,CDP,Growth,2024-09-16 06:57:46.238216 UTC,2024-09-13 10:09:30.101338 UTC
+VCG,CDP,Marketing,Marketing_new,Core Data Assets,Growth,CDP,Growth,2024-10-03 14:31:36.189645 UTC,2024-10-03 14:31:36.189645 UTC
+VCG,CDP,Marketing,Marketing_test_new,Core Data Assets,Growth,CDP,Growth,2024-10-04 15:36:59.383117 UTC,2024-10-04 15:36:59.383117 UTC
+VBG,,Grow Revenue,PERFORMANCE,Core Data Assets,,RTM/Pega/Artemis,,2024-11-19 07:32:49.237437 UTC,2024-11-19 07:32:49.237437 UTC
+VBG,POS,Grow Revenue,PERFORMANCE,Core Data Assets,FTL,RTM/Pega/Artemis,,2024-11-19 07:27:03.825745 UTC,2024-11-19 07:27:03.825745 UTC
+VCG,Marketing Capability,Grow Revenue,PROMOTIONS_PERKS_FIOS,Core Data Assets,GROWTH,Promo launches,PROMOTIONS,2024-09-16 06:57:46.238216 UTC,2024-08-21 09:06:42.741365 UTC
+VCG,Marketing Capability,PROMOTIONS_PERKS_FIOS_dev_testing,PROMOTIONS_PERKS_FIOS_dev_testing,Core Data Assets,GROWTH,PROMOTIONS_PERKS_FIOS_dev_testing,PROMOTIONS,2024-09-16 06:57:46.238216 UTC,2024-08-21 12:45:52.251157 UTC
+VCG,Marketing and Sales,Grow Revenue,Sales,Core Data assets,Fixed Wireless Access Home Internet,PRODUCT LAUNCHES,VCG,2025-02-04 11:05:51.305409 UTC,2025-02-04 11:05:51.305409 UTC
+VCG,Marketing and Sales,,Sales_DEV,Core Data assets,Transaction systeam fixed wireless access line details,,VCG,2025-02-12 11:55:18.545545 UTC,2025-02-12 11:55:18.545545 UTC
+VCG,Marketing and Sales,Grow Revenue,Sales_DEV_TEST,Core Data assets,Fixed Wireless Access Home Internet,PRODUCT LAUNCHES,VCG,2025-02-04 13:52:55.835430 UTC,2025-02-04 13:52:55.835430 UTC
+VCG,Corporate,Tier-1,One_ex_TIER1_DEV,Core Services,One_ex_Model_DQ_TIER1,ONE-EX,ONE-EX,2025-01-22 11:23:08.503637 UTC,2025-01-22 11:23:08.503637 UTC
+VCG,Corporate,Tier-1,One_ex_TIER1_DEV_AGG,Core Services,One_ex_Model_DQ_TIER1,ONE-EX,ONE-EX,2025-01-23 11:28:14.814961 UTC,2025-01-23 11:28:14.814961 UTC
+VCG,Corporate,Tier-1,One_ex_TIER1_DEV_NON_AGG,Core Services,One_ex_Model_DQ_TIER1,ONE-EX,ONE-EX,2025-01-23 12:02:31.274260 UTC,2025-01-23 12:02:31.274260 UTC
+VCG,Corporate,Tier-1,One_Ex_FDQ,Core Servives,One_ex_Model_DQ_TIER1,ONE-EX,ONE-EX,2025-01-21 07:58:26.557218 UTC,2025-01-21 07:58:26.557218 UTC
+VCG,Corporate,Tier-1,One_Ex_FDQ_dev,Core Servives,One_ex_Model_DQ_TIER1,ONE-EX,ONE-EX,2025-01-21 11:37:05.788188 UTC,2025-01-21 11:37:05.788188 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s10_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s1_s1mmenas_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 21:07:54.354956 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_14,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_17,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s6b_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 13:41:26.887479 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_gx_diameter_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 19:06:45.469840 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s2b_gtpv2_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s10_gtpv2_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_kpi_device_ip_address_audit,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-15 10:56:38.920386 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s6a_diameter_ptp_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 13:41:26.887479 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s1_s1mmeans_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 13:41:26.887479 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s1_s1mmeap_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_9,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_16,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_gy_diameter_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 21:07:54.354956 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_rf_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_18,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s5_s8_gtpv2_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 21:07:54.354956 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s5_s8_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 13:41:26.887479 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s6b_diameter_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 21:07:54.354956 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_12,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s1_s1mmenas_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-07 04:10:09.782042 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_10,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_6,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_3,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s2b_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_4,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_15,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_2,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_gx_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_gy_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_5,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_1,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_rf_kpi_daily_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_11,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_7,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s1_s1mmeap_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 21:07:54.354956 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_s6a_diameter_ptp_kpi_hourly_view_v1,Ng1,Ng1,2024-11-20 11:53:06.964144 UTC,2024-08-06 21:07:54.354956 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_13,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng1,Core network,lte_metrics_control_plane_daily_v1_8,Ng1,Ng1,2025-02-03 21:54:15.692910 UTC,2025-02-03 21:54:15.692910 UTC
+Network,Wireless,Ng1,Ng10,Core network,lte_rf_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng10,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng10,Core network,lte_metrics_control_plane_daily_v1_10,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng11,Core network,lte_metrics_control_plane_daily_v1_11,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng11,Core network,lte_rf_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng11,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng12,Core network,lte_metrics_control_plane_daily_v1_12,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng12,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng12,Core network,lte_rf_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng13,Core network,lte_s1_s1mmeap_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng13,Core network,lte_metrics_control_plane_daily_v1_13,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng13,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng14,Core network,lte_metrics_control_plane_daily_v1_14,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng14,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng14,Core network,lte_s1_s1mmeap_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng15,Core network,lte_metrics_control_plane_daily_v1_15,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng15,Core network,lte_s1_s1mmeap_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng15,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng16,Core network,lte_s1_s1mmeap_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng16,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng16,Core network,lte_metrics_control_plane_daily_v1_16,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng17,Core network,lte_metrics_control_plane_daily_v1_17,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng17,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng17,Core network,lte_s1_s1mmenas_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng18,Core network,lte_s1_s1mmenas_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng18,Core network,lte_metrics_control_plane_daily_v1_18,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng18,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng19,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng19,Core network,lte_s1_s1mmenas_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng1_dev_test,Core network,hive_files_audit_streaming_insert,Ng1,Ng1,2024-11-20 12:22:37.173309 UTC,2024-11-20 12:22:37.173308 UTC
+Network,Wireless,Ng1,Ng2,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng2,Core network,lte_gx_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng2,Core network,lte_metrics_control_plane_daily_v1_2,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng20,Core network,lte_s1_s1mmenas_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng20,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng21,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng21,Core network,lte_s2b_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng22,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng22,Core network,lte_s2b_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng23,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng23,Core network,lte_s2b_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng24,Core network,lte_s2b_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng24,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng25,Core network,lte_s5_s8_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng25,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng26,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng26,Core network,lte_s5_s8_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng27,Core network,lte_s5_s8_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng27,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng28,Core network,lte_s5_s8_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng28,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng29,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng29,Core network,lte_s6a_diameter_ptp_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng3,Core network,lte_gx_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng3,Core network,lte_metrics_control_plane_daily_v1_3,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng3,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng30,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng30,Core network,lte_s6a_diameter_ptp_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng31,Core network,lte_s6a_diameter_ptp_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng31,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng32,Core network,lte_s6a_diameter_ptp_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng32,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng33,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng33,Core network,lte_s6b_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng34,Core network,lte_s6b_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng34,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng35,Core network,lte_s6b_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng35,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng36,Core network,lte_s6b_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng36,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng37,Core network,lte_s10_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng37,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng38,Core network,lte_s10_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng38,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng39,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng39,Core network,lte_s10_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng4,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng4,Core network,lte_metrics_control_plane_daily_v1_4,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng4,Core network,lte_gx_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng40,Core network,lte_s10_gtpv2_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng40,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng5,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng5,Core network,lte_metrics_control_plane_daily_v1_5,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng5,Core network,lte_gy_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng6,Core network,lte_gy_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng6,Core network,lte_metrics_control_plane_daily_v1_6,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng6,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng7,Core network,lte_metrics_control_plane_daily_v1_7,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng7,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng7,Core network,lte_gy_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng8,Core network,lte_gy_diameter_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng8,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng8,Core network,lte_metrics_control_plane_daily_v1_8,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Wireless,Ng1,Ng9,Core network,Ng1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-06 12:45:02.924255 UTC
+Network,Wireless,Ng1,Ng9,Core network,lte_rf_kpi_daily_view_v1,Ng1,Ng1,2024-09-16 06:57:46.238216 UTC,2024-08-07 04:40:39.289893 UTC
+Network,Wireless,Ng1,Ng9,Core network,lte_metrics_control_plane_daily_v1_9,Ng1,Ng1,2025-02-04 09:31:14.510800 UTC,2025-02-04 09:31:14.510800 UTC
+Network,Network-asset,Total Cost of Ownership,TCO,Core network,Ecova,Total Cost of Ownership,RAN_Total Cost of Ownership,2024-11-26 13:26:05.223590 UTC,2024-11-26 13:26:05.223590 UTC
+Network,Network-asset,Total Cost of Ownership,TCO_dev,Core network,Ecova,Total Cost of Ownership,RAN_Total Cost of Ownership,2024-11-26 16:26:31.576010 UTC,2024-11-26 16:26:31.576010 UTC
+CORPORATE,EDW,Finance,CCRA,Core services,ERP_LOC_CD,Core services,CCRA,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,CCRA,Core services,ERP_DIST_CHNL_CD,Core services,CCRA,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,CCRA,Core services,ERP_MKT_CD,Core services,CCRA,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,CDP_MODEL_DQ,Core services,CDP_MODEL_DQ,Core services,CDP_MODEL_DQ,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,CIM,Core services,ERP_LOC_CD,Core services,CIM,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,CIM,Core services,DEPT_ID,Core services,CIM,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,CIM,Core services,"DEPT_ID,ERP_COST_CTR_CD",Core services,CIM,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,CIM,Core services,ERP_COMPANY_CD,Core services,CIM,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,MARKETING,Core services,DQ check,Core services,DATA QUALITY CHECK,Core services,DQ check,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,ERP_MKT_CD,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,ERP_DIST_CHNL_CD,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,PS_MKT_CD,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,ERP_LOCATION_CD,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,GL_ACCT_ID,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,ERP_GL_ACCT_ID,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,ERP_COMPANY_CD,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,ERP_LOC_CD,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,ERP_GEO_REGION_CD,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,RSS,Core services,ERP_VZ_MATERIAL_CD,Core services,RSS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,ERP_DIST_CHNL_CD,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,GL_ACCT_NUM,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,ERP_VZ_MATERIAL_CD,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,VZ2_SEGMT_CD,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,COMPANY_CD,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,COST_CENTER,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,PS_MKT_CD,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,ERP_LOC_CD,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAP,Core services,ERP_GEO_REGION_CD,Core services,WSAP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAPBW,Core services,ERP_LOC_CD,Core services,WSAPBW,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+CORPORATE,EDW,Finance,WSAPBW,Core services,GL_ACCT_NUM,Core services,WSAPBW,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VBG,DATA_INTELLIGENCE,MARKET INTELLIGENCE Platform,MARKET_INTELLIGENCE,DATA INTELLIGENCE,META_MARKETSHARE,Industrialization,META MARKETSHARE,2024-09-16 06:57:46.238216 UTC,2024-03-06 11:50:43.153537 UTC
+GNT,DATA_INTELLIGENCE,MARKET INTELLIGENCE Platform,MARKET_INTELLIGENCE,DATA INTELLIGENCE,META_MARKETSHARE,Industrialization,META MARKETSHARE,2024-09-16 06:57:46.238216 UTC,2024-03-19 07:52:29.003526 UTC
+GNT,DATA_INTELLIGENCE,MARKET INTELLIGENCE Platform,MARKET_INTELLIGENCE1,DATA INTELLIGENCE,META_MARKETSHARE,Industrialization,META MARKETSHARE,2024-09-16 06:57:46.238216 UTC,2024-03-20 08:08:05.794068 UTC
+GNT,Data_Intelligence,MARKET INTELLIGENCE Platform,market_intelligence,DATA INTELLIGENCE,metamarketshare,Industrialization,META MARKETSHARE,2024-09-16 06:57:46.238216 UTC,2024-03-19 15:50:27.252532 UTC
+VCG,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,SAFEGRAPH_INGESTION,ENTERPRISE_INSIGHTS,SAFEGRAPH_INGESTION,2024-09-16 06:57:46.238216 UTC,2024-03-27 10:21:50.791593 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,POI ADDRESS DATAPACK,ENTERPRISE_INSIGHTS,POI ADDRESS DATAPACK,2024-09-16 06:57:46.238216 UTC,2024-04-15 09:54:33.923195 UTC
+VCG,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,INFOGROUP,ENTERPRISE_INSIGHTS,INFOGROUP,2024-09-16 06:57:46.238216 UTC,2024-04-03 08:06:03.133269 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,INFOGROUP,ENTERPRISE_INSIGHTS,INFOGROUP,2024-09-16 06:57:46.238216 UTC,2024-04-15 09:54:33.923195 UTC
+VCG,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,POI ADDRESS DATAPACK,ENTERPRISE_INSIGHTS,POI ADDRESS DATAPACK,2024-09-16 06:57:46.238216 UTC,2024-04-08 07:17:48.614982 UTC
+VCG,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,SAFEGRAPH,ENTERPRISE_INSIGHTS,SAFEGRAPH,2024-09-16 06:57:46.238216 UTC,2024-04-03 08:06:03.133269 UTC
+VCG,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,INFOGROUP_INGESTION,ENTERPRISE_INSIGHTS,INFOGROUP_INGESTION,2024-09-16 06:57:46.238216 UTC,2024-03-27 10:21:50.791593 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,BFUSA,ENTERPRISE_INSIGHTS,BFUSA,2024-09-16 06:57:46.238216 UTC,2024-04-15 09:54:33.923195 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,SAFEGRAPH,ENTERPRISE_INSIGHTS,SAFEGRAPH,2024-09-16 06:57:46.238216 UTC,2024-04-15 09:54:33.923195 UTC
+VCG,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,BFUSA_INGESTION,ENTERPRISE_INSIGHTS,BFUSA_INGESTION,2024-09-16 06:57:46.238216 UTC,2024-03-27 10:21:50.791593 UTC
+VCG,DATA_INTELLIGENCE,Insights Platform,ENTERPRISE_INSIGHTS,DATA_INTELLIGENCE,BFUSA,ENTERPRISE_INSIGHTS,BFUSA,2024-09-16 06:57:46.238216 UTC,2024-04-03 08:06:03.133269 UTC
+GNT,DATA_INTELLIGENCE_dev,Insights Platform_dev,ENTERPRISE_INSIGHTS_dev,DATA_INTELLIGENCE_dev,POI ADDRESS DATAPACK_dev,ENTERPRISE_INSIGHTS_dev,POI ADDRESS DATAPACK_dev,2024-09-16 06:57:46.238216 UTC,2024-07-26 10:35:56.988229 UTC
+VCG,DEV_LLF_test,DEV_LLF_TEST,DEV_LLF_test,DEV_LLF_TEST,DEV_LLF_test,DEV_LLF_TEST,DEV_LLF_TEST,2024-10-07 14:49:44.720639 UTC,2024-10-07 14:49:44.720639 UTC
+VBG,DUMMY,DUMMY,DUMMY,DUMMY,DUMMY,DUMMY,DUMMY,2024-10-25 12:32:01.912116 UTC,2024-10-25 12:32:01.912116 UTC
+VCG,FINANCE,Industrialization,Tier1_Models,Data Industrialization,Tier1_Models,Data Quality & Validation,Tier1_Models,2025-03-11 12:13:38.727539 UTC,2025-03-04 09:52:18.420607 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,CQES,Data Intelligence,CUSTOMER_SEGMENTATION,Market Intelligence,CQES,2024-09-16 06:57:46.238216 UTC,2024-03-27 11:16:54.490914 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_MOBILE,Market Intelligence,OOKLA Aggregation,2024-09-16 06:57:46.238216 UTC,2024-05-29 10:12:02.695139 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CMA_MTHLY_WIDE,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-25 17:38:01.948198 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_CMA_MAPPING,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CT_MTHLY_WIDE,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-25 17:38:01.948198 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,TUTELA,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-04-13 07:29:42.576615 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_COVERAGE_MAPS,Market Intelligence,Ookla Coverage Maps,2024-09-16 06:57:46.238216 UTC,2024-04-04 05:39:00.651492 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOT_POINT_LOSS_STATE_RAW,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,BDC_MOBILE_COVERAGE,Market Intelligence,BDC Mobile Coverage,2024-09-16 06:57:46.238216 UTC,2024-03-28 13:24:49.726735 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_CMA_NAME_TIER_MAPPING,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-04-13 07:29:42.576615 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CT_DLY_SUMMARY,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-23 11:00:00.481319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CMA_DLY_WIDE,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-23 11:00:00.481319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,NAVI,Market Intelligence,NAVI,2024-09-16 06:57:46.238216 UTC,2024-08-16 06:18:15.742634 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ONX,Market Intelligence,ONX,2024-09-16 06:57:46.238216 UTC,2024-08-16 10:48:32.319270 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOT_POINT_LOSS_METRO_RAW,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_CENSUS_TRACT_MAPPING,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-04-13 07:29:42.576615 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_CENSUS_TRACT_MAPPING,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+VBG,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,META_MARKETSHARE,Market Intelligence,Meta Market Share,2024-09-16 06:57:46.238216 UTC,2024-04-04 08:00:54.657193 UTC
+GNT,DATA_INTELLIGENCE,Insights_Platform,MARKET_INTELLIGENCE,Data Intelligence,NAVI,Market Intelligence,NAVI,2024-09-16 06:57:46.238216 UTC,2024-08-26 06:02:01.549031 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ONX MOBILE,Market Intelligence,CQES Rule Based Scoring,2024-12-04 07:12:32.066466 UTC,2024-12-04 07:12:32.066466 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_NETWORK_PERFORMANCE,Market Intelligence,,2024-09-16 06:57:46.238216 UTC,2024-05-15 14:05:43.361447 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOT_METRICS,Market Intelligence,Root Metrics,2024-09-16 06:57:46.238216 UTC,2024-05-07 20:35:40.671465 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOTMETRICS_DRIVE_ROUTE,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CMA_MTHLY,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-25 17:38:01.948198 UTC
+GNT,DATA_INTELLIGENCE,Insights_Platform,MARKET_INTELLIGENCE,Data Intelligence,CRESTA,Market Intelligence,CRESTA,2024-09-16 06:57:46.238216 UTC,2024-08-26 06:02:01.549031 UTC
+GNT,DATA_INTELLIGENCE,Insights_Platform,MARKET_INTELLIGENCE,Data Intelligence,ONX,Market Intelligence,ONX,2024-09-16 06:57:46.238216 UTC,2024-08-26 06:02:01.549031 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CT_MTHLY,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-25 17:38:01.948198 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ONX MOBILE,Market Intelligence,ONX Mobile Raw,2024-12-04 07:12:32.066466 UTC,2024-12-04 07:12:32.066466 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,TUTELA_RAW,Market Intelligence,Tutela Raw,2024-09-16 06:57:46.238216 UTC,2024-04-29 07:22:08.632706 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOT_POINT_LOSS_METRO_RAW,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-05-09 17:54:17.596810 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CT_DLY,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-23 11:00:00.481319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform4,MARKET_INTELLIGENCE,Data Intelligence,GEOMAPPING,Market Intelligence,Geomapping,2024-09-16 06:57:46.238216 UTC,2024-05-16 13:02:07.974476 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_FIXED_NETWORK_PERFORMANCE,Market Intelligence,OOKLA Aggregation,2024-09-16 06:57:46.238216 UTC,2024-05-22 12:34:33.789887 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,META_MARKET_SHARE,Market Intelligence,Meta Market Share,2024-09-16 06:57:46.238216 UTC,2024-03-28 10:19:25.641928 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,PDS_OOKLA_SUMMARY,Market Intelligence,PDS Ookla Summary,2024-09-16 06:57:46.238216 UTC,2024-04-24 08:11:22.703341 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform5,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_FIXED,Market Intelligence,OOKLA Aggregation,2024-09-16 06:57:46.238216 UTC,2024-05-31 13:21:07.258207 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CT_MTHLY_SUMMARY,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-25 17:38:01.948198 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_ROOTMETRICS_RESULTS_PER_CMA,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-04-13 07:29:42.576615 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CRESTA,Market Intelligence,CRESTA,2024-09-16 06:57:46.238216 UTC,2024-08-16 10:51:08.214224 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOTMETRICS_SHAPEFILE,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_CMA_NAME_TIER_MAPPING,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_ROOTMETRICS_RESULTS_PER_CMA,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOTMETRICS_SHAPEFILE,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-04-13 07:29:42.576615 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOTMETRICS_DRIVE_ROUTE,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-04-13 07:29:42.576615 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_FIXED,Market Intelligence,OOKLA Aggregation,2024-09-16 06:57:46.238216 UTC,2024-05-29 10:12:02.695139 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RULE_BASED_SCORING,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-04-13 07:29:42.576615 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CMA_DLY,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-23 11:00:00.481319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_NETWORK_PERFORMANCE,Market Intelligence,Ookla Network Performance,2024-09-16 06:57:46.238216 UTC,2024-04-10 05:36:48.528865 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,ROOT_POINT_LOSS_STATE_RAW,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-05-09 17:54:17.596810 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,TUTELA,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RB_CT_DLY_WIDE,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-23 11:00:00.481319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_SITE_FINDER,Market Intelligence,Ookla Site Finder,2024-09-16 06:57:46.238216 UTC,2024-04-02 20:17:21.423536 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_CMA_MAPPING,Market Intelligence,CQES Rule Based,2024-09-16 06:57:46.238216 UTC,2024-04-13 07:29:42.576615 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform5,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_MOBILE,Market Intelligence,OOKLA Aggregation,2024-09-16 06:57:46.238216 UTC,2024-05-31 13:21:07.258207 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,OOKLA_MOBILE_NETWORK_PERFORMANCE,Market Intelligence,OOKLA Aggregation,2024-09-16 06:57:46.238216 UTC,2024-05-22 12:34:33.789887 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,CQES_RULE_BASED_SCORING,Market Intelligence,CQES Rule Based Scoring,2024-09-16 06:57:46.238216 UTC,2024-04-16 14:25:21.635319 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE,Data Intelligence,GEOMAPPING,Market Intelligence,Geomapping,2024-09-16 06:57:46.238216 UTC,2024-04-12 10:42:43.221942 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE 1,Data Intelligence,META_MARKET_SHARE,Market Intelligence,Meta Market Share,2024-09-16 06:57:46.238216 UTC,2024-04-03 12:30:16.294530 UTC
+GNT,DATA_INTELLIGENCE 1,Insights Platform1,MARKET_INTELLIGENCE 1,Data Intelligence,META_MARKET_SHARE 1,Market Intelligence1,Meta Market Share1,2024-09-16 06:57:46.238216 UTC,2024-04-03 12:31:54.926048 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE1,Data Intelligence,META_MARKET_SHARE,Market Intelligence,Meta Market Share,2024-09-16 06:57:46.238216 UTC,2024-04-04 10:26:30.371176 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE2,Data Intelligence,META_MARKET_SHARE,Market Intelligence,Meta Market Share,2024-09-16 06:57:46.238216 UTC,2024-04-08 07:10:01.765176 UTC
+VBG,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE5,Data Intelligence,META_MARKETSHARE,Market Intelligence,Meta Market Share,2024-09-16 06:57:46.238216 UTC,2024-05-09 16:19:30.658828 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE5,Data Intelligence,META_MARKET_SHARE,Market Intelligence,Meta Market Share,2024-09-16 06:57:46.238216 UTC,2024-05-08 14:51:07.440281 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE6,Data Intelligence,TUTELA_RAW,Market Intelligence,Tutela Raw,2024-09-16 06:57:46.238216 UTC,2024-05-10 06:50:17.676551 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE7,Data Intelligence,TUTELA_RAW,Market Intelligence,Tutela Raw,2024-09-16 06:57:46.238216 UTC,2024-05-10 14:09:58.354452 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE_DEV_NEW,Data Intelligence,GEOMAPPING,Market Intelligence,Geomapping,2024-11-21 08:13:11.301553 UTC,2024-11-21 08:13:11.301553 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform,MARKET_INTELLIGENCE_FINAL,Data Intelligence,GEOMAPPING,Market Intelligence,Geomapping_FINAL,2024-11-21 11:27:41.543413 UTC,2024-11-21 11:27:41.543413 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform1,MARKET_INTELLIGENCE,Data Intelligence1,META_MARKET_SHARE,Market Intelligence1,Meta Market Share1,2024-09-16 06:57:46.238216 UTC,2024-04-09 10:54:53.069567 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform1,MARKET_INTELLIGENCE2,Data Intelligence1,META_MARKET_SHARE,Market Intelligence1,Meta Market Share1,2024-09-16 06:57:46.238216 UTC,2024-04-08 09:19:44.235009 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform1,MARKET_INTELLIGENCE_dev,Data Intelligence2,META_MARKET_SHARE,Market Intelligence1,Meta Market Share2,2024-09-16 06:57:46.238216 UTC,2024-04-10 11:12:10.539563 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform3,MARKET_INTELLIGENCE,Data Intelligence3,META_MARKET_SHARE,Market Intelligence3,Meta Market Share3,2024-09-16 06:57:46.238216 UTC,2024-04-12 05:21:08.904801 UTC
+GNT,DATA_INTELLIGENCE,Insights Platform3,MARKET_INTELLIGENCE2,Data Intelligence3,META_MARKET_SHARE,Market Intelligence3,Meta Market Share3,2024-09-16 06:57:46.238216 UTC,2024-04-12 05:21:08.904801 UTC
+GNT,DATA_INTELLIGENCE,Insights PlatformG,MARKET_INTELLIGENCE,Data IntelligenceG,GEOMAPPING,Market IntelligenceG,Geomapping,2024-09-16 06:57:46.238216 UTC,2024-06-03 06:06:58.243188 UTC
+GNT,DATA_INTELLIGENCE,Insights PlatformG,MARKET_INTELLIGENCE8,Data IntelligenceG,GEOMAPPING,Market IntelligenceG,Geomapping,2024-09-16 06:57:46.238216 UTC,2024-06-03 07:24:47.698157 UTC
+GNT,DATA_INTELLIGENCE_dev,Insights PlatformG_dev,MARKET_INTELLIGENCE_dev,Data IntelligenceG_dev,GEOMAPPING,Market IntelligenceG_dev,Geomapping_dev,2024-09-16 06:57:46.238216 UTC,2024-06-03 12:24:30.594728 UTC
+GNT,DATA_INTELLIGENCE_dev2,Insights PlatformG_dev2,MARKET_INTELLIGENCE_dev2,Data IntelligenceG_dev2,GEOMAPPING_dev2,Market IntelligenceG_dev2,Geomapping_dev2,2024-09-16 06:57:46.238216 UTC,2024-06-05 12:03:29.529291 UTC
+GNT,DATA_INTELLIGENCE_Dev6,Insights Platform_Dev6,MARKET_INTELLIGENCE_dev6,Data Intelligence_Dev6,ONX MOBILE,Market Intelligence_Dev6,CQES Rule Based Scoring ONX,2024-12-16 15:53:52.402241 UTC,2024-12-16 15:53:52.402241 UTC
+GNT,DATA_INTELLIGENCE_Dev7,Insights Platform_Dev7,MARKET_INTELLIGENCE_dev7,Data Intelligence_Dev7,ONX MOBILE,Market Intelligence_Dev7,CQES Rule Based Scoring ONX,2024-12-23 13:00:11.199224 UTC,2024-12-23 13:00:11.199224 UTC
+GNT,DATA_INTELLIGENCE,Insights_Platform_dev,MARKET_INTELLIGENCE_dev,Data Intelligence_dev,NAVI,Market Intelligence_dev,NAVI,2024-09-16 06:57:46.238216 UTC,2024-09-03 09:46:31.404914 UTC
+GNT,DATA_INTELLIGENCE,Insights_Platform_dev,MARKET_INTELLIGENCE_dev,Data Intelligence_dev,ONX,Market Intelligence_dev,ONX,2024-09-16 06:57:46.238216 UTC,2024-09-03 09:46:31.404914 UTC
+GNT,DATA_INTELLIGENCE,Insights_Platform_dev,MARKET_INTELLIGENCE_dev,Data Intelligence_dev,CRESTA,Market Intelligence_dev,CRESTA,2024-09-16 06:57:46.238216 UTC,2024-09-03 09:46:31.404914 UTC
+GNT,DATA_INTELLIGENCE_dev_new,Insights Platform_dev_new,MARKET_INTELLIGENCE_dev_new,Data Intelligence_dev_new,ONX MOBILE,Market Intelligence_dev_new,CQES Rule Based Scoring ONX,2024-12-24 07:14:34.953588 UTC,2024-12-24 07:14:34.953588 UTC
+VBG,DummY_test,DummY_test,DummY_test,DummY_test,DummY_test,DummY_test,DummY_test,2024-10-29 11:39:30.721373 UTC,2024-10-29 11:39:30.721373 UTC
+VBG,Dummy_FTL_SIT_QA,Dummy_FTL_SIT_QA,Dummy_FTL_SIT_QA,Dummy_FTL_SIT_QA,Dummy_FTL_SIT_QA,Dummy_FTL_SIT_QA,Dummy_FTL_SIT_QA,2024-10-25 12:27:17.471876 UTC,2024-10-25 12:27:17.471876 UTC
+VBG,Dummy_SIT_DQ,Dummy_SIT_DQ,Dummy_SIT_DQ,Dummy_SIT_DQ,Dummy_SIT_DQ,Dummy_SIT_DQ,Dummy_SIT_DQ,2024-10-24 13:22:50.962532 UTC,2024-10-24 13:22:50.962532 UTC
+VBG,Dummy_SIT_FTL,Dummy_SIT_FTL,Dummy_SIT_FTL,Dummy_SIT_FTL,Dummy_SIT_FTL,Dummy_SIT_FTL,Dummy_SIT_FTL,2024-10-25 08:35:15.248212 UTC,2024-10-25 08:35:15.248212 UTC
+VBG,Dummy_SIT_QA,Dummy_SIT_QA,Dummy_SIT_QA,Dummy_SIT_QA,Dummy_SIT_QA,Dummy_SIT_QA,Dummy_SIT_QA,2024-10-23 11:47:22.984773 UTC,2024-10-23 11:47:22.984773 UTC
+VBG,Dummy_SIT_QA5,Dummy_SIT_QA2,Dummy_SIT_QA6,Dummy_SIT_QA3,Dummy_SIT_QA7,Dummy_SIT_QA1,Dummy_SIT_QA4,2024-10-23 14:32:00.816738 UTC,2024-10-23 14:32:00.816738 UTC
+VBG,GROWTH,Deliver Superior Experience,ECPD_Summarization,ECPD_Summarization,Personalization and Localization_dev,VBG_Event_Ledger,Profile_Personalization,2024-11-08 10:11:26.923231 UTC,2024-11-08 10:11:26.923231 UTC
+VBG,GROWTH,Deliver Superior Experience,ECPD_Summarization,ECPD_Summarization,Personalization and Localization,VBG_Event_Ledger,Profile_Personalization,2024-11-08 09:37:38.058299 UTC,2024-11-08 09:37:38.058299 UTC
+VBG,GROWTH,Deliver Superior Experience,ECPD_Summarization_dev,ECPD_Summarization,Personalization and Localization,VBG_Event_Ledger,Profile_Personalization,2024-11-08 13:18:49.839670 UTC,2024-11-08 13:18:49.839670 UTC
+VBG,EQUIPMENT_PROG,EQUIPMENT_PT,,EQUIPMENT_AP,EQUIPMENT_DBE,EQUIPMENT_P,EQUIPMENT_BP,2024-09-16 06:57:46.238216 UTC,2024-09-12 10:42:37.325150 UTC
+VCG,FINANCE,Grow Revenue,EXECUTIVE_REPORTING_TIER1,"EXECUTIVE_REPORTING_TIER1
+",EXECUTIVE_REPORTING_TIER1,EXECUTIVE_REPORTING_TIER1,EXECUTIVE_REPORTING_TIER1,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VBG,FTL_DUMMY_QA_SIT,FTL_DUMMY_QA_SIT,FTL_DUMMY_QA_SIT,FTL_DUMMY_QA_SIT,FTL_DUMMY_QA_SIT,FTL_DUMMY_QA_SIT,FTL_DUMMY_QA_SIT,2024-10-16 08:53:57.252853 UTC,2024-10-16 08:53:57.252853 UTC
+VCG,FTL_Dummy_STG,FTL_Dummy_STG,FTL_Dummy_STG,FTL_Dummy_STG,FTL_Dummy_STG,FTL_Dummy_STG,FTL_Dummy_STG,2024-09-16 06:57:46.238216 UTC,2024-08-27 10:02:54.645586 UTC
+VCG,FTL_Dummy_TEST,FTL_Dummy_TEST,FTL_Dummy_TEST,FTL_Dummy_TEST,FTL_Dummy_TEST,FTL_Dummy_TEST,FTL_Dummy_TEST,2024-09-16 06:57:46.238216 UTC,2024-09-05 07:45:32.502916 UTC
+VCG,FTL_TEST,FTL_TEST,FTL_TEST,FTL_TEST,FTL_TEST,FTL_TEST,FTL_TEST,2024-09-19 11:36:15.162836 UTC,2024-09-19 11:36:15.162836 UTC
+VBG,FTL_TEST_SIT,FTL_TEST_SIT,FTL_TEST_SIT,FTL_TEST_SIT,FTL_TEST_SIT,FTL_TEST_SIT,FTL_TEST_SIT,2024-09-19 12:05:38.070402 UTC,2024-09-19 12:05:38.070402 UTC
+VBG,FTL_TEST_SIT _DUMMY,FTL_TEST_SIT _DUMMY,FTL_TEST_SIT _DUMMY,FTL_TEST_SIT _DUMMY,FTL_TEST_SIT _DUMMY,FTL_TEST_SIT _DUMMY,FTL_TEST_SIT _DUMMY,2024-09-19 14:47:29.029076 UTC,2024-09-19 14:47:29.029076 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS,FWA_ANALYTICS,SHA,FWA_ANALYTICS,FWA_ANALYTICS,2025-01-23 10:54:07.846662 UTC,2025-01-23 10:54:07.846662 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_228,FWA_ANALYTICS,NQES,FWA_ANALYTICS,FWA_ANALYTICS,2025-02-28 08:07:23.307808 UTC,2025-02-28 08:07:23.307808 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_228,FWA_ANALYTICS,ULTRAGUAGE,FWA_ANALYTICS,FWA_ANALYTICS,2025-02-28 08:06:53.454489 UTC,2025-02-28 08:06:53.454489 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_228,FWA_ANALYTICS,WLS_METADATA,FWA_ANALYTICS,FWA_ANALYTICS,2025-02-28 08:08:26.653325 UTC,2025-02-28 08:08:26.653325 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_228,FWA_ANALYTICS,SHA,FWA_ANALYTICS,FWA_ANALYTICS,2025-02-28 08:07:44.639884 UTC,2025-02-28 08:07:44.639884 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_228,FWA_ANALYTICS,DATA_MEDIATION,FWA_ANALYTICS,FWA_ANALYTICS,2025-02-28 08:08:06.478982 UTC,2025-02-28 08:08:06.478982 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_303,FWA_ANALYTICS,WLS_METADATA,FWA_ANALYTICS,FWA_ANALYTICS,2025-03-03 09:44:50.320665 UTC,2025-03-03 09:44:50.320665 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_303,FWA_ANALYTICS,SHA,FWA_ANALYTICS,FWA_ANALYTICS,2025-03-03 09:45:20.392356 UTC,2025-03-03 09:45:20.392356 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_303,FWA_ANALYTICS,DATA_MEDIATION,FWA_ANALYTICS,FWA_ANALYTICS,2025-03-03 09:44:36.647441 UTC,2025-03-03 09:44:36.647441 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_303,FWA_ANALYTICS,NQES,FWA_ANALYTICS,FWA_ANALYTICS,2025-03-03 09:44:17.897357 UTC,2025-03-03 09:44:17.897357 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_303,FWA_ANALYTICS,ULTRAGUAGE,FWA_ANALYTICS,FWA_ANALYTICS,2025-03-03 09:43:47.912793 UTC,2025-03-03 09:43:47.912793 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_dev_tes_213,FWA_ANALYTICS,NQES,FWA_ANALYTICS,FWA_ANALYTICS,2025-02-27 06:55:42.092716 UTC,2025-02-27 06:55:42.092716 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_dev_tes_213,FWA_ANALYTICS,SHA,FWA_ANALYTICS,FWA_ANALYTICS,2025-02-27 06:54:38.089429 UTC,2025-02-27 06:54:38.089429 UTC
+VBG,DATA_INTELLIGENCE,FWA_ANALYTICS,FWA_ANALYTICS_dev_tes_213,FWA_ANALYTICS,ULTRAGUAGE,FWA_ANALYTICS,FWA_ANALYTICS,2025-02-27 06:56:08.140777 UTC,2025-02-27 06:56:08.140777 UTC
+VCG,Marketing and Sales,Fixed Wireless Access Home Internet,Sales,Fixed Wireless Access Home Internet,Fixed Wireless Access Home Internet,5G,Fixed Wireless Access Home Internet,2024-09-16 06:57:46.238216 UTC,2024-03-07 13:58:54.202574 UTC
+VCG,TEST1,Ftl_dev,TEST_NEW,Ftl_dev,TEST_NEW,Ftl_dev,Ftl_dev,2024-09-16 06:57:46.238216 UTC,2024-08-12 10:17:36.186382 UTC
+VCG,GROWTH,Fios Churn,5100_C H U R N_FIOS _MODEL,GROWTH,5100_C H U R N_FIOS _MODEL,FIOS,5100_C H U R N_FIOS _MODEL,2024-09-24 09:31:25.306307 UTC,2024-09-24 09:31:25.306307 UTC
+VCG,GROWTH,Fios Churn,8301_C H U R N_FIOS,GROWTH,8301_C H U R N_FIOS _MODEL,FIOS,8301_C H U R N_FIOS,2024-09-18 11:49:26.747136 UTC,2024-09-18 11:49:26.747136 UTC
+VCG,GROWTH,Fios Churn,8301_C H U R N_FIOS _MODEL,GROWTH,8301_C H U R N_FIOS,FIOS,8301_C H U R N_FIOS,2024-09-16 06:57:46.238216 UTC,2024-07-04 15:07:41.188945 UTC
+VCG,GROWTH,Fios Churn,8301_FIOS_BASE_QUERY,GROWTH,8301_FIOS_BASE_QUERY,FIOS,8301_FIOS_BASE_QUERY,2025-01-29 06:42:07.517426 UTC,2025-01-29 06:42:07.517426 UTC
+VCG,GROWTH,Fios Churn,8886_C H U R N_FIOS _MODEL,GROWTH,8886_C H U R N_FIOS,FIOS,8886_C H U R N_FIOS,2024-09-16 06:57:46.238216 UTC,2024-08-26 09:54:54.957244 UTC
+VCG,GROWTH,Fios Churn,8886_C H U R N_FIOS _MODEL_DEV,GROWTH,8886_C H U R N__DEV,FIOS,8886_C H U R N_FIOS,2024-09-16 06:57:46.238216 UTC,2024-08-30 07:55:43.071954 UTC
+VCG,GROWTH,Fios Churn,8889_C H U R N_FIOS _MODEL,GROWTH,8889_C H U R N_FIOS,FIOS,8889_C H U R N_FIOS,2024-09-17 08:05:36.889735 UTC,2024-09-17 08:05:36.889735 UTC
+VCG,GROWTH,CUSTOMER_HEALTH MODEL,CUSTOMER_HEALTH MODEL,GROWTH,CUSTOMER_HEALTH MODEL,CUSTOMER_HEALTH MODEL,CUSTOMER_HEALTH MODEL,2024-11-06 09:36:09.466133 UTC,2024-11-06 09:36:09.466133 UTC
+VCG,8301_C H U R N_FIOS,Fios Churn,GROWTH,GROWTH,8301_C H U R N_FIOS _MODEL,FIOS,8301_C H U R N_FIOS,2024-09-18 07:58:10.766067 UTC,2024-09-18 07:58:10.766067 UTC
+VCG,Wireless,service,RTS,JET/ NBX/ Proactive Resolution/Search,rts-cust-insights,NBX Service,NBX Service,2024-11-29 09:14:57.780257 UTC,2024-11-28 08:52:52.676629 UTC
+VCG,Wireless,service,RTS_DEV,JET/ NBX/ Proactive Resolution/Search,rts-cust-insights,NBX Service,NBX Service_DEV,2024-11-29 11:02:59.742553 UTC,2024-11-29 11:06:51.803261 UTC
+VBG,JET_DEV,JET_DEV,JET_DEV,JET_DEV,JET_DEV,JET_DEV,JET_DEV,2024-10-21 08:54:47.302976 UTC,2024-10-21 08:54:47.302976 UTC
+VCG,Journey Experiences,Interactions and Transactions,Experience,Journey Experiences,Experience ,Journey Experiences,Interactions and Transactions,2024-09-16 06:57:46.238216 UTC,2024-06-18 12:29:02.268034 UTC
+VCG,Service,Service,Case Management,Journeys and Experience Capabilities,Case Management,Case Management,Case Management,2024-11-11 07:04:45.110849 UTC,2024-11-11 07:04:45.110849 UTC
+VCG,NBX Measurement,Customer Experience,FBL,Journeys and Experience Capabilities,Feedback Loop,Journeys and Experience Capabilities,FBL,2024-12-04 09:48:45.137186 UTC,2024-12-04 09:48:45.137186 UTC
+VCG,NBX Measurement,Customer Experience,FBL_DEV,Journeys and Experience Capabilities,Feedback Loop,Journeys and Experience Capabilities,FBL,2024-12-16 10:19:08.372625 UTC,2024-12-16 10:19:08.372625 UTC
+VCG,NBX Measurement,Customer Experience,FBL_NEW,Journeys and Experience Capabilities,Feedback Loop,Journeys and Experience Capabilities,FBL,2024-12-16 09:18:07.047997 UTC,2024-12-16 09:18:07.047997 UTC
+VCG,Omni Datalayer,Deliver Experience,GCP Omni Relational,Journeys and Experience Capabilities,Click Stream Data,Interactions and Transaction,Omni Datalayer,2025-01-27 06:20:39.807327 UTC,2025-01-27 06:20:39.807327 UTC
+VCG,service,Deliver Experience,Interactions_dev,Journeys and Experience Capabilities,IDP_dev,Interaction and Transaction_dev,Interaction and Transaction_Dev,2024-09-16 06:57:46.238216 UTC,2024-07-08 08:27:16.355512 UTC
+VCG,service,Deliver Experience,Interactions_dev7,Journeys and Experience Capabilities,IDP_dev7,Interaction and Transaction_dev7,Interaction and Transaction_Dev,2024-09-16 06:57:46.238216 UTC,2024-07-08 08:33:38.005011 UTC
+VCG,JOURNEY,Deliver Experience,JET_DEV,Journeys and Experience Capabilities,JET_DEV,JET,JET_DEV,2024-09-16 06:57:46.238216 UTC,2024-07-29 15:04:18.883121 UTC
+VCG,JOURNEY,Deliver Experience,JET_HRLY,Journeys and Experience Capabilities,JET_HRLY,Customer Digital Twin (JET),JET_HRLY,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,JOURNEY,Deliver Experience,JET_dev_11042024,Journeys and Experience Capabilities,JET,JET,JET,2024-11-04 09:58:39.276260 UTC,2024-11-04 09:58:39.276260 UTC
+VCG,JOURNEY,Deliver Experience,JET_dev_1122024,Journeys and Experience Capabilities,JET,JET,JET,2024-11-26 08:51:11.383517 UTC,2024-11-26 08:51:11.383517 UTC
+VCG,JOURNEY,Deliver Experience,JET_dev_410,Journeys and Experience Capabilities,JET,JET,JET_DEV_410,2024-10-04 13:28:06.870713 UTC,2024-10-04 13:28:06.870713 UTC
+VCG,JOURNEY,Deliver Experience,JET_dev_4110,Journeys and Experience Capabilities,JET,JET,JET_DEV_410,2024-10-04 14:19:51.152858 UTC,2024-10-04 14:19:51.152858 UTC
+VCG,JOURNEY,Deliver Experience,JET_dev_4111,Journeys and Experience Capabilities,JET,JET,JET_DEV_410,2024-10-04 15:11:18.572701 UTC,2024-10-04 15:11:18.572701 UTC
+VCG,JOURNEY,Deliver Experience,JET_dev_test_121224,Journeys and Experience Capabilities,JET,JET,JET,2024-12-12 14:33:33.909937 UTC,2024-12-12 14:33:33.909937 UTC
+VCG,JOURNEY,Deliver Experience,JET_test_dev_1106,Journeys and Experience Capabilities,JET,JET,JET,2024-11-06 10:57:57.799530 UTC,2024-11-06 10:57:57.799530 UTC
+VCG,JOURNEY,Deliver Experience,Jet_Event_xref_HRLY,Journeys and Experience Capabilities,JET_HRLY,Customer Digital Twin (JET),Jet_Event_xref_HRLY,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,JOURNEY,Deliver Experience,Jet_Events_HRLY,Journeys and Experience Capabilities,JET_HRLY,Customer Digital Twin (JET),Jet_Events_HRLY,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,JOURNEY,Deliver Experience,Jet_Smry_HRLY,Journeys and Experience Capabilities,JET_HRLY,Customer Digital Twin (JET),Jet_Smry_HRLY,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,Customer Experience,Deliver Experience,Journey and Experience,Journeys and Experience Capabilities,Authentication,Interactions and transactions,Authentication,2024-09-16 06:57:46.238216 UTC,2024-07-05 14:49:36.432396 UTC
+VCG,Customer Experience,Deliver Experience,Journey and Experience,Journeys and Experience Capabilities,analytical repoting(annrpt),Interactions and transactions,analytical repoting(annrpt),2024-11-21 12:57:21.162819 UTC,2024-11-21 12:57:21.162819 UTC
+VBG,Customer Experience,Deliver Experience,Journey and Experience_DEV,Journeys and Experience Capabilities,Authentication,Interactions and transactions,Authentication_DEV,2024-11-25 12:50:26.685486 UTC,2024-11-25 12:50:26.685486 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,OMNI_DEV_UPDATED,Journeys and Experience Capabilities,OMNI_DEV,OMNI,OMNI_DEV_UPDATED,2024-11-20 11:52:44.520716 UTC,2024-11-20 11:52:44.520716 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,OMNI_DEV_V1_UPDATED,Journeys and Experience Capabilities,OMNI_DEV,OMNI,OMNI_DEV_V1_UPDATED,2024-11-20 13:54:49.530533 UTC,2024-11-20 13:54:49.530533 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV,Journeys and Experience Capabilities,UVOC_DEV,UVOC,,2024-11-28 10:34:01.575038 UTC,2024-11-28 10:34:01.575038 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV,Journeys and Experience Capabilities,UVOC_DEV,UVOC,Omni,2024-10-23 06:39:30.115920 UTC,2024-10-23 06:39:30.115920 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV,Journeys and Experience Capabilities,UVOC_DEV,UVOC,UVOC_DEV,2024-11-28 10:34:01.575038 UTC,2024-11-28 10:34:01.575038 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV_V2,Journeys and Experience Capabilities,UVOC_DEV_V2,UVOC,UVOC_DEV_V5,2024-11-28 12:31:30.522915 UTC,2024-11-28 12:31:30.522915 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV_V2,Journeys and Experience Capabilities,UVOC_DEV_V2,UVOC,UVOC_DEV_V4,2024-11-28 12:31:30.522915 UTC,2024-11-28 12:31:30.522915 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV_V2,Journeys and Experience Capabilities,UVOC_DEV_V2,UVOC,UVOC_DEV_V8,2024-11-28 12:31:30.522915 UTC,2024-11-28 12:31:30.522915 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV_V2,Journeys and Experience Capabilities,UVOC_DEV_V2,UVOC,UVOC_DEV_V6,2024-11-28 12:31:30.522915 UTC,2024-11-28 12:31:30.522915 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV_V2,Journeys and Experience Capabilities,UVOC_DEV_V2,UVOC,UVOC_DEV_V7,2024-11-28 12:31:30.522915 UTC,2024-11-28 12:31:30.522915 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV_V2,Journeys and Experience Capabilities,UVOC_DEV_V2,UVOC,UVOC_DEV_V3,2024-11-28 12:31:30.522915 UTC,2024-11-28 12:31:30.522915 UTC
+VCG,Interactions and Transaction,Interactions and Transaction,UVOC_DEV_V2,Journeys and Experience Capabilities,UVOC_DEV_V2,UVOC,UVOC_DEV_V2,2024-11-28 12:31:30.522915 UTC,2024-11-28 12:31:30.522915 UTC
+vz-it-pr-hukv-cdwldo-0.vzw_jet_prd_tbls_rd_v,jet_journey_events,Deliver Experience,journey_stepid,Journeys and Experience Capabilities,Consistency,JET,JET,2024-12-12 12:03:06.102654 UTC,2024-12-12 12:03:06.102654 UTC
+vz-it-pr-hukv-cdwldo-0.vzw_jet_prd_tbls_rd_v,jet_journey_events,Deliver Experience,source,Journeys and Experience Capabilities,Consistency,JET,JET,2024-12-12 12:03:06.102654 UTC,2024-12-12 12:03:06.102654 UTC
+VCG,Interactions and Transaction,Deliver Experience,OMNI_DEV_V3,Journeys and Experience Capablities,OMNI_DEV_V3_NEW,Omni,OMNI_DEV_V3_NEW,2025-01-08 08:08:54.034943 UTC,2025-01-08 08:08:54.034943 UTC
+VCG,Interactions and Transaction,Deliver Experience,OMNI_DEV_V3,Journeys and Experience Capablities,OMNI_DEV_V3,Omni,OMNI_DEV_V3,2025-01-07 15:34:16.895734 UTC,2025-01-07 15:34:16.895734 UTC
+VBG ,Adaptive Auth,Deliver Experience,Adaptive Auth_Dev,Journeys and experience Capabilities,Marketing,Interactions and Transactions,Authentication_Dev,2024-11-27 08:22:39.132835 UTC,2024-11-27 08:22:39.132835 UTC
+CORPORATE,LOAN LOSS FORECAST,LLF_AGG,LOAN LOSS FORECAST_TD_AGG,LLF_AGG,LOAN LOSS FORECAST TD_AGG,LLF_AGG,LLF_AGG,2025-01-31 04:55:32.303352 UTC,2025-01-31 04:55:32.303352 UTC
+VCG,LLF_DEV,LLF_DEV,LLF_DEV,LLF_DEV,LLF_DEV,LLF_DEV,LLF_DEV,2024-10-04 14:35:33.619860 UTC,2024-10-04 14:35:33.619860 UTC
+VCG,DEV_LLF,LLF_DEV_,DEV_LLF,LLF_DEV_,DEV_LLF,LLF_DEV_,LLF_DEV_,2024-10-07 08:54:10.078282 UTC,2024-10-07 08:54:10.078282 UTC
+VCG,LLF,LLF_TEST,LLF_TEST,LLF_TEST,LLF_TEST,LLF_TEST,LLF_TEST,2024-10-04 13:19:28.346838 UTC,2024-10-04 13:19:28.346838 UTC
+VCG,LLF_dev_test_2,LLF_dev_test_2,LLF_dev_test_2,LLF_dev_test_2,LLF_dev_test_2,GCP,LLF_dev_test_2,2024-10-07 18:58:15.777897 UTC,2024-10-07 18:58:15.777897 UTC
+VCG,LLF_dev_test_2,LLF_dev_test_2,LLF_dev_test_2,LLF_dev_test_2,LLF_dev_test_2,LLF_dev_test_2,LLF_dev_test_2,2024-10-07 19:22:44.515643 UTC,2024-10-07 19:22:44.515643 UTC
+VCG,GROWTH,LLP_TEST,LLF_TEST,LLP_TEST,LLF_TEST,LLP_TEST,LLP_TEST,2024-10-03 15:20:54.105400 UTC,2024-10-03 15:20:54.105400 UTC
+FINANCE,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST_DEV,2024-10-17 10:20:13.527907 UTC,2024-10-17 10:20:13.527907 UTC
+CORPORATE,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST GCP,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LLF,2025-02-03 13:16:40.362399 UTC,2025-02-03 13:16:40.362399 UTC
+FINANCE,LOAN LOSS FORECAST_dev,LOAN LOSS FORECAST,LOAN LOSS FORECAST TD_dev,LOAN LOSS FORECAST,LOAN LOSS FORECAST_dev,LOAN LOSS FORECAST,LOAN LOSS FORECAST TD,2024-11-06 12:19:39.343298 UTC,2024-11-06 12:19:39.343298 UTC
+FINANCE,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST TD_dev_1105,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST,LOAN LOSS FORECAST TD,2024-11-05 16:57:58.054020 UTC,2024-11-05 16:57:58.054020 UTC
+FINANCE,LOAN LOSS FORECAST_dev,LOAN LOSS FORECAST,LOAN LOSS FORECAST TD_dev_test,LOAN LOSS FORECAST,LOAN LOSS FORECAST_dev,LOAN LOSS FORECAST,LOAN LOSS FORECAST TD,2024-11-06 12:55:04.633435 UTC,2024-11-06 12:55:04.633435 UTC
+VCG,GROWTH,Grow Revenue,CDP_BATCH_MODEL,Marketing Capabilities,CDP,Churn & Marketing Campaigns,CDP_BATCH_MODEL,2024-09-16 06:57:46.238216 UTC,2024-03-05 13:11:59.023873 UTC
+VBG,Marketing,Grow Revenue,Business Reference Data,Marketing Capability,Artemis,Artemis,Business Referene Data,2024-09-16 06:57:46.238216 UTC,2024-03-07 09:58:05.499355 UTC
+VCG,AI_Audiencing,Grow Revenue,Marketing,Marketing Capability,Growth,AI Audience,AI Audience,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,MARKETING,Growth,PROMOS,Marketing Capability,TRADE_IN,Promotion Launches,PROMOS,2024-09-16 06:57:46.238216 UTC,2024-02-15 07:52:55.875310 UTC
+VCG,MARKETING,Grow Revenue,PROMOS,Marketing Capability,E2E Promo Activity,Promotion Launches,E2E Promo Activity,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,MARKETING,Grow Revenue,PROMOS,Marketing Capability,TRADE_IN,Promotion Launches,PROMOS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,MARKETING,Growth,PROMOS_TEST,Marketing Capability,TRADE_IN,Promotion Launches,PROMOS,2024-09-16 06:57:46.238216 UTC,2024-02-27 12:55:22.808892 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS,Marketing Capability,Marketing Capability,Promotion Launches,PROMOTIONS,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS,Marketing Capability,Marketing Capability,Promotion Launches,Promotion Launches_dev,2024-09-16 06:57:46.238216 UTC,2024-09-12 15:14:47.639887 UTC
+VCG,GROWTH,Grow Revenue,PROMOTIONS_dev,Marketing Capability,Marketing Capability_dev,Promotion Launches,Promotion Launches_dev,2024-09-16 06:57:46.238216 UTC,2024-09-12 17:33:05.795189 UTC
+VCG,GROWTH,Grow Revenue,PROMOTION_COA/R_LLP,Marketing Capability,Marketing Capability,Promotion Launches,PROMOTION_COA/R_LLP,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,PROMOTION_E2E_PROMO_ACTIVITY,Marketing Capability,Marketing Capability,Promotion Launches,PROMOTION_E2E_PROMO_ACTIVITY,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,PROMOTION_HYLA_INTERNALIZATION,Marketing Capability,Marketing Capability,Promotion Launches,PROMOTION_HYLA_INTERNALIZATION,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,Marketing and Sales,Grow Revenue,Sales,Marketing Capability,FWA Home Internet,FWA Home Internet,FWA Home Internet,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,GROWTH,Grow Revenue,TRACFONE_GCR,Marketing Capability,TRACFONE_GCR,Value Data Management,TRACFONE_GCR,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly1,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly11,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly12,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly13,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly2,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly3,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly4,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly5,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly6,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly8,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Party,Customer,CUSTOMER_CORE,ConsumerMonthly9,NETWORK PERFORMANCE,Customer Attributes,DTP,NDTWIN,2024-10-14 08:05:26.554668 UTC,2024-10-14 08:05:26.554668 UTC
+Network,Network-asset,DTRAN,Network-asset-domain,Network,RAN_ebh_15mins_raw_v1,DTRAN,Network-asset,2024-09-16 06:57:46.238216 UTC,2024-03-12 17:21:11.356361 UTC
+Network,Network-asset,VREPAIR,Network-asset-domain,Network,FTL,FTL,FTL,2024-09-16 06:57:46.238216 UTC,2024-04-23 09:26:24.393254 UTC
+Network,Network-asset,DTRAN,Network-asset-domain,Network,RAN_aptlte_monthly_raw_v14,DTRAN,Network-asset,2024-09-16 06:57:46.238216 UTC,2024-03-13 09:37:26.853760 UTC
+Network,Network-asset,DTRAN,Network-asset-domain,Network,RAN_carr_score_summarized_raw_v1,DTRAN,Network-asset,2024-09-16 06:57:46.238216 UTC,2024-03-21 11:47:26.131684 UTC
+VBG,Network Program,FWA Network,Network Sub Program,Network Area,Network Business Elements,FWA,Network Business Program,2024-09-16 06:57:46.238216 UTC,2024-09-13 14:26:26.932847 UTC
+Network Operations,Work for Optimisation,Drive Profitability,Force to load_dev,Network Operational Excellence,NMC,Operational Efficiency,Force to load nmc,2024-09-16 06:57:46.238216 UTC,2024-05-14 14:33:33.398249 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN_score_details_proc_v1,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-03-13 09:37:26.853760 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN_cpt_monthly_raw_v3,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-11-20 11:53:06.964143 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN_vpi_data_n7l_view,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-11-20 11:53:06.964143 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,EBH CORE,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-03-14 12:46:04.828218 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,EBH KPIs,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-03-14 12:46:04.828218 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN_score_summarized_proc_v1,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-03-13 09:37:26.853760 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,Site Perf KPI,Network Operational Excellence,OFS Forecasting,2024-11-27 16:14:53.794330 UTC,2024-11-20 11:53:06.964143 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,True Call KPI,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-06-11 04:18:17.409469 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN_lte_topology_raw_v4,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-03-13 09:37:26.853760 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN_carrier_location_raw_v1,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-03-13 09:37:26.853760 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN_sectorcarrier_hourly_raw_v2,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-03-13 09:37:26.853760 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,REAL ESTATE,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-03-14 12:46:04.828218 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain,Network Operational Excellence,RAN_carr_score_hr_details_raw_v1,Total Cost of Ownership,Network QES,2024-11-20 11:53:06.964144 UTC,2024-11-20 11:53:06.964143 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain_DEV_12032024,Network Operational Excellence,Site Perf KPI,Network Operational Excellence,OFS Forecasting_DEV_NEW,2024-12-02 11:55:32.664971 UTC,2024-12-02 11:55:32.664970 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain_DEV_12032024_new,Network Operational Excellence,Site Perf KPI,Network Operational Excellence,OFS Forecasting_DEV_NEW,2024-12-04 13:12:56.694089 UTC,2024-12-03 07:08:51.996604 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain_DEV_NEW,Network Operational Excellence,Site Perf KPI,Network Operational Excellence,OFS Forecasting_DEV_NEW,2024-12-02 16:00:32.198427 UTC,2024-12-02 16:00:32.198426 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain_NEW,Network Operational Excellence,Site Perf KPI,Network Operational Excellence,OFS Forecasting_NEW,2024-12-02 11:55:32.664971 UTC,2024-12-02 11:55:32.664970 UTC
+Network,Network-asset,Drive Profitability,Network-asset-domain_dev,Network Operational Excellence,Site Perf KPI,Network Operational Excellence,OFS Forecasting,2024-11-27 16:14:53.794330 UTC,2024-11-27 16:14:53.794329 UTC
+NETWORK,Deliver Superior Excellence,Network Performance & Experience,Network Performance & Experience,Network Performance,Network Performance,Deliver Superior Excellence,,2024-09-16 06:57:46.238216 UTC,2024-02-21 11:05:11.919776 UTC
+NETWORK,Deliver Superior Experience,Network Performance & Experience,Network Performance & Experience,Network Performance,Network Performance,Deliver Superior Experience,,2024-09-16 06:57:46.238216 UTC,2024-02-21 11:05:11.919776 UTC
+Party,Customer,Deliver Superior Excellence,Consumer,Network Performance & Experience,Customer KPIs,Network Performance,Network QES,2024-12-18 17:54:23.796273 UTC,2024-03-14 12:46:04.828218 UTC
+Party,Customer,Deliver Superior Excellence,Consumer,Network Performance & Experience,Customer Attributes,Network Performance,Network QES,2024-12-18 17:54:23.796273 UTC,2024-11-01 02:41:52.023879 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-cnc1,Network Performance & Experience,CNC,Network Performance,NQES,2024-11-25 16:42:05.847150 UTC,2024-11-25 16:42:05.847150 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-cnc2,Network Performance & Experience,CNC,Network Performance,NQES,2024-11-25 16:42:05.847150 UTC,2024-11-25 16:42:05.847150 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-cnc3,Network Performance & Experience,CNC,Network Performance,NQES,2024-11-25 16:42:05.847150 UTC,2024-11-25 16:42:05.847150 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-cnc4,Network Performance & Experience,CNC,Network Performance,NQES,2024-11-25 16:42:05.847150 UTC,2024-11-25 16:42:05.847150 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-domain,Network Performance & Experience,RAN_customer_attributes_daily_norm_v0,Network Performance,Network Digital Twin,2024-09-16 06:57:46.238216 UTC,2024-04-08 13:48:42.555472 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-domain,Network Performance & Experience,RAN_carr_score_summarized_raw_v1,Network Performance,Network Digital Twin,2024-09-16 06:57:46.238216 UTC,2024-03-28 16:01:21.676383 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-domain,Network Performance & Experience,RAN_dim_performance_network_norm_v0,Network Performance,Network Digital Twin,2024-09-16 06:57:46.238216 UTC,2024-04-22 14:59:09.642096 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-domain,Network Performance & Experience,RAN_qos_performance_hourly_norm_v0,Network Performance,Network QES,2024-09-16 06:57:46.238216 UTC,2024-05-08 15:53:38.947520 UTC
+Network,Network-asset,Deliver Superior Excellence,Network-asset-domain,Network Performance & Experience,RAN_qos_performance_customer_hourly_norm_v0,Network Performance,Network Digital Twin,2024-09-16 06:57:46.238216 UTC,2024-04-08 13:48:42.555472 UTC
+Party,Customer,Deliver Superior Excellence dev,consumer_dev,Network Performance & Experience dev,Customer Attributes,Network Performance dev,Network QES dev,2024-12-18 17:54:23.796273 UTC,2024-12-18 17:54:23.796272 UTC
+Party,Customer,Deliver Superior Excellence dev,consumer_dev,Network Performance & Experience dev,Customer KPIs,Network Performance dev,Network QES dev,2024-12-18 17:54:23.796273 UTC,2024-12-18 17:54:23.796272 UTC
+Party,Customer_dev1,Deliver Superior Excellence dev,consumer_dev1,Network Performance & Experience dev,Customer KPIs,Network Performance dev,Network QES dev,2024-12-18 17:54:23.796273 UTC,2024-12-18 17:54:23.796272 UTC
+Party,Customer_dev1,Deliver Superior Excellence dev,consumer_dev1,Network Performance & Experience dev,Customer Attributes,Network Performance dev,Network QES dev,2024-12-18 17:54:23.796273 UTC,2024-12-18 17:54:23.796272 UTC
+Party,Customer_dev,Deliver Superior Excellence dev,consumer_dev_test,Network Performance & Experience dev,Customer KPIs,Network Performance dev,Network QES dev,2024-12-18 17:55:42.613542 UTC,2024-12-18 17:55:42.613541 UTC
+Party,Customer_dev,Deliver Superior Excellence dev,consumer_dev_test,Network Performance & Experience dev,Customer Attributes,Network Performance dev,Network QES dev,2024-12-18 17:55:42.613542 UTC,2024-12-18 17:55:42.613541 UTC
+VCG,Corporate,ONE_EX_TEST,One_ex_TIER1_DEV,ONE_EX_TEST,One_ex_Model_DQ_TIER1,ONE_EX_TEST,N,2025-01-13 07:49:43.172688 UTC,2025-01-13 07:49:43.172688 UTC
+VCG,Corporate,Corporate,One_ex_Model_DQ_TIER1,One_ex_Model_DQ_TIER1,One_ex_Model_DQ_TIER1,One_ex_Model_DQ_TIER1,One_ex_Model_DQ_TIER1,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,Personalization_dev_test,Personalization_test,Personalization_dev_test,Personalization_test,Personalization_dev_test,Personalization_test,Personalization_test,2024-10-24 11:28:09.438588 UTC,2024-10-24 11:28:09.438588 UTC
+VCG,PERFORMANCE,Deliver Experience,AICOACH,Productivity & Efficiencies,FTL,AI COACH,AICOACH,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,AICOACH,Productivity & Efficiencies,Retail,AI COACH,AICOACH,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,AICOACH,Productivity & Efficiencies,CustCare,AI COACH,AICOACH,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,AICOACH_Custcare,Productivity & Efficiencies,CustCare,AI COACH,AICOACH_Custcare,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,AICOACH_Retail,Productivity & Efficiencies,Retail,AI COACH,AICOACH_Retail,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL,Productivity & Efficiencies,"Prepaid, Core and Messaging",FTL,FTL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL,Productivity & Efficiencies,Fios,FTL,FTL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL,Productivity & Efficiencies,Core,FTL,FTL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL,Productivity & Efficiencies,Messaging,FTL,FTL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL,Productivity & Efficiencies,Prepaid,FTL,FTL,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL PSO,Productivity & Efficiencies,Postpaid,FTL,FTL PSO,2024-11-04 08:05:18.331629 UTC,2024-11-04 08:05:18.331629 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL Postpaid Postmodel,Productivity & Efficiencies,Postpaid,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-08-06 10:11:33.344363 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL Retail,Productivity & Efficiencies,Retail 2.0,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-06-19 12:05:32.942109 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL Retail,Productivity & Efficiencies,Retail,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-06-18 15:12:12.047064 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL Retail,Productivity & Efficiencies,Attrition,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-06-14 14:25:12.209815 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL Retail SHT,Productivity & Efficiencies,Attrition,FTL,Attrition,2024-09-16 06:57:46.238216 UTC,2024-06-25 15:17:22.444078 UTC
+VCG,PERFORMANCE,Deliver Experience,FTL Retail SHT,Productivity & Efficiencies,RLM,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-06-18 15:07:36.891651 UTC
+VCG,MARKETING,Grow Revenue,Promotion_Model_DQ_TIER1,Promotion_Model_DQ_TIER1,Promotion_Model_DQ_TIER1,Promotion_Model_DQ_TIER1,Promotion_Model_DQ_TIER1,2024-09-16 06:57:46.238216 UTC,2024-02-07 12:05:33.015520 UTC
+VCG,SALES PERSONALISATION,GROWTH,VZENGAGE,SALES PERSONALISATION,MARKETING CAPABILITY,VCG,VZENGAGE,2024-09-16 06:57:46.238216 UTC,2024-06-10 12:34:54.358731 UTC
+VBG,Marketing and Sales,Grow Revenue,DQ check,Sales Personalization,DATA QUALITY CHECK,VOC,VBG,2024-09-16 06:57:46.238216 UTC,2024-03-19 12:10:31.063047 UTC
+VBG,Marketing and Sales,Grow Revenue,DQ check1,Sales Personalization,DATA QUALITY CHECK,VOC,VBG,2024-09-16 06:57:46.238216 UTC,2024-03-26 14:45:11.045438 UTC
+VCG,Service,Grow Revenue,Personalization,Sales Personalization,Service,VBG Sales Personalization,VCG_Growth,2024-10-28 06:31:14.441697 UTC,2024-10-28 06:31:14.441697 UTC
+VCG,Growth,Grow Revenue,Personalization_UAT,Sales Personalization,Growth,VBG Sales Personalization,VCG_Growth_UAT,2024-10-29 12:43:55.154148 UTC,2024-10-29 12:43:55.154148 UTC
+VBG,Marketing and Sales,Grow Revenue,Sales_Channel,Sales Personalization,Survey,VOC,VBG,2024-09-16 06:57:46.238216 UTC,2024-06-11 06:46:27.550779 UTC
+VBG,GROWTH,Digital_Experience,PERSONALIZATION AND LOCALIZATION_dev,Sales_Personalization,PERSONALIZATION,VBG_Event_Ledger,Sales_Personalization,2024-10-28 13:26:57.998455 UTC,2024-10-28 13:01:02.036423 UTC
+VBG,Marketing,Grow Revenue,Sales_Channel,Sales_Personalization,Survey,VOC,VBG,2024-09-16 06:57:46.238216 UTC,2024-09-12 09:42:50.069336 UTC
+VBG,Marketing_dev,Grow Revenue,Sales_Channel_dev,Sales_Personalization,Survey_dev,VOC,VBG,2024-09-16 06:57:46.238216 UTC,2024-09-12 09:47:46.427136 UTC
+VBG,Sample Program,Sample PT,Sample SP,Sample AP,Sample BE,Sample Product,Sample BP,2024-09-16 06:57:46.238216 UTC,2024-09-13 14:15:20.180698 UTC
+VBG,Sample_Prog,Sample_type,Sample_sub_prog,Sample_AP,Sample_BE,Sample_Product,Sample_BP,2024-09-16 06:57:46.238216 UTC,2024-09-13 06:27:54.951142 UTC
+VCG,POS,insidesales,,Service,FTL,FTL,aattru,2024-09-16 06:57:46.238216 UTC,2024-09-11 13:19:29.579014 UTC
+DUP,POS,insidesales,Dummy,Service,FTL,FTL,FTL Inside Sales,2024-10-14 13:17:24.102599 UTC,2024-10-14 13:17:24.102599 UTC
+VCG,PERFORMANCE,Postpaid,FTL,Service,Postpaid,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-03-25 12:32:27.398910 UTC
+VCG,PERFORMANCE,Inside Sales,FTL,Service,Inside Sales,FTL,FTL VCG Inside Sales,2024-09-16 06:57:46.238216 UTC,2024-03-28 09:54:21.214396 UTC
+VCG,PERFORMANCE,SalesChat,FTL,Service,SalesChat,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-03-25 12:32:27.398910 UTC
+VCG,PERFORMANCE,Messaging,FTL,Service,Messaging,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-03-25 12:32:27.398910 UTC
+VCG,PERFORMANCE,Core,FTL,Service,Core,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-03-25 12:32:27.398910 UTC
+VCG,PERFORMANCE,Postpaid,FTL CS,Service,Postpaid,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-04-01 12:40:04.763635 UTC
+VCG,PERFORMANCE,Messaging,FTL CS,Service,Messaging,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-04-01 12:40:04.763635 UTC
+VCG,PERFORMANCE,Core,FTL CS,Service,Core,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-04-01 12:40:04.763635 UTC
+VCG,PERFORMANCE,SalesChat,FTL CS,Service,SalesChat,FTL,FTL CS,2024-09-16 06:57:46.238216 UTC,2024-04-01 12:40:04.763635 UTC
+VCG,PERFORMANCE,insidesales,FTL Inside Sales,Service,Inside Sales,FTL,FTL Inside Sales,2024-09-16 06:57:46.238216 UTC,2024-03-26 17:04:48.988341 UTC
+VCG,PERFORMANCE,Insidesales,FTL Inside Sales,Service,Inside Sales,FTL,FTL VCG Inside Sales,2024-09-16 06:57:46.238216 UTC,2024-04-01 11:17:18.266838 UTC
+VCG,PERFORMANCE,Insidesales,FTL Inside Sales Postmodel,Service,Inside Sales,FTL,FTL Inside Sales,2024-09-16 06:57:46.238216 UTC,2024-06-21 06:31:16.657035 UTC
+VCG,PERFORMANCE,insidesales,FTL Inside Sales Postmodel,Service,Inside Sales,FTL,FTL Inside Sales,2024-09-16 06:57:46.238216 UTC,2024-04-23 20:26:45.249940 UTC
+VCG,PERFORMANCE,Insidesales,FTL Inside Sales1,Service,Inside Sales,FTL,FTL VCG Inside Sales,2024-09-16 06:57:46.238216 UTC,2024-04-01 08:55:40.589518 UTC
+VCG,PERFORMANCE,Service,FTL RLM,Service,Retail Labour Model,FTL,FTL RLM,2024-09-16 06:57:46.238216 UTC,2024-04-23 12:15:07.424851 UTC
+VCG,PERFORMANCE,Service,FTL Retail,Service,Retail 2.0,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-04-15 14:42:45.228877 UTC
+VCG,PERFORMANCE,Retail,FTL Retail,Service,Retail,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-04-12 12:51:39.053300 UTC
+VCG,PERFORMANCE,Service,FTL Retail,Service,Retail 1.0,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-04-15 14:42:45.228877 UTC
+VCG,PERFORMANCE,store hous,FTL Retail,Service,Store hours,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-04-22 16:16:54.155523 UTC
+VCG,PERFORMANCE,Retail,FTL Retail,Service,store hours,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-07-29 14:22:19.561052 UTC
+VCG,PERFORMANCE,Service,FTL Retail SHT,Service,Store Hour Traffic,FTL,FTL Retail SHT,2024-09-16 06:57:46.238216 UTC,2024-04-15 14:42:45.228877 UTC
+VCG,PERFORMANCE_dev,Retail,FTL Retail_dev,Service,Retail_dev,FTL_dev,FTL Retail_dev,2024-09-16 06:57:46.238216 UTC,2024-04-23 09:51:15.788064 UTC
+VCG,IVR,IVR CALL,IVR CALL JOURNEY,Service,IVR CALL DATA CUBE,IVR CALL DATA CUBE,NBX Propositions,2024-09-16 06:57:46.238216 UTC,2024-04-05 12:58:01.847805 UTC
+VBG,IVR,IVR CALL,IVR CALL JOURNEY,Service,IVR CALL DATA CUBE,IVR CALL DATA CUBE,NBX Propositions,2024-10-29 09:17:02.222856 UTC,2024-10-29 09:17:02.222856 UTC
+VCG,POS,insidesales,PERFORMANCE,Service,FTL,FTL,aattru,2024-09-16 06:57:46.238216 UTC,2024-08-26 14:43:59.631261 UTC
+VCG,POS,Retail,PERFORMANCE,Service,FTL,FTL,FTL Retail,2024-09-16 06:57:46.238216 UTC,2024-03-08 13:56:11.990548 UTC
+VCG,POS,insidesales,PERFORMANCE,Service,FTL,FTL,FTL Inside Sales,2024-09-16 06:57:46.238216 UTC,2024-04-15 10:29:56.034725 UTC
+VCG,Marketing,insidesales,PERFORMANCE,Service,FTL,FTL,FTL Inside Sales,2024-09-16 06:57:46.238216 UTC,2024-03-25 07:46:43.755199 UTC
+VCG,Marketing,StoreHourTraffic,PERFORMANCE,Service,FTL,FTL,Store Hour Traffic,2024-09-16 06:57:46.238216 UTC,2024-03-26 10:18:30.406915 UTC
+VCG,Marketing,SHT,PERFORMANCE,Service,FTL,FTL,Store Hour Traffic,2024-09-16 06:57:46.238216 UTC,2024-03-26 10:24:05.701388 UTC
+VBG,PERFORMANCE,vbg FTL bgco,VBG FTL BGCO postmodel,Service,vbg FTL bgco,FTL,VBG FTL BGCO postmodel,2024-12-03 09:45:21.968513 UTC,2024-12-03 09:45:21.968513 UTC
+VBG,PERFORMANCE,vbg FTL bgco,VBG FTL BGCO postmodel New,Service,vbg FTL bgco,FTL,VBG FTL BGCO postmodel,2024-12-03 12:23:39.497455 UTC,2024-12-03 12:23:39.497455 UTC
+VBG,PERFORMANCE,vbg FTL bgco,VBG FTL BGCO postmodel_New,Service,vbg FTL bgco,FTL,VBG FTL BGCO postmodel_New,2024-12-04 06:30:08.284718 UTC,2024-12-04 06:30:08.284718 UTC
+VBG,PERFORMANCE,vbg FTL bgco,VBG FTL BGCO premodel,Service,vbg FTL bgco,FTL,VBG FTL BGCO premodel,2024-11-11 13:52:17.690878 UTC,2024-11-11 13:52:17.690878 UTC
+VBG,CALL,IVR CALL,VBG IVR CALL JOURNEY,Service,IVR CALL DATA CUBE,VBG CALL DATA CUBE,NBX Propositions,2024-11-26 10:05:06.332990 UTC,2024-11-26 10:05:06.332990 UTC
+VCG,POS,insidesales,dummy,Service,FTL,FTL,aattru,2024-09-16 06:57:46.238216 UTC,2024-09-13 10:58:58.312862 UTC
+VCG,IVR,Deliver Experience,IVR CALL JOURNEY,Service Personalisation,IVR CALL DATA CUBE,NBX Service,IVR CALL DATA CUBE,2024-09-16 06:57:46.238216 UTC,2024-09-03 06:23:37.591020 UTC
+VCG,IVR,Deliver Experience,IVR CALL JOURNEY_NEW_DEV,Service Personalisation,IVR CALL DATA CUBE,NBX Service,IVR CALL DATA CUBE_NEW_DEV,2024-12-04 07:32:01.807547 UTC,2024-12-04 07:32:01.807547 UTC
+VCG,IVR,Deliver Experience,IVR CALL JOURNEY_TEST,Service Personalisation,IVR CALL DATA CUBE,NBX Service,IVR CALL DATA CUBE_TEST,2024-12-04 12:40:32.356835 UTC,2024-12-04 12:40:32.356835 UTC
+VBG,VBG_EL_RAW,Deliver Experience,VBG_EL_RAW,Service Personalisation,VBG_EL_RAW,NBX Service,IVR CALL DATA CUBE,2025-01-06 06:41:37.475385 UTC,2025-01-06 06:41:37.475385 UTC
+VBG,VBG_EL_RAW,Deliver Experience,VBG_EL_RAW_NEW,Service Personalisation,VBG_EL_RAW,NBX Service,IVR CALL DATA CUBE,2025-01-06 09:01:16.051781 UTC,2025-01-06 09:01:16.051781 UTC
+VCG,Service,Billing,Billing,Service Personalization,viewbill,viewbill,Billing SLM,2024-09-16 06:57:46.238216 UTC,2024-08-28 13:26:33.154819 UTC
+VCG,Service,Billing,Billing,Service Personalization,Billcompare,Billcompare,Copilot,2024-09-16 06:57:46.238216 UTC,2024-08-14 14:35:47.899775 UTC
+VCG,Service,Billing,Billing,Service Personalization,Billcompare,Co-Piot,Copilot,2024-09-27 11:55:29.815456 UTC,2024-09-27 11:55:29.815456 UTC
+VCG,Service,Billing,Billing SLM,Service Personalization,viewbill,viewbill,Billing SLM,2024-09-16 06:57:46.238216 UTC,2024-08-29 06:19:34.637804 UTC
+VBG,Common,Deliver Superior Experience,Business Interaction,Service Personalization,Not Applicable,VOC,VBG,2024-11-01 09:32:49.366772 UTC,2024-11-01 09:32:49.366772 UTC
+VBG,Common,Deliver Superior Experience,Business Interaction,Service Personalization,Not Applicable,VOC,VOC_VBG,2024-11-04 09:20:30.750729 UTC,2024-11-04 09:20:30.750729 UTC
+VBG,Customer,Deliver Superior Experience,Customer Interaction,Service Personalization,Not Applicable,VOC,VOC_VBG,2024-11-04 09:20:30.750729 UTC,2024-11-04 09:20:30.750729 UTC
+VBG,Customer,Deliver Superior Experience,Customer Interaction,Service Personalization,Not Applicable,VOC,VBG,2024-11-01 09:32:49.366772 UTC,2024-11-01 09:32:49.366772 UTC
+VBG,,Deliver Superior Experience,Dummay_Program,Service Personalization,,Event Ledger,,2024-11-29 12:51:22.993380 UTC,2024-11-29 12:51:22.993380 UTC
+VBG,,Deliver Superior Experience,Dummy_SIT_DQ_ext_3,Service Personalization,,Co-Pilot,,2024-11-21 10:13:27.455360 UTC,2024-11-21 10:13:27.455360 UTC
+VBG,Common,Deliver Superior Experience,Location,Service Personalization,Geographic Place,VOC,VBG,2024-11-01 09:32:49.366772 UTC,2024-11-01 09:32:49.366772 UTC
+VBG,Common,Deliver Superior Experience,Location,Service Personalization,Geographic Place,VOC,VOC_VBG,2024-11-04 09:20:30.750729 UTC,2024-11-04 09:20:30.750729 UTC
+VCG,Service,Service,Personalization,Service Personalization,Service-pct,NBx Service,NBx Digital Service dev,2024-09-16 06:57:46.238216 UTC,2024-03-15 10:20:33.733305 UTC
+VCG,Service,Service,Personalization,Service Personalization,Service-pct,NBx Service,NBx Digital Service,2024-09-16 06:57:46.238216 UTC,2024-03-14 14:58:47.701258 UTC
+VCG,Service,Deliver Experience,Personalization,Service Personalization,Service,NBX Service,NBX Digital Service,2024-11-26 12:28:18.770671 UTC,2024-11-26 12:28:18.770671 UTC
+VCG,Service,Deliver Experience,Personalization,Service Personalization,Service-PCT,NBX Service,NBX Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-04 15:46:54.496869 UTC
+VCG,Service,Service,Personalization,Service Personalization,Service-PCT,NBx Service,NBx Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-01 06:20:31.572256 UTC
+VCG,Service_Dev,Service_Dev,Personalization_Dev,Service Personalization,Service-pct,NBx Service,NBx Digital Service,2024-09-16 06:57:46.238216 UTC,2024-05-02 07:30:20.023656 UTC
+VCG,Service,Service_dev10,Personalization_dev10,Service Personalization,Service-PCT_dev10,NBx Service_10,NBx Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-08 15:15:31.279593 UTC
+VCG,Service,Service,Personalization_dev10,Service Personalization,Service-PCT_dev10,NBx Service,NBx Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-08 15:15:31.279593 UTC
+VBG,Marketing,Deliver Superior Experience,Sales Channel,Service Personalization,Not Applicable,VOC,VBG,2024-11-01 09:32:49.366772 UTC,2024-11-01 09:32:49.366772 UTC
+VBG,Marketing,Deliver Superior Experience,Sales Channel,Service Personalization,Not Applicable,VOC,VOC_VBG,2024-11-04 09:20:30.750729 UTC,2024-11-04 09:20:30.750729 UTC
+VBG,Market Sales,Deliver Superior Experience,Sales Lead and Opportunity,Service Personalization,Not Applicable,VOC,VBG,2024-11-01 09:32:49.366772 UTC,2024-11-01 09:32:49.366772 UTC
+VBG,Market Sales,Deliver Superior Experience,Sales Lead and Opportunity,Service Personalization,Not Applicable,VOC,VOC_VBG,2024-11-04 09:20:30.750729 UTC,2024-11-04 09:20:30.750729 UTC
+VBG,Market Sales,Deliver Superior Experience,Sales_Channel,Service Personalization,Not Applicable,VOC,VBG,2024-11-01 09:32:49.366772 UTC,2024-11-01 09:32:49.366772 UTC
+VBG,Market Sales,Deliver Superior Experience,Sales_Channel,Service Personalization,Not Applicable,VOC,VOC_VBG,2024-11-04 09:20:30.750729 UTC,2024-11-04 09:20:30.750729 UTC
+VCG,Service dev,Service dev,Personalization dev,Service Personalization dev,Service-pct dev,NBx Service dev,NBx Digital Service dev,2024-09-16 06:57:46.238216 UTC,2024-03-15 10:46:25.521135 UTC
+VCG,Service dev,Service dev,Personalization dev,Service Personalization dev,Service-pct,NBx Service dev,NBx Digital Service dev,2024-09-16 06:57:46.238216 UTC,2024-03-15 10:35:09.911024 UTC
+VCG,Service,Deliver Experience_dev,Personalization_dev,Service Personalization_dev,Service-PCT,NBX Service_dev,NBX Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-05 09:49:28.870542 UTC
+VCG,Service_dev1,Deliver Experience_dev,Personalization_dev1,Service Personalization_dev,Service-PCT,NBX Service_dev,NBX Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-05 13:45:59.778455 UTC
+VCG,Service_dev2,Deliver Experience_dev,Personalization_dev2,Service Personalization_dev,Service-PCT,NBX Service_dev,NBX Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-05 13:45:59.778455 UTC
+VCG,Service_dev3,Deliver Experience_dev,Personalization_dev3,Service Personalization_dev,Service-PCT,NBX Service_dev,NBX Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-05 13:45:59.778455 UTC
+VCG,Service_dev7,Deliver Experience_dev7,Personalization_dev7,Service Personalization_dev7,Service-PCT,NBX Service_dev7,NBX Digital Service,2024-09-16 06:57:46.238216 UTC,2024-07-05 14:54:04.274039 UTC
+VCG,PERFORMANCE_DEV,Insidesales_DEV,FTL Inside Sales Postmodel_DEV,Service_DEV,Inside Sales_DEV,FTL_DEV,FTL Inside Sales_DEV,2024-09-16 06:57:46.238216 UTC,2024-07-02 14:53:37.682335 UTC
+VCG,PERFORMANCE_DEV,Insidesales_DEV1,FTL Inside Sales Postmodel_DEV1,Service_DEV1,Inside Sales_DEV1,FTL_DEV1,FTL Inside Sales_DEV1,2024-09-16 06:57:46.238216 UTC,2024-07-05 14:21:41.239517 UTC
+VCG,PERFORMANCE_DEV55,Insidesales_DEV55,FTL Inside Sales Postmodel_DEV55,Service_DEV55,Inside Sales_DEV55,FTL_DEV55,FTL Inside Sales_DEV55,2024-09-16 06:57:46.238216 UTC,2024-07-09 12:06:22.422503 UTC
+VCG,Corporate,TEST,One_ex_TIER1_TEST,TEST,One_ex_Model_DQ_TIER1,ONE-EX,ONE-EX_TEST,2025-01-09 15:57:33.155740 UTC,2025-01-09 15:57:33.155740 UTC
+VCG,TEST,TEST,TEST,TEST,TEST,TEST,TEST,2025-01-10 03:32:03.372066 UTC,2025-01-10 03:32:03.372066 UTC
+VCG,GROWTH,TEST,TEST,TEST,TEST,TEST,TEST,2024-10-09 10:53:19.247781 UTC,2024-10-09 10:53:19.247781 UTC
+VCG,TEST_AGG,TEST_AGG,TEST_AGG,TEST_AGG,TEST_AGG,TEST_AGG,TEST_AGG,2025-01-22 14:26:07.476428 UTC,2025-01-22 14:26:07.476428 UTC
+VCG,TEST_AGG_dev,TEST_AGG_dev,TEST_AGG_dev,TEST_AGG_dev,TEST_AGG_dev,TEST_AGG_dev,TEST_AGG_dev,2025-01-23 06:44:58.319228 UTC,2025-01-23 06:44:58.319228 UTC
+VCG,TEST_DEV,TEST_DEV,TEST_DEV,TEST_DEV,TEST_DEV,TEST_DEV,TEST_DEV,2025-01-07 10:49:32.572826 UTC,2025-01-07 10:49:32.572826 UTC
+VCG,TEST_AGG,TEST_NON_AGG,TEST_non_AGG,TEST_NON_AGG,TEST_AGG,TEST_NON_AGG,TEST_NON_AGG,2025-01-22 14:59:18.525182 UTC,2025-01-22 14:59:18.525182 UTC
+VCG,MARKETING,TEST_TD_AGG,PROMOS_TD_AGG,TEST_TD_AGG,TRADE_IN,TEST_TD_AGG,TEST_TD_AGG,2025-01-29 11:55:04.970107 UTC,2025-01-29 11:55:04.970107 UTC
+VCG,DTRAN_TEST,TEST_dtran,DTRAN_TEST,TEST_dtran,DTRAN_TEST,TEST_dtran,TEST_dtran,2024-11-20 15:37:59.991136 UTC,2024-11-20 15:37:59.991136 UTC
+Network,Wireless,Test,Test_custom,Test,lte_s1_s1mmeap_kpi_daily_view_v1,Test,Test,2024-11-12 11:31:50.635764 UTC,2024-11-12 11:31:50.635763 UTC
+VBG,test P,Test PRod,test SP,Test PRod,test DBE,Test Prod,test BP,2024-11-05 04:52:05.617255 UTC,2024-11-05 04:52:05.617255 UTC
+VCG,Executive Reports,ONE-EX,One_Ex_Executive_report,Tier-1,One_Ex_Executive_report,Core Servives,ONE-EX,2025-02-28 11:39:34.439601 UTC,2025-02-21 10:24:53.242980 UTC
+VCG,Executive Reports,ONE-EX,One_Ex_Executive_report_test,Tier-1,One_Ex_Executive_report,Core Servives,ONE-EX,2025-03-14 07:36:34.062427 UTC,2025-03-14 07:36:34.062426 UTC
+VCG,Executive Reports test,ONE-EX,One_Ex_Executive_report_test,Tier-1,One_Ex_Executive_report,Core Servives,ONE-EX,2025-03-06 08:15:51.524248 UTC,2025-03-06 08:15:51.524247 UTC
+VCG,Corporate,ONE-EX,One_ex_TIER1_NEW,Tier-1,One_ex_Model_DQ_TIER1,Core Servives,ONE-EX,2025-01-20 07:49:48.235010 UTC,2025-01-09 17:21:18.217769 UTC
+NETWORK,Drive Profitability,Network Operational Excellence,Network Operational Excellence,Total Cost of Ownership,Total Cost of Ownership,Drive Profitability,,2024-09-16 06:57:46.238216 UTC,2024-02-21 11:05:11.919776 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v30,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v7,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v14,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v28,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v17,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v5,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v12,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v11,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v21,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v4,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v24,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v20,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v26,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v18,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v29,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v27,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v19,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v10,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v6,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v23,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v15,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v13,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v22,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v9,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v25,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v3,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VCG,GROWTH,"Base Mgmt,Acquisition & Personlaisation",Unified Model,Unified_Churn v3,Unified_churn_v8,Churn & Marketing Campaigns,,2024-09-16 06:57:46.238216 UTC,2024-05-20 11:18:45.265143 UTC
+VBG,GROWTH,Grow Revenue,MARKETING CAPABILITY,VBG Products & Programs( VBG Core data Assets),RTM/PEGA,RTM/PEGA,VBG,2024-09-16 06:57:46.238216 UTC,2024-04-10 09:53:35.745666 UTC
+VBG,GROWTH,Grow Revenue,MARKETING CAPABILITY1,VBG Products & Programs( VBG Core data Assets),RTM/PEGA,RTM/PEGA,VBG,2024-09-16 06:57:46.238216 UTC,2024-03-20 14:14:06.604011 UTC
+VBG,GROWTH,Grow Revenue,Marketing Capability,VBG Products & Programs( VBG Core data Assets),RTM/PEGA,RTM/PEGA,VBG,2024-09-16 06:57:46.238216 UTC,2024-04-10 09:53:35.745666 UTC
+VBG,GROWTH,Grow Revenue,Marketing Capability1,VBG Products & Programs( VBG Core data Assets),RTM/PEGA_dev,RTM/PEGA,VBG_dev,2024-09-16 06:57:46.238216 UTC,2024-04-10 07:26:42.177303 UTC
+VBG,GROWTH,Grow Revenue_dev,Marketing Capability10,VBG Products & Programs( VBG Core data Assets),RTM/PEGA,RTM/PEGA,VBG_dev,2024-09-16 06:57:46.238216 UTC,2024-04-12 09:07:37.381686 UTC
+VBG,GROWTH,Grow Revenue,Marketing Capability5,VBG Products & Programs( VBG Core data Assets),RTM/PEGA_dev,RTM/PEGA,VBG_dev_5,2024-09-16 06:57:46.238216 UTC,2024-04-10 09:22:44.430060 UTC
+AI&D VBG,,AI&D VBG,Dummy_Test,VBG Programs,,Gmart,,2024-11-29 05:38:41.513703 UTC,2024-11-29 05:38:41.513703 UTC
+AI&D VBG,,AI&D VBG,test,VBG Programs,,VOC,,2024-12-02 11:28:00.710062 UTC,2024-12-02 11:28:00.710062 UTC
+AI&D VBG,,AI&D VBG,test  sub123,VBG Programs,,Digitize Customer Ops,,2024-11-28 16:40:53.258428 UTC,2024-11-28 16:40:53.258428 UTC
+VBG,GROWTH,Digital_Experience,PERSONALIZATION AND LOCALIZATION,VBG_Event_Ledger,PERSONALIZATION,Sales_Personalization,Sales_Personalization,2025-02-04 11:35:17.329233 UTC,2025-02-04 11:35:17.329233 UTC
+VBG,GROWTH,Digital_Experience,PERSONALIZATION AND LOCALIZATION 111124,VBG_Event_Ledger,PERSONALIZATION,Sales_Personalization,Sales_Personalization,2024-11-11 12:04:37.848882 UTC,2024-11-11 12:04:37.848882 UTC
+VBG,GROWTH,Digital_Experience_DEV,PERSONALIZATION AND LOCALIZATION_DEV,VBG_Event_Ledger,PERSONALIZATION_DEV,Sales_Personalization_DEV,Sales_Personalization_DEV,2024-09-16 06:57:46.238216 UTC,2024-08-27 13:55:29.141627 UTC
+VBG,GROWTH,Digital_Experience,PERSONALIZATION AND LOCALIZATION_dev,VBG_Event_Ledger,PERSONALIZATION,Sales_Personalization,Sales_Personalization,2024-11-07 09:28:19.452598 UTC,2024-11-07 09:28:19.452598 UTC
+VBG,GROWTH,Digital_Experience,PERSONALIZATION AND LOCALIZATION_dev_11112024,VBG_Event_Ledger,PERSONALIZATION,Sales_Personalization,Sales_Personalization,2024-11-11 11:18:48.714206 UTC,2024-11-11 11:18:48.714206 UTC
+VBG,GROWTH,Digital_Experience,Personalization and Localization_DEV,VBG_Event_Ledger,Account_Summarization,Account_Summarization,Profile_Personalization,2024-09-16 06:57:46.238216 UTC,2024-08-08 10:32:13.379974 UTC
+VBG,GROWTH,Digital_Experience,Personalization and Localization_dev,VBG_Event_Ledger,Account_Summarization_dev,Account_Summarization_dev,Profile_Personalization,2024-09-16 06:57:46.238216 UTC,2024-08-14 10:23:42.552060 UTC
+VBG,GROWTH,Digital_Experience_dev7,Personalization and Localization_dev_7,VBG_Event_Ledger_7,Account_Summarization_dev_7,Account_Summarization_dev,Profile_Personalization_7,2024-09-16 06:57:46.238216 UTC,2024-08-14 10:55:21.249158 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_onexr_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_vzpp_churn_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_portout_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_acquision_health_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_device_upgrade_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_autorefill_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_htc_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_winback_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_churn_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+VCG,GROWTH,Marketing Campaigns,Value - Base Management,Vz Value,Value_long_churn_features,GROW REVENUE,Value - Base Management,2025-02-04 13:26:47.504434 UTC,2025-02-04 13:26:47.504434 UTC
+Network,Wireless,FWA Data Product,FWA SSOT,Wireless Broadband,FWA SSOT,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-06-27 13:03:37.288298 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_UCML_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_IOP_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_5G_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_AUTO_PROFILE,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 11:28:57.967144 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_MVD_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_OCT_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_SPEEDTEST_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_NPP_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_SHA_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network,Wireless,FWA Data Product,FWA_AUTO_PROFILE,Wireless Broadband,FWA_VPI_TIER1,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 08:19:10.115027 UTC
+Network Performance,FWA,FWA Data Product,FWA_Birth_Certificate,Wireless Broadband,BIRTH_CERTIFICATE,FWA SSOT,FWA,2024-10-17 16:31:19.339200 UTC,2024-10-17 16:31:19.339200 UTC
+Network Performance,FWA,FWA Data Product,FWA_CURATED,Wireless Broadband,FWA_CURATED,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-07-29 10:09:11.098609 UTC
+Network Performance,FWA,FWA Data Product,FWA_CURATED,Wireless Broadband,BIRTH_CERTIFICATE,FWA SSOT,FWA,2024-09-19 17:36:10.327556 UTC,2024-09-19 17:36:10.327556 UTC
+Network Performance,FWA,FWA Data Product,FWA_CURATED_DEV,Wireless Broadband,FWA_CURATED,FWA SSOT,FWA,2025-01-28 10:40:47.535387 UTC,2025-01-28 10:40:47.535387 UTC
+Network,Wireless,FWA Data Product,FWA_FEEDS,Wireless Broadband,FWA_AUTO_PROFILE,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-09 13:08:35.683337 UTC
+Network,Wireless,FWA Data Product,FWA_MDN_healthcheck,Wireless Broadband,FWA_MDN_healthcheck,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-04-08 14:06:15.091624 UTC
+Network,Wireless,FWA Data Product,FWA_SOURCES,Wireless Broadband,FWA_SOURCES,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-07-29 10:09:11.098609 UTC
+Network,Network,FWA Data Product,FWA_SOURCES,Wireless Broadband,FWA_SOURCES,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-07-29 10:09:11.098609 UTC
+Network,Wireless,FWA Data Product,FWA_line_level_performance,Wireless Broadband,FWA_line_level_performance,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-05-10 10:56:23.819435 UTC
+Network Performance,FWA,FWA Data Product,SSOT,Wireless Broadband,QOS Performance,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-05-17 14:18:49.530661 UTC
+Network Performance,FWA,FWA Data Product,SSOT,Wireless Broadband,Active Customer Performance,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-05-15 06:45:58.633558 UTC
+Network,Wireless,FWA Data Product,SSOT,Wireless Broadband,SSOT,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-06-13 10:00:53.443801 UTC
+Network,Wireless,FWA Data Product,fwa_ntw_bc,Wireless Broadband,fwa_ntw_bc,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-06-13 10:00:53.443801 UTC
+Network Performance,FWA,FWA Data Product,fwa_ntw_bc,Wireless Broadband,fwa_ntw_bc,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-06-13 10:00:53.443801 UTC
+Network,Wireless,FWA Data Product,fwa_site_perf,Wireless Broadband,fwa_site_perf,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-06-13 10:00:53.443801 UTC
+Network Performance,FWA,FWA Data Product,fwa_site_perf,Wireless Broadband,fwa_site_perf,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-06-13 10:00:53.443801 UTC
+Network Performance,5g_home,5G_Home Data Product,5g_home_CURATED,Wireline &Wireless Broadband,5g_home_CURATED,FWA SSOT,5G_Home,2025-01-15 13:02:07.534628 UTC,2025-01-15 13:02:07.534628 UTC
+VBG,,Deliver Superior Experience,Performance,Workforce Optimization,,Force to Load,,2024-11-29 07:19:09.674071 UTC,2024-11-29 07:19:09.674071 UTC
+VCG,FTL_Dummy_test,fianl test product type,FTL_Dummy_test,area merge,FTL_Dummy_test,final_product,Dummy final,2024-09-16 06:57:46.238216 UTC,2024-08-26 14:43:14.829305 UTC
+VBG,dummy_FTL_TEST_SIT_Monthly,dummy_FTL_TEST_SIT_Monthly,dummy_FTL_TEST_SIT_Monthly,dummy_FTL_TEST_SIT_Monthly,dummy_FTL_TEST_SIT_Monthly,dummy_FTL_TEST_SIT_Monthly,dummy_FTL_TEST_SIT_Monthly,2024-10-25 14:04:54.929817 UTC,2024-10-25 14:04:54.929817 UTC
+VBG,dummy_FTP_SIT_WEEK,dummy_FTP_SIT_WEEK,dummy_FTP_SIT_WEEK,dummy_FTP_SIT_WEEK,dummy_FTP_SIT_WEEK,dummy_FTP_SIT_WEEK,dummy_FTP_SIT_WEEK,2024-10-25 13:47:14.108245 UTC,2024-10-25 13:47:14.108245 UTC
+VCG,dummy_ftl_tst_SIT,dummy_ftl_tst_SIT,dummy_ftl_tst_SIT,dummy_ftl_tst_SIT,dummy_ftl_tst_SIT,dummy_ftl_tst_SIT,dummy_ftl_tst_SIT,2024-10-25 12:36:36.585249 UTC,2024-10-25 12:36:36.585249 UTC
+VCG,AI_Audiencing,growth,MARKETING_dev,marketing,Growth,Ai_Audiencing_dev,promos,2024-09-16 06:57:46.238216 UTC,2024-04-29 08:21:20.501791 UTC
+VCG,AI_Audiencing,growth,Marketing,marketing,Growth,Ai_Audiencing,promos,2024-09-16 06:57:46.238216 UTC,2024-04-08 13:54:38.001089 UTC
+VCG,testProgram,prdTypeDummy,MP API sample,prdAOPDummy,test,prdDummy,productBP,2024-09-17 14:48:08.665989 UTC,2024-09-17 14:48:08.665989 UTC
+VCG,testProgram,prdTypeDummy,MP API sample1,prdAOPDummy,test,prdDummy,productBP,2024-09-17 14:55:39.202954 UTC,2024-09-17 14:55:39.202954 UTC
+VCG,testProgram,prdTypeDummy,subprogram Test,prdAOPDummy,test,prdDummy,productBP,2024-09-16 06:57:46.238216 UTC,2024-09-13 07:11:01.083197 UTC
+VBG,test,test,t4est,test,test,test,test,2024-11-12 13:51:11.911908 UTC,2024-11-12 13:51:11.911908 UTC
+VCG,t4est,test,t4est,test,test,test,test,2024-09-16 06:57:46.238216 UTC,2024-09-02 06:49:29.815137 UTC
+VCG,test,test,t4st,test,test,test,t4est,2024-09-16 06:57:46.238216 UTC,2024-08-27 15:50:52.961776 UTC
+VCG,test,test,test,test,test,test,test,2024-09-16 06:57:46.238216 UTC,2024-08-27 13:51:03.416952 UTC
+VCG,tst,test,test,test,test,test,test,2024-09-16 06:57:46.238216 UTC,2024-09-04 14:15:13.160996 UTC
+VCG,test prg,terst,test,test,test,test,test,2024-10-16 12:16:31.756362 UTC,2024-10-16 12:16:31.756362 UTC
+VCG,test,test,test,test,test,test,test1,2024-10-21 16:32:54.269899 UTC,2024-10-21 16:32:54.269899 UTC
+VCG,test,test,test SP,test,test DBE,test,test,2024-10-15 06:55:36.747695 UTC,2024-10-15 06:55:36.747695 UTC
+VCG,test P,test PT,test SP,test AOP,test DBE,test Req,test BP,2024-10-15 06:38:01.967966 UTC,2024-10-15 06:38:01.967966 UTC
+VCG,test,testProd,testte,testAOP,st,test,test,2024-10-16 12:32:04.737109 UTC,2024-10-16 12:32:04.737109 UTC
+Network Performance,FWA,FWA Data Product,FWA_CURATED,ÿWireless Broadband,FWA_CURATED,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-07-30 11:01:19.973168 UTC
+Network,Wireless,FWA Data Product,FWA_SOURCES,ÿWireless Broadband,FWA_SOURCES,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-07-30 11:01:19.973168 UTC
+Network,Network,FWA Data Product,FWA_SOURCES,ÿWireless Broadband,FWA_SOURCES,FWA SSOT,FWA,2024-09-16 06:57:46.238216 UTC,2024-07-30 11:01:19.973168 UTC
+---------------------------------------------------
+
+
+
+profile_id,profile_type,product_name,project_name,database_name,active_flag,data_src,feature_name,column_name,rule_desc,incr_date_col,incr_date_cond,unique_index_cols,tag_name,table_ind,invalid_rec_sql,history_load_sql,critical_flag,micro_seg_cols,aggregated_col,comparison_type,business_term_desc,profile_schedule_ts,threshold_limit,max_threshold_limit,email_distro,opsgenie_flag,opsgenie_team,opsgenie_api,parsed_sql,run_frequency,insert_made_ts,update_made_ts,table_name,data_sub_dmn,data_lob,rule_name,dq_pillar,rule_sql,daily_flag,invalid_records_flag,vsad,auto_rerun_flag,is_cross_project_enabled,email_type,invalid_sql_required,rerun_required,jira_assignee,table_cde
+16,rule_custom,DQ_RULE_CUSTOM_CHECK,,dga_dq_tbls,N,TD,,,,auto_prfl_run_dt,2,,,,,,,,,,,,,,,Y,,,,,2025-03-04 12:55:07.532763 UTC,2025-03-04 12:55:07.532763 UTC,dqaas_auto_prfl_col_rpt,,,,,,,,,,,,,,redvi1f,
+1317,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SVC_OFFER_CD_ID,,,,,,,,,,31 23 * * *,80,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,SVC_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,SOR_ID
+1318,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SOR_ID,,,,,,,,,,00 01 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,LOAN_INFO_SED_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,"SOR_ID,OFFER_ID,CREDIT_QUAL_DT,DB_USER_ID,CREDIT_MTH_QTY"
+1317,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SVC_OFFER_CD_ID,,,,,,,,,,31 23 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,SVC_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,SOR_ID
+1315,auto,DQ_AUTO_CHECK,,POS,N,yiuy,,,,,7,"eff_dt,sls_outlet_id",,,,,,,,,,23 10 * * *,10,,ty,Y,,afg,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,PERFORMANCE,,VCG,,,,,,,,,,,,redvi1f,"eff_dt,sls_outlet_id"
+1317,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SVC_OFFER_CD_ID,,,,,,,,,,31 23 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,SVC_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,SOR_ID
+1318,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SOR_ID,,,,,,,,,,00 01 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,LOAN_INFO_SED_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,"SOR_ID,OFFER_ID,CREDIT_QUAL_DT,DB_USER_ID,CREDIT_MTH_QTY"
+1314,auto,DQ_AUTO_CHECK,,POS,N,yiuy,,,,,7,"eff_dt,sls_outlet_id",,,,,,,,,,23 10 * * *,10,,ty,Y,,afg,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,PERFORMANCE,,VCG,,,,,,,,,,,,redvi1f,"eff_dt,sls_outlet_id"
+1317,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SVC_OFFER_CD_ID,,,,,,,,,,31 23 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,SVC_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,SOR_ID
+1317,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SVC_OFFER_CD_ID,,,,,,,,,,31 23 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,SVC_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,SOR_ID
+1318,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SOR_ID,,,,,,,,,,00 01 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,LOAN_INFO_SED_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,"SOR_ID,OFFER_ID,CREDIT_QUAL_DT,DB_USER_ID,CREDIT_MTH_QTY"
+1318,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SOR_ID,,,,,,,,,,00 01 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,LOAN_INFO_SED_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,"SOR_ID,OFFER_ID,CREDIT_QUAL_DT,DB_USER_ID,CREDIT_MTH_QTY"
+9,rule_custom,DQ_RULE_CUSTOM_CHECK,vz-it-np-izcv-dev-idmcdo-0,dga_dq_tbls,N,GCP,,,,measure_date,7,,,,,,,,,,,,,,,Y,,,,,2025-03-04 12:55:07.532763 UTC,2025-03-04 12:55:07.532763 UTC,dqaas_fact_ran_dq_alert_info,,,,,,,,,,,,,,redvi1f,
+12,rule_custom,DQ_RULE_CUSTOM_CHECK,,dga_dq_tbls,N,TD,,,,auto_prfl_run_dt,5,,,,,,,,,,,,,,,Y,,,,,2025-03-04 12:55:07.532763 UTC,2025-03-04 12:55:07.532763 UTC,dqaas_auto_prfl_col_rpt,,,,,,,,,,,,,,redvi1f,
+14,rule_custom,DQ_RULE_CUSTOM_CHECK,,dga_dq_tbls,N,TD,,,,auto_prfl_run_dt,7,,,,,,,,,,,,,,,Y,,,,,2025-03-04 12:55:07.532763 UTC,2025-03-04 12:55:07.532763 UTC,dqaas_auto_prfl_col_rpt,,,,,,,,,,,,,,redvi1f,
+1317,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SVC_OFFER_CD_ID,,,,,,,,,,31 23 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,SVC_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,SOR_ID
+1318,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SOR_ID,,,,,,,,,,00 01 * * *,80,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,LOAN_INFO_SED_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,"SOR_ID,OFFER_ID,CREDIT_QUAL_DT,DB_USER_ID,CREDIT_MTH_QTY"
+1317,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SVC_OFFER_CD_ID,,,,,,,,,,31 23 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,SVC_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,SOR_ID
+10,rule_custom,DQ_RULE_CUSTOM_CHECK,vz-it-np-izcv-dev-idmcdo-0,dga_dq_tbls,N,GCP,,,,measure_date,2,,,,,,,,,,,,,,,Y,,,,,2025-03-04 12:55:07.532763 UTC,2025-03-04 12:55:07.532763 UTC,dqaas_fact_ran_dq_alert_info,,,,,,,,,,,,,,redvi1f,
+7,rule_custom,DQ_RULE_CUSTOM_CHECK,,dga_dq_tbls,N,TD,,,,auto_prfl_run_dt,2,,,,,,,,,,,,,,,Y,,,,,2025-03-04 12:55:07.532763 UTC,2025-03-04 12:55:07.532763 UTC,dqaas_auto_prfl_col_rpt,,,,,,,,,,,,,,redvi1f,
+1318,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SOR_ID,,,,,,,,,,00 01 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,LOAN_INFO_SED_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,"SOR_ID,OFFER_ID,CREDIT_QUAL_DT,DB_USER_ID,CREDIT_MTH_QTY"
+1318,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SOR_ID,,,,,,,,,,00 01 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,LOAN_INFO_SED_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,"SOR_ID,OFFER_ID,CREDIT_QUAL_DT,DB_USER_ID,CREDIT_MTH_QTY"
+1317,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,3,SVC_OFFER_CD_ID,,,,,,,,,,31 23 * * *,,,ashish.k.singh@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,SVC_OFFER_V,,VCG,,,,,,,,,,,,redvi1f,SOR_ID
+1323,auto,DQ_AUTO_CHECK,,NTL_PRD_ALLVM,N,TD,,,,,1,VENDOR_ID,,,,,,,,,,00 01 * * *,,,chitrapandi.s@verizon.com,Y,,,,Daily,2025-03-04 12:54:38.260171 UTC,2025-03-04 12:54:38.260171 UTC,EQUIPMENT_ITEM_V,,VBG,,,,,,,,,,,,redvi1f,VENDOR_ID
+17,rule_custom,DQ_RULE_CUSTOM_CHECK,vz-it-np-izcv-dev-idmcdo-0,dga_dq_tbls,N,GCP,,,,measure_date,2,,,,,,,,,,,,,,,Y,,,,,2025-03-04 12:55:07.532763 UTC,2025-03-04 12:55:07.532763 UTC,dqaas_fact_ran_dq_alert_info,,,,,,,,,,,,,,redvi1f,
