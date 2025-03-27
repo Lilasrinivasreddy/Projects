@@ -1,215 +1,38 @@
 (smartdq-venv) tdcldizcva002:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$  python custom_metrics.py
 /apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts/../config/config.ini
 /apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts/../config/config.ini
-name:CRM-3710252, path:/apps/opt/application/dev_smartdq/dev/dqaas//logs/2025-03-27/CustomMetricsLogs-2025-03-27-06-39-25.log
-2025-03-27 06:39:25 : CRM-3710252 - laod_historical_report - INFO : Inside laod_historical_report
-2025-03-27 06:39:25 : CRM-3710252 - laod_historical_report - ERROR : Error While Executing fetch_sql: Errormodule 'config_params' has no attribute 'dqaas_profile_mtd'
-2025-03-27 06:39:25 : CRM-3710252 - laod_historical_report - ERROR : Error While Executing insert_sql: Error'str' object has no attribute 'iterrows'
-2025-03-27 06:39:25 : CRM-3710252 - get_metadata - INFO : fetch metadata_query:
-                SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta
-                WHERE upper(profile_type) = 'RULE_CUSTOM'
-                and active_flag = 'Y'
-
-                ORDER BY PROFILE_ID;
-
-2025-03-27 06:39:25 : CRM-3710252 - run_bq_sql - INFO :
-BQ Select Query:
-                SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta
-                WHERE upper(profile_type) = 'RULE_CUSTOM'
-                and active_flag = 'Y'
-
-                ORDER BY PROFILE_ID;
-
-2025-03-27 06:39:25 : CRM-3710252 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-03-27 06:39:25 : CRM-3710252 - isTokenExpired - INFO : Token File Available
-2025-03-27 06:39:25 : CRM-3710252 - isTokenExpired - INFO : Access Token is Invalid
-2025-03-27 06:39:25 : CRM-3710252 - exchange_and_save_oidc_token_for_jwt - INFO : Retrieving JWT from OIDC provider...
-2025-03-27 06:39:25 : CRM-3710252 - exchange_and_save_oidc_token_for_jwt - INFO : Saving token...
-2025-03-27 06:39:32 : CRM-3710252 - bigquery_client - INFO : Setting environment variable...
-2025-03-27 06:39:32 : CRM-3710252 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-27 06:39:35 : CRM-3710252 - get_metadata - INFO : Metadata Length: 3
-2025-03-27 06:39:35 : CRM-3710252 - main_metrics_execution - INFO :
-Request Reference:: 20250327_063935
-Sub Domain:: One_Ex_Executive_report
-2025-03-27 06:39:35 : CRM-3710252 - run_metrics_engine - INFO : Comparison:: WEEKDAYS, Hourly:: N
-0    7444
-1    7475
-2    7478
-Name: profile_id, dtype: Int64
-2025-03-27 06:39:35 : CRM-3710252 - run_metrics_engine - INFO : Profile ID List : 7475, 7444, 7478
-2025-03-27 06:39:35 : CRM-3710252 - run_bq_sql - INFO :
-BQ Select Query:
-                select date(current_date-1) as run_dt,
-                extract(dayofweek from date(current_date-1)) as weekday;
-
-2025-03-27 06:39:35 : CRM-3710252 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-03-27 06:39:35 : CRM-3710252 - isTokenExpired - INFO : Token File Available
-2025-03-27 06:39:35 : CRM-3710252 - isTokenExpired - INFO : Access Token is Valid
-2025-03-27 06:39:35 : CRM-3710252 - bigquery_client - INFO : Setting environment variable...
-2025-03-27 06:39:35 : CRM-3710252 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-27 06:39:38 : CRM-3710252 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:38 : CRM-3710252 - profile_engine - INFO : Index:: 0, Rule ID:: 7444
-2025-03-27 06:39:38 : CRM-3710252 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
-Query: select cast(LAST_UPD_DT as date) as profile_date,'Executive Reports' as feature_name,
-null as dimension,
-count (*) as "value",
-current_timestamp as insert_date,
-dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
-from NTL_PRD_ALLVM.CUST_ACCT_V where cast(LAST_UPD_DT as date)=current_date -1 group by 1,2,3,5,6
-2025-03-27 06:39:39 : CRM-3710252 - profile_engine - INFO : No Records Found in Rules
-2025-03-27 06:39:39 : CRM-3710252 - profile_engine - INFO : Date Results ::
-       run_dt  weekday
-0  2025-03-26        4
-2025-03-27 06:39:39 : CRM-3710252 - profile_engine - INFO :
-      data_dt feature_name  dimension  count_curr                rule_run_ts  weekday  profile_id
-0  2025-03-26         None        NaN           0 2025-03-27 06:39:39.760591        4        7444
-2025-03-27 06:39:39 : CRM-3710252 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:39 : CRM-3710252 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:39 : CRM-3710252 - profile_engine - INFO : Index:: 1, Rule ID:: 7475
-2025-03-27 06:39:39 : CRM-3710252 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
-Query: select cast(LAST_UPD_DT as date) as profile_date,'Executive Reports' as feature_name,
-null as dimension,
-count (*) as "value",
-current_timestamp as insert_date,
-dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
-from NTL_PRD_ALLVM.EDGE_ELIG_RESULTS_V where cast(LAST_UPD_DT as date)=current_date -1 group by 1,2,3,5,6
-2025-03-27 06:39:40 : CRM-3710252 - profile_engine - INFO : No Records Found in Rules
-2025-03-27 06:39:40 : CRM-3710252 - profile_engine - INFO : Date Results ::
-       run_dt  weekday
-0  2025-03-26        4
-2025-03-27 06:39:40 : CRM-3710252 - profile_engine - INFO :
-      data_dt feature_name  dimension  count_curr                rule_run_ts  weekday  profile_id
-0  2025-03-26         None        NaN           0 2025-03-27 06:39:40.755120        4        7475
-2025-03-27 06:39:40 : CRM-3710252 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:40 : CRM-3710252 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:40 : CRM-3710252 - profile_engine - INFO : Index:: 2, Rule ID:: 7478
-2025-03-27 06:39:40 : CRM-3710252 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
-Query: select cast(LAST_UPD_DT as date) as profile_date,'Executive Reports' as feature_name,
-null as dimension,
-count (*) as "value",
-current_timestamp as insert_date,
-dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
-from NTL_PRD_ALLVM.FIXED_5G_DVC_DETAIL_V where cast(LAST_UPD_DT as date)=current_date -1 group by 1,2,3,5,6
-2025-03-27 06:39:41 : CRM-3710252 - profile_engine - INFO : No Records Found in Rules
-2025-03-27 06:39:41 : CRM-3710252 - profile_engine - INFO : Date Results ::
-       run_dt  weekday
-0  2025-03-26        4
-2025-03-27 06:39:41 : CRM-3710252 - profile_engine - INFO :
-      data_dt feature_name  dimension  count_curr                rule_run_ts  weekday  profile_id
-0  2025-03-26         None        NaN           0 2025-03-27 06:39:41.378023        4        7478
-2025-03-27 06:39:41 : CRM-3710252 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:41 : CRM-3710252 - profile_engine - INFO : Length of the Rules Result : 3
-2025-03-27 06:39:41 : CRM-3710252 - profile_engine - INFO :
-Index(['data_dt', 'feature_name', 'dimension', 'count_curr', 'rule_run_ts',
-       'weekday', 'profile_id'],
-      dtype='object')
-      data_dt feature_name  dimension  count_curr                rule_run_ts  weekday  profile_id
-0  2025-03-26         None        NaN           0 2025-03-27 06:39:39.760591        4        7444
-1  2025-03-26         None        NaN           0 2025-03-27 06:39:40.755120        4        7475
-2  2025-03-26         None        NaN           0 2025-03-27 06:39:41.378023        4        7478
-2025-03-27 06:39:41 : CRM-3710252 - run_bq_sql - INFO :
-BQ Select Query:
-            with top_records as
-            (
-            select *,row_number() over (partition by profile_id,feature_name,grouped_columns order by data_dt desc) as row_num
-            from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report join
-            unnest(GENERATE_DATE_ARRAY(date_sub(current_date-1,INTERVAL 3 MONTH),current_date-1, INTERVAL 1 day)) as interval_Date
-            on data_dt = interval_Date
-            where profile_id IN (7475, 7444, 7478)
-            and data_dt != current_date-1
-            order by profile_id,feature_name, grouped_columns,data_dt desc
-            )
-            select profile_id,feature_name,grouped_columns,WEEKDAY,
-            round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
-            round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
-            round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
-            round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
-            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value,
-            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value,
-            round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
-            from top_records
-            group by profile_id,feature_name,grouped_columns,WEEKDAY
-            order by profile_id,feature_name,grouped_columns,WEEKDAY;
-
-2025-03-27 06:39:41 : CRM-3710252 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-03-27 06:39:41 : CRM-3710252 - isTokenExpired - INFO : Token File Available
-2025-03-27 06:39:41 : CRM-3710252 - isTokenExpired - INFO : Access Token is Valid
-2025-03-27 06:39:41 : CRM-3710252 - bigquery_client - INFO : Setting environment variable...
-2025-03-27 06:39:41 : CRM-3710252 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-27 06:39:44 : CRM-3710252 - get_historical_details - INFO : Length of the historical groupby list : 3
-2025-03-27 06:39:44 : CRM-3710252 - get_historical_details - INFO :
-Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
-       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
-       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
-      dtype='object')
-   profile_id feature_name grouped_columns  weekday sum_count_prev  ... variance_value  std_dev_value  sigma_2_value  min_thresh_value  max_thresh_value
-0        7444                                     2          0E-38  ...            0.0            0.0            0.0               0.0               0.0
-1        7475                                     2          0E-38  ...            0.0            0.0            0.0               0.0               0.0
-2        7478                                     2          0E-38  ...            0.0            0.0            0.0               0.0               0.0
-
-[3 rows x 11 columns]
-2025-03-27 06:39:44 : CRM-3710252 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:44 : CRM-3710252 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 3
-2025-03-27 06:39:44 : CRM-3710252 - compare_historical_latest_dimensions - INFO :
-Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
-       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
-       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
-      dtype='object')
-   profile_id feature_name grouped_columns  weekday sum_count_prev  ... variance_value  std_dev_value  sigma_2_value  min_thresh_value  max_thresh_value
-0        7444                                     2          0E-38  ...            0.0            0.0            0.0               0.0               0.0
-1        7475                                     2          0E-38  ...            0.0            0.0            0.0               0.0               0.0
-2        7478                                     2          0E-38  ...            0.0            0.0            0.0               0.0               0.0
-
-[3 rows x 11 columns]
-2025-03-27 06:39:44 : CRM-3710252 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:44 : CRM-3710252 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 3
-2025-03-27 06:39:44 : CRM-3710252 - compare_historical_latest_dimensions - INFO :
-Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
-       'prfl_run_ts', 'weekday', 'profile_id'],
-      dtype='object')
-      data_dt feature_name  grouped_columns  count_curr          prfl_run_ts  weekday  profile_id
-0  2025-03-26         None              NaN           0  2025-03-27 06:39:41        4        7444
-1  2025-03-26         None              NaN           0  2025-03-27 06:39:41        4        7475
-2  2025-03-26         None              NaN           0  2025-03-27 06:39:41        4        7478
-2025-03-27 06:39:44 : CRM-3710252 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-27 06:39:44 : CRM-3710252 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error You are trying to merge on object and float64 columns. If you wish to proceed you should use pd.concat
-2025-03-27 06:39:44 : CRM-3710252 - main - ERROR : Error in Main Block. Error 'NoneType' object has no attribute 'to_csv'
-(smartdq-venv) tdcldizcva002:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$  ^C
-(smartdq-venv) tdcldizcva002:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$  python custom_metrics.py
-/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts/../config/config.ini
-/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts/../config/config.ini
-name:CRM-3718054, path:/apps/opt/application/dev_smartdq/dev/dqaas//logs/2025-03-27/CustomMetricsLogs-2025-03-27-06-53-53.log
-2025-03-27 06:53:53 : CRM-3718054 - laod_historical_report - INFO : Inside laod_historical_report
-2025-03-27 06:53:53 : CRM-3718054 - laod_historical_report - INFO : Fetch SQL executing:  select distinct mtd.profile_id, mtd.profile_type, mtd.dq_pillar, mtd.src_tbl, mtd.meas_name, mtd.feature_name, meas_rule_sql from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
+name:CRM-3722891, path:/apps/opt/application/dev_smartdq/dev/dqaas//logs/2025-03-27/CustomMetricsLogs-2025-03-27-07-01-32.log
+2025-03-27 07:01:32 : CRM-3722891 - laod_historical_report - INFO : Inside laod_historical_report
+2025-03-27 07:01:32 : CRM-3722891 - laod_historical_report - INFO : Fetch SQL executing:  select distinct mtd.profile_id, mtd.profile_type, mtd.dq_pillar, mtd.src_tbl, mtd.meas_name, mtd.feature_name, meas_rule_sql from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
             left join vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report rpt
             on mtd.profile_id = rpt.profile_id
             where rpt.profile_id is null
             and upper(mtd.profile_type) = 'CUSTOM_RULES'
-2025-03-27 06:53:53 : CRM-3718054 - run_bq_sql - INFO :
+2025-03-27 07:01:32 : CRM-3722891 - run_bq_sql - INFO :
 BQ Select Query:  select distinct mtd.profile_id, mtd.profile_type, mtd.dq_pillar, mtd.src_tbl, mtd.meas_name, mtd.feature_name, meas_rule_sql from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd mtd
             left join vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report rpt
             on mtd.profile_id = rpt.profile_id
             where rpt.profile_id is null
             and upper(mtd.profile_type) = 'CUSTOM_RULES'
-2025-03-27 06:53:53 : CRM-3718054 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-03-27 06:53:53 : CRM-3718054 - isTokenExpired - INFO : Token File Available
-2025-03-27 06:53:53 : CRM-3718054 - isTokenExpired - INFO : Access Token is Valid
-2025-03-27 06:53:53 : CRM-3718054 - bigquery_client - INFO : Setting environment variable...
-2025-03-27 06:53:53 : CRM-3718054 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-27 06:53:54 : CRM-3718054 - run_bq_sql - ERROR : Error While executing the BigQuery SQL. Error: 400 Name profile_id not found inside mtd at [3:20]
+2025-03-27 07:01:32 : CRM-3722891 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
+2025-03-27 07:01:32 : CRM-3722891 - isTokenExpired - INFO : Token File Available
+2025-03-27 07:01:32 : CRM-3722891 - isTokenExpired - INFO : Access Token is Valid
+2025-03-27 07:01:32 : CRM-3722891 - bigquery_client - INFO : Setting environment variable...
+2025-03-27 07:01:32 : CRM-3722891 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-27 07:01:32 : CRM-3722891 - run_bq_sql - ERROR : Error While executing the BigQuery SQL. Error: 400 Name profile_id not found inside mtd at [3:20]
 
 Location: US
-Job ID: 44376218-e97f-4e99-b5f6-ed268508f252
+Job ID: d7567a6a-d166-46da-a953-471b7ca9cb62
 
-2025-03-27 06:53:54 : CRM-3718054 - laod_historical_report - INFO : Fetched new onboarded tables
-2025-03-27 06:53:54 : CRM-3718054 - get_metadata - INFO : fetch metadata_query:
+2025-03-27 07:01:32 : CRM-3722891 - laod_historical_report - INFO : Fetched new onboarded tables
+2025-03-27 07:01:32 : CRM-3722891 - get_metadata - INFO : fetch metadata_query:
                 SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta
                 WHERE upper(profile_type) = 'RULE_CUSTOM'
                 and active_flag = 'Y'
 
                 ORDER BY PROFILE_ID;
 
-2025-03-27 06:53:54 : CRM-3718054 - run_bq_sql - INFO :
+2025-03-27 07:01:32 : CRM-3722891 - run_bq_sql - INFO :
 BQ Select Query:
                 SELECT * FROM vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta
                 WHERE upper(profile_type) = 'RULE_CUSTOM'
@@ -217,92 +40,146 @@ BQ Select Query:
 
                 ORDER BY PROFILE_ID;
 
-2025-03-27 06:53:54 : CRM-3718054 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-03-27 06:53:54 : CRM-3718054 - isTokenExpired - INFO : Token File Available
-2025-03-27 06:53:54 : CRM-3718054 - isTokenExpired - INFO : Access Token is Valid
-2025-03-27 06:53:54 : CRM-3718054 - bigquery_client - INFO : Setting environment variable...
-2025-03-27 06:53:54 : CRM-3718054 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-27 06:53:57 : CRM-3718054 - get_metadata - INFO : Metadata Length: 3
-2025-03-27 06:53:57 : CRM-3718054 - main_metrics_execution - INFO :
-Request Reference:: 20250327_065357
+2025-03-27 07:01:32 : CRM-3722891 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
+2025-03-27 07:01:32 : CRM-3722891 - isTokenExpired - INFO : Token File Available
+2025-03-27 07:01:32 : CRM-3722891 - isTokenExpired - INFO : Access Token is Valid
+2025-03-27 07:01:32 : CRM-3722891 - bigquery_client - INFO : Setting environment variable...
+2025-03-27 07:01:32 : CRM-3722891 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-27 07:01:36 : CRM-3722891 - get_metadata - INFO : Metadata Length: 3
+2025-03-27 07:01:36 : CRM-3722891 - main_metrics_execution - INFO :
+Request Reference:: 20250327_070136
 Sub Domain:: One_Ex_Executive_report
-2025-03-27 06:53:57 : CRM-3718054 - run_metrics_engine - INFO : Comparison:: WEEKDAYS, Hourly:: N
+2025-03-27 07:01:36 : CRM-3722891 - run_metrics_engine - INFO : Comparison:: WEEKDAYS, Hourly:: N
 0    7444
 1    7475
 2    7478
 Name: profile_id, dtype: Int64
-2025-03-27 06:53:57 : CRM-3718054 - run_metrics_engine - INFO : Profile ID List : 7475, 7444, 7478
-2025-03-27 06:53:57 : CRM-3718054 - run_bq_sql - INFO :
+2025-03-27 07:01:36 : CRM-3722891 - run_metrics_engine - INFO : Profile ID List : 7475, 7444, 7478
+2025-03-27 07:01:36 : CRM-3722891 - run_bq_sql - INFO :
 BQ Select Query:
                 select date(current_date-1) as run_dt,
                 extract(dayofweek from date(current_date-1)) as weekday;
 
-2025-03-27 06:53:57 : CRM-3718054 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-03-27 06:53:57 : CRM-3718054 - isTokenExpired - INFO : Token File Available
-2025-03-27 06:53:57 : CRM-3718054 - isTokenExpired - INFO : Access Token is Valid
-2025-03-27 06:53:57 : CRM-3718054 - bigquery_client - INFO : Setting environment variable...
-2025-03-27 06:53:57 : CRM-3718054 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-27 06:54:01 : CRM-3718054 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:01 : CRM-3718054 - profile_engine - INFO : Index:: 0, Rule ID:: 7444
-2025-03-27 06:54:01 : CRM-3718054 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
+2025-03-27 07:01:36 : CRM-3722891 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
+2025-03-27 07:01:36 : CRM-3722891 - isTokenExpired - INFO : Token File Available
+2025-03-27 07:01:36 : CRM-3722891 - isTokenExpired - INFO : Access Token is Valid
+2025-03-27 07:01:36 : CRM-3722891 - bigquery_client - INFO : Setting environment variable...
+2025-03-27 07:01:36 : CRM-3722891 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-27 07:01:39 : CRM-3722891 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:39 : CRM-3722891 - profile_engine - INFO : Index:: 0, Rule ID:: 7444
+2025-03-27 07:01:39 : CRM-3722891 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
 Query: select cast(LAST_UPD_DT as date) as profile_date,'Executive Reports' as feature_name,
 null as dimension,
 count (*) as "value",
 current_timestamp as insert_date,
 dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
 from NTL_PRD_ALLVM.CUST_ACCT_V where cast(LAST_UPD_DT as date)=current_date -1 group by 1,2,3,5,6
-2025-03-27 06:54:02 : CRM-3718054 - profile_engine - INFO : No Records Found in Rules
-2025-03-27 06:54:02 : CRM-3718054 - profile_engine - INFO : Date Results ::
+2025-03-27 07:01:39 : CRM-3722891 - run_teradata_sql - ERROR : Error While executing the Teradata SQL. Error: (teradatasql.OperationalError) [Version 17.0.0.2] [Session 897896] [Teradata Database] [Error 8017] The UserId, Password or Account is invalid.
+ at gosqldriver/teradatasql.(*teradataConnection).formatDatabaseError TeradataConnection.go:1138
+ at gosqldriver/teradatasql.(*teradataConnection).makeChainedDatabaseError TeradataConnection.go:1154
+ at gosqldriver/teradatasql.(*teradataConnection).makeDatabaseError TeradataConnection.go:1166
+ at gosqldriver/teradatasql.(*teradataConnection).processMessageSuccessOrError TeradataConnection.go:1269
+ at gosqldriver/teradatasql.newTeradataConnection TeradataConnection.go:571
+ at gosqldriver/teradatasql.(*teradataDriver).Open TeradataDriver.go:32
+ at database/sql.dsnConnector.Connect sql.go:600
+ at database/sql.(*DB).conn sql.go:1103
+ at database/sql.(*DB).Conn sql.go:1619
+ at main.goCreateConnection goside.go:275
+ at main._cgoexpwrap_212fad278f55_goCreateConnection _cgo_gotypes.go:240
+ at runtime.call64 asm_amd64.s:574
+ at runtime.cgocallbackg1 cgocall.go:316
+ at runtime.cgocallbackg cgocall.go:194
+ at runtime.cgocallback_gofunc asm_amd64.s:826
+ at runtime.goexit asm_amd64.s:2361
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-03-27 07:01:39 : CRM-3722891 - profile_engine - INFO : No Records Found in Rules
+2025-03-27 07:01:39 : CRM-3722891 - profile_engine - INFO : Date Results ::
        run_dt  weekday
 0  2025-03-26        4
-2025-03-27 06:54:02 : CRM-3718054 - profile_engine - INFO :
+2025-03-27 07:01:39 : CRM-3722891 - profile_engine - INFO :
       data_dt feature_name  dimension  count_curr                rule_run_ts  weekday  profile_id
-0  2025-03-26         None        NaN           0 2025-03-27 06:54:02.388497        4        7444
-2025-03-27 06:54:02 : CRM-3718054 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:02 : CRM-3718054 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:02 : CRM-3718054 - profile_engine - INFO : Index:: 1, Rule ID:: 7475
-2025-03-27 06:54:02 : CRM-3718054 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
+0  2025-03-26         None        NaN           0 2025-03-27 07:01:39.825486        4        7444
+2025-03-27 07:01:39 : CRM-3722891 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:39 : CRM-3722891 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:39 : CRM-3722891 - profile_engine - INFO : Index:: 1, Rule ID:: 7475
+2025-03-27 07:01:39 : CRM-3722891 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
 Query: select cast(LAST_UPD_DT as date) as profile_date,'Executive Reports' as feature_name,
 null as dimension,
 count (*) as "value",
 current_timestamp as insert_date,
 dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
 from NTL_PRD_ALLVM.EDGE_ELIG_RESULTS_V where cast(LAST_UPD_DT as date)=current_date -1 group by 1,2,3,5,6
-2025-03-27 06:54:03 : CRM-3718054 - profile_engine - INFO : No Records Found in Rules
-2025-03-27 06:54:03 : CRM-3718054 - profile_engine - INFO : Date Results ::
+2025-03-27 07:01:40 : CRM-3722891 - run_teradata_sql - ERROR : Error While executing the Teradata SQL. Error: (teradatasql.OperationalError) [Version 17.0.0.2] [Session 897897] [Teradata Database] [Error 8017] The UserId, Password or Account is invalid.
+ at gosqldriver/teradatasql.(*teradataConnection).formatDatabaseError TeradataConnection.go:1138
+ at gosqldriver/teradatasql.(*teradataConnection).makeChainedDatabaseError TeradataConnection.go:1154
+ at gosqldriver/teradatasql.(*teradataConnection).makeDatabaseError TeradataConnection.go:1166
+ at gosqldriver/teradatasql.(*teradataConnection).processMessageSuccessOrError TeradataConnection.go:1269
+ at gosqldriver/teradatasql.newTeradataConnection TeradataConnection.go:571
+ at gosqldriver/teradatasql.(*teradataDriver).Open TeradataDriver.go:32
+ at database/sql.dsnConnector.Connect sql.go:600
+ at database/sql.(*DB).conn sql.go:1103
+ at database/sql.(*DB).Conn sql.go:1619
+ at main.goCreateConnection goside.go:275
+ at main._cgoexpwrap_212fad278f55_goCreateConnection _cgo_gotypes.go:240
+ at runtime.call64 asm_amd64.s:574
+ at runtime.cgocallbackg1 cgocall.go:316
+ at runtime.cgocallbackg cgocall.go:194
+ at runtime.cgocallback_gofunc asm_amd64.s:826
+ at runtime.goexit asm_amd64.s:2361
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : No Records Found in Rules
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : Date Results ::
        run_dt  weekday
 0  2025-03-26        4
-2025-03-27 06:54:03 : CRM-3718054 - profile_engine - INFO :
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO :
       data_dt feature_name  dimension  count_curr                rule_run_ts  weekday  profile_id
-0  2025-03-26         None        NaN           0 2025-03-27 06:54:03.417939        4        7475
-2025-03-27 06:54:03 : CRM-3718054 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:03 : CRM-3718054 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:03 : CRM-3718054 - profile_engine - INFO : Index:: 2, Rule ID:: 7478
-2025-03-27 06:54:03 : CRM-3718054 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
+0  2025-03-26         None        NaN           0 2025-03-27 07:01:40.415964        4        7475
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : Index:: 2, Rule ID:: 7478
+2025-03-27 07:01:40 : CRM-3722891 - run_teradata_sql - INFO : Teradata DB: NTL_PRD_ALLVM,
 Query: select cast(LAST_UPD_DT as date) as profile_date,'Executive Reports' as feature_name,
 null as dimension,
 count (*) as "value",
 current_timestamp as insert_date,
 dayofweek(cast(LAST_UPD_DT AS date)) AS weekday
 from NTL_PRD_ALLVM.FIXED_5G_DVC_DETAIL_V where cast(LAST_UPD_DT as date)=current_date -1 group by 1,2,3,5,6
-2025-03-27 06:54:04 : CRM-3718054 - profile_engine - INFO : No Records Found in Rules
-2025-03-27 06:54:04 : CRM-3718054 - profile_engine - INFO : Date Results ::
+2025-03-27 07:01:40 : CRM-3722891 - run_teradata_sql - ERROR : Error While executing the Teradata SQL. Error: (teradatasql.OperationalError) [Version 17.0.0.2] [Session 897898] [Teradata Database] [Error 8017] The UserId, Password or Account is invalid.
+ at gosqldriver/teradatasql.(*teradataConnection).formatDatabaseError TeradataConnection.go:1138
+ at gosqldriver/teradatasql.(*teradataConnection).makeChainedDatabaseError TeradataConnection.go:1154
+ at gosqldriver/teradatasql.(*teradataConnection).makeDatabaseError TeradataConnection.go:1166
+ at gosqldriver/teradatasql.(*teradataConnection).processMessageSuccessOrError TeradataConnection.go:1269
+ at gosqldriver/teradatasql.newTeradataConnection TeradataConnection.go:571
+ at gosqldriver/teradatasql.(*teradataDriver).Open TeradataDriver.go:32
+ at database/sql.dsnConnector.Connect sql.go:600
+ at database/sql.(*DB).conn sql.go:1103
+ at database/sql.(*DB).Conn sql.go:1619
+ at main.goCreateConnection goside.go:275
+ at main._cgoexpwrap_212fad278f55_goCreateConnection _cgo_gotypes.go:240
+ at runtime.call64 asm_amd64.s:574
+ at runtime.cgocallbackg1 cgocall.go:316
+ at runtime.cgocallbackg cgocall.go:194
+ at runtime.cgocallback_gofunc asm_amd64.s:826
+ at runtime.goexit asm_amd64.s:2361
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : No Records Found in Rules
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : Date Results ::
        run_dt  weekday
 0  2025-03-26        4
-2025-03-27 06:54:04 : CRM-3718054 - profile_engine - INFO :
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO :
       data_dt feature_name  dimension  count_curr                rule_run_ts  weekday  profile_id
-0  2025-03-26         None        NaN           0 2025-03-27 06:54:04.185293        4        7478
-2025-03-27 06:54:04 : CRM-3718054 - profile_engine - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:04 : CRM-3718054 - profile_engine - INFO : Length of the Rules Result : 3
-2025-03-27 06:54:04 : CRM-3718054 - profile_engine - INFO :
+0  2025-03-26         None        NaN           0 2025-03-27 07:01:40.899634        4        7478
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO : Length of the Rules Result : 3
+2025-03-27 07:01:40 : CRM-3722891 - profile_engine - INFO :
 Index(['data_dt', 'feature_name', 'dimension', 'count_curr', 'rule_run_ts',
        'weekday', 'profile_id'],
       dtype='object')
       data_dt feature_name  dimension  count_curr                rule_run_ts  weekday  profile_id
-0  2025-03-26         None        NaN           0 2025-03-27 06:54:02.388497        4        7444
-1  2025-03-26         None        NaN           0 2025-03-27 06:54:03.417939        4        7475
-2  2025-03-26         None        NaN           0 2025-03-27 06:54:04.185293        4        7478
-2025-03-27 06:54:04 : CRM-3718054 - run_bq_sql - INFO :
+0  2025-03-26         None        NaN           0 2025-03-27 07:01:39.825486        4        7444
+1  2025-03-26         None        NaN           0 2025-03-27 07:01:40.415964        4        7475
+2  2025-03-26         None        NaN           0 2025-03-27 07:01:40.899634        4        7478
+2025-03-27 07:01:40 : CRM-3722891 - run_bq_sql - INFO :
 BQ Select Query:
             with top_records as
             (
@@ -326,13 +203,13 @@ BQ Select Query:
             group by profile_id,feature_name,grouped_columns,WEEKDAY
             order by profile_id,feature_name,grouped_columns,WEEKDAY;
 
-2025-03-27 06:54:04 : CRM-3718054 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-03-27 06:54:04 : CRM-3718054 - isTokenExpired - INFO : Token File Available
-2025-03-27 06:54:04 : CRM-3718054 - isTokenExpired - INFO : Access Token is Valid
-2025-03-27 06:54:04 : CRM-3718054 - bigquery_client - INFO : Setting environment variable...
-2025-03-27 06:54:04 : CRM-3718054 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-03-27 06:54:08 : CRM-3718054 - get_historical_details - INFO : Length of the historical groupby list : 3
-2025-03-27 06:54:08 : CRM-3718054 - get_historical_details - INFO :
+2025-03-27 07:01:40 : CRM-3722891 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
+2025-03-27 07:01:40 : CRM-3722891 - isTokenExpired - INFO : Token File Available
+2025-03-27 07:01:40 : CRM-3722891 - isTokenExpired - INFO : Access Token is Valid
+2025-03-27 07:01:40 : CRM-3722891 - bigquery_client - INFO : Setting environment variable...
+2025-03-27 07:01:40 : CRM-3722891 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-03-27 07:01:44 : CRM-3722891 - get_historical_details - INFO : Length of the historical groupby list : 3
+2025-03-27 07:01:44 : CRM-3722891 - get_historical_details - INFO :
 Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
        'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
        'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
@@ -343,9 +220,9 @@ Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
 2        7478                                     2          0E-38  ...            0.0            0.0            0.0               0.0               0.0
 
 [3 rows x 11 columns]
-2025-03-27 06:54:08 : CRM-3718054 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:08 : CRM-3718054 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 3
-2025-03-27 06:54:08 : CRM-3718054 - compare_historical_latest_dimensions - INFO :
+2025-03-27 07:01:44 : CRM-3722891 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:44 : CRM-3722891 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 3
+2025-03-27 07:01:44 : CRM-3722891 - compare_historical_latest_dimensions - INFO :
 Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
        'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
        'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
@@ -356,17 +233,17 @@ Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
 2        7478                                     2          0E-38  ...            0.0            0.0            0.0               0.0               0.0
 
 [3 rows x 11 columns]
-2025-03-27 06:54:08 : CRM-3718054 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:08 : CRM-3718054 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 3
-2025-03-27 06:54:08 : CRM-3718054 - compare_historical_latest_dimensions - INFO :
+2025-03-27 07:01:44 : CRM-3722891 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:44 : CRM-3722891 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 3
+2025-03-27 07:01:44 : CRM-3722891 - compare_historical_latest_dimensions - INFO :
 Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
        'prfl_run_ts', 'weekday', 'profile_id'],
       dtype='object')
       data_dt feature_name  grouped_columns  count_curr          prfl_run_ts  weekday  profile_id
-0  2025-03-26         None              NaN           0  2025-03-27 06:54:04        4        7444
-1  2025-03-26         None              NaN           0  2025-03-27 06:54:04        4        7475
-2  2025-03-26         None              NaN           0  2025-03-27 06:54:04        4        7478
-2025-03-27 06:54:08 : CRM-3718054 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-03-27 06:54:08 : CRM-3718054 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error You are trying to merge on object and float64 columns. If you wish to proceed you should use pd.concat
-2025-03-27 06:54:08 : CRM-3718054 - main - ERROR : Error in Main Block. Error 'NoneType' object has no attribute 'to_csv'
+0  2025-03-26         None              NaN           0  2025-03-27 07:01:40        4        7444
+1  2025-03-26         None              NaN           0  2025-03-27 07:01:40        4        7475
+2  2025-03-26         None              NaN           0  2025-03-27 07:01:40        4        7478
+2025-03-27 07:01:44 : CRM-3722891 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-03-27 07:01:44 : CRM-3722891 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error You are trying to merge on object and float64 columns. If you wish to proceed you should use pd.concat
+2025-03-27 07:01:44 : CRM-3722891 - main - ERROR : Error in Main Block. Error 'NoneType' object has no attribute 'to_csv'
 (smartdq-venv) tdcldizcva002:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$
