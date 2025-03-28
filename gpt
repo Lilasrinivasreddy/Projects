@@ -1,3 +1,1 @@
-# Ensure both dataframes have 'grouped_columns' as string to prevent dtype mismatch
-df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna('').astype(str)
-df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna('').astype(str)
+update  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta where email_distro = 'dq-process-alerts@verizon.com'
