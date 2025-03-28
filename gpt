@@ -1,1 +1,3 @@
-update  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta where email_distro = 'dq-process-alerts@verizon.com'
+UPDATE `vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta`
+SET email_distro = 'dq-process-alerts@verizon.com'
+WHERE 1 = 1;
