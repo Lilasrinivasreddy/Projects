@@ -1,3 +1,42 @@
+Run Profile Date	LOB	Domain Name	DB Name	Table Name	Feature Name	Dimensions	DQ Category	Weekday	Value	Avg Value	Percentage Change	Variance	Std Deviation	Sigma Value	Consistency Score	DQ Score	Status
+0	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	ACSS_BATCH_REQUEST_TYPE_V	Executive Reports	None	Consistency	2	38.00	38.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+1	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	AREA_V	Executive Reports	None	Consistency	2	5.00	5.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+2	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	CELLULAR_CARRIER_V	Executive Reports	None	Consistency	2	917.00	917.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+3	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	INDIRECT_DEVICE_TRADE_CANCEL_V	Executive Reports	None	Consistency	2	44,392.00	45,113.00	-1.62	1,559,523.00	1,248.79	1	98.40	100.00	PASS
+4	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PAYMENT_SOURCE_V	Executive Reports	None	Consistency	2	324.00	324.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+5	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PRICE_PLAN_BRAND_NAME_V	Executive Reports	None	Consistency	2	44.00	44.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+6	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PRICE_PLAN_CLASS_V	Executive Reports	None	Consistency	2	3.00	3.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+7	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PRICE_PLAN_GEOGRAPHY_V	Executive Reports	None	Consistency	2	6.00	6.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+8	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PRICE_PLAN_HANDSET_REQ_V	Executive Reports	None	Consistency	2	6.00	6.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+9	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PRICE_PLAN_HOME_RT_CVRG_V	Executive Reports	None	Consistency	2	3.00	3.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+10	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PRICE_PLAN_PRODUCT_LINE_V	Executive Reports	None	Consistency	2	126.00	126.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+11	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PRICE_PLAN_PROMO_V	Executive Reports	None	Consistency	2	94.00	94.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+12	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	REGION_V	Executive Reports	None	Consistency	2	23.00	23.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+13	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	SUB_REGION_V	Executive Reports	None	Consistency	2	141.00	141.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+14	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	NETACE_MARKETING_XREF_V	Executive Reports	None	Consistency	2	5,030.00	5,030.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+15	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	EQUIP_SUM_FACT_V	Executive Reports	None	Consistency	1	10,490,005.00	3,187,768.08	69.59	13,555,773,008,428.51	3,681,816.54	2	329.06	0.00	HIGH
+16	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	CUST_ACCT_LINE_EHA_V	Executive Reports	None	Consistency	1	7,242.00	6,256.25	13.59	4,498,461.19	2,120.96	1	115.76	100.00	PASS
+17	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	PAYMENT_ACH_V	Executive Reports	None	Consistency	4	15,782.00	0.00	0.00	0.00	0.00	outlier	0.00	0.00	LOW
+18	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	CREDIT_ACTIVATION_V	Executive Reports	None	Consistency	1	219,348.00	202,143.00	7.83	864,295,397.08	29,398.90	1	108.51	100.00	PASS
+19	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	CREDIT_DECISION_V	Executive Reports	None	Consistency	1	1,287,673.00	1,312,468.13	-1.91	15,788,373,677.20	125,651.80	1	98.09	100.00	PASS
+20	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	CUST_ACCT_DLY_HIST_V	Executive Reports	None	Consistency	1	751,337.00	4,167,955.00	-454.74	152,971,088,269,974.59	12,368,148.13	1	18.03	0.00	LOW
+21	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	CUST_ACCT_LINE_CBR_V	Executive Reports	None	Consistency	1	58,217.00	69,161.46	-18.80	366,857,439.62	19,153.52	1	84.18	100.00	PASS
+22	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	CUST_DIM_DLY_HIST_V	Executive Reports	None	Consistency	1	31,289.00	28,804.84	7.94	33,309,333.67	5,771.42	1	108.62	100.00	PASS
+23	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	DLY_LINE_ACTIVITY_PPLAN_PEND_V	Executive Reports	None	Consistency	1	57,881.00	143,471.69	-147.87	70,571,972,924.52	265,653.84	1	40.34	0.00	LOW
+24	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	POS_DEVICE_RECYCLE_ORDER_EXT_V	Executive Reports	None	Consistency	1	49,006.00	34,078.15	30.46	90,023,869.67	9,488.09	2	143.80	0.00	HIGH
+25	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	SID_V	Executive Reports	None	Consistency	1	516.00	516.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+26	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	cust_acct_line_pplan_hist_V	Executive Reports	None	Consistency	1	365,482.00	473,706.00	-29.60	55,501,945,179.08	235,588.51	1	77.15	0.00	LOW
+27	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	FIXED_5GPM_ORDER_TRACKING_V	Executive Reports	None	Consistency	1	0.00	0.00	0.00	0.00	0.00	1	0.00	0.00	LOW
+28	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	OMP_OFFER_V	Executive Reports	None	Consistency	2	113,550.00	112,980.50	0.50	39,668.75	199.15	3	100.50	100.00	LOW
+29	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	EPS_FEATURE_DETAILS_HIST_V	Executive Reports	None	Consistency	1	0.00	0.00	0.00	0.00	0.00	1	0.00	0.00	LOW
+30	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	EPS_DEVICE_DETAILS_HIST_V	Executive Reports	None	Consistency	2	44,392.00	45,113.00	-1.62	1,559,523.00	1,248.79	1	98.40	100.00	PASS
+31	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	dpv_feat_pack_map_V	Executive Reports	None	Consistency	2	35,391.00	35,329.50	0.17	726.75	26.96	3	100.17	100.00	LOW
+32	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	POS_OFFER_V	Executive Reports	None	Consistency	1	0.00	0.00	0.00	0.00	0.00	1	0.00	0.00	LOW
+33	2025-03-31	VCG	One_Ex_Executive_report	NTL_PRD_ALLVM	RPT_ATOMIC_PROD_HIER_INTEGRITY_V	Executive Reports	None	Consistency	2	7,909.00	7,909.00	0.00	0.00	0.00	1	100.00	100.00	PASS
+
+=======================================
+
+
 import re
 import pandas as pd
 import numpy as np
