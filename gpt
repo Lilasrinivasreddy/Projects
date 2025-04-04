@@ -1,192 +1,96 @@
---RULE MTD
+ #Create an opsgenie function
+    def send_opsgenie_jira_outlier_alert(self, reference_key: str):
+        try:
+            report_query = f"""                
+                SELECT rpt.*, 
+                    mtd.data_lob, mtd.data_dmn,mtd.data_sub_dmn, mtd.db_name, mtd.src_tbl,mtd.meas_name,
+                    mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api_key, mtd.is_opsgenie_flg,mtd.jira_assignee
+                FROM {config.dqaas_profile_mtd} mtd 
+                INNER JOIN 
+                (SELECT * FROM {config.dqaas_profile_rpt} 
+                WHERE rpt_ref_key = '{reference_key}') rpt
+                ON mtd.prfl_id = rpt.prfl_id
+                WHERE upper(mtd.prfl_type) = 'CUSTOM_RULES'
+            """
+            self.logger.info(f"Opsgenie Info Query: {report_query}")
 
-INSERT INTO
-  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta (
-    profile_id,
-    profile_type,
-    data_lob,
-    product_name,
-    data_sub_dmn,
-    data_src,
-    project_name,
-    database_name,
-    table_name,
-    column_name,
-    dq_pillar,
-    rule_name,
-    rule_desc,
-    rule_sql,
-    active_flag,
-    profile_schedule_ts,
-    threshold_limit,
-    email_distro,
-    invalid_records_flag,
-    invalid_rec_sql,
-    opsgenie_flag,
-    opsgenie_api,
-    jira_assignee,
-    tag_name
-  )
-SELECT
-  rule_id AS profile_id,
-  "rule" AS profile_type,
-  data_lob AS data_lob,
-  "DQ_RULE_CHECK" AS product_name,
-  data_sub_dmn AS data_sub_dmn,
-  data_src AS data_src,
-  CASE
-    WHEN data_src = 'GCP' THEN SPLIT(db_name, '.')[SAFE_OFFSET(0)]
-    ELSE NULL
-  END AS project_name,
-  CASE
-    WHEN data_src = 'GCP' THEN SPLIT(db_name, '.')[SAFE_OFFSET(1)]
-    ELSE db_name
-  END AS database_name,
-  src_tbl AS table_name,
-  src_col AS column_name,
-  dq_pillar AS dq_pillar,
-  meas_name AS rule_name,
-  meas_rule_desc AS rule_desc,
-  meas_rule_sql AS rule_sql,
-  is_active_flg AS active_flag,
-  rule_prfl_schd_ts AS profile_schedule_ts,
-  CAST(rule_min_thrsd AS INT64) AS threshold_limit,
-  email_distro AS email_distro,
-  invalid_rec_flg AS invalid_records_flag,
-  invalid_rec_sql AS invalid_rec_sql,
-  is_opsgenie_flg AS opsgenie_flag,
-  opsgenie_api_key AS opsgenie_api,
-  'redvi1f' AS jira_assignee,
-  label_tags AS tag_name
-FROM
-  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_rule_prfl_mtd;
--- WHERE is_active_flg='Y';
+            report_df = self.utils.run_bq_sql(
+                bq_auth=config.dq_gcp_auth_payload,
+                select_query=report_query
+            )
+            
+            if len(report_df) == 0:
+                self.logger.warning("No records found for Opsgenie alert")
+                return
+            
+            self.logger.info(f"Report DataFrame for Opsgenie Alerts: {report_df}")
 
+            # self.logger.info(f"Report DataFrame head: {report_df.head()}")
+            # self.logger.info(f"Report DataFrame head: {report_df.columns}")
+            # self.logger.info(f"Report DataFrame head: {report_df.dtypes}")
+            #report_df.reset_index(drop=True)
 
---AUTO MTD (UPDATED WITH DYNAMIC product_name)
+            for idx in report_df.index:
+                alert_type = None
+                priority = None
 
-INSERT INTO
-  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta (
-    profile_id,
-    profile_type,
-    data_lob,
-    product_name,
-    data_sub_dmn,
-    data_src,
-    project_name,
-    database_name,
-    table_name,
-    incr_date_col,
-    incr_date_cond,
-    unique_index_cols,
-    run_frequency,
-    profile_schedule_ts,
-    email_distro,
-    active_flag,
-    table_cde,
-    threshold_limit,
-    opsgenie_flag,
-    opsgenie_api,
-    jira_assignee,
-    tag_name
-  )
-SELECT
-  auto.prfl_tbl_id AS profile_id,
-  "auto" AS profile_type,
-  auto.data_lob AS data_lob,
-  COALESCE(prod_map.product_name, "DQ_AUTO_CHECK") AS product_name,
-  auto.data_sub_dmn AS data_sub_dmn,
-  auto.data_src AS data_src,
-  CASE
-    WHEN auto.data_src = 'GCP' THEN SPLIT(auto.db_name, '.')[SAFE_OFFSET(0)]
-    ELSE NULL
-  END AS project_name,
-  CASE
-    WHEN auto.data_src = 'GCP' THEN SPLIT(auto.db_name, '.')[SAFE_OFFSET(1)]
-    ELSE auto.db_name
-  END AS database_name,
-  auto.src_tbl AS table_name,
-  auto.incr_dt_col AS incr_date_col,
-  auto.incr_dt_cond AS incr_date_cond,
-  auto.unq_index_cols AS unique_index_cols,
-  auto.auto_prfl_freq AS run_frequency,
-  auto.auto_prfl_schd_ts AS profile_schedule_ts,
-  auto.email_dist AS email_distro,
-  auto.is_active_flg AS active_flag,
-  auto.tbl_cde AS table_cde,
-  CAST(auto.score_min_threshold AS INT64) AS threshold_limit,
-  auto.is_opsgenie_flg AS opsgenie_flag,
-  auto.opsgenie_api_key AS opsgenie_api,
-  'redvi1f' AS jira_assignee,
-  auto.label_tags AS tag_name
-FROM
-  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_auto_prfl_mtd auto
-LEFT JOIN
-  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_auto_rule_prfl_product_mtd prod_map
-ON
-  auto.data_dmn = prod_map.data_dmn AND
-  auto.data_sub_dmn = prod_map.data_sub_dmn AND
-  auto.data_bus_elem = prod_map.data_bus_elem AND
-  auto.product_name = prod_map.product_name;
--- WHERE auto.is_active_flg = 'Y';
+                # print(f"idx: {idx}")
+                # print(report_df.loc[idx,])
+                # print(report_df.loc[idx, 'dq_ind'])
 
+                # Fetch records where dq_status = 'LOW' OR sigma_value = 'outlier'
+                if report_df.loc[idx, 'dq_ind'].upper() == "LOW" and report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_both_dq_status and sigma_value failed'
+                    priority = "P3"  
 
---RULE_CUSTOM MTD
+                elif report_df.loc[idx, 'sigma_value'].lower() == "outlier":
+                    alert_type = 'custom_profile_outlier'
+                    priority = "P3" 
+                elif report_df.loc[idx, 'dq_ind'].upper() == "LOW":
+                    alert_type = 'custom_profile_dq_status failed'
+                    priority = "P3"
+                else:
+                    continue
+                
+                env = config.get_config_values('environment', 'env')
+                data_src = {report_df.loc[idx,'data_src']}
+                data_sub_dmn = {report_df.loc[idx,'data_sub_dmn']}
+                dq_pillar = {report_df.loc[idx,'dq_pillar']}
+                db_name = {report_df.loc[idx,'db_name']}
+                src_tbl = report_df.loc[idx,'src_tbl']
 
-INSERT INTO
-  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta (
-    profile_id,
-    profile_type,
-    data_lob,
-    product_name,
-    data_sub_dmn,
-    data_src,
-    project_name,
-    database_name,
-    table_name,
-    column_name,
-    dq_pillar,
-    incr_date_col,
-    incr_date_cond,
-    rule_name,
-    rule_sql,
-    active_flag,
-    profile_schedule_ts,
-    threshold_limit,
-    email_distro,
-    opsgenie_flag,
-    opsgenie_api,
-    jira_assignee
-  )
-SELECT
-  prfl_id AS profile_id,
-  "rule_custom" AS profile_type,
-  data_lob AS data_lob,
-  "DQ_RULE_CUSTOM_CHECK" AS product_name,
-  data_sub_dmn AS data_sub_dmn,
-  data_src AS data_src,
-  CASE
-    WHEN data_src = 'GCP' THEN SPLIT(db_name, '.')[SAFE_OFFSET(0)]
-    ELSE NULL
-  END AS project_name,
-  CASE
-    WHEN data_src = 'GCP' THEN SPLIT(db_name, '.')[SAFE_OFFSET(1)]
-    ELSE db_name
-  END AS database_name,
-  src_tbl AS table_name,
-  src_col AS column_name,
-  dq_pillar AS dq_pillar,
-  incr_dt_col AS incr_date_col,
-  incr_dt_cond AS incr_date_cond,
-  meas_name AS rule_name,
-  meas_rule_sql AS rule_sql,
-  is_active_flg AS active_flag,
-  prfl_schd_ts AS profile_schedule_ts,
-  CAST(min_threshold AS INT64) AS threshold_limit,
-  email_distros AS email_distro,
-  is_opsgenie_flg AS opsgenie_flag,
-  opsgenie_api_key AS opsgenie_api,
-  'redvi1f' AS jira_assignee
-FROM
-  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_mtd;
--- WHERE is_active_flg='Y';
+                if report_df.loc[idx, 'is_opsgenie_flg'].upper() == "Y":
+                    profile_type = "custom"
+                    api_key = report_df.loc[idx, 'opsgenie_api_key']           
+                    # Use default API key
+                    if api_key in config.EMPTY_STR_LIST or (isinstance(api_key, float) and math.isnan(api_key)):
+                        api_key = config.get_config_values('opsgenie', 'api_key')
+
+                    renamed_report_df = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
+                    gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
+                
+                    opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
+                    
+                    # Send Opsgenie alert
+                    response, request_id, message = opsgenie_client.create_opsgenie_alert(
+                        renamed_report_df, 0, alert_type, priority, env, profile_type
+                    )
+
+                    self.logger.info(f"Opsgenie response code: {response}")
+                    self.logger.info(f"Opsgenie alert sent successfully for {alert_type}")
+
+                elif report_df.loc[idx, 'jira_assignee'] is not None: 
+                    try:
+                        JIRA_ASSIGNEE = report_df.loc[idx, 'jira_assignee']
+                        label = "DQaaS"
+                        summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {db_name} | Table: {src_tbl}" | {alert_type}
+                        description = f"DQ Issue detected for Table {src_tbl} on Run Date {report_df.loc[idx,'prfl_run_ts']}."
+                        jira_client = Jira_ticket()
+                        ticket_id = jira_client.create_jira_ticket(JIRA_ASSIGNEE, summary, description, label)
+                        self.logger.info(f"Jira ticket created: {ticket_id}")
+                    except Exception as err:
+                        self.logger.error(f"Error while creating JIRA ticket: {err}")
+        
+        except Exception as err:
+            self.logger.error(f"Error occurred while sending Opsgenie alert. Error: {err}")
+
