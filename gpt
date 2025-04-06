@@ -9,3 +9,9 @@ select count(*) from   vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta    wher
 
 
 update   vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta set ACTIVE_FLAG = 'Y' where profile_type = 'rule_custom' and data_sub_dmn='Network-asset-domain'
+
+
+UPDATE vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta
+SET ACTIVE_FLAG = 'Y'
+WHERE profile_type = 'rule_custom'
+  AND data_sub_dmn = 'Network-asset-domain';
