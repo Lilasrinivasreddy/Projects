@@ -1,3 +1,8 @@
 update   vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta  set profile_schedule_ts = '40 12 * * *'  where profile_type = 'rule_custom' and data_sub_dmn='Network-asset-domain'
 
 select count(*) from   vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta    where profile_type = 'rule_custom' and active_flag = 'Y'
+
+
+	Run Profile Date	LOB	DB Name	Table Name	Feature Name	Dimensions	DQ Category	Weekday	Value	Avg Value	Percentage Change	Variance	Std Deviation	Sigma Value	DQ Score	Status
+0	2025-04-06	VCG	vzw_uda_prd_tbls_rd_v	dla_sum_fact	GROSS_ADDS		Consistency	7	41,478.00	46,543.00	-12.21	0.00	0.00	outlier	100.00	LOW
+1	2025-04-06	VCG	vzw_uda_prd_tbls_rd_v	upgrade_sum_fact			Consistency	7	0.00	NaN	0.00	NaN	NaN	1	0.00	LOW
