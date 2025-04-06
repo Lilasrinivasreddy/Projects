@@ -1,1 +1,3 @@
-Error occured while creating opsgenie alert. Error: exceptions must derive from BaseException
+update   vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta  set profile_schedule_ts = '40 12 * * *'  where profile_type = 'rule_custom' and data_sub_dmn='Network-asset-domain'
+
+select count(*) from   vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta    where profile_type = 'rule_custom' and active_flag = 'Y'
