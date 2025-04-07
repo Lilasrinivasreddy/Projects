@@ -1,965 +1,155 @@
-import re
-import pandas as pd
-import numpy as np
-import os
-import logging
-import sys
-from datetime import datetime, timedelta
-from functools import reduce
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-
-## Importing User Defined Modules
-import config_params as config
-from send_email import SendEmail
-from common_handlers import CommonUtils, set_logger, get_args_parser
-
-from dqaas_opsgenie import Alert
-from dqaas_jira import Jira_ticket
-import math
-
-
-
-class CustomeMetrics:
-    def __init__(self, data_src = None) -> None:
-        self.__set_default_values()
-        self.logger: logging = set_logger(
-            logger_path=config.LOGS_DIR,
-            log_filename="CustomMetricsLogs",
-            process_name='CRM',
-            # no_date_yn="Y",
-        )
-        
-        self.utils = CommonUtils(config, self.logger)
-        self.df_email_distro= pd.DataFrame()
-        
-    ## Default Values
-    def __set_default_values(self):
-        self.rule_col_rename_list = {
-            'profile_date': 'data_dt',
-            'pageName': 'value',
-            'pageflow': 'value' ,
-            'value': 'count_curr',
-            'insert_dt': 'rule_run_ts',
-        }
-        
-        self.final_col_rename_list = {
-            'profile_date': 'data_dt',
-            'value': 'count_curr',
-            'dimension': 'grouped_columns',
-            'rule_run_ts': 'prfl_run_ts',
-        }
-        
-        self.custom_profile_report_columns = {
-            "NUMERIC": [
-                'avg_count_prev', 'variance_value', 'std_dev_value',
-                'pct_change', 'count_curr','sigma_2_value','dq_score',
-                'consistency_score',
-            ],
-            "INT64": ['prfl_id', 'weekday', 'rpt_seq_num', ],
-            "STRING": [
-                'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt',
-                'prfl_type', 'src_tbl', 'dq_pillar', 'meas_name', 'dq_ind'
-            ],
-            "TIMESTAMP": ['prfl_run_ts'],
-        }
-        
-        self.email_rename_cols = {
-            'prfl_run_ts': 'Run Profile Date',
-            'data_lob': 'LOB',
-            'data_bus_elem': 'Domain Name',
-            'db_name': 'DB Name',
-            'src_tbl': 'Table Name',
-            'feature_name': 'Feature Name',
-            'grouped_columns': 'Dimensions',
-            'dq_pillar': 'DQ Category',
-            'weekday': 'Weekday',
-            'count_curr': 'Value',
-            'avg_count_prev': 'Avg Value',
-            'pct_change': 'Percentage Change',
-            'variance_value': 'Variance',
-            'std_dev_value': "Std Deviation",
-            'sigma_value': 'Sigma Value',
-            'consistency_score': 'Consistency Score',
-            'dq_score': 'DQ Score',
-            'dq_ind': 'Status',
-        }
-        
-        ## Same order used in the Email
-        self.summary_cols = [
-            'prfl_run_ts', 'data_lob', 'data_bus_elem', 'db_name', 'src_tbl',
-            'feature_name', 'grouped_columns', 'dq_pillar',
-            'weekday', 'count_curr', 'avg_count_prev', 'pct_change',
-            'variance_value', 'std_dev_value', 'sigma_value',
-            'consistency_score', 'dq_score', 'dq_ind'
-        ]
-        
-        ## Columns used to round off the float values in Email, 
-        ## Applicable Columns :- Should be available in self.summary_cols
-        self.email_float_cols = [
-           'count_curr', 'avg_count_prev', 'pct_change',
-            'variance_value', 'std_dev_value',
-            'consistency_score', 'dq_score',
-        ]
-    
-    ## Historical Queries 
-    @staticmethod
-    def historical_queries(comparison_type: str='WEEKDAYS'):
-        query = {
-            
-            "WEEKDAYS": r"""
-            with top_records as 
+2025-04-07 09:20:17 : CRM-652444 - profile_engine - INFO : Index:: 54, Rule ID:: 8050
+2025-04-07 09:20:17 : CRM-652444 - run_bq_sql - INFO :
+BQ Select Query: select cast(event_date as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from event_date) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.scm_usage where cast(event_date as date)>= current_date -2 group by 1,2,3,5,6
+2025-04-07 09:20:17 : CRM-652444 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-04-07 09:20:17 : CRM-652444 - isTokenExpired - INFO : Token File Available
+2025-04-07 09:20:17 : CRM-652444 - isTokenExpired - INFO : Access Token is Valid
+2025-04-07 09:20:17 : CRM-652444 - bigquery_client - INFO : Setting environment variable...
+2025-04-07 09:20:17 : CRM-652444 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-04-07 09:20:21 : CRM-652444 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2445-03-08  Tier1 Models       <NA>           2 2025-04-07 13:20:18.178355+00:00        4     8050
+1  3116-03-01  Tier1 Models       <NA>           1 2025-04-07 13:20:18.178355+00:00        4     8050
+2  4017-08-08  Tier1 Models       <NA>           1 2025-04-07 13:20:18.178355+00:00        3     8050
+3  4016-04-08  Tier1 Models       <NA>           1 2025-04-07 13:20:18.178355+00:00        6     8050
+4  4000-04-24  Tier1 Models       <NA>           2 2025-04-07 13:20:18.178355+00:00        2     8050
+5  2025-04-05  Tier1 Models       <NA>      327280 2025-04-07 13:20:18.178355+00:00        7     8050
+6  2025-04-06  Tier1 Models       <NA>      484746 2025-04-07 13:20:18.178355+00:00        1     8050
+2025-04-07 09:20:21 : CRM-652444 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-07 09:20:21 : CRM-652444 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-07 09:20:21 : CRM-652444 - profile_engine - INFO : Index:: 55, Rule ID:: 8051
+2025-04-07 09:20:21 : CRM-652444 - run_bq_sql - INFO :
+BQ Select Query: select cast(LAST_UPD_DT as date)as profile_date,
+'Tier1 Models' as feature_name,
+null as dimension,
+count (*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from LAST_UPD_DT) as weekday
+from vz-it-pr-gk1v-cwlsdo-0.vzw_uda_prd_tbls_rd_v.service where cast(LAST_UPD_DT as date)>= current_date -2 group by 1,2,3,5,6
+2025-04-07 09:20:21 : CRM-652444 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-04-07 09:20:21 : CRM-652444 - isTokenExpired - INFO : Token File Available
+2025-04-07 09:20:21 : CRM-652444 - isTokenExpired - INFO : Access Token is Valid
+2025-04-07 09:20:21 : CRM-652444 - bigquery_client - INFO : Setting environment variable...
+2025-04-07 09:20:21 : CRM-652444 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-04-07 09:20:25 : CRM-652444 - profile_engine - INFO :
+      data_dt  feature_name  dimension  count_curr                      insert_date  weekday  prfl_id
+0  2025-04-06  Tier1 Models       <NA>       24112 2025-04-07 13:20:22.505660+00:00        1     8051
+2025-04-07 09:20:25 : CRM-652444 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-07 09:20:25 : CRM-652444 - profile_engine - INFO : Length of the Rules Result : 148
+2025-04-07 09:20:25 : CRM-652444 - profile_engine - INFO :
+Index(['data_dt', 'feature_name', 'dimension', 'count_curr', 'rule_run_ts',
+       'weekday', 'prfl_id', 'insert_date'],
+      dtype='object')
+      data_dt  feature_name  dimension  count_curr                rule_run_ts  weekday  prfl_id                      insert_date
+0  2025-04-06  Tier1 Models        NaN           0 2025-04-07 09:12:59.550843        1     7992                              NaT
+1  2025-04-05  Tier1 Models        NaN      326978                        NaT        7     7993 2025-04-07 13:13:00.250319+00:00
+2  2025-04-07  Tier1 models        NaN         872                        NaT        2     7994 2025-04-07 13:13:04.741913+00:00
+3  2025-03-22  Tier1 Models        NaN   535979192                        NaT        7     7995 2025-04-07 13:13:08.862459+00:00
+4  2025-03-29  Tier1 Models        NaN   536075831                        NaT        7     7995 2025-04-07 13:13:08.862459+00:00
+2025-04-07 09:20:25 : CRM-652444 - run_bq_sql - INFO :
+BQ Select Query:
+            with top_records as
             (
-            select *,row_number() over (partition by prfl_id,feature_name,grouped_columns order by data_dt desc) as row_num 
-            from $rpt_table join 
-            unnest(GENERATE_DATE_ARRAY(date_sub($RUN_DT,INTERVAL 3 MONTH),$RUN_DT, INTERVAL 1 day)) as interval_Date
+            select *,row_number() over (partition by prfl_id,feature_name,grouped_columns order by data_dt desc) as row_num
+            from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_profile_rpt join
+            unnest(GENERATE_DATE_ARRAY(date_sub(current_date-1,INTERVAL 3 MONTH),current_date-1, INTERVAL 1 day)) as interval_Date
             on data_dt = interval_Date
-            where prfl_id IN ($prfl_id_list)
-            and data_dt != $RUN_DT
+            where prfl_id IN (7992, 7993, 7994, 7995, 7996, 7997, 7998, 7999, 8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010, 8011, 8012, 8013, 8014, 8015, 8016, 8017, 8018, 8019, 8020, 8021, 8022, 8023, 8024, 8025, 8026, 8027, 8028, 8029, 8030, 8031, 8032, 8034, 8038, 8039, 8040, 8041, 8042, 8043, 8044, 8045, 8046, 8047, 8048, 8049, 8050, 8051)
+            and data_dt != current_date-1
             order by prfl_id,feature_name, grouped_columns,data_dt desc
-            ) 
+            )
             select prfl_id,feature_name,grouped_columns,WEEKDAY,
             round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
             round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
             round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
             round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
-            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value, 
-            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value, 
+            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value,
+            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value,
             round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
-            from top_records 
+            from top_records
             group by prfl_id,feature_name,grouped_columns,WEEKDAY
             order by prfl_id,feature_name,grouped_columns,WEEKDAY;
-            """,
-            
-            "DTRAN_MONTHLY": r"""
-            with top_records as 
-            (select *,row_number() over (partition by prfl_id,feature_name,grouped_columns order by data_dt desc) as row_num 
-            from $rpt_table join 
-            unnest(GENERATE_DATE_ARRAY(date_trunc(date_sub($RUN_DT,INTERVAL 3 MONTH), MONTH),$RUN_DT, INTERVAL 1 MONTH)) as interval_Date
-            on data_dt = interval_Date
-            where prfl_id IN ($prfl_id_list)
-            and data_dt != date_trunc(date($RUN_DT), MONTH)
-            order by prfl_id,feature_name, grouped_columns,data_dt desc) 
-            select prfl_id,feature_name,grouped_columns,
-            round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
-            round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
-            round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
-            round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
-            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value, 
-            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value, 
-            round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
-            from top_records 
-            group by prfl_id,feature_name,grouped_columns
-            order by prfl_id,feature_name,grouped_columns;
-            """,
-        }
-        if comparison_type is None:
-            return query['WEEKDAYS']
-        if comparison_type.upper() in query:
-            return query[comparison_type.upper()]
-        return query['WEEKDAYS']
-              
-    ## Historical Results 
-    def get_historical_details(self, prfl_id_list: list, run_date: str, comparison_type: str='WEEKDAYS'):
-        hist_record_query = self.historical_queries(comparison_type)
-        
-        placeholders = {
-            "$rpt_table": config.dqaas_profile_rpt,
-            "$prfl_id_list": prfl_id_list,
-            "$RUN_DT": run_date,
-        }
-        # hist_record_query = hist_record_query.format(placeholders)
-        hist_record_query = reduce(lambda sql, replace_str: sql.replace(*replace_str), [hist_record_query, *list(placeholders.items())])
-        df_tbl_hist_rec = self.utils.run_bq_sql(
-            bq_auth=config.dq_gcp_auth_payload,
-            select_query=hist_record_query
-        )
-        df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
-        self.logger.info(f'Length of the historical groupby list : {len(df_tbl_hist_rec)}')
-        self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
 
-        if len(df_tbl_hist_rec) == 0:
-            self.logger.warning("Historical Data Not found for Identifying the variance")
-        
-        return df_tbl_hist_rec
-        
-    ## Comparing Hist and Current Records
-    def compare_historical_latest_dimensions(self, df_tbl_hist_rec, df_tbl_latest_rec: pd.DataFrame, comparison_type="WEEKDAYS", isHourly="N"):
-        
-        ## Historical Records
-        self.logger.info('------------------------------------------------------------------')
-        df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
-        df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
-        self.logger.info(f'Length of the historical Records : {len(df_tbl_hist_rec)}')
-        self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
-        
-        ## Latest Records
-        self.logger.info('------------------------------------------------------------------')
-        df_tbl_latest_rec = df_tbl_latest_rec.rename(columns={col: str(col).lower() for col in df_tbl_latest_rec.columns.tolist()})
-        df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna(np.nan).astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
-        self.logger.info(f'Length of the latest Records : {len(df_tbl_latest_rec)}')
-        self.logger.info(f'\n{df_tbl_latest_rec.columns}\n{df_tbl_latest_rec.head()}')
-
-        ## Merging the Historical and Latest Records
-        self.logger.info('------------------------------------------------------------------')
-        
-        join_list = ['prfl_id','feature_name','grouped_columns','weekday']
-        
-        if comparison_type == 'DTRAN_MONTHLY':
-            join_list.remove('weekday')
-        
-        self.logger.info(f'Historical Dataframe :: {df_tbl_hist_rec}')
-        df_tbl_hist_rec.to_csv('/apps/opt/application/smartdq/smartdq_gcp_migration/logs/hist_rec.csv', encoding='utf-8', index=False)
-        self.logger.info(f'Latest Dataframe :: {df_tbl_latest_rec}')
-        df_tbl_latest_rec.to_csv('/apps/opt/application/smartdq/smartdq_gcp_migration/logs/latest_rec.csv', encoding='utf-8', index=False)
-                             
-        df_merge_rec= pd.concat[(
-            df_tbl_hist_rec,
-            df_tbl_latest_rec,
-            # on=join_list,
-            # how='right'
-        )]
-        
-        self.logger.info(f'Length of the Merged Records : {len(df_merge_rec)}')
-        self.logger.info(f'\n{df_merge_rec.columns}\n{df_merge_rec.head()}')
-        self.logger.info('------------------------------------------------------------------')
-        return df_merge_rec
-    
-    #Create an opsgenie function
-    def send_opsgenie_jira_outlier_alert(self, reference_key: str):
-        try:
-            report_query = f"""                
-                SELECT rpt.*, 
-                    mtd.data_lob, mtd.data_dmn,mtd.data_sub_dmn, mtd.db_name, mtd.src_tbl,mtd.meas_name,
-                    mtd.data_src, mtd.dq_pillar, mtd.opsgenie_api_key, mtd.is_opsgenie_flg,mtd.jira_assignee
-                FROM {config.dqaas_profile_mtd} mtd 
-                INNER JOIN 
-                (SELECT * FROM {config.dqaas_profile_rpt} 
-                WHERE rpt_ref_key = '{reference_key}') rpt
-                ON mtd.prfl_id = rpt.prfl_id
-                WHERE upper(mtd.prfl_type) = 'CUSTOM_RULES'
-            """
-            self.logger.info(f"Opsgenie Info Query: {report_query}")
-
-            report_df = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=report_query
-            )
-            
-            if len(report_df) == 0:
-                self.logger.warning("No records found for Opsgenie alert")
-                return
-            
-            self.logger.info(f"Report DataFrame for Opsgenie Alerts: {report_df}")
-
-            # self.logger.info(f"Report DataFrame head: {report_df.head()}")
-            # self.logger.info(f"Report DataFrame head: {report_df.columns}")
-            # self.logger.info(f"Report DataFrame head: {report_df.dtypes}")
-            #report_df.reset_index(drop=True)
-
-            for idx in report_df.index:
-                alert_type = None
-                priority = None
-
-                # print(f"idx: {idx}")
-                # print(report_df.loc[idx,])
-                # print(report_df.loc[idx, 'dq_ind'])
-
-                # Fetch records where dq_status = 'LOW' OR sigma_value = 'outlier'
-                if report_df.loc[idx, 'dq_ind'].upper() == "LOW" and report_df.loc[idx, 'sigma_value'].lower() == "outlier":
-                    alert_type = 'custom_profile_both_dq_status and sigma_value failed'
-                    priority = "P3"  
-
-                elif report_df.loc[idx, 'sigma_value'].lower() == "outlier":
-                    alert_type = 'custom_profile_outlier'
-                    priority = "P3" 
-                elif report_df.loc[idx, 'dq_ind'].upper() == "LOW":
-                    alert_type = 'custom_profile_dq_status failed'
-                    priority = "P3"
-                else:
-                    continue
-                
-                env = config.get_config_values('environment', 'env')
-                data_src = {report_df.loc[idx,'data_src']}
-                data_sub_dmn = {report_df.loc[idx,'data_sub_dmn']}
-                dq_pillar = {report_df.loc[idx,'dq_pillar']}
-                db_name = {report_df.loc[idx,'db_name']}
-                src_tbl = report_df.loc[idx,'src_tbl']
-
-                if report_df.loc[idx, 'is_opsgenie_flg'].upper() == "Y":
-                    profile_type = "custom"
-                    api_key = report_df.loc[idx, 'opsgenie_api_key']           
-                    # Use default API key
-                    if api_key in config.EMPTY_STR_LIST or (isinstance(api_key, float) and math.isnan(api_key)):
-                        api_key = config.get_config_values('opsgenie', 'api_key')
-
-                    renamed_report_df = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
-                    gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
-                
-                    opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
-                    
-                    # Send Opsgenie alert
-                    response, request_id, message = opsgenie_client.create_opsgenie_alert(
-                        renamed_report_df, idx, alert_type, priority, env, profile_type
-                    )
-
-                    self.logger.info(f"Opsgenie response code: {response}")
-                    self.logger.info(f"Opsgenie alert sent successfully for {alert_type}")
-
-                elif report_df.loc[idx, 'jira_assignee'] is not None: 
-                    try:
-                        JIRA_ASSIGNEE = report_df.loc[idx, 'jira_assignee']
-                        label = "DQaaS"
-                        summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {db_name} | Table: {src_tbl}" | {alert_type}
-                        description = f"DQ Issue detected for Table {src_tbl} on Run Date {report_df.loc[idx,'prfl_run_ts']}."
-                        jira_client = Jira_ticket()
-                        ticket_id = jira_client.create_jira_ticket(JIRA_ASSIGNEE, summary, description, label)
-                        self.logger.info(f"Jira ticket created: {ticket_id}")
-                    except Exception as err:
-                        self.logger.error(f"Error while creating JIRA ticket: {err}")
-        
-        except Exception as err:
-            self.logger.error(f"Error occurred while sending Opsgenie alert. Error: {err}")
-
-    ## Email distros
-    def email_distro(self, sub_domain:str): 
-        try:
-            self.df_email_distro: pd.DataFrame = self.utils.get_email_distros_from_table(data_sub_dmn_list=[sub_domain])
-            self.logger.info(f"Email Dataframe: \n{self.df_email_distro}")
-            
-            receipents_mail_group: list = self.utils.get_mail_distro(
-                df_val=self.df_email_distro,
-                persona='PERSONA_2',
-                sub_dmn=sub_domain
-            )
-            self.logger.info(f"Email Group: {receipents_mail_group}")
-            # receipents_mail_group.append(config.dqaas_default_email_distro)
-            receipents_mail_group += config.dqaas_default_email_distro
-            
-            self.logger.info(f"Final Email Receipents: {receipents_mail_group}")  
-            return receipents_mail_group
-        except Exception as err:
-            self.logger.error(f"Error in retrieving Email Distro. Assigning default email group. Error: {err}")
-        return config.dqaas_default_email_distro
-           
-    ## Summary Report Generation and Sending part
-    def send_email_report(self, reference_key: str, sub_domain: str):
-        try:
-            
-            report_query = f"""
-                select rpt.*, 
-                mtd.data_lob, mtd.data_bus_elem ,mtd.db_name ,mtd.src_tbl ,mtd.dq_pillar 
-                from {config.dqaas_profile_mtd} mtd 
-                inner join 
-                (select * from {config.dqaas_profile_rpt} 
-                where rpt_ref_key = '{reference_key}' ) rpt
-                on mtd.prfl_id = rpt.prfl_id
-                and upper(mtd.prfl_type) = 'CUSTOM_RULES'
-            """
-            self.logger.info(f"Mail Query : {report_query}")
-
-            report_df = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=report_query
-            )
-            
-            if len(report_df) == 0:
-                raise Exception("No Records found for Email Summary")
-
-            
-            receipents_mail_group = self.email_distro(sub_domain=sub_domain)
-            
-            # report_df = report_df[['prfl_run_ts', 'feature_name',
-            #     'grouped_columns', 'weekday', 'count_curr', 'avg_count_prev', 'pct_change',
-            #     'variance_value', 'std_dev_value', 'sigma_value']]
-
-            # col = [
-            #     'count_curr', 'avg_count_prev', 'pct_change',
-            #     'variance_value', 'std_dev_value'
-            # ]
-            
-            report_df = report_df[self.summary_cols]
-            col = self.email_float_cols
-
-            for c in col:
-                report_df[c] = report_df[c].fillna(np.nan).astype('float64').map(self.utils.round_off)
-            
-            report_df['prfl_run_ts'] = pd.to_datetime(report_df['prfl_run_ts']).dt.date
-            report_df = report_df.rename(columns=self.email_rename_cols).reset_index(drop=True)
-            
-            style_format_dict = {
-                'Weekday': '{:,.0f}',
-                'Value': '{:,.2f}',
-                'Avg Value': '{:,.2f}',
-                'Percentage Change': '{:,.2f}',
-                'Variance': '{:,.2f}',
-                'Std Deviation': '{:,.2f}'
-            }
-
-            style_details_dict = {
-                'outlier': '{background-color:#BF3131; color:#FFF; font-weight:bold;}'
-            }
-            validate_column = 'Sigma Value'
-            
-
-            email = SendEmail(
-                smtp=config.SMTP_SERVER_NAME,
-                mail_from=config.SENDER_EMAIL_ID,
-                loggerObj=self.logger
-            )
-            current_date = datetime.strftime(datetime.now() - timedelta(days=1), '%Y-%m-%d')
-            email.send_summary_with_highlights(
-                email_template_filepath=os.path.join(config.TEMPLATE_DIR, "dq_summary_report_template_with_highlights.html"),
-                mail_subject=f"{config.EMAIL_ENV} Custom profile summary for {sub_domain} - {current_date}",
-                message='',
-                df_val=report_df,
-                receipents_email_id=receipents_mail_group,
-                style_format=style_format_dict,
-                style_details_dict=style_details_dict,
-                validate_column=validate_column
-            )
-        except Exception as err:
-            self.logger.error(f"Error in Report Summary Email Block. Error:{err}")
-    
-    ## Loading Results to Report Table
-    def load_to_report_results(self, df_report_result: pd.DataFrame, reference_key: str):
-        try:
-            ## BigQuery Client Connection
-            dbclient, db_creds = self.utils.bigquery_client(
-                auth=config.dq_gcp_auth_payload
-            )
-        
-            # Remove duplicate columns
-            df_report_result = df_report_result.loc[:, ~df_report_result.columns.duplicated()]
-
-            # Reference Key
-            df_report_result["rpt_ref_key"] = reference_key
-
-            # consistecy_score' exists (Fixed the error)
-            if 'consistecy_score' not in df_report_result.columns:
-                self.logger.warning("Column 'consistecy_score' missing, adding it with default value 0.")
-                df_report_result['consistecy_score'] = 0.0
-
-            # Converting numeric columns to correct dtypes
-            numeric_columns = [
-                "avg_count_prev", "variance_value", "std_dev_value", "sigma_2_value",
-                "pct_change", "count_curr", "dq_score", "min_thresh_value", "max_thresh_value", "consistecy_score"
-            ]
-            for col in numeric_columns:
-                if col in df_report_result.columns:
-                    df_report_result[col] = pd.to_numeric(df_report_result[col], errors='coerce').fillna(0)
-
-            # Convert int columns (Fixed string issue)
-            int_columns = ["weekday", "prfl_id", "rpt_seq_num", "dq_score"]
-            for col in int_columns:
-                if col in df_report_result.columns:
-                    try:
-                        df_report_result[col] = pd.to_numeric(df_report_result[col], errors='coerce').fillna(0).astype(int)
-                    except Exception as e:
-                        self.logger.error(f"Error converting column '{col}' to int: {e}")
-                        self.logger.info(f"Problematic column '{col}' Unique Values: {df_report_result[col].unique()}")
-
-            # Convert Date/Datetime columns (Fixed 'NaT' issues)
-            datetime_columns = ["data_dt", "insert_date", "prfl_run_ts"]
-            for col in datetime_columns:
-                if col in df_report_result.columns:
-                    df_report_result[col] = pd.to_datetime(df_report_result[col], errors='coerce')
-
-            # Remove future dates ( Unwanted date or future dates causing issues in BigQuery while load)
-            if "data_dt" in df_report_result.columns:
-                df_report_result = df_report_result[
-                    (df_report_result["data_dt"] >= "2000-01-01") & (df_report_result["data_dt"] <= "2100-12-31")
-                ]
-
-            # Checking for NaN values in numeric columns
-            nan_counts = df_report_result[numeric_columns].isna().sum().sum()
-            if nan_counts > 0:
-                self.logger.warning(f"Warning: Some numeric values contain NaN Count: {nan_counts}")
-
-            
-            self.logger.info(f"Columns before BigQuery Load: {df_report_result.columns.tolist()}")
-            self.logger.info(f"Data types before load:\n{df_report_result.dtypes}")
-
-            # Load Data into BigQuery
-            self.utils.load_result_to_bq_report_table(
-                dq_bq_client=dbclient,
-                dq_credentials=db_creds,
-                dq_report_table_name=config.dqaas_profile_rpt,
-                df_load_data=df_report_result,
-                seq_name='rpt_seq_num',
-                column_details=self.custom_profile_report_columns
-            )
-
-        except Exception as err:
-            self.logger.error(f"Error in load_to_report_results: {err}")
-
-    
-    ## Consistency Score, DQ Score, Variation Percentage
-    @staticmethod
-    def calculate_percentage_change(df):
-        print("calculate_percentage_change")
-        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
-        df['avg_count_prev'] = df['avg_count_prev'].astype(float)
-        df['min_threshold'] = df['min_threshold'].fillna(config.CUST_MIN_THRESHOLD).astype(float)
-        df['max_threshold'] = df['max_threshold'].fillna(config.CUST_MAX_THRESHOLD).astype(float)
-        # df['pct_change'] = (((df['count_curr'] - df['avg_count_prev']) / df['count_curr']) * 100).round(2)
-        df['pct_change'] = np.where( 
-            df['count_curr'].fillna(0) == 0, 0,
-            (((df['count_curr'] - df['avg_count_prev']) / df['count_curr']) * 100).round(2)
-        )
-        # df['consistency_score'] = ((df['count_curr'] / df['avg_count_prev']) * 100).round(2)
-        df['consistency_score'] = np.where( 
-            df['avg_count_prev'].fillna(0).astype(float) == 0, 0,
-            ((df['count_curr'] / df['avg_count_prev']) * 100).round(2)
-        )
-        df['dq_score'] = np.where(
-            (df['min_threshold'] <= df['consistency_score']) & (df['consistency_score'] <= df['max_threshold']),
-            100 , 0
-        )
-
-    ## 3 Sigma Values
-    @staticmethod
-    def calculate_sigma_value( df):
-        print("calculate_sigma_value")
-        df['std_dev_value'] = df['std_dev_value'].astype(float)
-        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
-        df['avg_count_prev'] = df['avg_count_prev'].astype(float)    
-        conditions_null_dim = [
-            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 1 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 1 * df['std_dev_value'].fillna(0).astype(float)),
-            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 2 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 2 * df['std_dev_value'].fillna(0).astype(float)),
-            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 3 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 3 * df['std_dev_value'].fillna(0).astype(float)),
-            pd.isna(df['grouped_columns'])
-        ]
-        choices = [1, 2, 3, 'outlier']
-        df['sigma_value'] = np.select(conditions_null_dim, choices, default='outlier')
-       
-    ## DQ Status  
-    @staticmethod
-    def calculate_dq_status(df):
-        print("calculate_dq_status")
-        df['std_dev_value'] = df['std_dev_value'].astype(float)
-        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
-        df['avg_count_prev'] = df['avg_count_prev'].astype(float)
-        df['consistency_score'] = df['consistency_score'].fillna(0).astype(float)
-        df['min_thresh_value'] = df['min_thresh_value'].fillna(0).astype(float)
-        df['max_thresh_value'] = df['max_thresh_value'].fillna(0).astype(float)
-        df['min_threshold'] = df['min_threshold'].fillna(config.CUST_MIN_THRESHOLD).astype(float)
-        df['max_threshold'] = df['max_threshold'].fillna(config.CUST_MAX_THRESHOLD).astype(float)
-
-        main_condition = (
-            (df['count_curr'].fillna(0) != 0) & 
-            (df['max_thresh_value'] >= df['count_curr']) &
-            (df['min_thresh_value'] <= df['count_curr']) | 
-            (
-                (df['count_curr'] == df['avg_count_prev'].fillna(0).astype(float)) &
-                (df['std_dev_value'].fillna(0).astype(float) == df['avg_count_prev'].fillna(0).astype(float))
-            )
-        )
-        
-        dq_status_condition = [
-            main_condition & (( df['min_threshold'] <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold'])), 
-            
-            ( main_condition &  (df['consistency_score'] < df['min_threshold'] ) |
-            ( (df['count_curr'] != 0 & (df['count_curr'] < df['min_thresh_value'])) &
-            (df['consistency_score'] < df['min_threshold'] ) | 
-            (( df['min_threshold']  <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold'])) ) ),
-            
-            (  main_condition & (df['consistency_score'] > df['max_threshold']) |
-            ( (df['count_curr'] != 0 & (df['count_curr'] > df['max_thresh_value'])) &
-            (df['consistency_score'] > df['max_threshold']) | (( df['min_threshold']  <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold'])) ) )
-        ]
-        choices = ["PASS", "LOW", "HIGH"]
-        df['dq_ind'] = np.select(dq_status_condition, choices, default='NA')
-
-    ## Not in Use
-    def delete_current_null_records(self, prfl_id_list, business_date):
-        try:
-            delete_dup_record_query=f'''
-                delete from {config.dqaas_profile_rpt}
-                where date(rule_profile_dt)={business_date} 
-                and prfl_id in ({prfl_id_list}) 
-                and weekday = extract(dayofweek from {business_date})  
-                and avg_count_prev is null
-                and pct_change is null 
-                and variance_avg_count_prev is null 
-                and std_dev_value is null 
-                and sigma_value is null;
-            '''
-            
-            num_recs_deleted = self.utils.run_bq_dml_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                dml_query=delete_dup_record_query
-            )
-            
-            self.logger.info(f'Number of latest records deleted :  {num_recs_deleted}')
-        except Exception as err:
-            self.logger.error(f"Error in Deleting historical records. Error:{err}")
-        
-    ## Profile Engine 
-    def profile_engine(self, df_rules: pd.DataFrame, param_to_replace: dict = None, comparison_type="WEEKDAYS"):
-        
-        ## Profiling Rules
-        # df_result = pd.DataFrame()
-        df_result = []
-        for i in df_rules.index:
-            self.logger.info('------------------------------------------------------------------')
-
-            try:
-                result = pd.DataFrame()
-                
-                prfl_id = df_rules.loc[i, "prfl_id"]
-                rule_sql = df_rules.loc[i, "meas_rule_sql"]
-                data_src = df_rules.loc[i, "data_src"]
-                
-                # self.logger.info(f"Index: {i} : Rule ID:: {prfl_id}, \nquery: {query}\n")
-                self.logger.info(f"Index:: {i}, Rule ID:: {prfl_id}")
-                
-                rule_sql = reduce(lambda sql, replace_str: sql.replace(*replace_str), [rule_sql, *list(param_to_replace.items())])
-            
-                result = self.utils.get_query_data(
-                    data_src=data_src,
-                    dbname=df_rules.loc[i, "db_name"],
-                    select_query=rule_sql
-                )
-                
-                result = result \
-                .rename(columns={col: str(col).lower() for col in result.columns.tolist()}) \
-                .rename(columns=self.rule_col_rename_list)
-                
-                
-                if len(result) == 0:
-                    self.logger.info('No Records Found in Rules')
-                    # date_val = self.utils.run_bq_sql(
-                    #     bq_auth=config.dq_gcp_auth_payload,
-                    #     select_query=f'''select date({param_to_replace["RUN_DT"]}) as run_dt, extract(dayofweek from date({param_to_replace["RUN_DT"]})) as weekday;'''
-                    # )
-                    self.logger.info(f'Date Results :: \n{self.date_val}')
-                    result = pd.DataFrame.from_records([{
-                        "data_dt" : self.date_val.loc[0, "run_dt"],
-                        "feature_name" : df_rules.loc[i, "feature_name"],
-                        "dimension" : np.nan,
-                        "count_curr" : 0,
-                        "rule_run_ts" : datetime.now(),
-                        "weekday" : self.date_val.loc[0, "weekday"],
-                    }])
-
-                    if comparison_type == 'DTRAN_MONTHLY':
-                        result = result.drop(columns=["weekday"], errors='ignore', axis=1)
-                    
-                    # result["data_dt"] = date_val.loc[0, "run_dt"]
-                    # result["feature_name"] = df_rules.loc[i, "feature_name"]
-                    # result["dimension"] = np.nan
-                    # result["count_curr"] = 0
-                    # result["rule_run_ts"] = datetime.now()
-                    # result["weekday"] = date_val.loc[0, "weekday"]
-    
-                result["prfl_id"] = prfl_id
-                
-                self.logger.info(f'\n{result}')
-                # df_result = df_result.append(result)
-                res_val = []
-                res_val = result.to_dict("records")
-                df_result.extend(res_val)
-            except Exception as err:
-                self.logger.error(f"Error While Executing Rules: Error{err}")
-            
-            self.logger.info('------------------------------------------------------------------')
-            
-        dfEndRes = pd.DataFrame(df_result)
-        self.logger.info(f'Length of the Rules Result : {len(dfEndRes)}')
-        self.logger.info(f'\n{dfEndRes.columns}\n{dfEndRes.head()}')
-           
-        if len(dfEndRes) == 0:
-            raise ValueError("No Records Found in Custom Rule Profiling.")
-        
-        # dfEndRes = dfEndRes.rename(columns=self.final_col_rename_list).reset_index(drop=True)
-        return dfEndRes.rename(columns=self.final_col_rename_list).reset_index(drop=True)
-    
-    @staticmethod
-    def int_df_to_list(df):
-        int_list: list = [i for i in df['prfl_id']]
-        return list(set(int_list))
-    
-    ## Level 2 - Execution Layer : Run Rules, Get Hist Records, Compare the Results, and Find metrics
-    def run_metrics_engine(self, df_mtd: pd.DataFrame, start_date, end_date, val_replace_params:dict = None):
-        try:
-
-            df_mtd = df_mtd.reset_index(drop=True)
-            df_mtd["comparison_type"] = df_mtd["comparison_type"].fillna("WEEKDAYS")
-            df_mtd["is_hourly_flg"] = df_mtd["is_hourly_flg"].fillna("N")
-            comparisonType = df_mtd.loc[0,"comparison_type"]
-            isHourly = df_mtd.loc[0, 'is_hourly_flg']
-            self.logger.info(f"Comparison:: {comparisonType}, Hourly:: {isHourly}")
-            ## Creating Profile ID list for historical Load
-            # rule_id_list: list = []
-            # for i in df_mtd['prfl_id']:
-            #     rule_id_list.append(i)
-            
-            print(df_mtd['prfl_id'])
-            prfl_id_list = [int(i) for i in df_mtd['prfl_id']]
-            prfl_id_list = list(set(prfl_id_list))
-            prfl_id_list = f"{prfl_id_list}".replace('[', '').replace(']' ,'')
-            self.logger.info(f'Profile ID List : {prfl_id_list}')
-        
-            ## For null results, weekday and date will be included
-            self.date_val = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=f'''
-                select date({val_replace_params["RUN_DT"]}) as run_dt,
-                extract(dayofweek from date({val_replace_params["RUN_DT"]})) as weekday;
-                '''
-            )
-            
-            df_latest = self.profile_engine(
-                df_rules=df_mtd,
-                param_to_replace=val_replace_params,
-            )
-            # df_latest = pd.DataFrame(df_latest)
-            # df_latest = df_latest.rename(columns=self.final_col_rename_list).reset_index(drop=True)
-            df_latest["prfl_run_ts"] = datetime.now().strftime(config.DTM_FMT)
-            if isHourly == 'Y':
-                df_latest["hour"] = df_latest["grouped_columns"]
-                
-            # df_latest.to_csv("./cm_res_1.txt")
-            
-            df_historical = self.get_historical_details(
-                run_date=start_date,
-                prfl_id_list=prfl_id_list,
-                comparison_type=comparisonType
-            )
-            
-
-            df_merged_dimensions = self.compare_historical_latest_dimensions(
-                df_tbl_hist_rec=df_historical,
-                df_tbl_latest_rec=df_latest,
-                comparison_type=comparisonType,
-                isHourly=isHourly,
-            )
-            
-            # df_merged_dimensions.to_csv(os.path.join(os.path.dirname(__file__), "merged_results.txt"))
-            mtdCols = ['prfl_id', 'prfl_type', 'src_tbl', 'dq_pillar', 'meas_name', 'min_threshold', 'max_threshold', 'comparison_type', 'is_hourly_flg']
-            df_final_result = pd.concat[(
-                df_merged_dimensions,
-                df_mtd[mtdCols],
-                # on=['prfl_id'],
-                # how='inner'
-            )]
-            
-            
-            self.calculate_percentage_change(df_final_result)
-            self.calculate_sigma_value(df_final_result)
-            self.calculate_dq_status(df_final_result)
-            
-            # df_merged_dimensions.to_csv(os.path.join(os.path.dirname(__file__), "merged_results_final.txt"))
-
-            self.logger.info('------------------------------------------------------------------')
-            self.logger.info(f'Length of the End Results : {len(df_final_result)}')
-            self.logger.info(f'\n{df_final_result.columns}\n{df_final_result.head()}')
-            self.logger.info('------------------------------------------------------------------')
-            # df_final_result.to_csv(os.path.join(os.path.dirname(__file__), "cm_res_3.txt"))
-           
-            # self.delete_historical_records(hist_date=hist_date, prfl_id_list=prfl_id_list)
-            return df_final_result
-                
-        except Exception as err:
-            self.logger.error(f"Error in Run Metrics Main Block. Error {err}")
-    
-    ## Level 1 - Metrics Execution initiation - entry point for Time based and Engine Initiation - Main Block
-    def main_metrics_execution(self, df_mtd: pd.DataFrame, sub_domain: str, start_date: str, end_date: str):
-        
-        df_mtd = df_mtd.rename(columns={col: str(col).lower() for col in df_mtd.columns.tolist()})
-        
-        ## Reference Key -> For every new request one ID will be created
-        reference_key = datetime.now().strftime('%Y%m%d%H%M%S%f')
-        self.logger.info(f"\nRequest Reference:: {reference_key}\nSub Domain:: {sub_domain}")
-  
-        ## Placeholders for replacing the values in query during execution
-        replace_params_for_rules = {"RUN_DT": start_date, "$START_DATE": start_date, "$END_DATE":end_date,}
-        
-        ## Metrics Initiation
-        df_end_result = self.run_metrics_engine(
-            df_mtd=df_mtd,
-            start_date=start_date,
-            end_date=end_date,
-            val_replace_params=replace_params_for_rules
-        )
-        
-        if len(df_end_result) == 0 :
-            self.logger.error("No Records Found for Loading Custom Metrics")
-            return 
-        
-        ## Loading Results to Report
-        self.load_to_report_results(
-            df_report_result=df_end_result,
-            reference_key=reference_key
-        )
-        
-        ## Send Email
-        self.send_email_report(
-            reference_key=reference_key,
-            sub_domain=sub_domain
-        )
-
-        ## Send opsgenie alert
-        self.send_opsgenie_jira_outlier_alert(
-            reference_key=reference_key
-        )
-
-    ## Metadata Retrival    
-    def get_metadata(self, add_condition: str = None) -> pd.DataFrame:
-            if add_condition in config.EMPTY_STR_LIST:
-                add_condition = ""
-            
-            metadata_query = f"""
-                SELECT * FROM {config.dqaas_profile_mtd}
-                WHERE prfl_type = 'CUSTOM_RULES'    
-                and IS_ACTIVE_FLG = 'Y'    
-                {add_condition}                     
-                ORDER BY PRFL_ID;
-            """
-            
-            df_val = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=metadata_query
-            )
-            
-            self.logger.info(f"Metadata Length: {len(df_val)}")
-            
-            if len(df_val) == 0:
-                raise ValueError("No Records Found for Custom Metrics")
-            
-            df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
-            return df_val
-
-
-    def laod_historical_report(self):
-
-        source_data = ''
-
-        try:
-            self.logger.info(f"Inside laod_historical_report")
-
-            fetch_sql = f""" select distinct mtd.prfl_id, mtd.prfl_type, mtd.dq_pillar, mtd.src_tbl, mtd.meas_name, mtd.feature_name, meas_rule_sql from {config.dqaas_profile_mtd} mtd
-            left join {config.dqaas_profile_rpt} rpt
-            on mtd.prfl_id = rpt.prfl_id
-            where rpt.prfl_id is null
-            and upper(mtd.prfl_type) = 'CUSTOM_RULES'"""
-
-            self.logger.info(f"Fetch SQL executing: {fetch_sql}")
-
-            source_data = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=fetch_sql)
-
-            self.logger.info(f"Fetched new onboarded tables")
-
-        except Exception as err:
-                self.logger.error(f"Error While Executing fetch_sql: Error{err}")
-
-        try:
-            for index, row in source_data.iterrows():
-                prfl_id = row[0]
-                prfl_type = row[1]
-                dq_pillar = row[2]
-                src_tbl = row[3]
-                meas_name = row[4].replace(" ","_")
-                meas_rule_sql = row[6]
-
-                self.logger.info(f"Orginal meas_rule_sql : {meas_rule_sql}")
-
-                modified_sql = meas_rule_sql.replace("= RUN_DT","between current_date() -1 and current_date() - 92")
-                modified_sql = re.sub(r"(?i)null.* as.* dimension","'null' AS dimension", modified_sql)
-                modified_sql = re.sub(r"(?i)^SELECT\s",f"""Select 999999 as rpt_seq_num, {prfl_id} as prfl_id, '{prfl_type}' as prfl_type, '{dq_pillar}' as dq_pillar, '{src_tbl}' as src_tbl, '{meas_name}' as meas_name, """, modified_sql)
-                modified_sql = re.sub(r"(?i)date\s*\(\s*current_timestamp\s*\)","current_timestamp", modified_sql)
-                modified_sql = re.sub(r"(?i)extract.*\(.*date.*current_timestamp\s*\(\s*\)\s*\)","current_timestamp()", modified_sql)
-                modified_sql = re.sub(r"(?i)group\s* by\s*.*","group by 1,2,3,4,5,6,7,8,9,11,12;", modified_sql)
-
-                insert_sql = f"""insert into {config.dqaas_profile_rpt} (rpt_seq_num, prfl_id, prfl_type, dq_pillar, src_tbl, meas_name, data_dt,feature_name,grouped_columns,count_curr,prfl_run_ts,weekday) """ + modified_sql
-
-                self.logger.info(f"History SQL for {src_tbl} : {insert_sql}")
-
-                #job = self.utils.client.query(insert_sql)
-
-                insert_status = self.utils.run_bq_dml_sql(
-                    bq_auth=config.dq_gcp_auth_payload,
-                    dml_query=insert_sql
-                )
-
-                self.logger.info('insert_status')
-                self.logger.info(insert_status)
-
-        except Exception as err:
-                self.logger.error(f"Error While Executing insert_sql: Error{err}")
-
-
-    def main(self):
-        try:
-            #self.laod_historical_report()
-            df_mtd = self.get_metadata()
-            
-            sub_domain_list = df_mtd['data_sub_dmn'].unique().tolist()
-            start_date = "current_date-1"
-            end_date = "current_date-1"
-            
-            for dmn in sub_domain_list:
-                self.main_metrics_execution(
-                    df_mtd=df_mtd,
-                    sub_domain=dmn,
-                    start_date=start_date,
-                    end_date=end_date
-                )
-            
-        except ValueError as err:
-            self.logger.error(err)
-        except Exception as err:
-            self.logger.error(f"Error in Main Block. Error {err}")
-            
-            
-
-
-CustomeMetrics().main()
-
-
-
-2025-04-07 05:53:42 : CRM-513189 - compare_historical_latest_dimensions - INFO :
+2025-04-07 09:20:25 : CRM-652444 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq//smartdq_gcp_migration//config/dqaas1_oidc_token.json
+2025-04-07 09:20:25 : CRM-652444 - isTokenExpired - INFO : Token File Available
+2025-04-07 09:20:25 : CRM-652444 - isTokenExpired - INFO : Access Token is Valid
+2025-04-07 09:20:25 : CRM-652444 - bigquery_client - INFO : Setting environment variable...
+2025-04-07 09:20:25 : CRM-652444 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-04-07 09:20:28 : CRM-652444 - get_historical_details - INFO : Length of the historical groupby list : 332
+2025-04-07 09:20:28 : CRM-652444 - get_historical_details - INFO :
+Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+   prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
+0     7992  Tier1 Models                        2  ...          0.00          0.00              0.00              0.00
+1     7992  Tier1 Models                        3  ...          0.00          0.00              0.00              0.00
+2     7992  Tier1 Models                        4  ...          0.00          0.00              0.00              0.00
+3     7992  Tier1 Models                        5  ...          0.00          0.00              0.00              0.00
+4     7993  Tier1 Models            None        2  ...          0.91          1.82         533059.77         533063.41
+
+[5 rows x 11 columns]
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 332
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO :
+Index(['prfl_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+   prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
+0     7992  Tier1 Models                        2  ...          0.00          0.00              0.00              0.00
+1     7992  Tier1 Models                        3  ...          0.00          0.00              0.00              0.00
+2     7992  Tier1 Models                        4  ...          0.00          0.00              0.00              0.00
+3     7992  Tier1 Models                        5  ...          0.00          0.00              0.00              0.00
+4     7993  Tier1 Models             NaN        2  ...          0.91          1.82         533059.77         533063.41
+
+[5 rows x 11 columns]
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 148
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO :
 Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
        'prfl_run_ts', 'weekday', 'prfl_id', 'insert_date'],
       dtype='object')
       data_dt  feature_name  grouped_columns  count_curr          prfl_run_ts  weekday  prfl_id                      insert_date
-0  2025-04-06  Tier1 Models              NaN           0  2025-04-07 05:53:39        1     7992                              NaT
-1  2025-04-05  Tier1 Models              NaN      326978  2025-04-07 05:53:39        7     7993 2025-04-07 09:49:00.580191+00:00
-2  2025-04-07  Tier1 models              NaN         872  2025-04-07 05:53:39        2     7994 2025-04-07 09:49:05.376248+00:00
-3  2025-03-15  Tier1 Models              NaN   535604277  2025-04-07 05:53:39        7     7995 2025-04-07 09:49:08.684086+00:00
-4  2025-03-08  Tier1 Models              NaN   536640587  2025-04-07 05:53:39        7     7995 2025-04-07 09:49:08.684086+00:00
-2025-04-07 05:53:42 : CRM-513189 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-04-07 05:53:42 : CRM-513189 - compare_historical_latest_dimensions - INFO : Historical Dataframe ::      prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
+0  2025-04-06  Tier1 Models              NaN           0  2025-04-07 09:20:25        1     7992                              NaT
+1  2025-04-05  Tier1 Models              NaN      326978  2025-04-07 09:20:25        7     7993 2025-04-07 13:13:00.250319+00:00
+2  2025-04-07  Tier1 models              NaN         872  2025-04-07 09:20:25        2     7994 2025-04-07 13:13:04.741913+00:00
+3  2025-03-22  Tier1 Models              NaN   535979192  2025-04-07 09:20:25        7     7995 2025-04-07 13:13:08.862459+00:00
+4  2025-03-29  Tier1 Models              NaN   536075831  2025-04-07 09:20:25        7     7995 2025-04-07 13:13:08.862459+00:00
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO : Historical Dataframe ::      prfl_id  feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
 0       7992  Tier1 Models                        2  ...          0.00          0.00              0.00              0.00
 1       7992  Tier1 Models                        3  ...          0.00          0.00              0.00              0.00
 2       7992  Tier1 Models                        4  ...          0.00          0.00              0.00              0.00
 3       7992  Tier1 Models                        5  ...          0.00          0.00              0.00              0.00
 4       7993  Tier1 Models             NaN        2  ...          0.91          1.82         533059.77         533063.41
 ..       ...           ...             ...      ...  ...           ...           ...               ...               ...
-275     8050  Tier1 Models                        5  ...          0.00          0.00         573454.00         573454.00
-276     8051  Tier1 Models                        2  ...          0.00          0.00          24048.00          24048.00
-277     8051  Tier1 Models                        3  ...          0.00          0.00          24049.00          24049.00
-278     8051  Tier1 Models                        4  ...          0.00          0.00          24061.00          24061.00
-279     8051  Tier1 Models                        5  ...          0.00          0.00          24061.00          24061.00
+327     8050  Tier1 Models                        5  ...          0.00          0.00         573454.00         573454.00
+328     8051  Tier1 Models                        2  ...          0.00          0.00          24048.00          24048.00
+329     8051  Tier1 Models                        3  ...          0.00          0.00          24049.00          24049.00
+330     8051  Tier1 Models                        4  ...          0.00          0.00          24061.00          24061.00
+331     8051  Tier1 Models                        5  ...          0.00          0.00          24061.00          24061.00
 
-[280 rows x 11 columns]
-2025-04-07 05:53:42 : CRM-513189 - compare_historical_latest_dimensions - INFO : Latest Dataframe ::         data_dt  feature_name  grouped_columns  count_curr          prfl_run_ts  weekday  prfl_id                      insert_date
-0    2025-04-06  Tier1 Models              NaN           0  2025-04-07 05:53:39        1     7992                              NaT
-1    2025-04-05  Tier1 Models              NaN      326978  2025-04-07 05:53:39        7     7993 2025-04-07 09:49:00.580191+00:00
-2    2025-04-07  Tier1 models              NaN         872  2025-04-07 05:53:39        2     7994 2025-04-07 09:49:05.376248+00:00
-3    2025-03-15  Tier1 Models              NaN   535604277  2025-04-07 05:53:39        7     7995 2025-04-07 09:49:08.684086+00:00
-4    2025-03-08  Tier1 Models              NaN   536640587  2025-04-07 05:53:39        7     7995 2025-04-07 09:49:08.684086+00:00
+[332 rows x 11 columns]
+2025-04-07 09:20:28 : CRM-652444 - compare_historical_latest_dimensions - INFO : Latest Dataframe ::         data_dt  feature_name  grouped_columns  count_curr          prfl_run_ts  weekday  prfl_id                      insert_date
+0    2025-04-06  Tier1 Models              NaN           0  2025-04-07 09:20:25        1     7992                              NaT
+1    2025-04-05  Tier1 Models              NaN      326978  2025-04-07 09:20:25        7     7993 2025-04-07 13:13:00.250319+00:00
+2    2025-04-07  Tier1 models              NaN         872  2025-04-07 09:20:25        2     7994 2025-04-07 13:13:04.741913+00:00
+3    2025-03-22  Tier1 Models              NaN   535979192  2025-04-07 09:20:25        7     7995 2025-04-07 13:13:08.862459+00:00
+4    2025-03-29  Tier1 Models              NaN   536075831  2025-04-07 09:20:25        7     7995 2025-04-07 13:13:08.862459+00:00
 ..          ...           ...              ...         ...                  ...      ...      ...                              ...
-134  4016-04-08  Tier1 Models              NaN           1  2025-04-07 05:53:39        6     8050 2025-04-07 09:53:32.661034+00:00
-135  4000-04-24  Tier1 Models              NaN           2  2025-04-07 05:53:39        2     8050 2025-04-07 09:53:32.661034+00:00
-136  2025-04-05  Tier1 Models              NaN      327280  2025-04-07 05:53:39        7     8050 2025-04-07 09:53:32.661034+00:00
-137  2025-04-06  Tier1 Models              NaN      484746  2025-04-07 05:53:39        1     8050 2025-04-07 09:53:32.661034+00:00
-138  2025-04-06  Tier1 Models              NaN       24112  2025-04-07 05:53:39        1     8051 2025-04-07 09:53:36.831399+00:00
+143  4016-04-08  Tier1 Models              NaN           1  2025-04-07 09:20:25        6     8050 2025-04-07 13:20:18.178355+00:00
+144  4000-04-24  Tier1 Models              NaN           2  2025-04-07 09:20:25        2     8050 2025-04-07 13:20:18.178355+00:00
+145  2025-04-05  Tier1 Models              NaN      327280  2025-04-07 09:20:25        7     8050 2025-04-07 13:20:18.178355+00:00
+146  2025-04-06  Tier1 Models              NaN      484746  2025-04-07 09:20:25        1     8050 2025-04-07 13:20:18.178355+00:00
+147  2025-04-06  Tier1 Models              NaN       24112  2025-04-07 09:20:25        1     8051 2025-04-07 13:20:22.505660+00:00
 
-[139 rows x 8 columns]
-2025-04-07 05:53:42 : CRM-513189 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error 'function' object is not subscriptable
-2025-04-07 05:53:42 : CRM-513189 - main - ERROR : Error in Main Block. Error object of type 'NoneType' has no len()
+[148 rows x 8 columns]
+2025-04-07 09:20:28 : CRM-652444 - run_metrics_engine - ERROR : Error in Run Metrics Main Block. Error You are trying to merge on object and float64 columns. If you wish to proceed you should use pd.concat
+2025-04-07 09:20:28 : CRM-652444 - main - ERROR : Error in Main Block. Error object of type 'NoneType' has no len()
