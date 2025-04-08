@@ -1,1006 +1,317 @@
-####################################################################                
-# Script: dqaas_opsgenie.py                                        #
-# Author: Santosh B                                                #
-# Date:   2023-06-05                                               #
-# Description: This Script contaisn an Alert calss , That can sent #
-# Opgenie alerts                                                   #
-####################################################################
-import time
-import requests
-import os
-from datetime import datetime
+Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+   profile_id         feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
+0           1       AUTOPAY_ENROLL            None        1  ...        767.44       1534.89       21024542.60       21027612.38
+1           1       AUTOPAY_ENROLL            None        5  ...          0.00          0.00       21012414.00       21012414.00
+2           1       AUTOPAY_ENROLL            None        6  ...          0.00          0.00       21016564.00       21016564.00
+3           2  MTHS_SINCE_UPG_ELIG               0        1  ...      12080.02      24160.04        1806746.71        1855066.80
+4           2  MTHS_SINCE_UPG_ELIG               0        5  ...          0.00          0.00        1584091.00        1584091.00
 
-OPSGENIE_BASE_URL = "https://api.opsgenie.com/v2/alerts/"
+[5 rows x 11 columns]
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 97
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO :
+Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+   profile_id         feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
+0           1       AUTOPAY_ENROLL             NaN        1  ...        767.44       1534.89       21024542.60       21027612.38
+1           1       AUTOPAY_ENROLL             NaN        5  ...          0.00          0.00       21012414.00       21012414.00
+2           1       AUTOPAY_ENROLL             NaN        6  ...          0.00          0.00       21016564.00       21016564.00
+3           2  MTHS_SINCE_UPG_ELIG               0        1  ...      12080.02      24160.04        1806746.71        1855066.80
+4           2  MTHS_SINCE_UPG_ELIG               0        5  ...          0.00          0.00        1584091.00        1584091.00
 
-class Alert:
-    """
-    Class name: Alert
-    Description: Class for handle Opsgenie alert
-    """
+[5 rows x 11 columns]
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 37
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO :
+Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
+       'prfl_run_ts', 'weekday', 'profile_id'],
+      dtype='object')
+      data_dt         feature_name grouped_columns  count_curr          prfl_run_ts  weekday  profile_id
+0  2025-04-06       AUTOPAY_ENROLL            None  21026243.0  2025-04-08 09:01:02        1           1
+1  2025-04-06  MTHS_SINCE_UPG_ELIG            >100  11682776.0  2025-04-08 09:01:02        1           2
+2  2025-04-06  MTHS_SINCE_UPG_ELIG           24-50  76890250.0  2025-04-08 09:01:02        1           2
+3  2025-04-06  MTHS_SINCE_UPG_ELIG            1-12  34858997.0  2025-04-08 09:01:02        1           2
+4  2025-04-06  MTHS_SINCE_UPG_ELIG               0   1833512.0  2025-04-08 09:01:02        1           2
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : Length of the Merged Records : 37
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO :
+Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
+       'count_curr', 'prfl_run_ts'],
+      dtype='object')
+   profile_id         feature_name grouped_columns  weekday  ... max_thresh_value     data_dt  count_curr          prfl_run_ts
+0           1       AUTOPAY_ENROLL            None        1  ...              NaN  2025-04-06  21026243.0  2025-04-08 09:01:02
+1           2  MTHS_SINCE_UPG_ELIG            >100        1  ...      11683070.51  2025-04-06  11682776.0  2025-04-08 09:01:02
+2           2  MTHS_SINCE_UPG_ELIG           24-50        1  ...      76894192.33  2025-04-06  76890250.0  2025-04-08 09:01:02
+3           2  MTHS_SINCE_UPG_ELIG            1-12        1  ...      34871959.57  2025-04-06  34858997.0  2025-04-08 09:01:02
+4           2  MTHS_SINCE_UPG_ELIG               0        1  ...       1855066.80  2025-04-06   1833512.0  2025-04-08 09:01:02
 
-    def __init__(self, api_key, proxy):
-        self.opsgenie_auth_headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"GenieKey {api_key}",
-        }
-        
-        self.alert_proxy = {
-            "http" : proxy,
-            "https" : proxy,
-        }
+[5 rows x 14 columns]
+2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+calculate_percentage_change
+calculate_sigma_value
+calculate_dq_status
+2025-04-08 09:01:05 : CRM-3195032 - run_metrics_engine - INFO : ------------------------------------------------------------------
+2025-04-08 09:01:05 : CRM-3195032 - run_metrics_engine - INFO : Length of the End Results : 73
+2025-04-08 09:01:05 : CRM-3195032 - run_metrics_engine - INFO :
+Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
+       'count_curr', 'prfl_run_ts', 'profile_type', 'table_name', 'dq_pillar',
+       'rule_name', 'threshold_limit', 'max_threshold_limit',
+       'comparison_type', 'run_frequency', 'pct_change', 'consistency_score',
+       'dq_score', 'sigma_value', 'dq_status'],
+      dtype='object')
+   profile_id         feature_name grouped_columns  weekday  ... consistency_score  dq_score  sigma_value  dq_status
+0           1       AUTOPAY_ENROLL            None        1  ...               0.0         0      outlier        LOW
+1           1       AUTOPAY_ENROLL            None        1  ...               0.0         0      outlier        LOW
+2           2  MTHS_SINCE_UPG_ELIG            >100        1  ...             100.0       100            1       PASS
+3           2  MTHS_SINCE_UPG_ELIG            >100        1  ...             100.0       100            1       PASS
+4           2  MTHS_SINCE_UPG_ELIG           24-50        1  ...             100.0       100            1       PASS
 
-    def create_alert(self, message, description, details, priority,tags):
-        """
-        Send alert to opsgenie.
-        input:
-            message: string - The message which we want to send to opsgenie
-            description: string - alert description
-            details: json - alert details
-            priority: string - Alert priority
-        return:
-            requestId: string - Opsgenie request Id (If the request is success)
-        """
-        
-        # Prepare json data which needs to send to Opsgenie.
-        json_data = {
-            "message": message,
-            "description": description,
-            "details": details,
-            "priority": priority,
-            "tags":tags
-        }
-        response = None
-        # Retry 3 times if the API request is failed.
-        for i in range(1, 4):
-            # Call Opsgenie alert creation API
-            response = requests.post(
-                OPSGENIE_BASE_URL,
-                headers=self.opsgenie_auth_headers,
-                json=json_data,
-                proxies=self.alert_proxy,
-            )
-            # Check whether the response is 202 (Accepted) or not.
-            if response.status_code == 202:
-                return response.text,response.json().get('requestId')
-            # If the response is not 202 wait for i*3 seconds and retry.
-            else:
-                time.sleep(i * 3)
-        return f"Unable to send the alert, Error: {response.text}",response.json().get('requestId')
-    
-    def create_opsgenie_alert(self,rules_data,idx,alert_type,priority,env,profile_type):   
-        message = ""
-        dq_score = ""
-        max_threshold = ""
-        try:                 
-            failure_category = alert_type
-            #prod_name = 'VSAD'
-            prod_name = rules_data.loc[idx,'PRODUCT_NAME']
-            #table_name = rules_data.loc[idx,'SRC_TBL']
-            table_name = rules_data.loc[idx,'TABLE_NAME']
-            db_name = rules_data.loc[idx,'DATABASE_NAME']
-            sub_domain = rules_data.loc[idx,'DATA_SUB_DMN']
-            data_src = rules_data.loc[idx,'DATA_SRC']
-            current_time_stamp = datetime.now().isoformat()
-            # run_date  = rules_data.loc[idx,'RULE_RUN_DT']
+[5 rows x 27 columns]
+2025-04-08 09:01:05 : CRM-3195032 - run_metrics_engine - INFO : ------------------------------------------------------------------
+2025-04-08 09:01:05 : CRM-3195032 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
+2025-04-08 09:01:05 : CRM-3195032 - isTokenExpired - INFO : Token File Available
+2025-04-08 09:01:05 : CRM-3195032 - isTokenExpired - INFO : Access Token is Valid
+2025-04-08 09:01:05 : CRM-3195032 - bigquery_client - INFO : Setting environment variable...
+2025-04-08 09:01:05 : CRM-3195032 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-04-08 09:01:05 : CRM-3195032 - load_result_to_bq_report_table - INFO :
+            ======================================================================================
+            Load Result Started for Table : vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+            Sequence Column: rpt_seq_num
+            Records Length: 73
+            Report Columns: Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
+       'count_curr', 'prfl_run_ts', 'profile_type', 'table_name', 'dq_pillar',
+       'rule_name', 'threshold_limit', 'max_threshold_limit',
+       'comparison_type', 'run_frequency', 'pct_change', 'consistency_score',
+       'dq_score', 'sigma_value', 'dq_status', 'rpt_ref_key'],
+      dtype='object')
+            ======================================================================================
 
-            if profile_type.lower() == "auto":
-                run_date  = current_time_stamp
-            elif profile_type.lower() == "auto_rule":
-                run_date  = rules_data.loc[idx,'PRFL_RUN_DT']
-                dq_score = rules_data.loc[idx,'TBL_DQ_SCORE']
-                max_threshold = rules_data.loc[idx,'MAX_THRESHOLD_LIMIT']
-            elif profile_type.lower() == "sql_rule":
-                dq_score = rules_data.loc[idx,'COL_VLD_PCT']
-                max_threshold = rules_data.loc[idx,'MAX_THRESHOLD_LIMIT']
-                meas_name = rules_data.loc[idx,'RULE_NAME']
-                run_date = rules_data.loc[idx,'PRFL_RUN_DT']
-            elif profile_type.lower() == "custom":
-                dq_ind = rules_data.loc[idx,'DQ_STATUS']
-                meas_name = rules_data.loc[idx,'RULE_NAME']
-                run_date  = rules_data.loc[idx,'PRFL_RUN_TS'].isoformat()
+2025-04-08 09:01:05 : CRM-3195032 - get_bq_max_sequence - INFO : sq_column: rpt_seq_num
+ bq_tablename : vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+2025-04-08 09:01:05 : CRM-3195032 - get_bq_max_sequence - INFO : BQ query: select IFNULL(MAX(rpt_seq_num), 0) from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+2025-04-08 09:01:09 : CRM-3195032 - get_bq_max_sequence - INFO : count:     f0_
+0  8258
+2025-04-08 09:01:09 : CRM-3195032 - get_bq_max_sequence - INFO : Max Sequence: 8258
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO :
+            Dataframe Columns:['profile_id', 'feature_name', 'grouped_columns', 'weekday', 'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value', 'min_thresh_value', 'max_thresh_value', 'data_dt', 'count_curr', 'prfl_run_ts', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'threshold_limit', 'max_threshold_limit', 'comparison_type', 'run_frequency', 'pct_change', 'dq_score', 'sigma_value', 'dq_status', 'rpt_ref_key', 'rpt_seq_num']
+            Requried Columns: ['avg_count_prev', 'variance_value', 'std_dev_value', 'pct_change', 'count_curr', 'dq_score', 'profile_id', 'weekday', 'rpt_seq_num', 'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'dq_status', 'prfl_run_ts']
 
-            if profile_type.lower() == "auto":
-                # auto SLA not met
-                message = f"LensX 2.0|{env}|{alert_type} |{prod_name} |{table_name}|{db_name}|{run_date} EST"
-                #message = f"SLA not met"                      
-                description = f"Run date: {run_date}, Table: {table_name}"   
-                details= {'Message': f"Table: {table_name} SLA not met",'Sub domain': sub_domain,'Data Src': data_src}
-                tags = [current_time_stamp,prod_name,table_name,env,alert_type]
-            elif profile_type.lower() == "auto_rule":
-                # auto rule failed
-                message = f"LensX 2.0|{env}|{alert_type} |{prod_name} |{table_name}|{db_name}|{run_date} EST"                     
-                description = f"Run date: {run_date}, Table: {table_name}, Score: {dq_score}, Threshold: {max_threshold}"                                            
-                details= {'Message': f"Table: {table_name} score is below threshold",'Sub domain': sub_domain,'Data Src': data_src}
-                tags = [current_time_stamp,prod_name,table_name,env,alert_type]
-            elif profile_type.lower() == "sql_rule":
-                # Sql rule profile
-                message = f"LensX 2.0|{env}|{failure_category} |{prod_name} |{meas_name}|{db_name}|{current_time_stamp} EST"                       
-                description = f"Run date: {run_date}, Rule: {meas_name}, Score: {dq_score}, Threshold: {max_threshold}"                                
-                details= {'Message': f"Rule: {meas_name} score is below threshold",'Sub domain': sub_domain,'Data Src': data_src}
-                tags = [current_time_stamp,prod_name,table_name,env,failure_category]
-            elif profile_type.lower() == "custom":
-                # custom profile
-                message = f"LensX 2.0|{env}|{alert_type} |{prod_name} |{meas_name}|{db_name}|{run_date} EST"                       
-                description = f"Run date: {run_date}, Rule: {meas_name}, DQ_Indicator: {dq_ind}"                                
-                details= {'Message': f"Rule: {meas_name} indicator is low",'Sub domain': sub_domain,'Data Src': data_src}
-                tags = [current_time_stamp,prod_name,table_name,env,alert_type]                        
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Columns for : ['avg_count_prev', 'variance_value', 'std_dev_value', 'pct_change', 'count_curr', 'dq_score', 'profile_id', 'weekday', 'rpt_seq_num', 'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'dq_status', 'prfl_run_ts']
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : dtype of grouped_columns1 : object
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : content of grouped_columns1 : 0     None
+1     None
+2     >100
+3     >100
+4    24-50
+5    24-50
+6     1-12
+7     1-12
+8        0
+9        0
+Name: grouped_columns, dtype: object
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 73 entries, 0 to 72
+Data columns (total 20 columns):
+ #   Column           Non-Null Count  Dtype
+---  ------           --------------  -----
+ 0   profile_id       73 non-null     Int64
+ 1   feature_name     73 non-null     object
+ 2   grouped_columns  73 non-null     object
+ 3   weekday          73 non-null     Int64
+ 4   avg_count_prev   64 non-null     float64
+ 5   variance_value   64 non-null     float64
+ 6   std_dev_value    64 non-null     float64
+ 7   data_dt          73 non-null     object
+ 8   count_curr       73 non-null     float64
+ 9   prfl_run_ts      73 non-null     object
+ 10  profile_type     73 non-null     object
+ 11  table_name       73 non-null     object
+ 12  dq_pillar        37 non-null     object
+ 13  rule_name        37 non-null     object
+ 14  pct_change       64 non-null     float64
+ 15  dq_score         73 non-null     int64
+ 16  sigma_value      73 non-null     object
+ 17  dq_status        73 non-null     object
+ 18  rpt_ref_key      73 non-null     object
+ 19  rpt_seq_num      73 non-null     int64
+dtypes: Int64(2), float64(5), int64(2), object(11)
+memory usage: 11.7+ KB
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : None
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : String.................
+feature_name
+grouped_columns
+sigma_value
+rpt_ref_key
+data_dt
+profile_type
+table_name
+dq_pillar
+rule_name
+dq_status
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : content of grouped_columns2 : 0     None
+1     None
+2     >100
+3     >100
+4    24-50
+5    24-50
+6     1-12
+7     1-12
+8        0
+9        0
+Name: grouped_columns, dtype: object
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : dtype of grouped_columns2 : object
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Numeric................
+avg_count_prev
+variance_value
+std_dev_value
+pct_change
+count_curr
+sigma_2_value
+dq_score
+consistency_score
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Integer................
+profile_id
+weekday
+rpt_seq_num
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Datetime...............
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : TIMESTAMP...............
+prfl_run_ts
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Completed..............
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 73 entries, 0 to 72
+Data columns (total 20 columns):
+ #   Column           Non-Null Count  Dtype
+---  ------           --------------  -----
+ 0   profile_id       73 non-null     int64
+ 1   feature_name     73 non-null     object
+ 2   grouped_columns  73 non-null     object
+ 3   weekday          73 non-null     int64
+ 4   avg_count_prev   73 non-null     object
+ 5   variance_value   73 non-null     object
+ 6   std_dev_value    73 non-null     object
+ 7   data_dt          73 non-null     object
+ 8   count_curr       73 non-null     object
+ 9   prfl_run_ts      73 non-null     datetime64[ns]
+ 10  profile_type     73 non-null     object
+ 11  table_name       73 non-null     object
+ 12  dq_pillar        73 non-null     object
+ 13  rule_name        73 non-null     object
+ 14  pct_change       73 non-null     object
+ 15  dq_score         73 non-null     object
+ 16  sigma_value      73 non-null     object
+ 17  dq_status        73 non-null     object
+ 18  rpt_ref_key      73 non-null     object
+ 19  rpt_seq_num      73 non-null     int64
+dtypes: datetime64[ns](1), int64(3), object(16)
+memory usage: 11.5+ KB
+2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : None
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 16912.52it/s]
+2025-04-08 09:01:13 : CRM-3195032 - load_result_to_bq_report_table - INFO : Loaded Result to vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+2025-04-08 09:01:13 : CRM-3195032 - send_email_report - INFO : Mail Query :
+                select rpt.*,
+                mtd.data_lob ,mtd.database_name ,mtd.table_name ,mtd.dq_pillar
+                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
+                inner join
+                (select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+                where rpt_ref_key = '20250408_085830' ) rpt
+                on mtd.profile_id = rpt.profile_id
+                and upper(mtd.profile_type) = 'RULE_CUSTOM'
 
-            response,request_id = self.create_alert(message, description, details, priority,tags)
+2025-04-08 09:01:13 : CRM-3195032 - run_bq_sql - INFO :
+BQ Select Query:
+                select rpt.*,
+                mtd.data_lob ,mtd.database_name ,mtd.table_name ,mtd.dq_pillar
+                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
+                inner join
+                (select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+                where rpt_ref_key = '20250408_085830' ) rpt
+                on mtd.profile_id = rpt.profile_id
+                and upper(mtd.profile_type) = 'RULE_CUSTOM'
 
-            return response,request_id,message
-        except Exception as err:
-            raise f"Error While creating the opsgenie alert. Error: {err}"
-==================================
+2025-04-08 09:01:13 : CRM-3195032 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
+2025-04-08 09:01:13 : CRM-3195032 - isTokenExpired - INFO : Token File Available
+2025-04-08 09:01:13 : CRM-3195032 - isTokenExpired - INFO : Access Token is Valid
+2025-04-08 09:01:13 : CRM-3195032 - bigquery_client - INFO : Setting environment variable...
+2025-04-08 09:01:13 : CRM-3195032 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-04-08 09:01:17 : CRM-3195032 - run_bq_sql - INFO :
+BQ Select Query:
+            select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_bus_elem_mtd
+            where DATA_BUS_ELEM in ('IN_MKT_WK')
 
-
-import re
-import pandas as pd
-import numpy as np
-import os
-import logging
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from datetime import datetime, timedelta
-from functools import reduce
-import warnings
-import math
-warnings.filterwarnings("ignore", category=FutureWarning)
-
-
-## Importing User Defined Modules
-import config_params as config
-from utils.send_email import SendEmail
-from scripts.dqaas_opsgenie import Alert
-from scripts.custom_common_handlers import CommonUtils, set_logger, get_args_parser
-from scripts.dqaas_jira import Jira_ticket
-
-
-
-class CustomeMetrics:
-    def __init__(self, data_src = None) -> None:
-        self.__set_default_values()
-        self.logger: logging = set_logger(
-            logger_path=config.LOGS_DIR,
-            log_filename="CustomMetricsLogs",
-            process_name='CRM',
-            # no_date_yn="Y",
-        )
-        
-        self.utils = CommonUtils(config, self.logger)
-        self.df_email_distro= pd.DataFrame()
-        
-    ## Default Values
-    def __set_default_values(self):
-        self.rule_col_rename_list = {
-            'profile_date': 'data_dt',
-            'pageName': 'value',
-            'pageflow': 'value' ,
-            'value': 'count_curr',
-            'insert_dt': 'rule_run_ts',
-        }
-        
-        self.final_col_rename_list = {
-            'profile_date': 'data_dt',
-            'value': 'count_curr',
-            'dimension': 'grouped_columns',
-            'rule_run_ts': 'prfl_run_ts',
-        }
-        
-        self.custom_profile_report_columns = {
-            "NUMERIC": [
-                'avg_count_prev', 'variance_value', 'std_dev_value',
-                'pct_change', 'count_curr','sigma_2_value','dq_score',
-                'consistency_score',
-            ],
-            "INT64": ['profile_id', 'weekday', 'rpt_seq_num', ],
-            "STRING": [
-                'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt',
-                'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'dq_status'
-            ],
-            "TIMESTAMP": ['prfl_run_ts'],
-        }
-        
-        self.email_rename_cols = {
-            'prfl_run_ts': 'Run Profile Date',
-            'data_lob': 'LOB',
-            # 'data_bus_elem': 'Domain Name',
-            'database_name': 'DB Name',
-            'table_name': 'Table Name',
-            'feature_name': 'Feature Name',
-            'grouped_columns': 'Dimensions',
-            'dq_pillar': 'DQ Category',
-            'weekday': 'Weekday',
-            'count_curr': 'Value',
-            'avg_count_prev': 'Avg Value',
-            'pct_change': 'Percentage Change',
-            'variance_value': 'Variance',
-            'std_dev_value': "Std Deviation",
-            'sigma_value': 'Sigma Value',
-            'consistency_score': 'Consistency Score',
-            'dq_score': 'DQ Score',
-            'dq_status': 'Status',
-        }
-        
-        ## Same order used in the Email
-        self.summary_cols = [
-            'prfl_run_ts', 'data_lob',  'database_name', 'table_name',
-            'feature_name', 'grouped_columns', 'dq_pillar',
-            'weekday', 'count_curr', 'avg_count_prev', 'pct_change',
-            'variance_value', 'std_dev_value', 'sigma_value','consistency_score',
-            'dq_score', 'dq_status'
-        ]
-        
-        ## Columns used to round off the float values in Email, 
-        ## Applicable Columns :- Should be available in self.summary_cols
-        self.email_float_cols = [
-           'count_curr', 'avg_count_prev', 'pct_change',
-            'variance_value', 'std_dev_value','consistency_score',
-             'dq_score',
-        ]
-    
-    ## Historical Queries 
-    @staticmethod
-    def historical_queries(comparison_type: str='WEEKDAYS'):
-        query = {
-            
-            "WEEKDAYS": r"""
-            with top_records as 
-            (
-            select *,row_number() over (partition by profile_id,feature_name,grouped_columns order by data_dt desc) as row_num 
-            from $rpt_table join 
-            unnest(GENERATE_DATE_ARRAY(date_sub($RUN_DT,INTERVAL 3 MONTH),$RUN_DT, INTERVAL 1 day)) as interval_Date
-            on data_dt = interval_Date
-            where profile_id IN ($prfl_id_list)
-            and data_dt != $RUN_DT
-            order by profile_id,feature_name, grouped_columns,data_dt desc
-            ) 
-            select profile_id,feature_name,grouped_columns,WEEKDAY,
-            round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
-            round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
-            round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
-            round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
-            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value, 
-            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value, 
-            round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
-            from top_records 
-            group by profile_id,feature_name,grouped_columns,WEEKDAY
-            order by profile_id,feature_name,grouped_columns,WEEKDAY;
-            """,
-            
-            "DTRAN_MONTHLY": r"""
-            with top_records as 
-            (select *,row_number() over (partition by profile_id,feature_name,grouped_columns order by data_dt desc) as row_num 
-            from $rpt_table join 
-            unnest(GENERATE_DATE_ARRAY(date_trunc(date_sub($RUN_DT,INTERVAL 3 MONTH), MONTH),$RUN_DT, INTERVAL 1 MONTH)) as interval_Date
-            on data_dt = interval_Date
-            where profile_id IN ($prfl_id_list)
-            and data_dt != date_trunc(date($RUN_DT), MONTH)
-            order by profile_id,feature_name, grouped_columns,data_dt desc) 
-            select profile_id,feature_name,grouped_columns,
-            round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
-            round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
-            round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
-            round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
-            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value, 
-            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value, 
-            round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
-            from top_records 
-            group by profile_id,feature_name,grouped_columns
-            order by profile_id,feature_name,grouped_columns;
-            """,
-        }
-        if comparison_type is None:
-            return query['WEEKDAYS']
-        if comparison_type.upper() in query:
-            return query[comparison_type.upper()]
-        return query['WEEKDAYS']
-              
-    ## Historical Results 
-    def get_historical_details(self, prfl_id_list: list, run_date: str, comparison_type: str='WEEKDAYS'):
-        hist_record_query = self.historical_queries(comparison_type)
-        
-        placeholders = {
-            "$rpt_table": config.dqaas_profile_rpt,
-            "$prfl_id_list": prfl_id_list,
-            "$RUN_DT": run_date,
-        }
-        # hist_record_query = hist_record_query.format(placeholders)
-        hist_record_query = reduce(lambda sql, replace_str: sql.replace(*replace_str), [hist_record_query, *list(placeholders.items())])
-        df_tbl_hist_rec = self.utils.run_bq_sql(
-            bq_auth=config.dq_gcp_auth_payload,
-            select_query=hist_record_query
-        )
-        df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
-        self.logger.info(f'Length of the historical groupby list : {len(df_tbl_hist_rec)}')
-        self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
-
-        if len(df_tbl_hist_rec) == 0:
-            self.logger.warning("Historical Data Not found for Identifying the variance")
-        
-        return df_tbl_hist_rec
-        
-    ## Comparing Hist and Current Records
-    def compare_historical_latest_dimensions(self, df_tbl_hist_rec, df_tbl_latest_rec: pd.DataFrame, comparison_type="WEEKDAYS", isHourly="N"):
-        
-        ## Historical Records
-        self.logger.info('------------------------------------------------------------------')
-        df_tbl_hist_rec = df_tbl_hist_rec.rename(columns={col: str(col).lower() for col in df_tbl_hist_rec.columns.tolist()})
-        df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].astype(str).replace('<NA>',np.nan).replace('nan',np.nan).replace('None',np.nan)
-        self.logger.info(f'Length of the historical Records : {len(df_tbl_hist_rec)}')
-        self.logger.info(f'\n{df_tbl_hist_rec.columns}\n{df_tbl_hist_rec.head()}')
-        
-        ## Latest Records
-        self.logger.info('------------------------------------------------------------------')
-        df_tbl_latest_rec = df_tbl_latest_rec.rename(columns={col: str(col).lower() for col in df_tbl_latest_rec.columns.tolist()})
-        df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].astype(str).replace('<NA>',np.nan).replace('nan',np.nan)
-        self.logger.info(f'Length of the latest Records : {len(df_tbl_latest_rec)}')
-        self.logger.info(f'\n{df_tbl_latest_rec.columns}\n{df_tbl_latest_rec.head()}')
-
-        ## Merging the Historical and Latest Records
-        self.logger.info('------------------------------------------------------------------')
-        
-        join_list = ['profile_id','feature_name','grouped_columns','weekday']
-        
-        if comparison_type == 'DTRAN_MONTHLY':
-            join_list.remove('weekday')
-
-        df_tbl_hist_rec['grouped_columns'] = df_tbl_hist_rec['grouped_columns'].fillna('').astype(str)
-        df_tbl_latest_rec['grouped_columns'] = df_tbl_latest_rec['grouped_columns'].fillna('').astype(str)
-                             
-        df_merge_rec= pd.merge(
-            df_tbl_hist_rec,
-            df_tbl_latest_rec,
-            on=join_list,
-            how='right'
-        )
-        
-        self.logger.info(f'Length of the Merged Records : {len(df_merge_rec)}')
-        self.logger.info(f'\n{df_merge_rec.columns}\n{df_merge_rec.head()}')
-        self.logger.info('------------------------------------------------------------------')
-        return df_merge_rec
-    
-    def send_opsgenie_jira_alert(self, reference_key: str):
-        try:
-            
-            report_query = f"""                
-                select rpt.*, 
+2025-04-08 09:01:17 : CRM-3195032 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
+2025-04-08 09:01:17 : CRM-3195032 - isTokenExpired - INFO : Token File Available
+2025-04-08 09:01:17 : CRM-3195032 - isTokenExpired - INFO : Access Token is Valid
+2025-04-08 09:01:17 : CRM-3195032 - bigquery_client - INFO : Setting environment variable...
+2025-04-08 09:01:17 : CRM-3195032 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-04-08 09:01:20 : CRM-3195032 - get_email_distros_from_table - INFO : Distro Details:1
+    BUS_ELEM_NUM DATA_BUS_ELEM PERSONA_1                      PERSONA_2 PERSONA_3                   UPDATE_MADE_TS                    ENTRY_MADE_TS
+0             3     IN_MKT_WK      None  dq-process-alerts@verizon.com        NA 2024-12-18 09:45:06.009963+00:00 2024-10-25 15:07:37.882855+00:00
+2025-04-08 09:01:20 : CRM-3195032 - email_distro - INFO : Email Dataframe:
+   BUS_ELEM_NUM DATA_BUS_ELEM PERSONA_1                      PERSONA_2 PERSONA_3                   UPDATE_MADE_TS                    ENTRY_MADE_TS
+0             3     IN_MKT_WK      None  dq-process-alerts@verizon.com        NA 2024-12-18 09:45:06.009963+00:00 2024-10-25 15:07:37.882855+00:00
+2025-04-08 09:01:20 : CRM-3195032 - get_mail_distro - INFO : Sub Domain: IN_MKT_WK, Persona: PERSONA_2
+2025-04-08 09:01:20 : CRM-3195032 - get_mail_distro - INFO : Mail Distro Dataframe:
+   BUS_ELEM_NUM DATA_BUS_ELEM PERSONA_1                      PERSONA_2 PERSONA_3                   UPDATE_MADE_TS                    ENTRY_MADE_TS
+0             3     IN_MKT_WK      None  dq-process-alerts@verizon.com        NA 2024-12-18 09:45:06.009963+00:00 2024-10-25 15:07:37.882855+00:00
+2025-04-08 09:01:20 : CRM-3195032 - get_mail_distro - INFO : Mail Distro: ['dq-process-alerts@verizon.com']
+2025-04-08 09:01:20 : CRM-3195032 - email_distro - INFO : Email Group: ['dq-process-alerts@verizon.com']
+2025-04-08 09:01:20 : CRM-3195032 - email_distro - INFO : Final Email Receipents: ['dq-process-alerts@verizon.com', 'dq-process-alerts@verizon.com']
+---------------- Email Object Constructor ----------------
+2025-04-08 09:01:20 : CRM-3195032 - send_email - INFO : Receipents: ['dq-process-alerts@verizon.com', 'dq-process-alerts@verizon.com']
+2025-04-08 09:01:20 : CRM-3195032 - send_email - INFO : Requesting for eMail Notification........
+2025-04-08 09:01:21 : CRM-3195032 - send_email - INFO : e-Mail Triggered Successfully to Receipents Address(['dq-process-alerts@verizon.com', 'dq-process-alerts@verizon.com'])
+2025-04-08 09:01:21 : CRM-3195032 - send_opsgenie_jira_alert - INFO : opsgenie info Query :
+                select rpt.*,
                 mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
-                from {config.dqaas_mtd} mtd 
-                inner join 
-                (select * from 
-                {config.dqaas_profile_rpt} 
-                where rpt_ref_key = '{reference_key}' ) rpt
+                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
+                inner join
+                (select * from
+                vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+                where rpt_ref_key = '20250408_085830' ) rpt
                 on mtd.profile_id = rpt.profile_id
                 and upper(mtd.profile_type) = 'RULE_CUSTOM'
-            """
-            self.logger.info(f"opsgenie info Query : {report_query}")
 
-            report_df = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=report_query
-            )
-            
-            if len(report_df) == 0:
-                raise Exception("No Records found for opsgenie alert")
-            
-            self.logger.info(f"report_df: {report_df}")
-            
-            for idx in report_df.index:
-                alert_type = None
-                priority = None
-
-                # print(f"idx: {idx}")
-                # print(report_df.loc[idx,])
-                # print(report_df.loc[idx, 'dq_status'])
-
-                # Fetch records where dq_status = 'LOW' OR sigma_value = 'outlier'
-                if report_df.loc[idx, 'dq_status'].upper() == "LOW" and report_df.loc[idx, 'sigma_value'].lower() == "outlier":
-                    alert_type = 'custom_profile_both_dq_status and sigma_value failed'
-                    priority = "P3"  
-
-                elif report_df.loc[idx, 'sigma_value'].lower() == "outlier":
-                    alert_type = 'custom_profile_outlier'
-                    priority = "P3" 
-                elif report_df.loc[idx, 'dq_status'].upper() == "LOW":
-                    alert_type = 'custom_profile_dq_status failed'
-                    priority = "P3"
-                else:
-                    continue
-                
-                env = config.get_config_values('environment', 'env')
-                data_src = {report_df.loc[idx,'data_src']}
-                data_sub_dmn = {report_df.loc[idx,'data_sub_dmn']}
-                dq_pillar = {report_df.loc[idx,'dq_pillar']}
-                database_name = {report_df.loc[idx,'database_name']}
-                src_tbl = report_df.loc[idx,'table_name']
-
-                if report_df.loc[idx, 'opsgenie_flag'].upper() == "Y":
-                    profile_type = "custom"
-                    api_key = report_df.loc[idx, 'opsgenie_api']           
-                    # Use default API key
-                    if api_key in config.EMPTY_STR_LIST or (isinstance(api_key, float) and math.isnan(api_key)):
-                        api_key = config.get_config_values('opsgenie', 'api_key')
-
-                    renamed_report_df  = report_df.rename(columns={col: str(col).upper() for col in report_df.columns.tolist()})
-                    gcp_http_proxy_url = config.GCP_HTTP_PROXY_URL
-                
-                    opsgenie_client = Alert(api_key=api_key, proxy=gcp_http_proxy_url)
-                    
-                    # Send Opsgenie alert
-                    response, request_id, message = opsgenie_client.create_opsgenie_alert(
-                        renamed_report_df, 0, alert_type, priority, env, profile_type
-                    )
-
-                    self.logger.info(f"Opsgenie response code: {response}")
-                    self.logger.info(f"Opsgenie alert sent successfully for {alert_type}")
-                elif report_df.loc[idx,'jira_assignee'] is not None: 
-                    try:
-                        JIRA_ASSIGNEE = report_df.loc[idx,'jira_assignee']
-                        lable = "DQaaS"
-                        self.logger.info(f"Calling Jira Module for: {report_df.loc[idx,'table_name']}")
-                        self.logger.info(f"dq_status: {report_df.loc[idx,'dq_status']}")                                                                        
-                        # summary = f"LensX|DQ Failure|Table: {report_df.loc[idx,'TABLE_NAME']} DQ status is LOW"
-                        summary = f"LensX | {env} | {data_src} | {data_sub_dmn} | {dq_pillar} | {database_name} | Table: {src_tbl} | {alert_type}"
-                        description = f"DQ has failed for Table : {report_df.loc[idx,'table_name']} on Run date : {report_df.loc[idx,'prfl_run_ts']}. DQ status is LOW"
-                        jira_client = Jira_ticket()
-                        ticket_id=jira_client.create_jira_ticket(JIRA_ASSIGNEE,summary, description,lable)
-                        self.logger.info(f"Jira Id created: {ticket_id}")
-                    except Exception as err:
-                        self.logger.error(f"Error occured while creating JIRA tickets {err}")                
-        except Exception as err:
-            self.logger.error(f"Error occured while creating opsgenie alert. Error: {err}")
-         
-    
-    ## Email distros
-    def email_distro(self, sub_domain:str): 
-        try:
-            self.df_email_distro: pd.DataFrame = self.utils.get_email_distros_from_table(data_sub_dmn_list=[sub_domain])
-            self.logger.info(f"Email Dataframe: \n{self.df_email_distro}")
-            
-            receipents_mail_group: list = self.utils.get_mail_distro(
-                df_val=self.df_email_distro,
-                persona='PERSONA_2',
-                sub_dmn=sub_domain
-            )
-            self.logger.info(f"Email Group: {receipents_mail_group}")
-            # receipents_mail_group.append(config.dqaas_default_email_distro)
-            receipents_mail_group += config.dqaas_default_email_distro
-            
-            self.logger.info(f"Final Email Receipents: {receipents_mail_group}")  
-            return receipents_mail_group
-        except Exception as err:
-            self.logger.error(f"Error in retrieving Email Distro. Assigning default email group. Error: {err}")
-        return config.dqaas_default_email_distro
-           
-    ## Summary Report Generation and Sending part
-    def send_email_report(self, reference_key: str, sub_domain: str):
-        try:
-            
-            report_query = f"""
-                select rpt.*, 
-                mtd.data_lob ,mtd.database_name ,mtd.table_name ,mtd.dq_pillar 
-                from {config.dqaas_auto_prfl_mtd} mtd 
-                inner join 
-                (select * from {config.dqaas_profile_rpt} 
-                where rpt_ref_key = '{reference_key}' ) rpt
+2025-04-08 09:01:21 : CRM-3195032 - run_bq_sql - INFO :
+BQ Select Query:
+                select rpt.*,
+                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
+                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
+                inner join
+                (select * from
+                vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+                where rpt_ref_key = '20250408_085830' ) rpt
                 on mtd.profile_id = rpt.profile_id
                 and upper(mtd.profile_type) = 'RULE_CUSTOM'
-            """
-            self.logger.info(f"Mail Query : {report_query}")
 
-            report_df = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=report_query
-            )
-            
-            if len(report_df) == 0:
-                raise Exception("No Records found for Email Summary")
+2025-04-08 09:01:21 : CRM-3195032 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
+2025-04-08 09:01:21 : CRM-3195032 - isTokenExpired - INFO : Token File Available
+2025-04-08 09:01:21 : CRM-3195032 - isTokenExpired - INFO : Access Token is Valid
+2025-04-08 09:01:21 : CRM-3195032 - bigquery_client - INFO : Setting environment variable...
+2025-04-08 09:01:21 : CRM-3195032 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+2025-04-08 09:01:25 : CRM-3195032 - send_opsgenie_jira_alert - INFO : report_df:      rpt_seq_num      rpt_ref_key  profile_id               prfl_run_ts     data_dt  ... data_src    dq_pillar_1 opsgenie_api opsgenie_flag jira_assignee
+0           8292  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
+1           8293  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
+2           8294  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
+3           8295  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
+4           8296  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
+..           ...              ...         ...                       ...         ...  ...      ...            ...          ...           ...           ...
+141         8271  20250408_085830           2 2025-04-08 09:01:02+00:00  2025-04-06  ...      GCP  Custom Metric         None             Y       redvi1f
+142         8272  20250408_085830           2 2025-04-08 09:01:02+00:00  2025-04-06  ...      GCP  Custom Metric         None             Y       redvi1f
+143         8273  20250408_085830           2 2025-04-08 09:01:02+00:00  2025-04-06  ...      GCP  Custom Metric         None             Y       redvi1f
+144         8274  20250408_085830           2 2025-04-08 09:01:02+00:00  2025-04-06  ...      GCP  Custom Metric         None             Y       redvi1f
+145         8275  20250408_085830           3 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
 
-            
-            receipents_mail_group = self.email_distro(sub_domain=sub_domain)
-            
-            # report_df = report_df[['prfl_run_ts', 'feature_name',
-            #     'grouped_columns', 'weekday', 'count_curr', 'avg_count_prev', 'pct_change',
-            #     'variance_value', 'std_dev_value', 'sigma_value']]
-
-            # col = [
-            #     'count_curr', 'avg_count_prev', 'pct_change',
-            #     'variance_value', 'std_dev_value'
-            # ]
-            
-            report_df = report_df[self.summary_cols]
-            col = self.email_float_cols
-
-            for c in col:
-                report_df[c] = report_df[c].fillna(np.nan).astype('float64').map(self.utils.round_off)
-            
-            report_df['prfl_run_ts'] = pd.to_datetime(report_df['prfl_run_ts']).dt.date
-            report_df = report_df.rename(columns=self.email_rename_cols).reset_index(drop=True)
-            
-            style_format_dict = {
-                'Weekday': '{:,.0f}',
-                'Value': '{:,.2f}',
-                'Avg Value': '{:,.2f}',
-                'Percentage Change': '{:,.2f}',
-                'Variance': '{:,.2f}',
-                'Std Deviation': '{:,.2f}'
-            }
-
-            style_details_dict = {
-                'outlier': '{background-color:#BF3131; color:#FFF; font-weight:bold;}'
-            }
-            validate_column = 'Sigma Value'
-            
-
-            email = SendEmail(
-                smtp=config.SMTP_SERVER_NAME,
-                mail_from=config.SENDER_EMAIL_ID,
-                loggerObj=self.logger
-            )
-            current_date = datetime.strftime(datetime.now() - timedelta(days=1), '%Y-%m-%d')
-            email.send_summary_with_highlights(
-                email_template_filepath=os.path.join(config.TEMPLATE_DIR, "dq_summary_report_template_with_highlights.html"),
-                mail_subject=f"DQaaS2.0 Custom profile summary for {sub_domain} - {current_date}",
-                message='',
-                df_val=report_df,
-                receipents_email_id=receipents_mail_group,
-                style_format=style_format_dict,
-                style_details_dict=style_details_dict,
-                validate_column=validate_column
-            )
-        except Exception as err:
-            self.logger.error(f"Error in Report Summary Email Block. Error:{err}")
-    
-    ## Loading Results to Report Table
-    def load_to_report_results(self, df_report_result: pd.DataFrame, reference_key: str):
-        try:
-            ## BigQuery Client Connection
-            dbclient, db_creds = self.utils.bigquery_client(
-                auth=config.dq_gcp_auth_payload
-            )
-        
-            df_report_result["rpt_ref_key"] = reference_key
-            
-            df_report_result = df_report_result.rename(columns={col: str(col).lower() for col in df_report_result.columns.tolist()})
-            
-            ## Loading Table Level Report
-            self.utils.load_result_to_bq_report_table(
-                dq_bq_client=dbclient,
-                dq_credentials=db_creds,
-                dq_report_table_name=config.dqaas_profile_rpt,
-                df_load_data=df_report_result,
-                seq_name='rpt_seq_num',
-                column_details=self.custom_profile_report_columns
-            )
-            
-        except Exception as err:
-            self.logger.error(f" {err}")
-    
-    ## Consistency Score, DQ Score, Variation Percentage
-    @staticmethod
-    def calculate_percentage_change(df):
-        print("calculate_percentage_change")
-        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
-        df['avg_count_prev'] = df['avg_count_prev'].astype(float)
-        df['threshold_limit'] = df['threshold_limit'].fillna(config.CUST_MIN_THRESHOLD).astype(float)
-        df['max_threshold_limit'] = df['max_threshold_limit'].fillna(config.CUST_MAX_THRESHOLD).astype(float)
-        # df['pct_change'] = (((df['count_curr'] - df['avg_count_prev']) / df['count_curr']) * 100).round(2)
-        df['pct_change'] = np.where( 
-            df['count_curr'].fillna(0) == 0, 0,
-            (((df['count_curr'] - df['avg_count_prev']) / df['count_curr']) * 100).round(2)
-        )
-        # df['consistency_score'] = ((df['count_curr'] / df['avg_count_prev']) * 100).round(2)
-        df['consistency_score'] = np.where( 
-            df['avg_count_prev'].fillna(0).astype(float) == 0, 0,
-            ((df['count_curr'] / df['avg_count_prev']) * 100).round(2)
-        )
-        df['dq_score'] = np.where(
-            (df['threshold_limit'] <= df['consistency_score']) & (df['consistency_score'] <= df['max_threshold_limit']),
-            100 , 0
-        )
-
-    ## 3 Sigma Values
-    @staticmethod
-    def calculate_sigma_value( df):
-        print("calculate_sigma_value")
-        df['std_dev_value'] = df['std_dev_value'].astype(float)
-        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
-        df['avg_count_prev'] = df['avg_count_prev'].astype(float)    
-        conditions_null_dim = [
-            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 1 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 1 * df['std_dev_value'].fillna(0).astype(float)),
-            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 2 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 2 * df['std_dev_value'].fillna(0).astype(float)),
-            (df['count_curr'] >= df['avg_count_prev'].fillna(0).astype(float) - 3 * df['std_dev_value'].fillna(0).astype(float)) & (df['count_curr'] <= df['avg_count_prev'].fillna(0).astype(float) + 3 * df['std_dev_value'].fillna(0).astype(float)),
-            pd.isna(df['grouped_columns'])
-        ]
-        choices = [1, 2, 3, 'outlier']
-        df['sigma_value'] = np.select(conditions_null_dim, choices, default='outlier')
-       
-    ## DQ Status  
-    @staticmethod
-    def calculate_dq_status(df):
-        print("calculate_dq_status")
-        df['std_dev_value'] = df['std_dev_value'].astype(float)
-        df['count_curr'] = df['count_curr'].fillna(0).astype(float)
-        df['avg_count_prev'] = df['avg_count_prev'].astype(float)
-        df['consistency_score'] = df['consistency_score'].fillna(0).astype(float)
-        df['min_thresh_value'] = df['min_thresh_value'].fillna(0).astype(float)
-        df['max_thresh_value'] = df['max_thresh_value'].fillna(0).astype(float)
-        df['threshold_limit'] = df['threshold_limit'].fillna(config.CUST_MIN_THRESHOLD).astype(float)
-        df['max_threshold_limit'] = df['max_threshold_limit'].fillna(config.CUST_MAX_THRESHOLD).astype(float)
-
-        main_condition = (
-            (df['count_curr'].fillna(0) != 0) & 
-            (df['max_thresh_value'] >= df['count_curr']) &
-            (df['min_thresh_value'] <= df['count_curr']) | 
-            (
-                (df['count_curr'] == df['avg_count_prev'].fillna(0).astype(float)) &
-                (df['std_dev_value'].fillna(0).astype(float) == df['avg_count_prev'].fillna(0).astype(float))
-            )
-        )
-        
-        dq_status_condition = [
-            main_condition & (( df['threshold_limit'] <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold_limit'])), 
-            
-            ( main_condition &  (df['consistency_score'] < df['threshold_limit'] ) |
-            ( (df['count_curr'] != 0 & (df['count_curr'] < df['min_thresh_value'])) &
-            (df['consistency_score'] < df['threshold_limit'] ) | 
-            (( df['threshold_limit']  <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold_limit'])) ) ),
-            
-            (  main_condition & (df['consistency_score'] > df['max_threshold_limit']) |
-            ( (df['count_curr'] != 0 & (df['count_curr'] > df['max_thresh_value'])) &
-            (df['consistency_score'] > df['max_threshold_limit']) | (( df['threshold_limit']  <= df['consistency_score'] ) & ( df['consistency_score'] <= df['max_threshold_limit'])) ) )
-        ]
-        choices = ["PASS", "LOW", "HIGH"]
-        df['dq_status'] = np.select(dq_status_condition, choices, default='NA')
-
-    ## Not in Use
-    def delete_current_null_records(self, prfl_id_list, business_date):
-        try:
-            delete_dup_record_query=f'''
-                delete from {config.dqaas_profile_rpt}
-                where date(rule_profile_dt)={business_date} 
-                and profile_id in ({prfl_id_list}) 
-                and weekday = extract(dayofweek from {business_date})  
-                and avg_count_prev is null
-                and pct_change is null 
-                and variance_avg_count_prev is null 
-                and std_dev_value is null 
-                and sigma_value is null;
-            '''
-            
-            num_recs_deleted = self.utils.run_bq_dml_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                dml_query=delete_dup_record_query
-            )
-            
-            self.logger.info(f'Number of latest records deleted :  {num_recs_deleted}')
-        except Exception as err:
-            self.logger.error(f"Error in Deleting historical records. Error:{err}")
-        
-    ## Profile Engine 
-    def profile_engine(self, df_rules: pd.DataFrame, param_to_replace: dict = None, comparison_type="WEEKDAYS"):
-        
-        ## Profiling Rules
-        # df_result = pd.DataFrame()
-        df_result = []
-        for i in df_rules.index:
-            self.logger.info('------------------------------------------------------------------')
-
-            try:
-                result = pd.DataFrame()
-                
-                profile_id = df_rules.loc[i, "profile_id"]
-                rule_sql = df_rules.loc[i, "rule_sql"]
-                data_src = df_rules.loc[i, "data_src"]
-                
-                # self.logger.info(f"Index: {i} : Rule ID:: {profile_id}, \nquery: {query}\n")
-                self.logger.info(f"Index:: {i}, Rule ID:: {profile_id}")
-                
-                rule_sql = reduce(lambda sql, replace_str: sql.replace(*replace_str), [rule_sql, *list(param_to_replace.items())])
-            
-                result = self.utils.get_query_data(
-                    data_src=data_src,
-                    dbname=df_rules.loc[i, "database_name"],
-                    select_query=rule_sql
-                )
-                
-                result = result \
-                .rename(columns={col: str(col).lower() for col in result.columns.tolist()}) \
-                .rename(columns=self.rule_col_rename_list)
-                
-                
-                if len(result) == 0:
-                    self.logger.info('No Records Found in Rules')
-                    # date_val = self.utils.run_bq_sql(
-                    #     bq_auth=config.dq_gcp_auth_payload,
-                    #     select_query=f'''select date({param_to_replace["RUN_DT"]}) as run_dt, extract(dayofweek from date({param_to_replace["RUN_DT"]})) as weekday;'''
-                    # )
-                    self.logger.info(f'Date Results :: \n{self.date_val}')
-                    result = pd.DataFrame.from_records([{
-                        "data_dt" : self.date_val.loc[0, "run_dt"],
-                        "feature_name" : df_rules.loc[i, "feature_name"],
-                        "dimension" : np.nan,
-                        "count_curr" : 0,
-                        "rule_run_ts" : datetime.now(),
-                        "weekday" : self.date_val.loc[0, "weekday"],
-                    }])
-
-                    if comparison_type == 'DTRAN_MONTHLY':
-                        result = result.drop(columns=["weekday"], errors='ignore', axis=1)
-                    
-                    # result["data_dt"] = date_val.loc[0, "run_dt"]
-                    # result["feature_name"] = df_rules.loc[i, "feature_name"]
-                    # result["dimension"] = np.nan
-                    # result["count_curr"] = 0
-                    # result["rule_run_ts"] = datetime.now()
-                    # result["weekday"] = date_val.loc[0, "weekday"]
-    
-                result["profile_id"] = profile_id
-                
-                self.logger.info(f'\n{result}')
-                # df_result = df_result.append(result)
-                res_val = []
-                res_val = result.to_dict("records")
-                df_result.extend(res_val)
-            except Exception as err:
-                self.logger.error(f"Error While Executing Rules: Error{err}")
-            
-            self.logger.info('------------------------------------------------------------------')
-            
-        dfEndRes = pd.DataFrame(df_result)
-        self.logger.info(f'Length of the Rules Result : {len(dfEndRes)}')
-        self.logger.info(f'\n{dfEndRes.columns}\n{dfEndRes.head()}')
-           
-        if len(dfEndRes) == 0:
-            raise ValueError("No Records Found in Custom Rule Profiling.")
-        # dfEndRes.to_csv("/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/dfEndRes1.csv")
-        # dfEndRes = dfEndRes.rename(columns=self.final_col_rename_list).reset_index(drop=True)
-        dfEndRes = dfEndRes.rename(columns=self.final_col_rename_list).reset_index(drop=True)
-        # dfEndRes.to_csv("/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/dfEndRes2.csv")
-        return dfEndRes
-    
-    @staticmethod
-    def int_df_to_list(df):
-        int_list: list = [i for i in df['profile_id']]
-        return list(set(int_list))
-    
-    ## Level 2 - Execution Layer : Run Rules, Get Hist Records, Compare the Results, and Find metrics
-    def run_metrics_engine(self, df_mtd: pd.DataFrame, start_date, end_date, val_replace_params:dict = None):
-        try:
-
-            df_mtd = df_mtd.reset_index(drop=True)
-            df_mtd["comparison_type"] = df_mtd["comparison_type"].fillna("WEEKDAYS")
-            df_mtd["run_frequency"] = df_mtd["run_frequency"].fillna("N")
-            comparisonType = df_mtd.loc[0,"comparison_type"]
-            isHourly = df_mtd.loc[0, 'run_frequency']
-            self.logger.info(f"Comparison:: {comparisonType}, Hourly:: {isHourly}")
-            ## Creating Profile ID list for historical Load
-            # rule_id_list: list = []
-            # for i in df_mtd['prfl_id']:
-            #     rule_id_list.append(i)
-            
-            print(df_mtd['profile_id'])
-            prfl_id_list = [int(i) for i in df_mtd['profile_id']]
-            prfl_id_list = list(set(prfl_id_list))
-            prfl_id_list = f"{prfl_id_list}".replace('[', '').replace(']' ,'')
-            self.logger.info(f'Profile ID List : {prfl_id_list}')
-        
-            ## For null results, weekday and date will be included
-            self.date_val = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=f'''
-                select date({val_replace_params["RUN_DT"]}) as run_dt,
-                extract(dayofweek from date({val_replace_params["RUN_DT"]})) as weekday;
-                '''
-            )
-            
-            df_latest = self.profile_engine(
-                df_rules=df_mtd,
-                param_to_replace=val_replace_params,
-            )
-            # df_latest = pd.DataFrame(df_latest)
-            # df_latest = df_latest.rename(columns=self.final_col_rename_list).reset_index(drop=True)
-            df_latest["prfl_run_ts"] = datetime.now().strftime(config.DTM_FMT)
-            if isHourly == 'Y':
-                df_latest["hour"] = df_latest["grouped_columns"]
-                
-            # df_latest.to_csv("/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/hour.csv")
-            
-            df_historical = self.get_historical_details(
-                run_date=start_date,
-                prfl_id_list=prfl_id_list,
-                comparison_type=comparisonType
-            )
-            
-
-            df_merged_dimensions = self.compare_historical_latest_dimensions(
-                df_tbl_hist_rec=df_historical,
-                df_tbl_latest_rec=df_latest,
-                comparison_type=comparisonType,
-                isHourly=isHourly,
-            )
-            
-            # df_merged_dimensions.to_csv(os.path.join(os.path.dirname(__file__), "merged_results.txt"))
-            mtdCols = ['profile_id', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'threshold_limit', 'max_threshold_limit', 'comparison_type', 'run_frequency']
-            df_final_result = pd.merge(
-                df_merged_dimensions,
-                df_mtd[mtdCols],
-                on=['profile_id'],
-                how='inner'
-            )
-            
-            
-            self.calculate_percentage_change(df_final_result)
-            self.calculate_sigma_value(df_final_result)
-            self.calculate_dq_status(df_final_result)
-            
-            # df_merged_dimensions.to_csv(os.path.join(os.path.dirname(__file__), "merged_results_final.txt"))
-
-            self.logger.info('------------------------------------------------------------------')
-            self.logger.info(f'Length of the End Results : {len(df_final_result)}')
-            self.logger.info(f'\n{df_final_result.columns}\n{df_final_result.head()}')
-            self.logger.info('------------------------------------------------------------------')
-            # df_final_result.to_csv(os.path.join(os.path.dirname(__file__), "cm_res_3.txt"))
-           
-            # self.delete_historical_records(hist_date=hist_date, prfl_id_list=prfl_id_list)
-            return df_final_result
-                
-        except Exception as err:
-            self.logger.error(f"Error in Run Metrics Main Block. Error {err}")
-    
-    ## Level 1 - Metrics Execution initiation - entry point for Time based and Engine Initiation - Main Block
-    def main_metrics_execution(self, df_mtd: pd.DataFrame, sub_domain: str, start_date: str, end_date: str):
-        
-        df_mtd = df_mtd.rename(columns={col: str(col).lower() for col in df_mtd.columns.tolist()})
-        
-        ## Reference Key -> For every new request one ID will be created
-        reference_key = datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.logger.info(f"\nRequest Reference:: {reference_key}\nSub Domain:: {sub_domain}")
-  
-        ## Placeholders for replacing the values in query during execution
-        replace_params_for_rules = {"RUN_DT": start_date, "$START_DATE": start_date, "$END_DATE":end_date,}
-        
-        ## Metrics Initiation
-        df_end_result = self.run_metrics_engine(
-            df_mtd=df_mtd,
-            start_date=start_date,
-            end_date=end_date,
-            val_replace_params=replace_params_for_rules
-        )
-        # df_end_result.to_csv("/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/df_end_result.csv")
-        if len(df_end_result) == 0 :
-            self.logger.error("No Records Found for Loading Custom Metrics")
-            return 
-        
-        ## Loading Results to Report
-        self.load_to_report_results(
-            df_report_result=df_end_result,
-            reference_key=reference_key
-        )
-        
-        ## Send Email
-        self.send_email_report(
-            reference_key=reference_key,
-            sub_domain=sub_domain
-        )
-
-          ## Send opsgenie alert
-        self.send_opsgenie_jira_alert(
-            reference_key=reference_key
-        )
-
-    ## Metadata Retrival    
-    def get_metadata(self, add_condition: str = None) -> pd.DataFrame:
-            if add_condition in config.EMPTY_STR_LIST:
-                add_condition = ""
-            
-            metadata_query = f"""
-                SELECT * FROM {config.dqaas_mtd}
-                WHERE upper(profile_type) = 'RULE_CUSTOM'    
-                and active_flag = 'Y'    
-                {add_condition}                     
-                ORDER BY PROFILE_ID;
-            """
-            
-            self.logger.info(f"fetch metadata_query: {metadata_query}")
-
-            df_val = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=metadata_query
-            )
-            
-            self.logger.info(f"Metadata Length: {len(df_val)}")
-            
-            if len(df_val) == 0:
-                raise ValueError("No Records Found for Custom Metrics")
-            
-            df_val = df_val.rename(columns={col: str(col).lower() for col in df_val.columns.tolist()})
-            return df_val
-
-
-    def laod_historical_report(self):
-
-        source_data = ''
-
-        try:
-            self.logger.info(f"Inside laod_historical_report")
-
-            fetch_sql = f""" select distinct mtd.profile_id, mtd.profile_type, mtd.dq_pillar, mtd.table_name, mtd.rule_name, mtd.feature_name, mtd.rule_sql from {config.dqaas_mtd} mtd
-            left join {config.dqaas_profile_rpt} rpt
-            on mtd.profile_id = rpt.profile_id
-            where rpt.profile_id is null
-            and upper(mtd.profile_type) = 'RULE_CUSTOM'"""
-
-            self.logger.info(f"Fetch SQL executing: {fetch_sql}")
-
-            source_data = self.utils.run_bq_sql(
-                bq_auth=config.dq_gcp_auth_payload,
-                select_query=fetch_sql)
-
-            self.logger.info(f"Fetched new onboarded tables")
-
-        except Exception as err:
-                self.logger.error(f"Error While Executing fetch_sql: Error{err}")
-
-        try:
-            for index, row in source_data.iterrows():
-                profile_id = row[0]
-                profile_type = row[1]
-                dq_pillar = row[2]
-                src_tbl = row[3]
-                meas_name = row[4].replace(" ","_")
-                meas_rule_sql = row[6]
-
-                self.logger.info(f"Orginal meas_rule_sql : {meas_rule_sql}")
-
-                modified_sql = meas_rule_sql.replace("= RUN_DT","between current_date() -1 and current_date() - 92")
-                modified_sql = re.sub(r"(?i)null.* as.* dimension","'null' AS dimension", modified_sql)
-                modified_sql = re.sub(r"(?i)^SELECT\s",f"""Select 999999 as rpt_seq_num, {profile_id} as profile_id, '{profile_type}' as profile_type, '{dq_pillar}' as dq_pillar, '{src_tbl}' as src_tbl, '{meas_name}' as meas_name, """, modified_sql)
-                modified_sql = re.sub(r"(?i)date\s*\(\s*current_timestamp\s*\)","current_timestamp", modified_sql)
-                modified_sql = re.sub(r"(?i)extract.*\(.*date.*current_timestamp\s*\(\s*\)\s*\)","current_timestamp()", modified_sql)
-                modified_sql = re.sub(r"(?i)group\s* by\s*.*","group by 1,2,3,4,5,6,7,8,9,11,12;", modified_sql)
-
-                insert_sql = f"""insert into {config.dqaas_profile_rpt} (rpt_seq_num, profile_id, profile_type, dq_pillar, src_tbl, meas_name, data_dt,feature_name,grouped_columns,count_curr,prfl_run_ts,weekday) """ + modified_sql
-
-                self.logger.info(f"History SQL for {src_tbl} : {insert_sql}")
-
-                #job = self.utils.client.query(insert_sql)
-
-                insert_status = self.utils.run_bq_dml_sql(
-                    bq_auth=config.dq_gcp_auth_payload,
-                    dml_query=insert_sql
-                )
-
-                self.logger.info('insert_status')
-                self.logger.info(insert_status)
-
-        except Exception as err:
-                self.logger.error(f"Error While Executing insert_sql: Error{err}")
-
-
-    def main(self):
-        try:
-            self.laod_historical_report()
-            df_mtd = self.get_metadata()
-            
-            sub_domain_list = df_mtd['data_sub_dmn'].unique().tolist()
-            start_date = "current_date-1"
-            end_date = "current_date-1"
-            
-            for dmn in sub_domain_list:
-                self.main_metrics_execution(
-                    df_mtd=df_mtd,
-                    sub_domain=dmn,
-                    start_date=start_date,
-                    end_date=end_date
-                )
-            
-        except ValueError as err:
-            self.logger.error(err)
-        except Exception as err:
-            self.logger.error(f"Error in Main Block. Error {err}")
-            
-            
-
-
-# CustomeMetrics().main()
+[146 rows x 33 columns]
+2025-04-08 09:01:25 : CRM-3195032 - send_opsgenie_jira_alert - ERROR : Error occured while creating opsgenie alert. Error: Error While creating the opsgenie alert. Error: 'PRODUCT_NAME'
+(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$
