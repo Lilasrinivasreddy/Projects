@@ -1,317 +1,40 @@
-Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
-       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
-       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
-      dtype='object')
-   profile_id         feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
-0           1       AUTOPAY_ENROLL            None        1  ...        767.44       1534.89       21024542.60       21027612.38
-1           1       AUTOPAY_ENROLL            None        5  ...          0.00          0.00       21012414.00       21012414.00
-2           1       AUTOPAY_ENROLL            None        6  ...          0.00          0.00       21016564.00       21016564.00
-3           2  MTHS_SINCE_UPG_ELIG               0        1  ...      12080.02      24160.04        1806746.71        1855066.80
-4           2  MTHS_SINCE_UPG_ELIG               0        5  ...          0.00          0.00        1584091.00        1584091.00
-
-[5 rows x 11 columns]
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 97
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO :
-Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
-       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
-       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
-      dtype='object')
-   profile_id         feature_name grouped_columns  weekday  ... std_dev_value sigma_2_value  min_thresh_value  max_thresh_value
-0           1       AUTOPAY_ENROLL             NaN        1  ...        767.44       1534.89       21024542.60       21027612.38
-1           1       AUTOPAY_ENROLL             NaN        5  ...          0.00          0.00       21012414.00       21012414.00
-2           1       AUTOPAY_ENROLL             NaN        6  ...          0.00          0.00       21016564.00       21016564.00
-3           2  MTHS_SINCE_UPG_ELIG               0        1  ...      12080.02      24160.04        1806746.71        1855066.80
-4           2  MTHS_SINCE_UPG_ELIG               0        5  ...          0.00          0.00        1584091.00        1584091.00
-
-[5 rows x 11 columns]
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 37
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO :
-Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
-       'prfl_run_ts', 'weekday', 'profile_id'],
-      dtype='object')
-      data_dt         feature_name grouped_columns  count_curr          prfl_run_ts  weekday  profile_id
-0  2025-04-06       AUTOPAY_ENROLL            None  21026243.0  2025-04-08 09:01:02        1           1
-1  2025-04-06  MTHS_SINCE_UPG_ELIG            >100  11682776.0  2025-04-08 09:01:02        1           2
-2  2025-04-06  MTHS_SINCE_UPG_ELIG           24-50  76890250.0  2025-04-08 09:01:02        1           2
-3  2025-04-06  MTHS_SINCE_UPG_ELIG            1-12  34858997.0  2025-04-08 09:01:02        1           2
-4  2025-04-06  MTHS_SINCE_UPG_ELIG               0   1833512.0  2025-04-08 09:01:02        1           2
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : Length of the Merged Records : 37
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO :
-Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
-       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
-       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
-       'count_curr', 'prfl_run_ts'],
-      dtype='object')
-   profile_id         feature_name grouped_columns  weekday  ... max_thresh_value     data_dt  count_curr          prfl_run_ts
-0           1       AUTOPAY_ENROLL            None        1  ...              NaN  2025-04-06  21026243.0  2025-04-08 09:01:02
-1           2  MTHS_SINCE_UPG_ELIG            >100        1  ...      11683070.51  2025-04-06  11682776.0  2025-04-08 09:01:02
-2           2  MTHS_SINCE_UPG_ELIG           24-50        1  ...      76894192.33  2025-04-06  76890250.0  2025-04-08 09:01:02
-3           2  MTHS_SINCE_UPG_ELIG            1-12        1  ...      34871959.57  2025-04-06  34858997.0  2025-04-08 09:01:02
-4           2  MTHS_SINCE_UPG_ELIG               0        1  ...       1855066.80  2025-04-06   1833512.0  2025-04-08 09:01:02
-
-[5 rows x 14 columns]
-2025-04-08 09:01:05 : CRM-3195032 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
-calculate_percentage_change
-calculate_sigma_value
-calculate_dq_status
-2025-04-08 09:01:05 : CRM-3195032 - run_metrics_engine - INFO : ------------------------------------------------------------------
-2025-04-08 09:01:05 : CRM-3195032 - run_metrics_engine - INFO : Length of the End Results : 73
-2025-04-08 09:01:05 : CRM-3195032 - run_metrics_engine - INFO :
-Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
-       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
-       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
-       'count_curr', 'prfl_run_ts', 'profile_type', 'table_name', 'dq_pillar',
-       'rule_name', 'threshold_limit', 'max_threshold_limit',
-       'comparison_type', 'run_frequency', 'pct_change', 'consistency_score',
-       'dq_score', 'sigma_value', 'dq_status'],
-      dtype='object')
-   profile_id         feature_name grouped_columns  weekday  ... consistency_score  dq_score  sigma_value  dq_status
-0           1       AUTOPAY_ENROLL            None        1  ...               0.0         0      outlier        LOW
-1           1       AUTOPAY_ENROLL            None        1  ...               0.0         0      outlier        LOW
-2           2  MTHS_SINCE_UPG_ELIG            >100        1  ...             100.0       100            1       PASS
-3           2  MTHS_SINCE_UPG_ELIG            >100        1  ...             100.0       100            1       PASS
-4           2  MTHS_SINCE_UPG_ELIG           24-50        1  ...             100.0       100            1       PASS
-
-[5 rows x 27 columns]
-2025-04-08 09:01:05 : CRM-3195032 - run_metrics_engine - INFO : ------------------------------------------------------------------
-2025-04-08 09:01:05 : CRM-3195032 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-04-08 09:01:05 : CRM-3195032 - isTokenExpired - INFO : Token File Available
-2025-04-08 09:01:05 : CRM-3195032 - isTokenExpired - INFO : Access Token is Valid
-2025-04-08 09:01:05 : CRM-3195032 - bigquery_client - INFO : Setting environment variable...
-2025-04-08 09:01:05 : CRM-3195032 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-04-08 09:01:05 : CRM-3195032 - load_result_to_bq_report_table - INFO :
-            ======================================================================================
-            Load Result Started for Table : vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-            Sequence Column: rpt_seq_num
-            Records Length: 73
-            Report Columns: Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
-       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
-       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
-       'count_curr', 'prfl_run_ts', 'profile_type', 'table_name', 'dq_pillar',
-       'rule_name', 'threshold_limit', 'max_threshold_limit',
-       'comparison_type', 'run_frequency', 'pct_change', 'consistency_score',
-       'dq_score', 'sigma_value', 'dq_status', 'rpt_ref_key'],
-      dtype='object')
-            ======================================================================================
-
-2025-04-08 09:01:05 : CRM-3195032 - get_bq_max_sequence - INFO : sq_column: rpt_seq_num
- bq_tablename : vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-2025-04-08 09:01:05 : CRM-3195032 - get_bq_max_sequence - INFO : BQ query: select IFNULL(MAX(rpt_seq_num), 0) from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-2025-04-08 09:01:09 : CRM-3195032 - get_bq_max_sequence - INFO : count:     f0_
-0  8258
-2025-04-08 09:01:09 : CRM-3195032 - get_bq_max_sequence - INFO : Max Sequence: 8258
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO :
-            Dataframe Columns:['profile_id', 'feature_name', 'grouped_columns', 'weekday', 'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value', 'min_thresh_value', 'max_thresh_value', 'data_dt', 'count_curr', 'prfl_run_ts', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'threshold_limit', 'max_threshold_limit', 'comparison_type', 'run_frequency', 'pct_change', 'dq_score', 'sigma_value', 'dq_status', 'rpt_ref_key', 'rpt_seq_num']
-            Requried Columns: ['avg_count_prev', 'variance_value', 'std_dev_value', 'pct_change', 'count_curr', 'dq_score', 'profile_id', 'weekday', 'rpt_seq_num', 'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'dq_status', 'prfl_run_ts']
-
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Columns for : ['avg_count_prev', 'variance_value', 'std_dev_value', 'pct_change', 'count_curr', 'dq_score', 'profile_id', 'weekday', 'rpt_seq_num', 'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'dq_status', 'prfl_run_ts']
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : dtype of grouped_columns1 : object
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : content of grouped_columns1 : 0     None
-1     None
-2     >100
-3     >100
-4    24-50
-5    24-50
-6     1-12
-7     1-12
-8        0
-9        0
-Name: grouped_columns, dtype: object
-<class 'pandas.core.frame.DataFrame'>
-RangeIndex: 73 entries, 0 to 72
-Data columns (total 20 columns):
- #   Column           Non-Null Count  Dtype
----  ------           --------------  -----
- 0   profile_id       73 non-null     Int64
- 1   feature_name     73 non-null     object
- 2   grouped_columns  73 non-null     object
- 3   weekday          73 non-null     Int64
- 4   avg_count_prev   64 non-null     float64
- 5   variance_value   64 non-null     float64
- 6   std_dev_value    64 non-null     float64
- 7   data_dt          73 non-null     object
- 8   count_curr       73 non-null     float64
- 9   prfl_run_ts      73 non-null     object
- 10  profile_type     73 non-null     object
- 11  table_name       73 non-null     object
- 12  dq_pillar        37 non-null     object
- 13  rule_name        37 non-null     object
- 14  pct_change       64 non-null     float64
- 15  dq_score         73 non-null     int64
- 16  sigma_value      73 non-null     object
- 17  dq_status        73 non-null     object
- 18  rpt_ref_key      73 non-null     object
- 19  rpt_seq_num      73 non-null     int64
-dtypes: Int64(2), float64(5), int64(2), object(11)
-memory usage: 11.7+ KB
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : None
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : String.................
-feature_name
-grouped_columns
-sigma_value
-rpt_ref_key
-data_dt
-profile_type
-table_name
-dq_pillar
-rule_name
-dq_status
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : content of grouped_columns2 : 0     None
-1     None
-2     >100
-3     >100
-4    24-50
-5    24-50
-6     1-12
-7     1-12
-8        0
-9        0
-Name: grouped_columns, dtype: object
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : dtype of grouped_columns2 : object
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Numeric................
-avg_count_prev
-variance_value
-std_dev_value
-pct_change
-count_curr
-sigma_2_value
-dq_score
-consistency_score
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Integer................
-profile_id
-weekday
-rpt_seq_num
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Datetime...............
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : TIMESTAMP...............
-prfl_run_ts
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : Completed..............
-<class 'pandas.core.frame.DataFrame'>
-RangeIndex: 73 entries, 0 to 72
-Data columns (total 20 columns):
- #   Column           Non-Null Count  Dtype
----  ------           --------------  -----
- 0   profile_id       73 non-null     int64
- 1   feature_name     73 non-null     object
- 2   grouped_columns  73 non-null     object
- 3   weekday          73 non-null     int64
- 4   avg_count_prev   73 non-null     object
- 5   variance_value   73 non-null     object
- 6   std_dev_value    73 non-null     object
- 7   data_dt          73 non-null     object
- 8   count_curr       73 non-null     object
- 9   prfl_run_ts      73 non-null     datetime64[ns]
- 10  profile_type     73 non-null     object
- 11  table_name       73 non-null     object
- 12  dq_pillar        73 non-null     object
- 13  rule_name        73 non-null     object
- 14  pct_change       73 non-null     object
- 15  dq_score         73 non-null     object
- 16  sigma_value      73 non-null     object
- 17  dq_status        73 non-null     object
- 18  rpt_ref_key      73 non-null     object
- 19  rpt_seq_num      73 non-null     int64
-dtypes: datetime64[ns](1), int64(3), object(16)
-memory usage: 11.5+ KB
-2025-04-08 09:01:09 : CRM-3195032 - load_result_to_bq_report_table - INFO : None
-100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 16912.52it/s]
-2025-04-08 09:01:13 : CRM-3195032 - load_result_to_bq_report_table - INFO : Loaded Result to vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-2025-04-08 09:01:13 : CRM-3195032 - send_email_report - INFO : Mail Query :
-                select rpt.*,
-                mtd.data_lob ,mtd.database_name ,mtd.table_name ,mtd.dq_pillar
-                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
-                inner join
-                (select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-                where rpt_ref_key = '20250408_085830' ) rpt
-                on mtd.profile_id = rpt.profile_id
-                and upper(mtd.profile_type) = 'RULE_CUSTOM'
-
-2025-04-08 09:01:13 : CRM-3195032 - run_bq_sql - INFO :
-BQ Select Query:
-                select rpt.*,
-                mtd.data_lob ,mtd.database_name ,mtd.table_name ,mtd.dq_pillar
-                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
-                inner join
-                (select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-                where rpt_ref_key = '20250408_085830' ) rpt
-                on mtd.profile_id = rpt.profile_id
-                and upper(mtd.profile_type) = 'RULE_CUSTOM'
-
-2025-04-08 09:01:13 : CRM-3195032 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-04-08 09:01:13 : CRM-3195032 - isTokenExpired - INFO : Token File Available
-2025-04-08 09:01:13 : CRM-3195032 - isTokenExpired - INFO : Access Token is Valid
-2025-04-08 09:01:13 : CRM-3195032 - bigquery_client - INFO : Setting environment variable...
-2025-04-08 09:01:13 : CRM-3195032 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-04-08 09:01:17 : CRM-3195032 - run_bq_sql - INFO :
-BQ Select Query:
-            select * from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_bus_elem_mtd
-            where DATA_BUS_ELEM in ('IN_MKT_WK')
-
-2025-04-08 09:01:17 : CRM-3195032 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-04-08 09:01:17 : CRM-3195032 - isTokenExpired - INFO : Token File Available
-2025-04-08 09:01:17 : CRM-3195032 - isTokenExpired - INFO : Access Token is Valid
-2025-04-08 09:01:17 : CRM-3195032 - bigquery_client - INFO : Setting environment variable...
-2025-04-08 09:01:17 : CRM-3195032 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-04-08 09:01:20 : CRM-3195032 - get_email_distros_from_table - INFO : Distro Details:1
-    BUS_ELEM_NUM DATA_BUS_ELEM PERSONA_1                      PERSONA_2 PERSONA_3                   UPDATE_MADE_TS                    ENTRY_MADE_TS
-0             3     IN_MKT_WK      None  dq-process-alerts@verizon.com        NA 2024-12-18 09:45:06.009963+00:00 2024-10-25 15:07:37.882855+00:00
-2025-04-08 09:01:20 : CRM-3195032 - email_distro - INFO : Email Dataframe:
-   BUS_ELEM_NUM DATA_BUS_ELEM PERSONA_1                      PERSONA_2 PERSONA_3                   UPDATE_MADE_TS                    ENTRY_MADE_TS
-0             3     IN_MKT_WK      None  dq-process-alerts@verizon.com        NA 2024-12-18 09:45:06.009963+00:00 2024-10-25 15:07:37.882855+00:00
-2025-04-08 09:01:20 : CRM-3195032 - get_mail_distro - INFO : Sub Domain: IN_MKT_WK, Persona: PERSONA_2
-2025-04-08 09:01:20 : CRM-3195032 - get_mail_distro - INFO : Mail Distro Dataframe:
-   BUS_ELEM_NUM DATA_BUS_ELEM PERSONA_1                      PERSONA_2 PERSONA_3                   UPDATE_MADE_TS                    ENTRY_MADE_TS
-0             3     IN_MKT_WK      None  dq-process-alerts@verizon.com        NA 2024-12-18 09:45:06.009963+00:00 2024-10-25 15:07:37.882855+00:00
-2025-04-08 09:01:20 : CRM-3195032 - get_mail_distro - INFO : Mail Distro: ['dq-process-alerts@verizon.com']
-2025-04-08 09:01:20 : CRM-3195032 - email_distro - INFO : Email Group: ['dq-process-alerts@verizon.com']
-2025-04-08 09:01:20 : CRM-3195032 - email_distro - INFO : Final Email Receipents: ['dq-process-alerts@verizon.com', 'dq-process-alerts@verizon.com']
----------------- Email Object Constructor ----------------
-2025-04-08 09:01:20 : CRM-3195032 - send_email - INFO : Receipents: ['dq-process-alerts@verizon.com', 'dq-process-alerts@verizon.com']
-2025-04-08 09:01:20 : CRM-3195032 - send_email - INFO : Requesting for eMail Notification........
-2025-04-08 09:01:21 : CRM-3195032 - send_email - INFO : e-Mail Triggered Successfully to Receipents Address(['dq-process-alerts@verizon.com', 'dq-process-alerts@verizon.com'])
-2025-04-08 09:01:21 : CRM-3195032 - send_opsgenie_jira_alert - INFO : opsgenie info Query :
-                select rpt.*,
-                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
-                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
-                inner join
-                (select * from
-                vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-                where rpt_ref_key = '20250408_085830' ) rpt
-                on mtd.profile_id = rpt.profile_id
-                and upper(mtd.profile_type) = 'RULE_CUSTOM'
-
-2025-04-08 09:01:21 : CRM-3195032 - run_bq_sql - INFO :
-BQ Select Query:
-                select rpt.*,
-                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
-                from vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta mtd
-                inner join
-                (select * from
-                vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
-                where rpt_ref_key = '20250408_085830' ) rpt
-                on mtd.profile_id = rpt.profile_id
-                and upper(mtd.profile_type) = 'RULE_CUSTOM'
-
-2025-04-08 09:01:21 : CRM-3195032 - isTokenExpired - INFO : Token file Path is /apps/opt/application/dev_smartdq/dev/dqaas//keys/dq_oidc_token.json
-2025-04-08 09:01:21 : CRM-3195032 - isTokenExpired - INFO : Token File Available
-2025-04-08 09:01:21 : CRM-3195032 - isTokenExpired - INFO : Access Token is Valid
-2025-04-08 09:01:21 : CRM-3195032 - bigquery_client - INFO : Setting environment variable...
-2025-04-08 09:01:21 : CRM-3195032 - bigquery_client - INFO : Connected to vz-it-np-izcv-dev-idmcdo-0 project space
-2025-04-08 09:01:25 : CRM-3195032 - send_opsgenie_jira_alert - INFO : report_df:      rpt_seq_num      rpt_ref_key  profile_id               prfl_run_ts     data_dt  ... data_src    dq_pillar_1 opsgenie_api opsgenie_flag jira_assignee
-0           8292  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
-1           8293  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
-2           8294  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
-3           8295  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
-4           8296  20250408_085830           7 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
-..           ...              ...         ...                       ...         ...  ...      ...            ...          ...           ...           ...
-141         8271  20250408_085830           2 2025-04-08 09:01:02+00:00  2025-04-06  ...      GCP  Custom Metric         None             Y       redvi1f
-142         8272  20250408_085830           2 2025-04-08 09:01:02+00:00  2025-04-06  ...      GCP  Custom Metric         None             Y       redvi1f
-143         8273  20250408_085830           2 2025-04-08 09:01:02+00:00  2025-04-06  ...      GCP  Custom Metric         None             Y       redvi1f
-144         8274  20250408_085830           2 2025-04-08 09:01:02+00:00  2025-04-06  ...      GCP  Custom Metric         None             Y       redvi1f
-145         8275  20250408_085830           3 2025-04-08 09:01:02+00:00  2025-04-06  ...       TD           None         None             Y       redvi1f
-
-[146 rows x 33 columns]
-2025-04-08 09:01:25 : CRM-3195032 - send_opsgenie_jira_alert - ERROR : Error occured while creating opsgenie alert. Error: Error While creating the opsgenie alert. Error: 'PRODUCT_NAME'
-(smartdq-venv) tdcldizcva007:/apps/opt/application/dev_smartdq/dev/dqaas/dqaas/scripts$
+2025-04-08 06:40:03 : DQ-PROCESS-Main - run_bq_sql - INFO : 
+BQ Query: select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.email_type,T1.product_name,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.jira_assignee,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T2.table_id, T2.server_name,T2.run_status,T2.data_availability_indicator,T2.run_dt
+            from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_meta T1  join
+            vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_control_table T2 on  
+            T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND  T1.profile_id = T2.table_id
+            WHERE  T2.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T2.run_status in ('Ready','RR') AND T1.data_src = 'TD' AND cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern') AND server_name = 'tdclpizcva007.verizon.com' 
+2025-04-08 06:40:03 : DQ-PROCESS-Main - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-08 06:40:03 : DQ-PROCESS-Main - isTokenExpired - INFO : Token File Available
+2025-04-08 06:40:03 : DQ-PROCESS-Main - isTokenExpired - INFO : Access Token is Valid
+2025-04-08 06:40:03 : DQ-PROCESS-Main - bigquery_client - INFO : Setting environment variable...
+2025-04-08 06:40:03 : DQ-PROCESS-Main - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-08 06:40:03 : DQ-PROCESS-Main - run_bq_sql - INFO : 
+BQ Query: select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.email_type,T1.product_name,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.jira_assignee,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T2.table_id, T2.server_name,T2.run_status,T2.data_availability_indicator,T2.run_dt
+            from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_meta T1  join
+            vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_control_table T2 on  
+            T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND  T1.profile_id = T2.table_id
+            WHERE  T2.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T2.run_status in ('Ready','RR') AND T1.data_src = 'GCP' AND cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern') AND server_name = 'tdclpizcva007.verizon.com' 
+2025-04-08 06:40:03 : DQ-PROCESS-Main - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-08 06:40:03 : DQ-PROCESS-Main - isTokenExpired - INFO : Token File Available
+2025-04-08 06:40:03 : DQ-PROCESS-Main - isTokenExpired - INFO : Access Token is Valid
+2025-04-08 06:40:03 : DQ-PROCESS-Main - bigquery_client - INFO : Setting environment variable...
+2025-04-08 06:40:03 : DQ-PROCESS-Main - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-08 06:40:06 : DQ-PROCESS-Main - read_metadata - INFO : read meta data query: select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.email_type,T1.product_name,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.jira_assignee,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T2.table_id, T2.server_name,T2.run_status,T2.data_availability_indicator,T2.run_dt
+            from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_meta T1  join
+            vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_control_table T2 on  
+            T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND  T1.profile_id = T2.table_id
+            WHERE  T2.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T2.run_status in ('Ready','RR') AND T1.data_src = 'GCP' AND cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern') AND server_name = 'tdclpizcva007.verizon.com' 
+2025-04-08 06:40:06 : DQ-PROCESS-Main - read_metadata - INFO : Count Result: 0
+2025-04-08 06:40:06 : DQ-PROCESS-Main - process_main - INFO : metadata_df: Empty DataFrame
+Columns: [profile_id, profile_type, project_name, database_name, table_name, email_type, product_name, data_sub_dmn, active_flag, data_src, feature_name, column_name, rule_desc, incr_date_col, incr_date_cond, unique_index_cols, tag_name, table_ind, invalid_rec_sql, history_load_sql, critical_flag, micro_seg_cols, aggregated_col, comparison_type, business_term_desc, profile_schedule_ts, threshold_limit, max_threshold_limit, email_distro, opsgenie_flag, opsgenie_team, opsgenie_api, parsed_sql, jira_assignee, run_frequency, data_lob, rule_name, dq_pillar, rule_sql, daily_flag, invalid_records_flag, auto_rerun_flag, invalid_sql_required, rerun_required, vsad, table_id, server_name, run_status, data_availability_indicator, run_dt]
+Index: []
+2025-04-08 06:40:06 : DQ-PROCESS-Main - read_metadata - INFO : read meta data query: select T1.profile_id,T1.profile_type,T1.project_name,T1.database_name,T1.table_name,T1.email_type,T1.product_name,T1.data_sub_dmn,T1.active_flag,T1.data_src,T1.feature_name,T1.column_name,T1.rule_desc,T1.incr_date_col,T1.incr_date_cond,T1.unique_index_cols,T1.tag_name,T1.table_ind,T1.invalid_rec_sql,T1.history_load_sql,T1.critical_flag,T1.micro_seg_cols,T1.aggregated_col,T1.comparison_type,T1.business_term_desc,T1.profile_schedule_ts,T1.threshold_limit,T1.max_threshold_limit,T1.email_distro,T1.opsgenie_flag,T1.opsgenie_team,T1.opsgenie_api,T1.parsed_sql,T1.jira_assignee,T1.run_frequency,T1.data_lob,T1.rule_name,T1.dq_pillar,T1.rule_sql,T1.daily_flag,T1.invalid_records_flag,T1.auto_rerun_flag,T1.invalid_sql_required,T1.rerun_required,T1.vsad,T2.table_id, T2.server_name,T2.run_status,T2.data_availability_indicator,T2.run_dt
+            from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_meta T1  join
+            vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_control_table T2 on  
+            T1.database_name = T2.database_name AND T1.table_name = T2.table_name AND  T1.profile_id = T2.table_id
+            WHERE  T2.data_availability_indicator = 'Y' and T1.active_flag = 'Y' AND T2.run_status in ('Ready','RR') AND T1.data_src = 'TD' AND cast(run_dt AS DATE) = date(current_timestamp(),'US/Eastern') AND server_name = 'tdclpizcva007.verizon.com' 
+2025-04-08 06:40:06 : DQ-PROCESS-Main - read_metadata - INFO : Count Result: 0
+2025-04-08 06:40:06 : DQ-PROCESS-Main - process_main - INFO : metadata_df: Empty DataFrame
+Columns: [profile_id, profile_type, project_name, database_name, table_name, email_type, product_name, data_sub_dmn, active_flag, data_src, feature_name, column_name, rule_desc, incr_date_col, incr_date_cond, unique_index_cols, tag_name, table_ind, invalid_rec_sql, history_load_sql, critical_flag, micro_seg_cols, aggregated_col, comparison_type, business_term_desc, profile_schedule_ts, threshold_limit, max_threshold_limit, email_distro, opsgenie_flag, opsgenie_team, opsgenie_api, parsed_sql, jira_assignee, run_frequency, data_lob, rule_name, dq_pillar, rule_sql, daily_flag, invalid_records_flag, auto_rerun_flag, invalid_sql_required, rerun_required, vsad, table_id, server_name, run_status, data_availability_indicator, run_dt]
+Index: []
