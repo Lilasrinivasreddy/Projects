@@ -1,3 +1,138 @@
+####################################################################                
+# Script: dqaas_opsgenie.py                                        #
+# Author: Santosh B                                                #
+# Date:   2023-06-05                                               #
+# Description: This Script contaisn an Alert calss , That can sent #
+# Opgenie alerts                                                   #
+####################################################################
+import time
+import requests
+import os
+from datetime import datetime
+
+OPSGENIE_BASE_URL = "https://api.opsgenie.com/v2/alerts/"
+
+class Alert:
+    """
+    Class name: Alert
+    Description: Class for handle Opsgenie alert
+    """
+
+    def __init__(self, api_key, proxy):
+        self.opsgenie_auth_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"GenieKey {api_key}",
+        }
+        
+        self.alert_proxy = {
+            "http" : proxy,
+            "https" : proxy,
+        }
+
+    def create_alert(self, message, description, details, priority,tags):
+        """
+        Send alert to opsgenie.
+        input:
+            message: string - The message which we want to send to opsgenie
+            description: string - alert description
+            details: json - alert details
+            priority: string - Alert priority
+        return:
+            requestId: string - Opsgenie request Id (If the request is success)
+        """
+        
+        # Prepare json data which needs to send to Opsgenie.
+        json_data = {
+            "message": message,
+            "description": description,
+            "details": details,
+            "priority": priority,
+            "tags":tags
+        }
+        response = None
+        # Retry 3 times if the API request is failed.
+        for i in range(1, 4):
+            # Call Opsgenie alert creation API
+            response = requests.post(
+                OPSGENIE_BASE_URL,
+                headers=self.opsgenie_auth_headers,
+                json=json_data,
+                proxies=self.alert_proxy,
+            )
+            # Check whether the response is 202 (Accepted) or not.
+            if response.status_code == 202:
+                return response.text,response.json().get('requestId')
+            # If the response is not 202 wait for i*3 seconds and retry.
+            else:
+                time.sleep(i * 3)
+        return f"Unable to send the alert, Error: {response.text}",response.json().get('requestId')
+    
+    def create_opsgenie_alert(self,rules_data,idx,alert_type,priority,env,profile_type):   
+        message = ""
+        dq_score = ""
+        max_threshold = ""
+        try:                 
+            failure_category = alert_type
+            #prod_name = 'VSAD'
+            prod_name = rules_data.loc[idx,'PRODUCT_NAME']
+            #table_name = rules_data.loc[idx,'SRC_TBL']
+            table_name = rules_data.loc[idx,'TABLE_NAME']
+            db_name = rules_data.loc[idx,'DATABASE_NAME']
+            sub_domain = rules_data.loc[idx,'DATA_SUB_DMN']
+            data_src = rules_data.loc[idx,'DATA_SRC']
+            current_time_stamp = datetime.now().isoformat()
+            # run_date  = rules_data.loc[idx,'RULE_RUN_DT']
+
+            if profile_type.lower() == "auto":
+                run_date  = current_time_stamp
+            elif profile_type.lower() == "auto_rule":
+                run_date  = rules_data.loc[idx,'PRFL_RUN_DT']
+                dq_score = rules_data.loc[idx,'TBL_DQ_SCORE']
+                max_threshold = rules_data.loc[idx,'MAX_THRESHOLD_LIMIT']
+            elif profile_type.lower() == "sql_rule":
+                dq_score = rules_data.loc[idx,'COL_VLD_PCT']
+                max_threshold = rules_data.loc[idx,'MAX_THRESHOLD_LIMIT']
+                meas_name = rules_data.loc[idx,'RULE_NAME']
+                run_date = rules_data.loc[idx,'PRFL_RUN_DT']
+            elif profile_type.lower() == "custom":
+                dq_ind = rules_data.loc[idx,'DQ_STATUS']
+                meas_name = rules_data.loc[idx,'RULE_NAME']
+                run_date  = rules_data.loc[idx,'PRFL_RUN_TS'].isoformat()
+
+            if profile_type.lower() == "auto":
+                # auto SLA not met
+                message = f"LensX 2.0|{env}|{alert_type} |{prod_name} |{table_name}|{db_name}|{run_date} EST"
+                #message = f"SLA not met"                      
+                description = f"Run date: {run_date}, Table: {table_name}"   
+                details= {'Message': f"Table: {table_name} SLA not met",'Sub domain': sub_domain,'Data Src': data_src}
+                tags = [current_time_stamp,prod_name,table_name,env,alert_type]
+            elif profile_type.lower() == "auto_rule":
+                # auto rule failed
+                message = f"LensX 2.0|{env}|{alert_type} |{prod_name} |{table_name}|{db_name}|{run_date} EST"                     
+                description = f"Run date: {run_date}, Table: {table_name}, Score: {dq_score}, Threshold: {max_threshold}"                                            
+                details= {'Message': f"Table: {table_name} score is below threshold",'Sub domain': sub_domain,'Data Src': data_src}
+                tags = [current_time_stamp,prod_name,table_name,env,alert_type]
+            elif profile_type.lower() == "sql_rule":
+                # Sql rule profile
+                message = f"LensX 2.0|{env}|{failure_category} |{prod_name} |{meas_name}|{db_name}|{current_time_stamp} EST"                       
+                description = f"Run date: {run_date}, Rule: {meas_name}, Score: {dq_score}, Threshold: {max_threshold}"                                
+                details= {'Message': f"Rule: {meas_name} score is below threshold",'Sub domain': sub_domain,'Data Src': data_src}
+                tags = [current_time_stamp,prod_name,table_name,env,failure_category]
+            elif profile_type.lower() == "custom":
+                # custom profile
+                message = f"LensX 2.0|{env}|{alert_type} |{prod_name} |{meas_name}|{db_name}|{run_date} EST"                       
+                description = f"Run date: {run_date}, Rule: {meas_name}, DQ_Indicator: {dq_ind}"                                
+                details= {'Message': f"Rule: {meas_name} indicator is low",'Sub domain': sub_domain,'Data Src': data_src}
+                tags = [current_time_stamp,prod_name,table_name,env,alert_type]                        
+
+            response,request_id = self.create_alert(message, description, details, priority,tags)
+
+            return response,request_id,message
+        except Exception as err:
+            raise f"Error While creating the opsgenie alert. Error: {err}"
+==================================
+
+
 import re
 import pandas as pd
 import numpy as np
