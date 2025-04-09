@@ -1,28 +1,350 @@
-SELECT rule_CL_nonemp_fieldglass_instance_Completeness, COUNT(*) as count FROM( SELECT CASE (fieldglass_instance IS NOT NULL OR LTRIM(RTRIM(fieldglass_instance))<>'') WHEN (fieldglass_instance NOT LIKE LTRIM(RTRIM('VZBP')) AND fieldglass_instance NOT LIKE LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_instance_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_instance_Completeness;
-SELECT rule_CL_nonemp_fieldglass_vendor_number_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_vendor_number IS NULL OR LTRIM(RTRIM(fieldglass_vendor_number))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_vendor_number_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_vendor_number_Completeness;
-SELECT rule_CL_nonemp_fieldglass_currency_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_currency IS NULL OR LTRIM(RTRIM(fieldglass_currency))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_currency_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_currency_Completeness;
-SELECT rule_CL_nonemp_fieldglass_hr_line_of_business_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_hr_line_of_business IS NULL OR LTRIM(RTRIM(fieldglass_hr_line_of_business))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_hr_line_of_business_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_hr_line_of_business_Completeness;
-SELECT rule_CL_nonemp_fieldglass_master_worker_id_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_master_worker_id IS NULL OR LTRIM(RTRIM(fieldglass_master_worker_id))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_master_worker_id_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_master_worker_id_Completeness;
-SELECT rule_CL_nonemp_fieldglass_site_code_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_site_code IS NULL OR LTRIM(RTRIM(fieldglass_site_code))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_site_code_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_site_code_Completeness;
-SELECT rule_CL_nonemp_fieldglass_state_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN LTRIM(RTRIM(office_country_code_3_char))='USA' AND(fieldglass_state IS NULL OR LTRIM(RTRIM(fieldglass_state))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_state_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_state_Completeness;
-SELECT rule_CL_nonemp_fieldglass_worker_contractor_type_description_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_worker_contractor_type_description IS NULL OR LTRIM(RTRIM(fieldglass_worker_contractor_type_description))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_worker_contractor_type_description_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_worker_contractor_type_description_Completeness;
-SELECT rule_CL_nonemp_fieldglass_business_unit_code_Completeness, COUNT(*) as count FROM( SELECT CASE WHEN (fieldglass_business_unit_code IS NULL OR LTRIM(RTRIM(fieldglass_business_unit_code))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_business_unit_code_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_business_unit_code_Completeness;
-SELECT rule_CL_nonemp_office_state_code_Completeness, COUNT(*) as count FROM( SELECT CASE office_country_code_3_char = 'USA' WHEN (office_state_code IS NULL OR LTRIM(RTRIM(office_state_code))='') THEN 'INVALID' ELSE'VALID' END AS rule_CL_nonemp_office_state_code_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_office_state_code_Completeness;
-SELECT rule_CL_nonemp_fieldglass_site_name_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_site_name IS NULL OR LTRIM(RTRIM(fieldglass_site_name))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_site_name_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_site_name_Completeness;
-SELECT rule_CL_nonemp_fieldglass_cost_center_name_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_cost_center_name IS NULL OR LTRIM(RTRIM(fieldglass_cost_center_name))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_cost_center_name_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_cost_center_name_Completeness;
-SELECT rule_CL_nonemp_fieldglass_cost_center_code_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_cost_center_code IS NULL OR LTRIM(RTRIM(fieldglass_cost_center_code))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_cost_center_code_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_cost_center_code_Completeness;
-SELECT rule_CL_nonemp_fieldglass_country_code_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_country_code IS NULL OR LTRIM(RTRIM(fieldglass_country_code))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_country_code_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_country_code_Completeness;
-SELECT rule_CL_nonemp_fieldglass_business_unit_name_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_business_unit_name IS NULL OR LTRIM(RTRIM(fieldglass_business_unit_name))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_business_unit_name_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_business_unit_name_Completeness;
-SELECT rule_CL_nonemp_fieldglass_contingent_worker_type_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_contingent_worker_type IS NULL OR LTRIM(RTRIM(fieldglass_contingent_worker_type))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_contingent_worker_type_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_contingent_worker_type_Completeness;
-SELECT rule_CL_nonemp_fieldglass_work_order_id_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_work_order_id IS NULL OR LTRIM(RTRIM(fieldglass_work_order_id))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_work_order_id_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_work_order_id_Completeness;
-SELECT rule_CL_nonemp_fieldglass_work_order_revision_owner_eid_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_work_order_revision_owner_eid IS NULL OR LTRIM(RTRIM(fieldglass_work_order_revision_owner_eid))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_work_order_revision_owner_eid_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_work_order_revision_owner_eid_Completeness;
-SELECT rule_CL_nonemp_fieldglass_job_posting_title_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_job_posting_title IS NULL OR LTRIM(RTRIM(fieldglass_job_posting_title))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_job_posting_title_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_job_posting_title_Completeness;
-SELECT rule_CL_nonemp_fieldglass_work_order_revision_owner_name_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_work_order_revision_owner_name IS NULL OR LTRIM(RTRIM(fieldglass_work_order_revision_owner_name))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_work_order_revision_owner_name_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_work_order_revision_owner_name_Completeness;
-SELECT rule_CL_nonemp_fieldglass_vendor_name_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_vendor_name IS NULL OR LTRIM(RTRIM(fieldglass_vendor_name))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZBP')),LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_vendor_name_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_vendor_name_Completeness;
-SELECT rule_CL_nonemp_office_state_name_Completeness, COUNT(*) as count FROM( SELECT CASE office_country_code_3_char = 'USA' WHEN (office_state_name IS NULL OR LTRIM(RTRIM(office_state_name))='') THEN 'INVALID' ELSE'VALID' END AS rule_CL_nonemp_office_state_name_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_office_state_name_Completeness;
-SELECT rule_CL_nonemp_fieldglass_working_model_Completeness, COUNT(*) as count FROM(SELECT CASE WHEN (fieldglass_working_model IS NULL OR LTRIM(RTRIM(fieldglass_working_model))='' ) AND fieldglass_instance LIKE ANY (LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_working_model_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_working_model_Completeness;
+2025-04-09 10:10:06 : CRM-15710 - main_metrics_execution - INFO : 
+Request Reference:: 20250409_101006
+Sub Domain:: Consumer
+2025-04-09 10:10:06 : CRM-15710 - run_metrics_engine - INFO : Comparison:: WEEKDAYS, Hourly:: N
+2025-04-09 10:10:06 : CRM-15710 - run_metrics_engine - INFO : Profile ID List : 354, 365, 400, 402, 377
+2025-04-09 10:10:06 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query: 
+                select date(current_date-1) as run_dt,
+                extract(dayofweek from date(current_date-1)) as weekday;
+                
+2025-04-09 10:10:06 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:06 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:06 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:06 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:06 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:12 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:12 : CRM-15710 - profile_engine - INFO : Index:: 0, Rule ID:: 402
+2025-04-09 10:10:12 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query: select meas_dt AS Profile_date, 
+"CUS ATR DL DVGEN PATTERN CNT" AS feature_name, 
+null AS dimension, 
+sum(device_generation_pttrn) AS Value, 
+current_timestamp as insert_dt , 
+extract(dayofweek from meas_dt) AS weekday 
+from (select meas_dt,case when cast(device_generation as string) is not null AND (upper(device_generation) like "%4G%" or upper(device_generation) like "%5G%") then 0 else 1 end device_generation_pttrn from (select device_generation,cast(trans_dt as date) meas_dt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_customer_core_tbls.customer_attributes_daily_norm_v0 where Cast(trans_dt AS DATE) = CURRENT_DATE -1 ) t ) y group by 1
+2025-04-09 10:10:12 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:12 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:12 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:12 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:12 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:16 : CRM-15710 - profile_engine - INFO : No Records Found in Rules
+2025-04-09 10:10:16 : CRM-15710 - profile_engine - INFO : Date Results :: 
+       run_dt  weekday
+0  2025-04-08        3
+2025-04-09 10:10:16 : CRM-15710 - profile_engine - INFO : 
+      data_dt feature_name  ...  weekday  profile_id
+0  2025-04-08         None  ...        3         402
 
+[1 rows x 7 columns]
+2025-04-09 10:10:16 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:16 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:16 : CRM-15710 - profile_engine - INFO : Index:: 1, Rule ID:: 377
+2025-04-09 10:10:16 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query: select meas_dt AS Profile_date, 
+"CUS ATR DL ACC CUSID SQID ROW CNT" AS feature_name, 
+null AS dimension, 
+sum(cnt) AS Value, 
+current_timestamp as insert_dt , 
+extract(dayofweek from meas_dt) AS weekday 
+from (select count(1) cnt,cast(trans_dt as date) as meas_dt from vz-it-pr-gudv-dtwndo-0.aid_dtwin_customer_core_tbls_v.customer_attributes_daily_norm_v0 where Cast(trans_dt AS DATE)>= CURRENT_DATE -1 AND Cast(trans_dt AS DATE)<=CURRENT_DATE group by acct_num,cust_id,cust_line_seq_id,cast(trans_dt as date)) group by 1
+2025-04-09 10:10:16 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:16 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:16 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:16 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:16 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:20 : CRM-15710 - profile_engine - INFO : No Records Found in Rules
+2025-04-09 10:10:20 : CRM-15710 - profile_engine - INFO : Date Results :: 
+       run_dt  weekday
+0  2025-04-08        3
+2025-04-09 10:10:20 : CRM-15710 - profile_engine - INFO : 
+      data_dt feature_name  ...  weekday  profile_id
+0  2025-04-08         None  ...        3         377
 
+[1 rows x 7 columns]
+2025-04-09 10:10:20 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:20 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:20 : CRM-15710 - profile_engine - INFO : Index:: 2, Rule ID:: 365
+2025-04-09 10:10:20 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query: select meas_dt AS Profile_date, 
+"CU ATR SM MT AC CID SQID ROW CNT" AS feature_name, 
+null AS dimension, 
+sum(cnt) AS Value, 
+current_timestamp as insert_dt 
+from (select count(1) cnt,cast(report_month as date) meas_dt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_customer_core_tbls_v.customer_attributes_summary_norm_v0 where cast(report_month as date) BETWEEN (CURRENT_DATE()- INTERVAL 1 MONTH) AND (CURRENT_DATE) group by acct_num,cust_id,cust_line_seq_id ,cast(report_month as date)) y group by 1
+2025-04-09 10:10:20 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:20 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:20 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:20 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:20 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:24 : CRM-15710 - profile_engine - INFO : 
+      data_dt  ... profile_id
+0  2025-04-01  ...        365
 
+[1 rows x 6 columns]
+2025-04-09 10:10:24 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:24 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:24 : CRM-15710 - profile_engine - INFO : Index:: 3, Rule ID:: 354
+2025-04-09 10:10:24 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query: select cast(report_month as date) as profile_date,
+"CU ATR MN MT PRISMT PTRN CNT" as feature_name,
+null as dimension,
+COUNT(*) as value,
+current_timestamp as insert_date,
+extract(dayofweek from cast(report_month as date)) AS weekday
+from vz-it-pr-gudv-dtwndo-0.aid_dtwin_customer_core_tbls_v.customer_attributes_monthly_norm_v0 where cast(report_month as date) BETWEEN (CURRENT_DATE()- INTERVAL 1 MONTH) AND (CURRENT_DATE) group by 1
+2025-04-09 10:10:24 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:24 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:24 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:24 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:24 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:28 : CRM-15710 - profile_engine - INFO : No Records Found in Rules
+2025-04-09 10:10:28 : CRM-15710 - profile_engine - INFO : Date Results :: 
+       run_dt  weekday
+0  2025-04-08        3
+2025-04-09 10:10:28 : CRM-15710 - profile_engine - INFO : 
+      data_dt feature_name  ...  weekday  profile_id
+0  2025-04-08         None  ...        3         354
 
-fieldglass_instance IS NOT NULL AND LTRIM(RTRIM(fieldglass_instance))<>'' AND fieldglass_instance LIKE LTRIM(RTRIM('VZBP')) AND fieldglass_instance LIKE LTRIM(RTRIM('VZGT'))
+[1 rows x 7 columns]
+2025-04-09 10:10:28 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:28 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:28 : CRM-15710 - profile_engine - INFO : Index:: 4, Rule ID:: 400
+2025-04-09 10:10:28 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query: select meas_dt AS Profile_date, 
+"CU ATR SM MT AC CID SQID ROW CNT" AS feature_name, 
+null AS dimension, 
+sum(cnt) AS Value, 
+current_timestamp as insert_dt 
+from (select count(1) cnt,cast(report_month as date) meas_dt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_customer_core_tbls.customer_attributes_summary_norm_v0 where cast(report_month as date) BETWEEN (CURRENT_DATE()- INTERVAL 1 MONTH) AND (CURRENT_DATE) group by acct_num,cust_id,cust_line_seq_id ,cast(report_month as date)) y group by 1
+2025-04-09 10:10:28 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:28 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:28 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:28 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:28 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:32 : CRM-15710 - profile_engine - INFO : 
+      data_dt  ... profile_id
+0  2025-04-01  ...        400
+
+[1 rows x 6 columns]
+2025-04-09 10:10:32 : CRM-15710 - profile_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:32 : CRM-15710 - profile_engine - INFO : Length of the Rules Result : 5
+2025-04-09 10:10:32 : CRM-15710 - profile_engine - INFO : 
+Index(['data_dt', 'feature_name', 'dimension', 'count_curr', 'rule_run_ts',
+       'weekday', 'profile_id'],
+      dtype='object')
+      data_dt                      feature_name  ... weekday  profile_id
+0  2025-04-08                              None  ...     3.0         402
+1  2025-04-08                              None  ...     3.0         377
+2  2025-04-01  CU ATR SM MT AC CID SQID ROW CNT  ...     NaN         365
+3  2025-04-08                              None  ...     3.0         354
+4  2025-04-01  CU ATR SM MT AC CID SQID ROW CNT  ...     NaN         400
+
+[5 rows x 7 columns]
+2025-04-09 10:10:32 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query: 
+            with top_records as 
+            (
+            select *,row_number() over (partition by profile_id,feature_name,grouped_columns order by data_dt desc) as row_num 
+            from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report join 
+            unnest(GENERATE_DATE_ARRAY(date_sub(current_date-1,INTERVAL 3 MONTH),current_date-1, INTERVAL 1 day)) as interval_Date
+            on data_dt = interval_Date
+            where profile_id IN (354, 365, 400, 402, 377)
+            and data_dt != current_date-1
+            order by profile_id,feature_name, grouped_columns,data_dt desc
+            ) 
+            select profile_id,feature_name,grouped_columns,WEEKDAY,
+            round(sum(ifnull(count_curr, 0)), 2) as sum_count_prev,
+            round(avg(ifnull(count_curr, 0)), 2) as avg_count_prev,
+            round(var_pop(ifnull(count_curr, 0)), 2) as variance_value,
+            round(stddev_pop(ifnull(count_curr, 0)), 2) as std_dev_value,
+            round(stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as sigma_2_value, 
+            round(avg(ifnull(count_curr, 0)) - stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as min_thresh_value, 
+            round(avg(ifnull(count_curr, 0)) + stddev_pop(ifnull(count_curr, 0)) * 2.0, 2) as max_thresh_value
+            from top_records 
+            group by profile_id,feature_name,grouped_columns,WEEKDAY
+            order by profile_id,feature_name,grouped_columns,WEEKDAY;
+            
+2025-04-09 10:10:32 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:32 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:32 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:32 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:32 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:37 : CRM-15710 - get_historical_details - INFO : Length of the historical groupby list : 0
+2025-04-09 10:10:37 : CRM-15710 - get_historical_details - INFO : 
+Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+Empty DataFrame
+Columns: [profile_id, feature_name, grouped_columns, weekday, sum_count_prev, avg_count_prev, variance_value, std_dev_value, sigma_2_value, min_thresh_value, max_thresh_value]
+Index: []
+2025-04-09 10:10:37 : CRM-15710 - get_historical_details - WARNING : Historical Data Not found for Identifying the variance
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : Length of the historical Records : 0
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : 
+Index(['profile_id', 'feature_name', 'grouped_columns', 'weekday',
+       'sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value'],
+      dtype='object')
+Empty DataFrame
+Columns: [profile_id, feature_name, grouped_columns, weekday, sum_count_prev, avg_count_prev, variance_value, std_dev_value, sigma_2_value, min_thresh_value, max_thresh_value]
+Index: []
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : Length of the latest Records : 5
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : 
+Index(['data_dt', 'feature_name', 'grouped_columns', 'count_curr',
+       'prfl_run_ts', 'weekday', 'profile_id'],
+      dtype='object')
+      data_dt                      feature_name  ...  weekday  profile_id
+0  2025-04-08                              None  ...      3.0         402
+1  2025-04-08                              None  ...      3.0         377
+2  2025-04-01  CU ATR SM MT AC CID SQID ROW CNT  ...      NaN         365
+3  2025-04-08                              None  ...      3.0         354
+4  2025-04-01  CU ATR SM MT AC CID SQID ROW CNT  ...      NaN         400
+
+[5 rows x 7 columns]
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : Length of the Merged Records : 5
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : 
+Index(['sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
+       'feature_name', 'grouped_columns', 'count_curr', 'prfl_run_ts',
+       'weekday', 'profile_id'],
+      dtype='object')
+  sum_count_prev avg_count_prev  ... weekday profile_id
+0            NaN            NaN  ...     3.0        402
+1            NaN            NaN  ...     3.0        377
+2            NaN            NaN  ...     NaN        365
+3            NaN            NaN  ...     3.0        354
+4            NaN            NaN  ...     NaN        400
+
+[5 rows x 14 columns]
+2025-04-09 10:10:37 : CRM-15710 - compare_historical_latest_dimensions - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:37 : CRM-15710 - run_metrics_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:37 : CRM-15710 - run_metrics_engine - INFO : Length of the End Results : 5
+2025-04-09 10:10:37 : CRM-15710 - run_metrics_engine - INFO : 
+Index(['sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
+       'feature_name', 'grouped_columns', 'count_curr', 'prfl_run_ts',
+       'weekday', 'profile_id', 'profile_type', 'table_name', 'dq_pillar',
+       'rule_name', 'threshold_limit', 'max_threshold_limit',
+       'comparison_type', 'run_frequency', 'pct_change', 'consistency_score',
+       'dq_score', 'sigma_value', 'dq_status'],
+      dtype='object')
+  sum_count_prev  avg_count_prev variance_value  ...  dq_score sigma_value  dq_status
+0            NaN             NaN            NaN  ...         0           1        LOW
+1            NaN             NaN            NaN  ...         0           1        LOW
+2            NaN             NaN            NaN  ...         0     outlier        LOW
+3            NaN             NaN            NaN  ...         0           1        LOW
+4            NaN             NaN            NaN  ...         0     outlier        LOW
+
+[5 rows x 27 columns]
+2025-04-09 10:10:37 : CRM-15710 - run_metrics_engine - INFO : ------------------------------------------------------------------
+2025-04-09 10:10:37 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:37 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:37 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:37 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:37 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:37 : CRM-15710 - load_result_to_bq_report_table - INFO : 
+            ======================================================================================            
+            Load Result Started for Table : vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+            Sequence Column: rpt_seq_num
+            Records Length: 5
+            Report Columns: Index(['sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value',
+       'sigma_2_value', 'min_thresh_value', 'max_thresh_value', 'data_dt',
+       'feature_name', 'grouped_columns', 'count_curr', 'prfl_run_ts',
+       'weekday', 'profile_id', 'profile_type', 'table_name', 'dq_pillar',
+       'rule_name', 'threshold_limit', 'max_threshold_limit',
+       'comparison_type', 'run_frequency', 'pct_change', 'consistency_score',
+       'dq_score', 'sigma_value', 'dq_status', 'rpt_ref_key'],
+      dtype='object')
+            ======================================================================================       
+            
+2025-04-09 10:10:37 : CRM-15710 - get_bq_max_sequence - INFO : sq_column: rpt_seq_num 
+ bq_tablename : vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+2025-04-09 10:10:37 : CRM-15710 - get_bq_max_sequence - INFO : BQ query: select IFNULL(MAX(rpt_seq_num), 0) from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report
+2025-04-09 10:10:41 : CRM-15710 - get_bq_max_sequence - INFO : count:      f0_
+0  34740
+2025-04-09 10:10:41 : CRM-15710 - get_bq_max_sequence - INFO : Max Sequence: 34740
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : 
+            Dataframe Columns:['sum_count_prev', 'avg_count_prev', 'variance_value', 'std_dev_value', 'min_thresh_value', 'max_thresh_value', 'data_dt', 'feature_name', 'grouped_columns', 'count_curr', 'prfl_run_ts', 'weekday', 'profile_id', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'threshold_limit', 'max_threshold_limit', 'comparison_type', 'run_frequency', 'pct_change', 'dq_score', 'sigma_value', 'dq_status', 'rpt_ref_key', 'rpt_seq_num']
+            Requried Columns: ['avg_count_prev', 'variance_value', 'std_dev_value', 'pct_change', 'count_curr', 'dq_score', 'profile_id', 'weekday', 'rpt_seq_num', 'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'dq_status', 'prfl_run_ts']
+            
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : Columns for : ['avg_count_prev', 'variance_value', 'std_dev_value', 'pct_change', 'count_curr', 'dq_score', 'profile_id', 'weekday', 'rpt_seq_num', 'feature_name', 'grouped_columns', 'sigma_value', 'rpt_ref_key', 'data_dt', 'profile_type', 'table_name', 'dq_pillar', 'rule_name', 'dq_status', 'prfl_run_ts']
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : dtype of grouped_columns1 : object
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : content of grouped_columns1 : 0    
+1    
+2    
+3    
+4    
+Name: grouped_columns, dtype: object
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : None
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : String.................
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : content of grouped_columns2 : 0    
+1    
+2    
+3    
+4    
+Name: grouped_columns, dtype: object
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : dtype of grouped_columns2 : object
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : Numeric................
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : Integer................
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - ERROR : Error Occurred while loading Results to BigQuery Table. Error: cannot convert float NaN to integer
+2025-04-09 10:10:41 : CRM-15710 - load_result_to_bq_report_table - INFO : Load Result Error vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report table
+2025-04-09 10:10:41 : CRM-15710 - send_email_report - INFO : Mail Query : 
+                select rpt.*, 
+                mtd.data_lob ,mtd.database_name ,mtd.table_name ,mtd.dq_pillar 
+                from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_meta mtd 
+                inner join 
+                (select * from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report 
+                where rpt_ref_key = '20250409_101006' ) rpt
+                on mtd.profile_id = rpt.profile_id
+                and upper(mtd.profile_type) = 'RULE_CUSTOM'
+            
+2025-04-09 10:10:41 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query: 
+                select rpt.*, 
+                mtd.data_lob ,mtd.database_name ,mtd.table_name ,mtd.dq_pillar 
+                from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_meta mtd 
+                inner join 
+                (select * from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report 
+                where rpt_ref_key = '20250409_101006' ) rpt
+                on mtd.profile_id = rpt.profile_id
+                and upper(mtd.profile_type) = 'RULE_CUSTOM'
+            
+2025-04-09 10:10:41 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:41 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:41 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:41 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:41 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:44 : CRM-15710 - send_email_report - ERROR : Error in Report Summary Email Block. Error:No Records found for Email Summary
+2025-04-09 10:10:44 : CRM-15710 - send_opsgenie_jira_alert - INFO : opsgenie info Query :                 
+                select rpt.*, 
+                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
+                from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_meta mtd 
+                inner join 
+                (select * from 
+                vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report 
+                where rpt_ref_key = '20250409_101006' ) rpt
+                on mtd.profile_id = rpt.profile_id
+                and upper(mtd.profile_type) = 'RULE_CUSTOM'
+            
+2025-04-09 10:10:44 : CRM-15710 - run_bq_sql - INFO : 
+BQ Select Query:                 
+                select rpt.*, 
+                mtd.data_lob, mtd.data_sub_dmn,mtd.database_name ,mtd.table_name,mtd.data_src,mtd.dq_pillar,mtd.opsgenie_api,mtd.opsgenie_flag,mtd.jira_assignee
+                from vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_meta mtd 
+                inner join 
+                (select * from 
+                vz-it-pr-izcv-idmcdo-0.dga_dq_tbls.dqaas_consistency_report 
+                where rpt_ref_key = '20250409_101006' ) rpt
+                on mtd.profile_id = rpt.profile_id
+                and upper(mtd.profile_type) = 'RULE_CUSTOM'
+            
+2025-04-09 10:10:44 : CRM-15710 - isTokenExpired - INFO : Token file Path is /apps/opt/application/smartdq/dqaas//keys/dq_oidc_token.json
+2025-04-09 10:10:44 : CRM-15710 - isTokenExpired - INFO : Token File Available
+2025-04-09 10:10:44 : CRM-15710 - isTokenExpired - INFO : Access Token is Valid
+2025-04-09 10:10:44 : CRM-15710 - bigquery_client - INFO : Setting environment variable...
+2025-04-09 10:10:44 : CRM-15710 - bigquery_client - INFO : Connected to vz-it-pr-izcv-idmcdo-0 project space
+2025-04-09 10:10:47 : CRM-15710 - send_opsgenie_jira_alert - ERROR : Error occured while creating opsgenie alert. Error: No Records found for opsgenie alert
