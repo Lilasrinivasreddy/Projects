@@ -36,3 +36,27 @@ fieldglass_instance IS NOT NULL AND LTRIM(RTRIM(fieldglass_instance))<>'' AND fi
   SELECT rule_CL_emp_job_code_Accuracy,COUNT(*) AS count FROM(SELECT CASE WHEN length(job_code) <> 6 THEN 'INVALID' ELSE (CASE WHEN job_code NOT LIKE 'J%' THEN 'INVALID' ELSE 'VALID' END)END AS rule_CL_emp_job_code_Accuracy FROM vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth) GROUP BY rule_CL_emp_job_code_Accuracy;
   
   length(job_code) = 6 AND job_code LIKE 'J%' 
+
+
+
+
+incr_col1=date(ETL_LOAD_TS)
+incr_col2=source_period
+incr_col3=period
+incr_col4=substr(file_commit_timestamp,0,8)
+incr_col5=year
+incr_col6=period
+incr_col7=recordstamp
+
+PARSE_DATE('%Y%m%d',$incr_col4 ) BETWEEN '$start_dt' AND '$end_dt')
+PARSE_DATE('%Y%m%d',substr(file_commit_timestamp,0,8) ) BETWEEN current_date - 1 AND current_date - 1
+1:18
+start_date=current_date -1
+end_date=current_date -1
+start_year_month=current_date -1
+end_year_month=current_date -1
+
+
+
+$incr_col2 between $start_yr_mnth and $end_yr_mnth
+source_period between current_date -1 and current_date -1
