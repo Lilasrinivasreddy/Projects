@@ -60,3 +60,6 @@ end_year_month=current_date -1
 
 $incr_col2 between $start_yr_mnth and $end_yr_mnth
 source_period between current_date -1 and current_date -1
+
+
+$incr_col3 between $start_yr_mnth and $end_yr_mnth)
