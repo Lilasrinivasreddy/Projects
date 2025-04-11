@@ -18,6 +18,21 @@ SELECT rule_CL_emp_hire_date_Accuracy,COUNT(*) as count FROM(SELECT CASE WHEN LE
 
 
 
+
+
+" select rule_EL_ACDOCA_BSCHL_Completeness,COUNT(*) AS count FROM(SELECT CASE WHEN POPER != '000' AND (BSCHL IS NULL OR LTRIM(RTRIM(BSCHL))= '') and xsplitmod = '' and bstat <> 'C' THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCA_BSCHL_Completeness FROM vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdoca WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCA_BSCHL_Completeness; "
+POPER = '000' OR (BSCHL IS NOT NULL AND LTRIM(RTRIM(BSCHL))!= '') OR xsplitmod != '' OR bstat = 'C' AND operation_flag in ('U', 'I')
+
+
+
+"SELECT rule_EL_ACDOCU_PRCTR_Accuracy, COUNT(*) AS count FROM ( SELECT CASE WHEN LENGTH(PRCTR) != 10 THEN 'INVALID' ELSE (CASE WHEN PRCTR NOT LIKE '00000%' THEN 'INVALID' ELSE 'VALID' END) END AS rule_EL_ACDOCU_PRCTR_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PRCTR_Accuracy ;"
+LENGTH(PRCTR) = 10 AND PRCTR LIKE '00000%'
+
+SELECT rule_CL_nonemp_fieldglass_instance_Completeness, COUNT(*) as count FROM( SELECT CASE (fieldglass_instance IS NOT NULL OR LTRIM(RTRIM(fieldglass_instance))<>'') WHEN (fieldglass_instance NOT LIKE LTRIM(RTRIM('VZBP')) AND fieldglass_instance NOT LIKE LTRIM(RTRIM('VZGT'))) THEN 'INVALID' ELSE 'VALID' END AS rule_CL_nonemp_fieldglass_instance_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.nonemployee_headcount` WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth ) GROUP BY rule_CL_nonemp_fieldglass_instance_Completeness;
+fieldglass_instance IS NOT NULL AND LTRIM(RTRIM(fieldglass_instance))<>'' AND fieldglass_instance LIKE LTRIM(RTRIM('VZBP')) AND fieldglass_instance LIKE LTRIM(RTRIM('VZGT'))
+
+
+
   SELECT rule_CL_emp_job_code_Accuracy,COUNT(*) AS count FROM(SELECT CASE WHEN length(job_code) <> 6 THEN 'INVALID' ELSE (CASE WHEN job_code NOT LIKE 'J%' THEN 'INVALID' ELSE 'VALID' END)END AS rule_CL_emp_job_code_Accuracy FROM vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount WHERE $incr_col2 between $start_yr_mnth and $end_yr_mnth) GROUP BY rule_CL_emp_job_code_Accuracy;
   
   length(job_code) = 6 AND job_code LIKE 'J%' 
