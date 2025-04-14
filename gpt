@@ -1,3 +1,9 @@
+SELECT rule_CL_biapps_prod_t_ran_nokia_rma_sold_to_code_Validity_1, COUNT(*) AS count FROM (SELECT CASE WHEN LENGTH(sold_to_code) = 10 THEN 'VALID' ELSE 'INVALID' END AS rule_CL_biapps_prod_t_ran_nokia_rma_sold_to_code_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_ran.biapps_prod_t_ran_nokia_rma`) GROUP BY rule_CL_biapps_prod_t_ran_nokia_rma_sold_to_code_Validity_1;
+
+
+
+
+
 SELECT rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_m5_request_id_Validity_1, COUNT(*) AS count FROM (SELECT CASE WHEN LENGTH(m5_request_id) = 10 THEN 'VALID' ELSE 'INVALID' END AS rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_m5_request_id_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_ran.biapps_prod_t_ran_ericsson_repair_monthly`) GROUP BY rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_m5_request_id_Validity_1;
 SELECT rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_repair_data_result_Completeness_1, count(*) AS count FROM (SELECT CASE WHEN repair_data_result IS NULL THEN 'INVALID' ELSE 'VALID' END AS rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_repair_data_result_Completeness_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_ran.biapps_prod_t_ran_ericsson_repair_monthly`) GROUP BY rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_repair_data_result_Completeness_1;
 SELECT rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_m5_status_Completeness_1, count(*) AS count FROM (SELECT CASE WHEN m5_status IS NULL THEN 'INVALID' ELSE 'VALID' END AS rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_m5_status_Completeness_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_ran.biapps_prod_t_ran_ericsson_repair_monthly`) GROUP BY rule_CL_biapps_prod_t_ran_ericsson_repair_monthly_m5_status_Completeness_1;
