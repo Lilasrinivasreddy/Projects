@@ -1,5 +1,4 @@
-SELECT rule_CL_biapps_prod_t_ran_nokia_rma_sold_to_code_Validity_1, COUNT(*) AS count FROM (SELECT CASE WHEN LENGTH(sold_to_code) = 10 THEN 'VALID' ELSE 'INVALID' END AS rule_CL_biapps_prod_t_ran_nokia_rma_sold_to_code_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_ran.biapps_prod_t_ran_nokia_rma`) GROUP BY rule_CL_biapps_prod_t_ran_nokia_rma_sold_to_code_Validity_1;
-
+SELECT rule_CL_biapps_prod_t_cns_stb_consmp_actv_date_Validity_1, COUNT(*) AS count FROM (select CASE WHEN actv_date = replace(string(PARSE_DATE('%Y%m%d',actv_date)),'-','') THEN 'VALID' ELSE 'INVALID' END AS rule_CL_biapps_prod_t_cns_stb_consmp_actv_date_Validity_1 from `vz-it-pr-j0nv-oddo-0.od_curated_prism.biapps_prod_t_cns_stb_consmp`) GROUP BY rule_CL_biapps_prod_t_cns_stb_consmp_actv_date_Validity_1;
 
 
 
