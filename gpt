@@ -1,8 +1,180 @@
-SELECT rule_CL_ext_conn_f301_insvc_adj_qty_Validity_1, COUNT(*) AS count FROM (SELECT if(SAFE_CAST(insvc_adj_qty AS NUMERIC) is null,'INVALID', 'VALID') AS rule_CL_ext_conn_f301_insvc_adj_qty_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_alis.ext_conn_f301` WHERE insvc_adj_qty IS NOT NULL) GROUP BY rule_CL_ext_conn_f301_insvc_adj_qty_Validity_1;
-SELECT rule_CL_ext_conn_f301_net_trnsfr_qty_Validity_1, COUNT(*) AS count FROM (SELECT if(SAFE_CAST(net_trnsfr_qty AS NUMERIC) is null,'INVALID', 'VALID') AS rule_CL_ext_conn_f301_net_trnsfr_qty_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_alis.ext_conn_f301` WHERE net_trnsfr_qty IS NOT NULL) GROUP BY rule_CL_ext_conn_f301_net_trnsfr_qty_Validity_1;
-SELECT rule_CL_ext_conn_f301_outwrd_qty_Validity_1, COUNT(*) AS count FROM (SELECT if(SAFE_CAST(outwrd_qty AS NUMERIC) is null,'INVALID', 'VALID') AS rule_CL_ext_conn_f301_outwrd_qty_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_alis.ext_conn_f301` WHERE outwrd_qty IS NOT NULL) GROUP BY rule_CL_ext_conn_f301_outwrd_qty_Validity_1;
-SELECT rule_CL_ext_conn_f301_svc_ord_adj_qty_Validity_1, COUNT(*) AS count FROM (SELECT if(SAFE_CAST(svc_ord_adj_qty AS NUMERIC) is null,'INVALID', 'VALID') AS rule_CL_ext_conn_f301_svc_ord_adj_qty_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_alis.ext_conn_f301` WHERE svc_ord_adj_qty IS NOT NULL) GROUP BY rule_CL_ext_conn_f301_svc_ord_adj_qty_Validity_1;
-SELECT rule_CL_ext_conn_f301_insvc_qty_Validity_1, COUNT(*) AS count FROM (SELECT if(SAFE_CAST(insvc_qty AS NUMERIC) is null,'INVALID', 'VALID') AS rule_CL_ext_conn_f301_insvc_qty_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_alis.ext_conn_f301` WHERE insvc_qty IS NOT NULL) GROUP BY rule_CL_ext_conn_f301_insvc_qty_Validity_1;
-SELECT rule_CL_ext_conn_f301_cris_adj_qty_Validity_1, COUNT(*) AS count FROM (SELECT if(SAFE_CAST(cris_adj_qty AS NUMERIC) is null,'INVALID', 'VALID') AS rule_CL_ext_conn_f301_cris_adj_qty_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_alis.ext_conn_f301` WHERE cris_adj_qty IS NOT NULL) GROUP BY rule_CL_ext_conn_f301_cris_adj_qty_Validity_1;
-SELECT rule_CL_ext_conn_f301_inward_qty_Validity_1, COUNT(*) AS count FROM (SELECT if(SAFE_CAST(inward_qty AS NUMERIC) is null,'INVALID', 'VALID') AS rule_CL_ext_conn_f301_inward_qty_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_alis.ext_conn_f301` WHERE inward_qty IS NOT NULL) GROUP BY rule_CL_ext_conn_f301_inward_qty_Validity_1;
-SELECT rule_CL_ext_conn_f301_insvc_plug_qty_Validity_1, COUNT(*) AS count FROM (SELECT if(SAFE_CAST(insvc_plug_qty AS NUMERIC) is null,'INVALID', 'VALID') AS rule_CL_ext_conn_f301_insvc_plug_qty_Validity_1 FROM `vz-it-pr-j0nv-oddo-0.od_curated_alis.ext_conn_f301` WHERE insvc_plug_qty IS NOT NULL) GROUP BY rule_CL_ext_conn_f301_insvc_plug_qty_Validity_1;
+"select case when occ_grt_one_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_occ_grt_one_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select case when forecast > 1 then 'INVALID' else 'VALID' end as occ_grt_one_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=7
+)
+group by 1;"
+"select case when vol_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_vol_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select case when forecast < 0 then 'INVALID' else 'VALID' end as vol_neg_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=1
+)
+group by 1;"
+"select case when occ_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_occ_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select case when forecast < 0 then 'INVALID' else 'VALID' end as occ_neg_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=7
+)
+group by 1;"
+"select case when shrink_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_shrink_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select case when forecast < 0 then 'INVALID' else 'VALID' end as shrink_neg_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=6
+)
+group by 1;"
+"select case when shrink_grt_one_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_shrink_grt_one_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select case when forecast > 1 then 'INVALID' else 'VALID' end as shrink_grt_one_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=6
+)
+group by 1;"
+"select case when aht_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_aht_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select case when forecast < 0 then 'INVALID' else 'VALID' end as aht_neg_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=2
+)
+group by 1;"
+"select case when aitl_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_aitl_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select case when forecast < 0 then 'INVALID' else 'VALID' end as aitl_neg_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=5
+)
+group by 1;"
+"select case when vol_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_vol_neg_cnt_f2l_postpaid_monthly_actual_Validity, count(*) as count from
+(
+select case when volume < 0 then 'INVALID' else 'VALID' end as vol_neg_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual
+)
+group by 1;"
+"select case when occ_grt_one_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_occ_grt_one_cnt_f2l_postpaid_monthly_actual_Validity, count(*) as count from
+(
+select case when occupancy > 1 then 'INVALID' else 'VALID' end as occ_grt_one_cnt 
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual
+)
+group by 1;"
+
+
+select * from (select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls_rd_v.f2l_postpaid_daily_forecast where queue_id=21
+group by 1,2,3,4,5,6,7) where dup_check > 1
+
+
+
+
+
+
+
+
+
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=21
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_loy_eng_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=12
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_tech_bil_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=20
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxi_bil_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=9
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_t1_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=17
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_loy_bil_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=13
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_t2_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=18
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxii_eng_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=10
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxi_eng_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=8
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_enterprise_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=7
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_tech_eng_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=19
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxii_bil_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=11
+group by 1,2,3,4,5,6,7
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_t1_dup_check_f2l_postpaid_monthly_actual_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,date,month,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual where queue_id=17
+group by 1,2,3,4
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_dup_check_f2l_postpaid_monthly_actual_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,date,month,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual where queue_id=21
+group by 1,2,3,4
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxii_eng_dup_check_f2l_postpaid_monthly_actual_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,date,month,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual where queue_id=10
+group by 1,2,3,4
+)
+group by 1;"
+"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_loy_bil_dup_check_f2l_postpaid_monthly_actual_Validity, count(*) as count from
+(
+select load_date_utc,load_time_utc,date,month,count(*) as dup_check
+from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual where queue_id=13
+group by 1,2,3,4
+)
+group by 1;"
