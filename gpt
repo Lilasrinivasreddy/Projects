@@ -1,180 +1,54 @@
-"select case when occ_grt_one_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_occ_grt_one_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select case when forecast > 1 then 'INVALID' else 'VALID' end as occ_grt_one_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=7
-)
-group by 1;"
-"select case when vol_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_vol_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select case when forecast < 0 then 'INVALID' else 'VALID' end as vol_neg_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=1
-)
-group by 1;"
-"select case when occ_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_occ_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select case when forecast < 0 then 'INVALID' else 'VALID' end as occ_neg_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=7
-)
-group by 1;"
-"select case when shrink_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_shrink_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select case when forecast < 0 then 'INVALID' else 'VALID' end as shrink_neg_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=6
-)
-group by 1;"
-"select case when shrink_grt_one_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_shrink_grt_one_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select case when forecast > 1 then 'INVALID' else 'VALID' end as shrink_grt_one_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=6
-)
-group by 1;"
-"select case when aht_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_aht_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select case when forecast < 0 then 'INVALID' else 'VALID' end as aht_neg_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=2
-)
-group by 1;"
-"select case when aitl_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_aitl_neg_cnt_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select case when forecast < 0 then 'INVALID' else 'VALID' end as aitl_neg_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where metric_id=5
-)
-group by 1;"
-"select case when vol_neg_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_vol_neg_cnt_f2l_postpaid_monthly_actual_Validity, count(*) as count from
-(
-select case when volume < 0 then 'INVALID' else 'VALID' end as vol_neg_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual
-)
-group by 1;"
-"select case when occ_grt_one_cnt = 'VALID' then 'VALID' else 'INVALID' end as rule_occ_grt_one_cnt_f2l_postpaid_monthly_actual_Validity, count(*) as count from
-(
-select case when occupancy > 1 then 'INVALID' else 'VALID' end as occ_grt_one_cnt 
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual
-)
-group by 1;"
-
-
-select * from (select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls_rd_v.f2l_postpaid_daily_forecast where queue_id=21
-group by 1,2,3,4,5,6,7) where dup_check > 1
+SELECT cast(rpt_mth as date) AS meas_dt, COUNT(*) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT" GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN LENGTH(fips) > 0 THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN LENGTH(county_name) > 0 THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN LENGTH(cma_id) > 0 THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN LENGTH(cma_name) > 0 THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN total_enb IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN total_gnb IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN cband_site_count IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN total_eNB_4g_trigger IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN total_eNB_5g_trigger IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN total_gNB_5g_trigger IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN total_gNB_4g_trigger IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN total_population IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
+SELECT meas_dt, SUM(cnt) AS meas_value, current_timestamp load_ts FROM ( SELECT CAST(rpt_mth AS DATE) AS meas_dt, CASE WHEN vz_share IS NOT NULL THEN 0 else 1 END cnt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.network_market_insights_norm WHERE cast(rpt_mth as date) = "$START_DT") GROUP BY 1
 
 
 
 
-
-
-
-
-
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=21
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_loy_eng_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=12
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_tech_bil_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=20
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxi_bil_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=9
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_t1_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=17
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_loy_bil_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=13
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_t2_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=18
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxii_eng_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=10
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxi_eng_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=8
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_enterprise_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=7
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_tech_eng_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=19
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxii_bil_dup_check_f2l_postpaid_daily_forecast_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,rpt_dt,run_key,as_of_date,metric_id,horizon,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_daily_forecast where queue_id=11
-group by 1,2,3,4,5,6,7
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_t1_dup_check_f2l_postpaid_monthly_actual_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,date,month,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual where queue_id=17
-group by 1,2,3,4
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_port_dup_check_f2l_postpaid_monthly_actual_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,date,month,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual where queue_id=21
-group by 1,2,3,4
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_cxii_eng_dup_check_f2l_postpaid_monthly_actual_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,date,month,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual where queue_id=10
-group by 1,2,3,4
-)
-group by 1;"
-"select case when dup_check > 1 then 'INVALID' else 'VALID' end as rule_loy_bil_dup_check_f2l_postpaid_monthly_actual_Validity, count(*) as count from
-(
-select load_date_utc,load_time_utc,date,month,count(*) as dup_check
-from vz-it-pr-hgsv-vikido-0.vzw_wkf_prd_tbls.f2l_postpaid_monthly_actual where queue_id=13
-group by 1,2,3,4
-)
-group by 1;"
+SELECT trans_dt meas_dt, countif(enodeb_id IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt meas_dt, countif(sector IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt meas_dt, countif(ta_distance IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt meas_dt, countif(technology IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt meas_dt, countif(device_longitude IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt meas_dt, countif(market_id IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT meas_dt, COALESCE(meas_value, 0) AS meas_value, current_timestamp load_ts, manufacturer, market, "NA" technology FROM ( SELECT CAST(trans_dt AS DATE) AS meas_dt, source AS manufacturer, cache_algorithm AS market, count(1) AS meas_value FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1, 2, 3 )
+SELECT trans_dt meas_dt, countif(region IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt meas_dt, countif(device_latitude IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt meas_dt, countif(imsi IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_network_analytics_tbls_v.rtt_customer_location_cache_norm WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt, COUNTIF(all_app_fails_proj8 IS NULL) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.customer_network_capability_summary_daily_norm_view WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt, COUNTIF(connections IS NULL) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.customer_network_capability_summary_daily_norm_view WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt, COUNTIF(imsi IS NULL) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.customer_network_capability_summary_daily_norm_view WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt, COUNTIF(all_app_fails_proj9 IS NULL) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.customer_network_capability_summary_daily_norm_view WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt, COUNTIF(vid_fails IS NULL) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.customer_network_capability_summary_daily_norm_view WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt, COUNTIF(min_fails IS NULL) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.customer_network_capability_summary_daily_norm_view WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt, COUNT(1) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.customer_network_capability_summary_daily_norm_view WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt, COUNTIF(all_app_fails IS NULL) AS meas_value, CURRENT_TIMESTAMP() AS load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.customer_network_capability_summary_daily_norm_view WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT meas_dt, COALESCE(meas_value, 0) AS meas_value, current_timestamp load_ts, manufacturer, market, "NA" technology FROM ( SELECT trans_dt_ct meas_dt, protocol_interface AS manufacturer, application_name AS market, count(1) meas_value FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE Cast(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1, 2, 3 )
+SELECT trans_dt_ct meas_dt, countif(cell_mnc IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(application_protocol_type_code IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(device_name IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(application_name IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(userequipment_manufacturer_name IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(destination_node IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(cell_id IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(apn_name IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(userequipment_model_name IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(trackingarea_code IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(client_server_entry_type_name IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(destination_node IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(response_code IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(response_description IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(cell_mcc IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(rat_name IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt_ct meas_dt, countif(procedure IS NULL) meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_metrics_control_plane_daily_v1 WHERE CAST(trans_dt_ct AS DATE) = "$START_DT" GROUP BY 1
