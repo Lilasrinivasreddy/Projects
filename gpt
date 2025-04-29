@@ -3,6 +3,8 @@ Tbl_ind = Monthly -> start dt = '2025-03-01'
 else start dt >= current_date-10
 
 
+select meas_dt,sum(cnt) as meas_value,current_timestamp load_ts from (select count(*) cnt,extract(date from safe_CAST(mdate AS datetime)) as meas_dt,ROW_NUMBER() OVER (PARTITION BY mdate ORDER BY safe_CAST(mdate AS datetime) DESC) latest from vz-it-pr-i37v-ndldo-0.vzn_ndl_vpi_core_tbls_v.cpt_monthly_raw_v3 where CAST(mdate AS datetime)>='2025-03-01' AND CAST(mdate AS datetime)<="current_date -1" group by mdate) group by meas_dt;
+
 
 
 select meas_dt,sum(cycle_start_dt_pttrn) as meas_value,current_timestamp load_ts from (select meas_dt,case when REGEXP_CONTAINS(cast(cycle_start_dt as string),"^[0-9]{4}-[0-9]{2}-[0-9]{2}$") or cycle_start_dt is not null then 0 else 1 end cycle_start_dt_pttrn from (select cast(cycle_start_dt as date) cycle_start_dt ,cast(report_month as date) meas_dt FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_customer_core_tbls_v.customer_attributes_monthly_norm_v0 where cast(report_month as date) ="$START_DT") t ) y group by meas_dt
