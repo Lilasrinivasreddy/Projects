@@ -1,3 +1,37 @@
+Connected to vz-it-np-izcv-dev-idmcdo-0 project space
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+######################################################################
+Query Failed. Error:
+ 'Pandas' object has no attribute 'sql_query'
+
+
+
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
