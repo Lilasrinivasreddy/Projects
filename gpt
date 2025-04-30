@@ -1,3 +1,172 @@
-SELECT CAST(trans_dt AS DATE) meas_dt, COUNT(*) FROM vz-it-pr-i37v-ndldo-0.vzn_ndl_ng1_core_tbls_rd_v.control_plane_raw_v1 WHERE trans_dt >= current_date-7 GROUP BY 1
+from datetime import datetime, timedelta
+import pandas as pd
+import numpy as np
+import psutil
+import os
+import shutil
+import logging
+import croniter
 
-SELECT CAST(trans_dt AS DATE) meas_dt, COUNT(*) FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_rd_v.customer_network_capability_summary_daily_norm_view WHERE trans_dt >= current_date-7 GROUP BY 1
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+## Added on 2024-03-26 for Connection issues
+import argparse
+import sys
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, registry
+from sqlalchemy import MetaData
+import stat
+import decimal
+
+## GCP Connection
+from google.cloud import bigquery
+import requests
+from requests.exceptions import HTTPError
+import json
+import google.auth
+import time
+import base64
+import pandas_gbq
+
+################################################################################################
+
+config_path = os.path.dirname(__file__)
+bq_auth = {
+"token_url": "https://ssologinuat.verizon.com/ngauth/oauth2/realms/root/realms/employee/access_token",
+"client_id": "27472_izcv_gcp_gz_oauth2client",
+"client_secret": "27472IZCV",
+"conn_project_id": "vz-it-np-izcv-dev-idmcdo-0",
+"sa_json_file_dtls": os.path.join(config_path, "sa-dev-izcv-app-idmcdo-0-oidc-27472-config.json"),
+"oidc_token": os.path.join(config_path, "dqaas_oidc_token.json"),
+}
+
+
+################################################################################################
+## GCP connection - Token Acitve / Expiry Verification
+def isTokenExpired(path) -> bool:
+    try:
+        print(f"Token file Path is {path}")
+        if(os.path.exists(path)):
+            print("Token File Available")
+            with open(path,'r') as f:
+                old_access_token = json.load(f)['access_token'].split('.')[1]
+                old_access_token += '=' * (-len(old_access_token) % 4)
+                old_token_json_decoded = json.loads(base64.b64decode(old_access_token).decode('utf8').replace("'",'"'))
+                auth_time = old_token_json_decoded['auth_time']
+                expires_in = old_token_json_decoded['expires_in']
+                curr_epoch_time = int(time.time())
+                if curr_epoch_time - auth_time < expires_in - 120:
+                    print("Access Token is Valid")
+                    return False
+                else:
+                    print("Access Token is Invalid")
+        return True
+    except Exception as e:
+        raise e
+    
+##  GCP connection - Token Generation
+def exchange_and_save_oidc_token_for_jwt(url: str, client_id: str, client_secret: str, oidc_token_file_name:str) -> None:
+    try:
+        print('Retrieving JWT from OIDC provider...')
+        payload = {
+            'grant_type': 'client_credentials', 'client_id': client_id,
+            'client_secret': client_secret, 'scope': 'read'}
+    
+        response = requests.post(url=url, params=payload)
+        response.raise_for_status()
+        token = response.json()
+        print('Saving token...')
+        # Serializing json
+        # oidc_token_file_name = "oidc_token.json"
+        oidc_token_path = oidc_token_file_name
+        if os.path.isfile(oidc_token_path):
+            os.remove(oidc_token_path)
+            time.sleep(7)
+
+        with open(oidc_token_path, 'w') as f:  # don't change the file name
+            json.dump(token, f)
+    except HTTPError as e:
+        raise HTTPError(f"Http Error. Error:{e}")
+    except Exception as e:
+        raise Exception(f"Error Ocurred in Generating the OIDC Token. Error:{e}")
+
+
+
+##  GCP connection - BigQuery Client Connection - Main GCP Connection - Returns Client and Credentials
+def bigquery_client(auth: dict):
+    print(f'url={auth["token_url"]}, client_id={auth["client_id"]}, client_secret={auth["client_secret"]}')
+    
+    token_path = auth["oidc_token"]
+    if isTokenExpired(token_path):
+        exchange_and_save_oidc_token_for_jwt (
+            url=auth["token_url"],
+            client_id=auth["client_id"],
+            client_secret=auth["client_secret"],
+            oidc_token_file_name = token_path
+        )
+    print('Setting environment variable...')
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = auth["sa_json_file_dtls"]
+    os.environ['GOOGLE_CLOUD_PROJECT'] = auth["conn_project_id"]
+    
+    credentials, _ = google.auth.default()
+    
+    client = bigquery.Client(credentials=credentials, project=auth["conn_project_id"])
+    print(f'Connected to {auth["conn_project_id"]} project space')
+    
+    return client
+
+################################################################################################
+
+# Run Queries from CSV File
+def run_csv_bq_rules(csv_file_name: str, query_column_name: str):
+    try:
+        df = pd.read_csv(csv_file_name)
+        df = df.rename(columns={col: str(col).lower() for col in df.columns.tolist()}).\
+            rename(columns={str(query_column_name).lower() : "sql_query"})
+        
+        print("Rcords Found ==> ", len(df))
+        
+        if len(df) > 0:
+            bq_client = bigquery_client(auth=bq_auth)
+            for q in df.itertuples():
+                try:
+                    print("######################################################################")
+                    print("Query :: ", q.sql_query)
+                    result = bq_client.query(q.sql_query).to_dataframe()
+                    print("Total Records ::", len(result),"\n", result.head(100))
+                    # print("Total Records ::", len(result),"\n", result)
+                except Exception as e:
+                    print("Query Failed. Error:\n", e)
+        else:
+            print("NO RECORDS FOUND")
+            
+    except Exception as e:
+        print("Error: ", e)
+        
+        
+# Run Only one SQL
+def run_bq_select_query(sql_query: str):
+    try:
+        
+        bq_client = bigquery_client(auth=bq_auth)
+        print("Query :: ", sql_query)
+        result = bq_client.query(sql_query).to_dataframe()
+        print("Total Records ::", len(result),"\n", result.head(100))
+        # print("Total Records ::", len(result),"\n", result)
+        
+    except Exception as e:
+        print("Error: ", e)
+        
+        
+sql = r"""
+
+--SELECT * FROM vz-it-pr-gudv-vzntdo-0.aid_nwftl_nmc_core_tbls_rd_v.call_metrics_30mn_raw_v2 limit 10
+select current_date as meas_dt,sum(submarket_long_pttrn) as meas_value,current_timestamp load_ts from (select case when safe_cast(submarket_long as STRING) is not null then 0 else 1 end submarket_long_pttrn from (select submarket_long from vz-it-pr-gudv-dtwndo-0.aid_dtwin_analytics_tbls_rd_v.vzw_ltemarkets_tbl ) t ) y group by meas_dt;
+"""
+# run_bq_select_query(sql_query=sql)
+
+CSV_FILENAME = r"/apps/opt/application/dev_smartdq/prasanna/dqaas_queries_execution/rules_testing.csv"
+SQL_COLUMN_NAME_IN_CSV = r"meas_rule_sql"
+
+run_csv_bq_rules(CSV_FILENAME, SQL_COLUMN_NAME_IN_CSV)
