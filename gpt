@@ -1,1 +1,8 @@
 =REGEXEXTRACT(A1, "^\d+\s\d{4}-\d{2}-\d{2}")
+
+
+=INDEX(SPLIT(A1, " "), 1) & " " & INDEX(SPLIT(A1, " "), 2)
+
+=TEXT(SPLIT(A1, " "), "0")
+
+=LEFT(A1, FIND(" ", A1, FIND(" ", A1)+1)-1)
