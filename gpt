@@ -6,3 +6,70 @@
 =TEXT(SPLIT(A1, " "), "0")
 
 =LEFT(A1, FIND(" ", A1, FIND(" ", A1)+1)-1)
+
+
+
+INSERT INTO
+  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_meta (
+    profile_id,
+    profile_type,
+    data_lob,
+    product_name,
+    data_sub_dmn,
+    data_src,
+    project_name,
+    database_name,
+    table_name,
+    incr_date_col,
+    incr_date_cond,
+    unique_index_cols,
+    run_frequency,
+    profile_schedule_ts,
+    email_distro,
+    active_flag,
+    table_cde,
+    threshold_limit,
+    opsgenie_flag,
+    opsgenie_api,
+    jira_assignee,
+    tag_name
+  )
+SELECT
+  auto.prfl_tbl_id AS profile_id,
+  "auto" AS profile_type,
+  auto.data_lob AS data_lob,
+  COALESCE(prod_map.product_name, 'DQ_AUTO_CHECK') AS product_name,
+  auto.data_sub_dmn AS data_sub_dmn,
+  auto.data_src AS data_src,
+  CASE
+    WHEN auto.data_src = 'GCP' THEN SPLIT(auto.db_name, '.')[SAFE_OFFSET(0)]
+    ELSE NULL
+  END AS project_name,
+  CASE
+    WHEN auto.data_src = 'GCP' THEN SPLIT(auto.db_name, '.')[SAFE_OFFSET(1)]
+    ELSE auto.db_name
+  END AS database_name,
+  auto.src_tbl AS table_name,
+  auto.incr_dt_col AS incr_date_col,
+  auto.incr_dt_cond AS incr_date_cond,
+  auto.unq_index_cols AS unique_index_cols,
+  auto.auto_prfl_freq AS run_frequency,
+  auto.auto_prfl_schd_ts AS profile_schedule_ts,
+  auto.email_dist AS email_distro,
+  auto.is_active_flg AS active_flag,
+  auto.tbl_cde AS table_cde,
+  CAST(auto.score_min_threshold AS INT64) AS threshold_limit,
+  auto.is_opsgenie_flg AS opsgenie_flag,
+  auto.opsgenie_api_key AS opsgenie_api,
+  'redvi1f' AS jira_assignee,
+  auto.label_tags AS tag_name
+FROM
+  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_auto_prfl_mtd auto
+LEFT JOIN
+  vz-it-np-izcv-dev-idmcdo-0.dga_dq_tbls.dqaas_auto_rule_prfl_product_mtd prod_map
+ON
+  auto.data_dmn = prod_map.data_dmn AND
+  auto.data_sub_dmn = prod_map.data_sub_dmn AND
+  auto.data_bus_elem = prod_map.data_bus_elem AND
+  auto.product_name = prod_map.product_name;
+-- WHERE auto.is_active_flg = 'Y';
