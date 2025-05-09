@@ -1,1 +1,6 @@
-SELECT trans_dt AS meas_dt, SUM(messages_count) AS meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_kpi_device_ip_address_audit WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
+SELECT trans_dt AS meas_dt,
+       SUM(SAFE_CAST(messages_count AS INT64)) AS meas_value,
+       CURRENT_TIMESTAMP() AS load_ts
+FROM `vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_kpi_device_ip_address_audit`
+WHERE CAST(trans_dt AS DATE) = CURRENT_DATE() - 16
+GROUP BY 1;
