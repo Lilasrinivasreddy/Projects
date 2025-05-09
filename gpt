@@ -8,10 +8,16 @@ FROM (
     SELECT trans_dt, trans_hr, device_name,
            SUM(CAST(messages_count AS INT64)) AS messagecount
     FROM `vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_rd_v.lte_kpi_device_ip_address_audit`
-    WHERE CAST(trans_dt AS DATE) = CURRENT_DATE() - 16
+    WHERE CAST(trans_dt AS DATE) = current_date-16
     GROUP BY 1, 2, 3
     HAVING messagecount > 0
   )
   GROUP BY 1, 2
 )
 GROUP BY 1;
+
+
+Error:  400 Bad int64 value: +1BaWuHgPsNy0XWUZ1zhpJKOqewwijcn...
+
+Location: US
+Job ID: ef64c8a1-9324-4ca2-8fb1-23a1a3240879
