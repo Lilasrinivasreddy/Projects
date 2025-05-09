@@ -1,12 +1,16 @@
-select meas_dt,sum(rw_cnt) meas_value,current_timestamp load_ts
-  from (
-    select PARSE_DATE(""%Y%m%d"", SUBSTR(event_time, 0 , 8)) meas_dt,count(1) rw_cnt
-      from vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_rd_v.dim_performance_network_norm_v0
-     WHERE Cast(trans_dt AS DATE)>= current_date-18
-       AND event_time LIKE CONCAT(FORMAT_DATE(""%Y%m%d"", current_date-18), "%")
-     group by 1
-  ) as a group by meas_dt
+SELECT trans_dt AS meas_dt, COUNTIF(hrcount != 24) AS meas_value, CURRENT_TIMESTAMP() load_ts FROM ( SELECT trans_dt, device_name, COUNT(DISTINCT trans_hr) AS hrcount FROM ( SELECT trans_dt, trans_hr, device_name, SUM(messages_count) AS messagecount FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_rd_v.lte_kpi_device_ip_address_audit WHERE CAST(trans_dt AS DATE) = current_date-16 GROUP BY 1, 2, 3 HAVING messagecount > 0 ) GROUP BY 1, 2 ) GROUP BY 1
 
 
 
-Error:  400 Syntax error: Expected ")" but got "%" at [9:25]
+Error:  400 No matching signature for aggregate function SUM
+  Argument types: STRING
+  Signature: SUM(INT64)
+    Argument 1: Unable to coerce type STRING to expected type INT64
+  Signature: SUM(FLOAT64)
+    Argument 1: Unable to coerce type STRING to expected type FLOAT64
+  Signature: SUM(NUMERIC)
+    Argument 1: Unable to coerce type STRING to expected type NUMERIC
+  Signature: SUM(BIGNUMERIC)
+    Argument 1: Unable to coerce type STRING to expected type BIGNUMERIC
+  Signature: SUM(INTERVAL)
+    Argument 1: Unable to coerce type STRING to expected type INTERVAL at [7:215]
