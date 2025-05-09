@@ -1,6 +1,18 @@
-SELECT trans_dt AS meas_dt,
-       SUM(SAFE_CAST(messages_count AS INT64)) AS meas_value,
-       CURRENT_TIMESTAMP() AS load_ts
-FROM `vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_kpi_device_ip_address_audit`
-WHERE CAST(trans_dt AS DATE) = CURRENT_DATE() - 16
-GROUP BY 1;
+select meas_dt,sum(dl_prb_util_pct_pttrn) as meas_value,current_timestamp load_ts
+  from (
+    select meas_dt,
+           case when safe_cast(dl_prb_util_pct as float64) is null
+                     OR (dl_prb_util_pct=0 AND avg_conn_users>1)
+                     OR dl_prb_util_pct < 0
+                     OR dl_prb_util_pct > 100 then 1 else 0
+            end dl_prb_util_pct_pttrn, dl_prb_util_pct
+      from (
+        select dl_prb_util_pct, avg_conn_users, PARSE_DATE("%Y%m%d", SUBSTR(event_time, 0 , 8)) meas_dt
+          FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_rd_v.dim_performance_network_norm_v0
+         where Cast(trans_dt AS DATE)>= current_date-16
+           AND event_time LIKE CONCAT(FORMAT_DATE("%Y%m%d", current_date-16), "%")
+      ) t
+  ) y group by meas_dt"
+
+
+Error:  400 Syntax error: Unclosed string literal at [21:23]
