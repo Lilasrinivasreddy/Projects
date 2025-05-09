@@ -1,37 +1,12 @@
-"select meas_dt,sum(rw_cnt) meas_value,current_timestamp load_ts
+select meas_dt,sum(rw_cnt) meas_value,current_timestamp load_ts
   from (
     select PARSE_DATE(""%Y%m%d"", SUBSTR(event_time, 0 , 8)) meas_dt,count(1) rw_cnt
-      from vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.dim_performance_network_norm_v0
-     WHERE Cast(trans_dt AS DATE)>= ""$START_DT""
-       AND event_time LIKE CONCAT(FORMAT_DATE(""%Y%m%d"", ""$START_DT""), ""%"")
+      from vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_rd_v.dim_performance_network_norm_v0
+     WHERE Cast(trans_dt AS DATE)>= current_date-18
+       AND event_time LIKE CONCAT(FORMAT_DATE(""%Y%m%d"", current_date-18), "%")
      group by 1
-  ) as a group by meas_dt"
-"select meas_dt,sum(unq_cnt) meas_value,current_timestamp load_ts
-  from (
-    select PARSE_DATE(""%Y%m%d"", SUBSTR(event_time, 0 , 8)) meas_dt,count(distinct concat(coalesce(hour,""""),""|"",
-           coalesce(enodeb_id,""""), ""|"",coalesce(cast(sector as string),""""),""|"",
-           coalesce(gnb_du_id,""""),""|"",coalesce(cast(carrier as string),""""),""|"",
-           coalesce(cast(event_time as string),""""))) unq_cnt
-      from vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.dim_performance_network_norm_v0
-     WHERE Cast(trans_dt AS DATE)>= ""$START_DT""
-       AND event_time LIKE CONCAT(FORMAT_DATE(""%Y%m%d"", ""$START_DT""), ""%"")
-     group by 1) as a group by meas_dt"
-SELECT CAST("$START_DT" AS DATE) meas_dt, COALESCE(meas_value, 0) AS meas_value, current_timestamp load_ts, "NA" manufacturer,       LPAD(base.lte_market_id, 3, "0") AS market, "NA" technology    FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_analytics_tbls_v.vzw_ltemarkets_tbl base  LEFT JOIN (    select meas_dt,market, sum(rw_cnt) meas_value,       from (         select PARSE_DATE("%Y%m%d", SUBSTR(event_time, 0 , 8)) meas_dt, market, count(1) rw_cnt           from vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.dim_performance_network_norm_v0          WHERE Cast(trans_dt AS DATE) >= "$START_DT"           AND event_time LIKE CONCAT(FORMAT_DATE("%Y%m%d", "$START_DT" ), "%") group by 1, 2      ) as a     group by meas_dt, market order by market DESC  ) counts ON LPAD(base.lte_market_id, 3, "0") = counts.market
-SELECT CAST("$START_DT" AS DATE) meas_dt, SUM(meas_value) AS meas_value, current_timestamp load_ts,        "NA" manufacturer, submarket market, "NA" technology  FROM (    SELECT base.submarket, a.meas_dt, COALESCE(a.rw_cnt, 0) AS meas_value      FROM (        SELECT DISTINCT submarket           FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_analytics_tbls_v.vzw_ltemarkets_tbl        ) AS base        LEFT JOIN          (SELECT trans_dt meas_dt,                  CASE WHEN submkt = "CARTN" THEN "CATN"                       WHEN submkt = "GA" THEN "GAAL"                       WHEN submkt = "MINKY" THEN "MIK"                       WHEN submkt = "NCAL" THEN "NCA"                       WHEN submkt = "OHPA" THEN "OPW"                       WHEN submkt = "SCAL" THEN "SCA"                       WHEN submkt = "UNY" THEN "UPNY"                       ELSE submkt                   END AS submkt,                   count(1) rw_cnt             FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_truecall_core_tbls_v.qos_performance_customer_dtl            WHERE CAST(trans_dt AS DATE) = "$START_DT"            GROUP BY 1, 2          ) AS a        ON base.submarket = a.submkt      )      GROUP BY submarket
-SELECT trans_dt AS meas_dt, COUNTIF(hrcount != 24) AS meas_value, CURRENT_TIMESTAMP() load_ts FROM ( SELECT trans_dt, device_name, COUNT(DISTINCT trans_hr) AS hrcount FROM ( SELECT trans_dt, trans_hr, device_name, SUM(messages_count) AS messagecount FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_kpi_device_ip_address_audit WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1, 2, 3 HAVING messagecount > 0 ) GROUP BY 1, 2 ) GROUP BY 1
-SELECT trans_dt AS meas_dt, SUM(messages_count) AS meas_value, CURRENT_TIMESTAMP() load_ts FROM vz-it-pr-gudv-dtwndo-0.aid_nwperf_session_ng1_core_tbls_v.lte_kpi_device_ip_address_audit WHERE CAST(trans_dt AS DATE) = "$START_DT" GROUP BY 1
-"select meas_dt,sum(dl_prb_util_pct_pttrn) as meas_value,current_timestamp load_ts
-  from (
-    select meas_dt,
-           case when safe_cast(dl_prb_util_pct as float64) is null
-                     OR (dl_prb_util_pct=0 AND avg_conn_users>1)
-                     OR dl_prb_util_pct < 0
-                     OR dl_prb_util_pct > 100 then 1 else 0
-            end dl_prb_util_pct_pttrn, dl_prb_util_pct
-      from (
-        select dl_prb_util_pct, avg_conn_users, PARSE_DATE(""%Y%m%d"", SUBSTR(event_time, 0 , 8)) meas_dt
-          FROM vz-it-pr-gudv-dtwndo-0.aid_dtwin_ran_core_tbls_v.dim_performance_network_norm_v0
-         where Cast(trans_dt AS DATE)>= ""$START_DT""
-           AND event_time LIKE CONCAT(FORMAT_DATE(""%Y%m%d"", ""$START_DT""), ""%"")
-      ) t
-  ) y group by meas_dt"
+  ) as a group by meas_dt
+
+
+
+Error:  400 Syntax error: Expected ")" but got "%" at [9:25]
