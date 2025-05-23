@@ -1,77 +1,13 @@
--- rule_CL_emp_activity_type_code_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND LTRIM(RTRIM(activity_type_code)) NOT LIKE 'AT____' 
-  AND activity_type_code IS NOT NULL 
-  AND TRIM(activity_type_code) <> '';
-
--- rule_CL_emp_continous_service_date_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND LENGTH(continous_service_date) <> 7;
-
--- rule_CL_emp_cost_center_reference_id_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND s4_company_code IS NOT NULL 
-  AND TRIM(s4_company_code) <> '' 
-  AND s4_company_code NOT IN ('NONE','9111','9121')
-  AND LENGTH(cost_center_reference_id) <> 10 
-  AND worker_status IN ('A','L','P');
-
--- rule_CL_emp_country_iso_code_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND LENGTH(country_iso_code) <> 3;
-
--- rule_CL_emp_enterprise_id_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND LENGTH(CAST(enterprise_id AS STRING)) > 10;
-
--- rule_CL_emp_finance_location_Accuracy_1
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND s4_company_code IS NOT NULL 
-  AND TRIM(s4_company_code) <> '' 
-  AND LENGTH(finance_location) <> 10 
-  AND worker_status IN ('A','L','P');
-
--- rule_CL_emp_hire_date_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND LENGTH(hire_date) <> 7;
-
--- rule_CL_emp_job_code_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND (LENGTH(job_code) <> 6 OR job_code NOT LIKE 'J%');
-
--- rule_CL_emp_job_level_Validity
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND job_level = 'Associate' 
-  AND management_level <> 'UNN';
-
--- rule_CL_emp_location_reference_id_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND TRIM(COUNTRY_ISO_CODE) = 'USA'
-  AND worker_status IN ('A','L','P')
-  AND TRIM(location_reference_id) IS NOT NULL
-  AND TRIM(location_reference_id) <> ''
-  AND LENGTH(TRIM(location_reference_id)) <> 6
-  AND TRIM(location_reference_id) <> 'GUM01';
-
--- rule_CL_emp_management_level_Validity
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND job_level = 'Associate' 
-  AND management_level <> 'UNN';
-
--- rule_CL_emp_manager_eid_Accuracy
-SELECT * FROM `vz-it-pr-j0nv-oddo-0.od_curated_workday.employee_headcount`
-WHERE $incr_col2 BETWEEN $start_yr_mnth AND $end_yr_mnth
-  AND manager_eid IS NOT NULL 
-  AND TRIM(manager_eid) <> '' 
-  AND LENGTH(manager_eid) <> 10;
+SELECT rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness, COUNT(*) AS count FROM ( SELECT CASE WHEN 1 = ROW_NUMBER() OVER (PARTITION BY acdocu_key,period) THEN 'VALID' ELSE 'INVALID' END AS rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I') ) GROUP BY rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness ;
+SELECT rule_EL_ACDOCU_MATNR_Accuracy, COUNT(*) AS count FROM ( SELECT CASE WHEN LENGTH(LTRIM(MATNR,'0')) > 18 AND (MATNR IS NOT NULL OR LTRIM(RTRIM(MATNR))<>'') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_MATNR_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_MATNR_Accuracy;
+SELECT rule_EL_ACDOCU_PRCTR_Accuracy, COUNT(*) AS count FROM ( SELECT CASE WHEN LENGTH(PRCTR) != 10 THEN 'INVALID' ELSE (CASE WHEN PRCTR NOT LIKE '00000%' THEN 'INVALID' ELSE 'VALID' END) END AS rule_EL_ACDOCU_PRCTR_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PRCTR_Accuracy ;
+SELECT rule_EL_ACDOCU_PS_POSID_Accuracy, COUNT(*) AS count FROM ( SELECT CASE (PS_POSID IS NOT NULL OR LTRIM(RTRIM(PS_POSID))<>'') WHEN LENGTH(PS_POSID) >24 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_POSID_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PS_POSID_Accuracy;
+SELECT rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1, COUNT(*) AS count FROM ( SELECT CASE (PS_PSP_PNR IS NOT NULL OR LTRIM(RTRIM(PS_PSP_PNR ))<>'') WHEN SAFE_CAST(PS_PSP_PNR AS FLOAT64) IS NULL THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1 FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1;
+SELECT rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2, COUNT(*) AS count FROM ( SELECT CASE (PS_PSP_PNR IS NOT NULL OR LTRIM(RTRIM(PS_PSP_PNR))<>'') WHEN LENGTH(PS_PSP_PNR) >24 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2 FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2;
+SELECT rule_EL_ACDOCU_RBUNIT_Accuracy, COUNT(*) AS count FROM ( SELECT CASE WHEN LTRIM(RTRIM(RBUNIT))='EPS' THEN 'VALID' ELSE ( CASE WHEN LENGTH(RBUNIT) != 18 AND RBUNIT NOT LIKE '00000000000000%' THEN 'INVALID' ELSE 'VALID' END) END AS rule_EL_ACDOCU_RBUNIT_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_RBUNIT_Accuracy;
+SELECT rule_EL_ACDOCU_RBUNIT_Completeness, COUNT(*) AS count FROM ( SELECT CASE WHEN RBUNIT IS NULL OR LTRIM(RTRIM(RBUNIT))='' THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RBUNIT_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_RBUNIT_Completeness;
+SELECT rule_EL_ACDOCU_RCNTR_Accuracy, COUNT(*) AS count FROM ( SELECT CASE (RCNTR IS NOT NULL OR LTRIM(RTRIM(RCNTR ))<>'') WHEN LENGTH(RCNTR) <>10 AND RACCT LIKE ANY ('005%', '006%') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RCNTR_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_RCNTR_Accuracy;
+SELECT rule_EL_ACDOCU_RITEM_Completeness, COUNT(*) AS count FROM ( SELECT CASE WHEN RITEM IS NULL OR LTRIM(RTRIM(RITEM))='' THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RITEM_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_RITEM_Completeness;
+SELECT rule_EL_ACDOCU_SUBIT_Validity, COUNT(*) AS count FROM ( SELECT CASE WHEN RACCT LIKE ANY ('001%', '002%', '003%') AND (SUBIT IS NULL OR LTRIM(RTRIM(SUBIT ))='') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_SUBIT_Validity FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_SUBIT_Validity;
+SELECT rule_EL_ACDOCU_VTWEG_Accuracy, COUNT(*) AS count FROM ( SELECT CASE (VTWEG IS NOT NULL OR LTRIM(RTRIM(VTWEG ))<>'') WHEN LENGTH(VTWEG) != 2 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_VTWEG_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_VTWEG_Accuracy ;
+SELECT rule_EL_ACDOCU_VTWEG_Validity, COUNT(*) AS count FROM ( SELECT CASE WHEN RACCT LIKE ANY ('001%', '002%', '003%') AND (VTWEG IS NOT NULL OR LTRIM(RTRIM(VTWEG))<>'') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_VTWEG_Validity FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_VTWEG_Validity;
