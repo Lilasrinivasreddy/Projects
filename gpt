@@ -1,29 +1,142 @@
-SELECT rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness, COUNT(*) AS count FROM ( SELECT CASE WHEN 1 = ROW_NUMBER() OVER (PARTITION BY acdocu_key,period) THEN 'VALID' ELSE 'INVALID' END AS rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I') ) GROUP BY rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness ;
-SELECT rule_EL_ACDOCU_MATNR_Accuracy, COUNT(*) AS count FROM ( SELECT CASE WHEN LENGTH(LTRIM(MATNR,'0')) > 18 AND (MATNR IS NOT NULL OR LTRIM(RTRIM(MATNR))<>'') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_MATNR_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_MATNR_Accuracy;
-SELECT rule_EL_ACDOCU_PRCTR_Accuracy, COUNT(*) AS count FROM ( SELECT CASE WHEN LENGTH(PRCTR) != 10 THEN 'INVALID' ELSE (CASE WHEN PRCTR NOT LIKE '00000%' THEN 'INVALID' ELSE 'VALID' END) END AS rule_EL_ACDOCU_PRCTR_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PRCTR_Accuracy ;
-SELECT rule_EL_ACDOCU_PS_POSID_Accuracy, COUNT(*) AS count FROM ( SELECT CASE (PS_POSID IS NOT NULL OR LTRIM(RTRIM(PS_POSID))<>'') WHEN LENGTH(PS_POSID) >24 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_POSID_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PS_POSID_Accuracy;
-SELECT rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1, COUNT(*) AS count FROM ( SELECT CASE (PS_PSP_PNR IS NOT NULL OR LTRIM(RTRIM(PS_PSP_PNR ))<>'') WHEN SAFE_CAST(PS_PSP_PNR AS FLOAT64) IS NULL THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1 FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1;
-SELECT rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2, COUNT(*) AS count FROM ( SELECT CASE (PS_PSP_PNR IS NOT NULL OR LTRIM(RTRIM(PS_PSP_PNR))<>'') WHEN LENGTH(PS_PSP_PNR) >24 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2 FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2;
-SELECT rule_EL_ACDOCU_RBUNIT_Accuracy, COUNT(*) AS count FROM ( SELECT CASE WHEN LTRIM(RTRIM(RBUNIT))='EPS' THEN 'VALID' ELSE ( CASE WHEN LENGTH(RBUNIT) != 18 AND RBUNIT NOT LIKE '00000000000000%' THEN 'INVALID' ELSE 'VALID' END) END AS rule_EL_ACDOCU_RBUNIT_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_RBUNIT_Accuracy;
-SELECT rule_EL_ACDOCU_RBUNIT_Completeness, COUNT(*) AS count FROM ( SELECT CASE WHEN RBUNIT IS NULL OR LTRIM(RTRIM(RBUNIT))='' THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RBUNIT_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_RBUNIT_Completeness;
-SELECT rule_EL_ACDOCU_RCNTR_Accuracy, COUNT(*) AS count FROM ( SELECT CASE (RCNTR IS NOT NULL OR LTRIM(RTRIM(RCNTR ))<>'') WHEN LENGTH(RCNTR) <>10 AND RACCT LIKE ANY ('005%', '006%') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RCNTR_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_RCNTR_Accuracy;
-SELECT rule_EL_ACDOCU_RITEM_Completeness, COUNT(*) AS count FROM ( SELECT CASE WHEN RITEM IS NULL OR LTRIM(RTRIM(RITEM))='' THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RITEM_Completeness FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_RITEM_Completeness;
-SELECT rule_EL_ACDOCU_SUBIT_Validity, COUNT(*) AS count FROM ( SELECT CASE WHEN RACCT LIKE ANY ('001%', '002%', '003%') AND (SUBIT IS NULL OR LTRIM(RTRIM(SUBIT ))='') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_SUBIT_Validity FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_SUBIT_Validity;
-SELECT rule_EL_ACDOCU_VTWEG_Accuracy, COUNT(*) AS count FROM ( SELECT CASE (VTWEG IS NOT NULL OR LTRIM(RTRIM(VTWEG ))<>'') WHEN LENGTH(VTWEG) != 2 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_VTWEG_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_VTWEG_Accuracy ;
-SELECT rule_EL_ACDOCU_VTWEG_Validity, COUNT(*) AS count FROM ( SELECT CASE WHEN RACCT LIKE ANY ('001%', '002%', '003%') AND (VTWEG IS NOT NULL OR LTRIM(RTRIM(VTWEG))<>'') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_VTWEG_Validity FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_VTWEG_Validity;
+-- Rule 1
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE WHEN 1 = ROW_NUMBER() OVER (PARTITION BY acdocu_key,period) THEN 'VALID' ELSE 'INVALID' END AS rule_EL_ACDOCU_ACDOCU_KEY_Uniqueness
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
+-- Rule 2
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_MATNR_Accuracy = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_MATNR_Accuracy = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE WHEN LENGTH(LTRIM(MATNR,'0')) > 18 AND (MATNR IS NOT NULL OR LTRIM(RTRIM(MATNR))<>'') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_MATNR_Accuracy
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
+-- Rule 3
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_PRCTR_Accuracy = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_PRCTR_Accuracy = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE WHEN LENGTH(PRCTR) != 10 THEN 'INVALID' ELSE (CASE WHEN PRCTR NOT LIKE '00000%' THEN 'INVALID' ELSE 'VALID' END) END AS rule_EL_ACDOCU_PRCTR_Accuracy
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
+-- Rule 4
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_PS_POSID_Accuracy = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_PS_POSID_Accuracy = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE (PS_POSID IS NOT NULL OR LTRIM(RTRIM(PS_POSID))<>'') WHEN LENGTH(PS_POSID) > 24 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_POSID_Accuracy
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
-select COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed from (SELECT
-    CASE WHEN rule_EL_nonemp_fieldglass_worker_contractor_type_description_Completeness = 'VALID' THEN 1 ElSE 0 END AS valid,
-    CASE WHEN rule_EL_nonemp_fieldglass_worker_contractor_type_description_Completeness = 'INVALID' THEN 1 ELSE 0 END AS invalid
-FROM (
+-- Rule 5
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1 = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1 = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE (PS_PSP_PNR IS NOT NULL OR LTRIM(RTRIM(PS_PSP_PNR ))<>'') WHEN SAFE_CAST(PS_PSP_PNR AS FLOAT64) IS NULL THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_1
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
+-- Rule 6
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2 = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2 = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE (PS_PSP_PNR IS NOT NULL OR LTRIM(RTRIM(PS_PSP_PNR))<>'') WHEN LENGTH(PS_PSP_PNR) > 24 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_PS_PSP_PNR_Accuracy_2
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
+-- Rule 7
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_RBUNIT_Accuracy = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_RBUNIT_Accuracy = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE WHEN LTRIM(RTRIM(RBUNIT))='EPS' THEN 'VALID' ELSE (CASE WHEN LENGTH(RBUNIT) != 18 AND RBUNIT NOT LIKE '00000000000000%' THEN 'INVALID' ELSE 'VALID' END) END AS rule_EL_ACDOCU_RBUNIT_Accuracy
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
+-- Rule 8
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_RBUNIT_Completeness = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_RBUNIT_Completeness = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE WHEN RBUNIT IS NULL OR LTRIM(RTRIM(RBUNIT))='' THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RBUNIT_Completeness
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
-NEW
+-- Rule 9
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_RCNTR_Accuracy = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_RCNTR_Accuracy = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE (RCNTR IS NOT NULL OR LTRIM(RTRIM(RCNTR))<>'') WHEN LENGTH(RCNTR) <>10 AND RACCT LIKE ANY ('005%', '006%') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RCNTR_Accuracy
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
 
-1:26
-source_period = cast(format_date('%Y%m', current_date-1) as int64)))as temp valid_invalid_scenario
+-- Rule 10
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_RITEM_Completeness = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_RITEM_Completeness = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE WHEN RITEM IS NULL OR LTRIM(RTRIM(RITEM)) = '' THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_RITEM_Completeness
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
+
+-- Rule 11
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_SUBIT_Validity = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_SUBIT_Validity = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE WHEN RACCT LIKE ANY ('001%', '002%', '003%') AND (SUBIT IS NULL OR LTRIM(RTRIM(SUBIT)) = '') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_SUBIT_Validity
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
+
+-- Rule 12
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_VTWEG_Accuracy = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_VTWEG_Accuracy = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE (VTWEG IS NOT NULL OR LTRIM(RTRIM(VTWEG))<>'') WHEN LENGTH(VTWEG) != 2 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_VTWEG_Accuracy
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
+
+-- Rule 13
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed FROM (
+  SELECT CASE WHEN rule_EL_ACDOCU_VTWEG_Validity = 'VALID' THEN 1 ELSE 0 END AS valid,
+         CASE WHEN rule_EL_ACDOCU_VTWEG_Validity = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT CASE WHEN RACCT LIKE ANY ('001%', '002%', '003%') AND (VTWEG IS NOT NULL OR LTRIM(RTRIM(VTWEG))<>'') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_VTWEG_Validity
+    FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu`
+    WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+  )
+) AS temp_valid_invalid_scenario;
