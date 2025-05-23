@@ -11,3 +11,19 @@ SELECT rule_EL_ACDOCU_RITEM_Completeness, COUNT(*) AS count FROM ( SELECT CASE W
 SELECT rule_EL_ACDOCU_SUBIT_Validity, COUNT(*) AS count FROM ( SELECT CASE WHEN RACCT LIKE ANY ('001%', '002%', '003%') AND (SUBIT IS NULL OR LTRIM(RTRIM(SUBIT ))='') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_SUBIT_Validity FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_SUBIT_Validity;
 SELECT rule_EL_ACDOCU_VTWEG_Accuracy, COUNT(*) AS count FROM ( SELECT CASE (VTWEG IS NOT NULL OR LTRIM(RTRIM(VTWEG ))<>'') WHEN LENGTH(VTWEG) != 2 THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_VTWEG_Accuracy FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_VTWEG_Accuracy ;
 SELECT rule_EL_ACDOCU_VTWEG_Validity, COUNT(*) AS count FROM ( SELECT CASE WHEN RACCT LIKE ANY ('001%', '002%', '003%') AND (VTWEG IS NOT NULL OR LTRIM(RTRIM(VTWEG))<>'') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCU_VTWEG_Validity FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdocu` WHERE $incr_col1 BETWEEN '$start_dt' AND '$end_dt' and operation_flag in ('U', 'I')) GROUP BY rule_EL_ACDOCU_VTWEG_Validity;
+
+
+
+
+select COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed from (SELECT
+    CASE WHEN rule_EL_nonemp_fieldglass_worker_contractor_type_description_Completeness = 'VALID' THEN 1 ElSE 0 END AS valid,
+    CASE WHEN rule_EL_nonemp_fieldglass_worker_contractor_type_description_Completeness = 'INVALID' THEN 1 ELSE 0 END AS invalid
+FROM (
+
+
+
+
+NEW
+
+1:26
+source_period = cast(format_date('%Y%m', current_date-1) as int64)))as temp valid_invalid_scenario
