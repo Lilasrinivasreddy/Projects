@@ -1,0 +1,77 @@
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed
+FROM (
+  SELECT
+    CASE WHEN rule_EL_ACDOCA_ANLN1_Accuracy = 'VALID' THEN 1 ELSE 0 END AS valid,
+    CASE WHEN rule_EL_ACDOCA_ANLN1_Accuracy = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT rule_EL_ACDOCA_ANLN1_Accuracy, COUNT(*) AS count FROM (
+        SELECT CASE WHEN ANLN1 IS NULL OR LTRIM(RTRIM(ANLN1)) = '' OR LENGTH(ANLN1) = 12 THEN 'VALID' ELSE 'INVALID' END AS rule_EL_ACDOCA_ANLN1_Accuracy
+        FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdoca`
+        WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+    ) GROUP BY rule_EL_ACDOCA_ANLN1_Accuracy
+  )
+) AS temp_valid_invalid_scenario
+
+--
+
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed
+FROM (
+  SELECT
+    CASE WHEN rule_EL_ACDOCA_BELNR_Completeness = 'VALID' THEN 1 ELSE 0 END AS valid,
+    CASE WHEN rule_EL_ACDOCA_BELNR_Completeness = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT rule_EL_ACDOCA_BELNR_Completeness, COUNT(*) AS count FROM (
+        SELECT CASE WHEN POPER != '000' AND (BELNR IS NULL OR LTRIM(RTRIM(BELNR))= '') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCA_BELNR_Completeness
+        FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdoca`
+        WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+    ) GROUP BY rule_EL_ACDOCA_BELNR_Completeness
+  )
+) AS temp_valid_invalid_scenario
+
+--
+
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed
+FROM (
+  SELECT
+    CASE WHEN rule_EL_ACDOCA_BLART_Completeness = 'VALID' THEN 1 ELSE 0 END AS valid,
+    CASE WHEN rule_EL_ACDOCA_BLART_Completeness = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT rule_EL_ACDOCA_BLART_Completeness, COUNT(*) AS count FROM (
+        SELECT CASE WHEN POPER != '000' AND (BLART IS NULL OR LTRIM(RTRIM(BLART))= '') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCA_BLART_Completeness
+        FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdoca`
+        WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+    ) GROUP BY rule_EL_ACDOCA_BLART_Completeness
+  )
+) AS temp_valid_invalid_scenario
+
+--
+
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed
+FROM (
+  SELECT
+    CASE WHEN rule_EL_ACDOCA_BLDAT_Completeness = 'VALID' THEN 1 ELSE 0 END AS valid,
+    CASE WHEN rule_EL_ACDOCA_BLDAT_Completeness = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT rule_EL_ACDOCA_BLDAT_Completeness, COUNT(*) AS count FROM (
+        SELECT CASE WHEN POPER != '000' AND (BLDAT IS NULL OR LTRIM(RTRIM(BLDAT))= '') THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCA_BLDAT_Completeness
+        FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdoca`
+        WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+    ) GROUP BY rule_EL_ACDOCA_BLDAT_Completeness
+  )
+) AS temp_valid_invalid_scenario
+
+--
+
+SELECT COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed
+FROM (
+  SELECT
+    CASE WHEN rule_EL_ACDOCA_BSCHL_Completeness = 'VALID' THEN 1 ELSE 0 END AS valid,
+    CASE WHEN rule_EL_ACDOCA_BSCHL_Completeness = 'INVALID' THEN 1 ELSE 0 END AS invalid
+  FROM (
+    SELECT rule_EL_ACDOCA_BSCHL_Completeness, COUNT(*) AS count FROM (
+        SELECT CASE WHEN POPER != '000' AND (BSCHL IS NULL OR LTRIM(RTRIM(BSCHL))= '') and xsplitmod = '' and bstat <> 'C' THEN 'INVALID' ELSE 'VALID' END AS rule_EL_ACDOCA_BSCHL_Completeness
+        FROM `vz-it-pr-j0nv-oddo-0.od_enriched_fin_acct.acdoca`
+        WHERE source_period = CAST(FORMAT_DATE('%Y%m', CURRENT_DATE - 1) AS INT64)
+    ) GROUP BY rule_EL_ACDOCA_BSCHL_Completeness
+  )
+) AS temp_valid_invalid_scenario
