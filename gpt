@@ -1,4 +1,29 @@
-select COALESCE(SUM(valid), 0) AS passed, COALESCE(SUM(invalid), 0) AS failed from (SELECT
-    CASE WHEN rule_PL_epm_p20gmgn_market_Accuracy_1 = 'VALID' THEN 1 ElSE 0 END AS valid,
-    CASE WHEN rule_PL_epm_p20gmgn_market_Accuracy_1 = 'INVALID' THEN 1 ELSE 0 END AS invalid
-FROM (SELECT CASE WHEN UPPER(market) NOT LIKE '%NONE' AND model ='Wireline' THEN "INVALID" ELSE "VALID" END AS rule_PL_epm_p20gmgn_market_Accuracy_1 FROM `vz-it-pr-j0nv-oddo-0.od_published_epm.epm_p20gmgn_actuals_v` WHERE CONCAT(REPLACE(year,'FY','20'), CASE WHEN period = 'Jan' THEN '01' WHEN period = 'Feb' THEN '02' WHEN period = 'Mar' THEN '03' WHEN period = 'Apr' THEN '04' WHEN period = 'May' THEN '05' WHEN period = 'May' THEN '05' WHEN period = 'Jun' THEN '06' WHEN period = 'Jul' THEN '07' WHEN period = 'Aug' THEN '08' WHEN period = 'Sep' THEN '09' WHEN period = 'Oct' THEN '10' WHEN period = 'Nov' THEN '11' WHEN period = 'Dec' THEN '12' END) BETWEEN current_date -1 AND current_date -1 as temp valid_invalid_scenario
+Field Name	Example Values(Text)	Example Values(Image)		Strict Text Search Field	Text Search Field	Filter Field	Display/Return Only Field	Ignore/Refine from current to elastic	Usage Details	Code or pipeline requirements	Questions or Comments
+Category	Equipment			No	No	Yes	No	No			This is not an identifier field but probably a filter field
+content_type	text,			No	No	Yes	No	No			Not a text search field. Maybe a filter
+document_Create_Date				No	No	No	No	No			This structure is not needed
+document_created_day				No	No	No	No	Yes			This structure is not needed
+document_created_month				No	No	No	No	Yes			This structure is not needed
+document_created_year				No	No	No	No	Yes			This structure is not needed
+document_ext				No	No	Yes	No	No			This should be a filter not a text search field
+document_name	3. Temporary Worksite Use Cases_49876a0d65194bf7b884cd5aa4034362.pdf,			No	Yes	No	No	No	Custom analyzer		Should this be a text search field? How does it differ from File_name?
+document_type	application/pdf,			No	No	Yes	No	No			How does this field participate in text search? Will the text application/pdf appear in the query text or is this a filter field?
+is_summary	false,			No	No	Yes	No	No			
+text	Verizon confidential and proprietary. Unauthorized disclosure, reproduction or other use prohibited.\nEnvironmental services company \ndeploys LTE Business Internet to \nimprove landfill management\nChallenges\nSolutions\nBenefits\n• Enhanced productivity and \ndigital communications with \nHQ for landfill management \nteams \n• Fast and easy deployment of \nwireless business-grade \ninternet within days\n• Connections are mobile within \nVerizon’s coverage footprint \nwhich covers 99% of the US \npopulation1\n• Improved overall network user \nexperience at dispatch oﬃces\n• Predictable cost with \nconsistent price plan \nnationwide\n• Equipped management teams \nwith LTE Business Internet \n(BI) plans and capable routers \nto take with them virtually \nanywhere,			No	Yes	No	No	No			
+
+
+
+
+
+
+
+Field Name	Example Values(Text)	Example Values(Image)		Strict Text Search Field	Text Search Field	Filter Field	Display/Return Only Field
+text_embedding				No	Yes	No	No
+usecase_name				No	No	No	Yes
+pipeline_run_id				No	No	No	Yes
+chunk_id				No	No	No	Yes
+document_name				No	No	No	Yes
+page				No	No	No	Yes
+original_content				No	No	No	Yes
+parent_data				No	No	No	Yes
+parent_id				No	No	No	Yes
