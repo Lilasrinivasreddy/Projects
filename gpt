@@ -100,3 +100,171 @@ SELECT
 FROM 
     table_avg
 
+
+
+
+auto_prfl_num
+INTEGER	REQUIRED	-	-	-	
+-	
+-
+prfl_tbl_id
+INTEGER	REQUIRED	-	-	-	
+-	
+-
+auto_prfl_run_dt
+TIMESTAMP	NULLABLE	-	-	CURRENT_TIMESTAMP()	
+-	
+-
+src_tbl
+STRING	NULLABLE	-	-	-	
+-	
+-
+tbl_completeness
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_uniqueness
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_timeliness
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_duplicates
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_col_counts
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+tbl_row_counts
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+tbl_total_cells
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+tbl_sample_row_count
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+tbl_avg_count
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_variation_perc
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_conformity
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_validity
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_integrity
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_consistency
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_dq_score
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+rpt_ref_key
+STRING	NULLABLE	-	-	-
+
+
+
+
+
+=======================
+rpt_ref_key
+STRING	NULLABLE	-	-	-	
+-	
+-
+profile_id
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+prfl_run_dt
+TIMESTAMP	NULLABLE	-	-	current_timestamp	
+-	
+-
+profile_type
+STRING	NULLABLE	-	-	-	
+-	
+-
+table_name
+STRING	NULLABLE	-	-	-	
+-	
+-
+tbl_completeness
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_uniqueness
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_timeliness
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_duplicates
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_col_counts
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+tbl_row_counts
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+tbl_total_cells
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+tbl_sample_row_count
+INTEGER	NULLABLE	-	-	-	
+-	
+-
+tbl_avg_count
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_variation_perc
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_conformity
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_validity
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_integrity
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_consistency
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+tbl_dq_score
+NUMERIC	NULLABLE	-	-	-	
+-	
+-
+
