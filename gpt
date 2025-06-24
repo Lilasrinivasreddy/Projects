@@ -1,28 +1,19 @@
-SELECT 
-            FORMAT_DATE('%Y-%m-%d', DATE(t1.auto_prfl_run_dt)) as run_date,
-            AVG(t1.tbl_dq_score) as score
-        FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_tbl_rpt\` t1
-        JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` t2
-        ON t1.src_tbl = t2.table_name
-        WHERE t2.product_name = @productName
-        AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
-        GROUP BY run_date
-        ORDER BY run_date
-
-
-SELECT 
-    FORMAT_DATE('%Y-%m-%d', DATE(t1.prfl_run_dt)) as run_date,
-    AVG(t1.tbl_dq_score) as score
-FROM 
-    `${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_table_report` t1
-JOIN 
-    `${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd` t2
-ON 
-    t1.table_name = t2.table_name
-WHERE 
-    t2.product_name = @productName
-    AND DATE(t1.prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
-GROUP BY 
-    run_date
-ORDER BY 
-    run_date
+WITH filtered_data AS (
+            SELECT 
+                t1.src_tbl, 
+                AVG(t1.tbl_dq_score) AS tbl_level_score, 
+                DATE(t1.auto_prfl_run_dt) AS run_date
+            FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_tbl_rpt\` AS t1
+            JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` AS t2
+            ON t2.table_name = t1.src_tbl
+            WHERE t2.product_name = @productName
+            AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
+            GROUP BY t1.src_tbl, t1.auto_prfl_run_dt
+        ), ranked_data AS (
+            SELECT src_tbl, AVG(tbl_level_score) AS tbl_score
+            FROM filtered_data
+            GROUP BY src_tbl
+        )
+        SELECT src_tbl AS table, tbl_score
+        FROM ranked_data
+        ORDER BY tbl_score ASC
