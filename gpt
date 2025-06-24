@@ -55,3 +55,22 @@ ORDER BY
     tbl_score ASC
 
 
+
+SELECT 
+    FORMAT_DATE('%Y-%m-%d', DATE(t1.prfl_run_dt)) as run_date,
+    AVG(t1.tbl_dq_score) as score
+FROM 
+    `my-project-id.dga_dq_tbls.dqaas_table_report` t1
+JOIN 
+    `my-project-id.dga_dq_tbls.dqaas_label_taxonomy_mtd` t2
+ON 
+    t1.table_name = t2.table_name
+WHERE 
+    t2.product_name = 'MyProduct'
+    AND DATE(t1.prfl_run_dt) BETWEEN '2024-06-01' AND '2024-06-30'
+GROUP BY 
+    run_date
+ORDER BY 
+    run_date
+
+
