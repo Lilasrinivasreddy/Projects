@@ -50,3 +50,53 @@ dqaas_table_report --new
 dqaas_label_taxonomy_mtd --- old taxonomy table
 8:06
 dqaas_taxonomy_meta ---new
+
+
+
+
+
+
+WITH filtered_data AS (
+    SELECT 
+        t1.src_tbl, 
+        t1.tbl_completeness, 
+        t1.tbl_timeliness, 
+        t1.tbl_uniqueness, 
+        t1.tbl_conformity, 
+        t1.tbl_validity, 
+        t1.tbl_consistency, 
+        DATE(t1.auto_prfl_run_dt) AS run_date 
+    FROM 
+        `${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_table_report` AS t1 
+    JOIN 
+        `${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd` AS t2 
+    ON 
+        t2.table_name = t1.src_tbl 
+    WHERE 
+        t2.product_name = @productName 
+        AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
+), 
+table_avg AS (
+    SELECT 
+        src_tbl, 
+        AVG(tbl_completeness) AS avg_tbl_completeness, 
+        AVG(tbl_timeliness) AS avg_tbl_timeliness, 
+        AVG(tbl_uniqueness) AS avg_tbl_uniqueness, 
+        AVG(tbl_conformity) AS avg_tbl_conformity, 
+        AVG(tbl_validity) AS avg_tbl_validity, 
+        AVG(tbl_consistency) AS avg_tbl_consistency 
+    FROM 
+        filtered_data 
+    GROUP BY 
+        src_tbl
+) 
+SELECT 
+    AVG(avg_tbl_completeness) AS completeness, 
+    AVG(avg_tbl_timeliness) AS timeliness, 
+    AVG(avg_tbl_uniqueness) AS uniqueness, 
+    AVG(avg_tbl_conformity) AS conformity, 
+    AVG(avg_tbl_validity) AS validity, 
+    AVG(avg_tbl_consistency) AS consistency 
+FROM 
+    table_avg
+
