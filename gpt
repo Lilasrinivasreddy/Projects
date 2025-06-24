@@ -8,3 +8,21 @@ SELECT
         AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
         GROUP BY run_date
         ORDER BY run_date
+
+
+SELECT 
+    FORMAT_DATE('%Y-%m-%d', DATE(t1.prfl_run_dt)) as run_date,
+    AVG(t1.tbl_dq_score) as score
+FROM 
+    `${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_table_report` t1
+JOIN 
+    `${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd` t2
+ON 
+    t1.table_name = t2.table_name
+WHERE 
+    t2.product_name = @productName
+    AND DATE(t1.prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
+GROUP BY 
+    run_date
+ORDER BY 
+    run_date
