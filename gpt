@@ -1,276 +1,134 @@
-import os
-import pandas as pd
-import json
-import time
-from build_index_config import parent_dir, data_path
-from downloader import download_confluence_links
+const { executeQuery, getDateRange } = require('../../utils/queryUtils');
+const { getDistinctProductNames, productNamesList } = require('../../queries/sharedQueries');
 
-print(time.strftime("%H:%M:%S", time.localtime()))
+const getL2Data = async (bigquery, productName) => {
+    const { startDate, endDate } = getDateRange();
+    const query = `
+    WITH l2_metrics AS (
+        SELECT
+            t2.l2_label,
+            FORMAT_DATE('%Y-%m-%d', DATE(t1.auto_prfl_run_dt)) AS run_date,
+            CAST(AVG(t1.tbl_dq_score) AS FLOAT64) AS avg_score,
+            CAST(AVG(t1.tbl_completeness) AS FLOAT64) AS completeness,
+            CAST(AVG(t1.tbl_timeliness) AS FLOAT64) AS timeliness,
+            CAST(AVG(t1.tbl_uniqueness) AS FLOAT64) AS uniqueness,
+            CAST(AVG(t1.tbl_conformity) AS FLOAT64) AS conformity,
+            CAST(AVG(t1.tbl_validity) AS FLOAT64) AS validity,
+            CAST(AVG(t1.tbl_consistency) AS FLOAT64) AS consistency
+        FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_tbl_rpt\` t1
+        JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` t2
+        ON t1.src_tbl = t2.table_name
+        WHERE t2.product_name = @productName
+        AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
+        GROUP BY t2.l2_label, run_date
+    ),
+    column_metrics AS (
+        SELECT DISTINCT
+            t2.l2_label,
+            t1.src_tbl,
+            t1.col_name,
+            CAST(AVG(t1.col_completeness) AS FLOAT64) AS col_completeness,
+            CAST(AVG(t1.col_validity) AS FLOAT64) AS col_validity,
+            CAST(AVG(t1.col_conformity) AS FLOAT64) AS col_conformity
+        FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_col_rpt\` AS t1
+        JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` AS t2
+        ON t2.table_name = t1.src_tbl
+        WHERE t2.product_name = @productName
+        AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
+        GROUP BY t2.l2_label, t1.src_tbl, t1.col_name
+    ),
+    table_metrics AS (
+        SELECT
+            t2.l2_label,
+            t1.src_tbl,
+            CAST(AVG(t1.tbl_dq_score) AS FLOAT64) AS tbl_score
+        FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_tbl_rpt\` AS t1
+        JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` AS t2
+        ON t2.table_name = t1.src_tbl
+        WHERE t2.product_name = @productName
+        AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
+        GROUP BY t2.l2_label, t1.src_tbl
+    )
+    SELECT
+        m.l2_label,
+        m.run_date,
+        m.avg_score AS score,
+        c.src_tbl,
+        c.col_name,
+        c.col_completeness,
+        c.col_validity,
+        c.col_conformity,
+        t.tbl_score,
+        m.completeness,
+        m.timeliness,
+        m.uniqueness,
+        m.conformity,
+        m.validity,
+        m.consistency
+    FROM l2_metrics m
+    LEFT JOIN column_metrics c USING (l2_label)
+    LEFT JOIN table_metrics t USING (l2_label, src_tbl)
+    ORDER BY m.l2_label, m.run_date, c.src_tbl, c.col_name`;
 
-index_faiss_collection_mapping = {
-    'gcp': "aider_gcp_v1",
-    'bi_tools': "aider_bi_tools_v1",
-    'dgs': "aider_dgs_v1",
-    'ml_platform': "aider_ml_platform_v1",
-    'hadoop': "aider_hadoop_v1",
-    'teradata': "aider_teradata_v1",
-    'all': "aider_all_v1",
-    'informatica': "aider_informatica_v1",
-    'data_indus': "aider_data_indus_v1",
-    'data_discovery': "aider_data_discovery_v1",
-    'bu_enablement': "aider_bu_enablement_v1",
-    'ai_indus': "aider_ai_indus_v1",
-    'ai_workmate': "aider_ai_workmate_v1"
-}
+    const rows = await executeQuery(bigquery, query, { productName });
+    const level2Data = new Map();
 
-pdfs = "pdfs"
-columns = ["Functional_area", "Services", "Subtopic", "Oneconfluence_link"]
-## make sure to keep "all" at last of the list
-list_func_area = ["gcp", "data_indus", "bi_tools", "dgs", "teradata", "ml_platform", "hadoop", "informatica", 'data_discovery', 'all', 'ai_indus', 'ai_workmate']
-current_dir = os.path.join(parent_dir, "aider_kw_retriever")
-print(current_dir)
+    rows.forEach(row => {
+        const l2Label = row.l2_label;
+        if (!level2Data.has(l2Label)) {
+            level2Data.set(l2Label, {
+                level2_name: l2Label,
+                dq_score: {
+                    completeness: row.completeness,
+                    timeliness: row.timeliness,
+                    uniqueness: row.uniqueness,
+                    conformity: row.conformity,
+                    validity: row.validity,
+                    consistency: row.consistency
+                },
+                barChart_allTables: new Map(),
+                lineChart: {},
+            });
+        }
 
-combined_df = pd.DataFrame()
-
-for each in list_func_area:
-    if each == 'all':
-        # Combine data from all functional areas
-        if combined_df.empty:
-            raise ValueError("No data available to combine for 'all' index")
-        df = combined_df
-    else:
-        try:
-            df = pd.read_excel(f"{data_path}/SlackbotKBs.xlsx", each)
-            combined_df = pd.concat([combined_df, df], ignore_index=True)
-        except:
-            raise ValueError(f"Please download and make sure the excel sheet for {each} is in place")
-    
-    print(each)
-    download_pdf = True
-    faiss_col_name = index_faiss_collection_mapping[each]
-
-    os.makedirs(data_path, exist_ok=True)
-    parent_dir = f"{data_path}/{each}"
-    ulst = []
-    plst = []
-
-    for _, dt in df.iterrows():
-        if not str(dt['Oneconfluence_link']).strip().startswith("https://oneconfluence"):
-            continue
+        const l2Data = level2Data.get(l2Label);
         
-        ulst.append(dt['Oneconfluence_link'].strip())
-        pretext = f"Functional Area: {dt['Functional_area']} \n Topic: {dt['Subtopic']}"
-        plst.append(pretext)
+        if (row.run_date && row.score) {
+            l2Data.lineChart[row.run_date] = row.score;
+        }
 
-    url = ulst
-    if download_pdf:
-        not_downloaded_list = download_confluence_links(url, pdf_path=parent_dir)
-        print(not_downloaded_list)
+        if (row.src_tbl) {
+            const tableData = l2Data.barChart_allTables.get(row.src_tbl) || {
+                tableName: row.src_tbl,
+                overall_DQ_Score: row.tbl_score,
+                columns: []
+            };
 
-    file_path = os.path.join(current_dir, f'{each}/pdfs')
-    print(file_path)
-    files = os.listdir(file_path)
-    src_docs = []
+            if (row.col_name && !tableData.columns.some(col => col.columnName === row.col_name)) {
+                tableData.columns.push({
+                    columnName: row.col_name,
+                    Completeness: row.col_completeness,
+                    Validity: row.col_validity,
+                    Conformity: row.col_conformity
+                });
+            }
 
-    def get_num(x):
-        return int(x.split('.')[0])
-    
-    files = sorted(files, key=get_num, reverse=False)
-    for fname in files:
-        index = get_num(fname)
-        src_doc_dict = {"source": url[index], "index": index, "pretext": plst[index]}
-        src_docs.append(src_doc_dict)
+            l2Data.barChart_allTables.set(row.src_tbl, tableData);
+        }
+    });
 
-    with open(f'files_not_downloaded/{each}_files_not_downloaded.txt', 'w') as f:
-        for line in not_downloaded_list:
-            f.write(f"{line}\n")
-    with open(f'mapping_docs/{each}_src_docs.txt', 'w') as convert_file:
-        convert_file.write(json.dumps(src_docs))
+    return Array.from(level2Data.values()).map(l2Data => ({
+        ...l2Data,
+        barChart_allTables: Array.from(l2Data.barChart_allTables.values())
+    }));
+};
 
-print(time.strftime("%H:%M:%S", time.localtime()))
-=============================
+const buildJson = async (bigquery) => {
+    const productNames = productNamesList.length === 0 ? await getDistinctProductNames(bigquery) : productNamesList;
+    return Promise.all(productNames.map(async productName => ({
+        product_id: productName,
+        level2_data: await getL2Data(bigquery, productName)
+    })));
+};
 
-from config import parent_dir,text_chunk_size,text_chunk_overlap
-import os
-import json
-import ast
-import requests
-import time
-from pydantic import BaseModel
-from langchain.pydantic_v1 import BaseModel as langchainBaseModel, Extra, Field
-from langchain.schema.embeddings import Embeddings
-from typing import List,Any, List
-from langchain_community.document_loaders.pdf import PDFMinerLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.docstore.document import Document
-from langchain_community.retrievers import BM25Retriever
-from langchain_community.vectorstores import FAISS
-import warnings
-import pickle
-import numpy as np
-import warnings
-from langchain_community.document_loaders import PDFPlumberLoader
-
-warnings.filterwarnings("ignore")
-
-
-def create_index():
-    list_func_area=["gcp","bi_tools","dgs","teradata","ml_platform","hadoop","informatica","all","data_indus","data_discovery","bu_enablement","ai_indus","ai_workmate"]
-    #list_func_area=["teradata"]
-    current_dir=os.path.join(parent_dir,"aider_kw_retriever")
-
-    text_chunk_size=2500
-    text_chunk_overlap=300
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=text_chunk_size, chunk_overlap=text_chunk_overlap,length_function=len)
-    
-    for i in list_func_area:
-        documents=[]
-        metadata=[]
-        chunks=""
-
-        file_path=os.path.join(current_dir,f'{i}/pdfs')
-        print(file_path)
-        files=os.listdir(file_path)
-        def get_num(x): 
-            return int(x.split('.')[0])
-
-        files = sorted(files, key = get_num, reverse = False)
-
-        with (open(f'mapping_docs/{i}_src_docs.txt', 'r')) as openfile:
-            metadata=ast.literal_eval(openfile.read())
-
-        for fname in files:
-            loader=PDFPlumberLoader(os.path.join(file_path,fname))
-            j=get_num(fname)
-            print(f"file number: {j}")
-            search_dict=list(filter(lambda searchindex: searchindex['index'] == j, metadata))
-            # print(f"metadata before loading: {search_dict}")
-            raw_text=loader.load()
-            print(f"length of raw_text: {len(raw_text)}")
-            for rt in range(len(raw_text)):
-                raw_text[rt].metadata=search_dict[0]
-
-            chunks = text_splitter.split_documents(raw_text)
-            # print(f"raw_text: {raw_text}")
-            for ch in chunks:
-                ch.page_content = ch.page_content  + " \n" + f"[metadata_start: \n{search_dict[0]['pretext']} \n:metadata_end]"
-            documents.extend(chunks)
-            # print(documents)
-
-        
-        print(f'Starting process_shard of {len(documents)} chunks.')
-        st = time.time()
-        embeddings = HuggingFaceEmbeddings(model_name='all-distilroberta-v1')
-        result = FAISS.from_documents(documents, embeddings)
-        result_bm25=BM25Retriever.from_documents(documents)
-        et = time.time() - st
-        print(f'Shard completed in {et} seconds.')
-        print("------------------------------------------------------")
-
-        result.save_local(f'indexes/{i}')
-        with open(f'indexes/{i}/{i}_bm25_retriever.pkl','wb') as file:
-            pickle.dump(result_bm25,file)
-
-if __name__ == "__main__":
-    create_index()
-===========================
-import requests,html
-from bs4 import BeautifulSoup
-from tqdm import tqdm
-import os
-import time
-
-from build_index_config import confluence_username, confluence_password
-
-from build_index_config import parent_dir
-parent_dir = os.path.join(parent_dir,"pdfs")
-
-
-
-def get_nested_links(link):
-    username = confluence_username
-    passkey = confluence_password
-
-    reqs = requests.get(link, auth=(username, passkey))
-    soup = BeautifulSoup(reqs.text, 'html.parser')
-
-    urls = []
-    for link in soup.find_all("a"):
-        if link.get('href').startswith('/pages') or link.get('href').startswith('/display'):
-            urls.append("https://oneconfluence.verizon.com"+ link.get('href'))
-        else:
-            pass
-    return list(set(urls))
-
-def download_confluence_as_pdf(link:str, pdf_path: str = parent_dir,filename:str ="1", fetch_nested = False):
-    
-    if not link.startswith("https://oneconfluence.verizon.com"):
-        raise ValueError("this function handles only oneconfluence page")
-    
-    if fetch_nested:
-        links = get_nested_links(link)
-    else:
-        links = [link]
-    
-    username = confluence_username
-    passkey = confluence_password
-    key = "pdfpageexport"
-    
-    url_local = []
-    not_downloaded_list=[]
-    for lk in links:
-        try:
-                
-            reqs = requests.get(lk, auth=(username, passkey))
-            soup = BeautifulSoup(reqs.text, 'html.parser')
-            l = []
-        
-            for link in soup.find_all("a"):
-                if key in link.get("href", "") and link.get("id","") == "action-export-pdf-link":
-                    
-                    # print("https://oneconfluence.verizon.com" + link.get("href"))
-                    l.append("https://oneconfluence.verizon.com" + link.get("href"))
-            print("pdf found",l)
-            # if len(l) > 1:
-            #     for count in range(len(l)):
-            #         response = requests.get(l[count], stream=True,auth=(username, passkey))
-            #         filename = l[count].split("=")[-1]
-            #         print(filename)
-            #         with open("pdfs/"+filename+".pdf", "wb") as handle:
-            #             for data in tqdm(response.iter_content()):
-            #                 handle.write(data)
-            # else:
-            # filename = l[0].split("=")[-1] + "_"+str(time.time())[-5:]
-            if len(l)==0:
-                print(lk, "no pdf found")
-            elif len(l)>1:
-                print(lk, "has more than on pdf ")
-            response = requests.get(l[0], stream=True,auth=(username, passkey))
-            print(filename)
-            if not os.path.exists(os.path.join(pdf_path, "pdfs")):
-                os.makedirs(os.path.join(pdf_path, "pdfs"))
-            
-            with open(os.path.join(pdf_path, "pdfs",filename+".pdf"), "wb") as handle:
-                for data in tqdm(response.iter_content()):
-                    handle.write(data)
-                    
-            url_local.append([lk,])
-            print("PDF DOWNLOADED SUCCESSFULLY..")
-            
-        except Exception as pdfexe:
-            print(lk," ----  ****  ----" ,pdfexe)
-            return lk
-
-
-
-def download_confluence_links(links: list, pdf_path:str = parent_dir, fetch_nested=False):
-    not_downloaded_list=[]
-    for idx,link in enumerate(links):
-       link_not_downloaded = download_confluence_as_pdf(link,pdf_path, filename=str(idx))
-       if not(link_not_downloaded is  None):
-            not_downloaded_list.append(link_not_downloaded)
-
-    return not_downloaded_list
-
+module.exports = { buildJson };
