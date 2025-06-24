@@ -1,134 +1,52 @@
-const { executeQuery, getDateRange } = require('../../utils/queryUtils');
-const { getDistinctProductNames, productNamesList } = require('../../queries/sharedQueries');
-
-const getL2Data = async (bigquery, productName) => {
-    const { startDate, endDate } = getDateRange();
-    const query = `
-    WITH l2_metrics AS (
-        SELECT
-            t2.l2_label,
-            FORMAT_DATE('%Y-%m-%d', DATE(t1.auto_prfl_run_dt)) AS run_date,
-            CAST(AVG(t1.tbl_dq_score) AS FLOAT64) AS avg_score,
-            CAST(AVG(t1.tbl_completeness) AS FLOAT64) AS completeness,
-            CAST(AVG(t1.tbl_timeliness) AS FLOAT64) AS timeliness,
-            CAST(AVG(t1.tbl_uniqueness) AS FLOAT64) AS uniqueness,
-            CAST(AVG(t1.tbl_conformity) AS FLOAT64) AS conformity,
-            CAST(AVG(t1.tbl_validity) AS FLOAT64) AS validity,
-            CAST(AVG(t1.tbl_consistency) AS FLOAT64) AS consistency
+WITH filtered_data AS (
+            SELECT t1.src_tbl, t1.tbl_completeness, t1.tbl_timeliness, t1.tbl_uniqueness, t1.tbl_conformity, t1.tbl_validity, t1.tbl_consistency, DATE(t1.auto_prfl_run_dt) AS run_date 
+            FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_tbl_rpt\` AS t1 
+            JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` AS t2 
+            ON t2.table_name = t1.src_tbl 
+            WHERE t2.product_name = @productName 
+            AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
+        ), table_avg AS (
+            SELECT src_tbl, AVG(tbl_completeness) AS avg_tbl_completeness, AVG(tbl_timeliness) AS avg_tbl_timeliness, AVG(tbl_uniqueness) AS avg_tbl_uniqueness, AVG(tbl_conformity) AS avg_tbl_conformity, AVG(tbl_validity) AS avg_tbl_validity, AVG(tbl_consistency) AS avg_tbl_consistency 
+            FROM filtered_data 
+            GROUP BY src_tbl
+        ) 
+        SELECT AVG(avg_tbl_completeness) AS completeness, AVG(avg_tbl_timeliness) AS timeliness, AVG(avg_tbl_uniqueness) AS uniqueness, AVG(avg_tbl_conformity) AS conformity, AVG(avg_tbl_validity) AS validity, AVG(avg_tbl_consistency) AS consistency 
+        FROM table_avg
+8:07
+Product ID linechart query
+SELECT 
+            FORMAT_DATE('%Y-%m-%d', DATE(t1.auto_prfl_run_dt)) as run_date,
+            AVG(t1.tbl_dq_score) as score
         FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_tbl_rpt\` t1
         JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` t2
         ON t1.src_tbl = t2.table_name
         WHERE t2.product_name = @productName
         AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
-        GROUP BY t2.l2_label, run_date
-    ),
-    column_metrics AS (
-        SELECT DISTINCT
-            t2.l2_label,
-            t1.src_tbl,
-            t1.col_name,
-            CAST(AVG(t1.col_completeness) AS FLOAT64) AS col_completeness,
-            CAST(AVG(t1.col_validity) AS FLOAT64) AS col_validity,
-            CAST(AVG(t1.col_conformity) AS FLOAT64) AS col_conformity
-        FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_col_rpt\` AS t1
-        JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` AS t2
-        ON t2.table_name = t1.src_tbl
-        WHERE t2.product_name = @productName
-        AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
-        GROUP BY t2.l2_label, t1.src_tbl, t1.col_name
-    ),
-    table_metrics AS (
-        SELECT
-            t2.l2_label,
-            t1.src_tbl,
-            CAST(AVG(t1.tbl_dq_score) AS FLOAT64) AS tbl_score
-        FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_tbl_rpt\` AS t1
-        JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` AS t2
-        ON t2.table_name = t1.src_tbl
-        WHERE t2.product_name = @productName
-        AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
-        GROUP BY t2.l2_label, t1.src_tbl
-    )
-    SELECT
-        m.l2_label,
-        m.run_date,
-        m.avg_score AS score,
-        c.src_tbl,
-        c.col_name,
-        c.col_completeness,
-        c.col_validity,
-        c.col_conformity,
-        t.tbl_score,
-        m.completeness,
-        m.timeliness,
-        m.uniqueness,
-        m.conformity,
-        m.validity,
-        m.consistency
-    FROM l2_metrics m
-    LEFT JOIN column_metrics c USING (l2_label)
-    LEFT JOIN table_metrics t USING (l2_label, src_tbl)
-    ORDER BY m.l2_label, m.run_date, c.src_tbl, c.col_name`;
+        GROUP BY run_date
+        ORDER BY run_date
+New
+8:10
+To get the Product name list
+SELECT DISTINCT product_name FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\
 
-    const rows = await executeQuery(bigquery, query, { productName });
-    const level2Data = new Map();
 
-    rows.forEach(row => {
-        const l2Label = row.l2_label;
-        if (!level2Data.has(l2Label)) {
-            level2Data.set(l2Label, {
-                level2_name: l2Label,
-                dq_score: {
-                    completeness: row.completeness,
-                    timeliness: row.timeliness,
-                    uniqueness: row.uniqueness,
-                    conformity: row.conformity,
-                    validity: row.validity,
-                    consistency: row.consistency
-                },
-                barChart_allTables: new Map(),
-                lineChart: {},
-            });
-        }
 
-        const l2Data = level2Data.get(l2Label);
-        
-        if (row.run_date && row.score) {
-            l2Data.lineChart[row.run_date] = row.score;
-        }
+=====================
+dqaas_meta---new mtd table
+dqaas_auto_prfl_mtd --- old mtd table
 
-        if (row.src_tbl) {
-            const tableData = l2Data.barChart_allTables.get(row.src_tbl) || {
-                tableName: row.src_tbl,
-                overall_DQ_Score: row.tbl_score,
-                columns: []
-            };
 
-            if (row.col_name && !tableData.columns.some(col => col.columnName === row.col_name)) {
-                tableData.columns.push({
-                    columnName: row.col_name,
-                    Completeness: row.col_completeness,
-                    Validity: row.col_validity,
-                    Conformity: row.col_conformity
-                });
-            }
 
-            l2Data.barChart_allTables.set(row.src_tbl, tableData);
-        }
-    });
 
-    return Array.from(level2Data.values()).map(l2Data => ({
-        ...l2Data,
-        barChart_allTables: Array.from(l2Data.barChart_allTables.values())
-    }));
-};
 
-const buildJson = async (bigquery) => {
-    const productNames = productNamesList.length === 0 ? await getDistinctProductNames(bigquery) : productNamesList;
-    return Promise.all(productNames.map(async productName => ({
-        product_id: productName,
-        level2_data: await getL2Data(bigquery, productName)
-    })));
-};
 
-module.exports = { buildJson };
+8:04
+dqaas_auto_prfl_col_rpt----old column report table
+dqaas_column_report --- new column report table
+8:05
+dqaas_auto_prfl_tbl_rpt----old table report
+dqaas_table_report --new
+8:06
+dqaas_label_taxonomy_mtd --- old taxonomy table
+8:06
+dqaas_taxonomy_meta ---new
