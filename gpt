@@ -1,76 +1,1641 @@
-WITH filtered_data AS (
-            SELECT 
-                t1.src_tbl, 
-                AVG(t1.tbl_dq_score) AS tbl_level_score, 
-                DATE(t1.auto_prfl_run_dt) AS run_date
-            FROM \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_auto_prfl_tbl_rpt\` AS t1
-            JOIN \`${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd\` AS t2
-            ON t2.table_name = t1.src_tbl
-            WHERE t2.product_name = @productName
-            AND DATE(t1.auto_prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
-            GROUP BY t1.src_tbl, t1.auto_prfl_run_dt
-        ), ranked_data AS (
-            SELECT src_tbl, AVG(tbl_level_score) AS tbl_score
-            FROM filtered_data
-            GROUP BY src_tbl
-        )
-        SELECT src_tbl AS table, tbl_score
-        FROM ranked_data
-        ORDER BY tbl_score ASC
+Vegas Data Engineering DPF
+
+1. Architecture Diagram
+1.1 Vegas DE Architecture
+1.2 Data Processing Framework
+1.3 RAG Applications
+1.4 LLMOps
+1.5 Small language Models and finetunings
+2. Responsibilities & Development RACI
+2.1 Usecase ownerTeam
+2.2 Data Product team ( Data Engineering)
+2.3 VEGAS  CORE (Data Engineering)
+2.4. VEGAS MLE endpoints
+2.5 Data Scientists
+2.6 SOE Application DE
+2.7 Enablement Team
+3. Data Sourcing
+3.1 Supported Data types
+Html
+Pdf
+Confluence
+Images
+PPtx
+Docx
+Video / Audio
+3.2 Data Sources
+3.2.1 Infomanager
+3.2.2 Oneconfluence
+3.2.3 VZ Knowledge
+3.2.4 S3 Buckets
+3.2.4 MFT
+3.2.5 Google Drive
+3.2.6 JIRA
+3.2.7 URL Crawl
+3.2.8 Equipment Guide
+3.2.9 Polaris
+4.  Data processing Framework
+4.1 Document loader
+4.2 Chunkings
+4.3 Embeddings
+4.4 Metadata Extractions
+4.5 Video/ Audio to Text
+4.6 Summarization
+4.6.1 Image Summarization
+4.6.2 Table Summarization
+4.6.3 Chunk Summarization
+5.  Indexes
+5.1 Elastic indexes
+5.2 Google vertexAI vector Store
+5.3 Google Dialogflow Vector Store
+5.4 Chroma / FAISS Etc
+6. RAG Endpoints
+6.1 Endpoint
+6.2 Sample notebook
+6.3 Prompting
+6.4 Reranking
+6.5 LLM Ops
+7. Usecase DPF  onboarding : RAG DPF Framework
+Overview
+Use Case Configuration JSON Creation
+7.1 Sample Use Case Configuration JSON Structure
+7.2 Explanation of Key Fields
+7.3 How to prepare your JSON
+7.4 Observability
+8. Onboarding Process - GCS Bucket creation
+8.1 Bucket Access for your Use Case
+8.1.1 Marketplace GCS bucket (Individual Account)
+8.1.2 Marketplace GCS bucket Access (Service Account)
+8.2 Composer Access for your Use Case
+8.3 Sourcing Files
+8.4Change Data Capture (CDC)
+9. Big Query & GCS Storage Access
+9.1.1 Marketplace BQ Table (Individual Account)
+9.1.2 Marketplace GCS bucket Access (Service Account)
+9.2 Helpful links
+9.3 Server Access
+10. Creating Custom Processor
+10.1 Custom Embeddings
+10.2 Custom Chunking
+10.3 Custom Document Extractor
+10.3.1 Video Extraction Integration
+10.3 Custom Indexing
+11. Appendix
+1.1 Manual  DAG Deployment steps:
+
+
+Vegas Data Engineering DPF
+1. Architecture Diagram 
+1.1 Vegas DE Architecture 
 
 
 
-----WITH filtered_data AS (
-    SELECT 
-        t1.table_name, 
-        AVG(t1.tbl_dq_score) AS tbl_level_score, 
-        DATE(t1.prfl_run_dt) AS run_date
-    FROM 
-        `${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_table_report` AS t1
-    JOIN 
-        `${process.env.DQ_PROJECT_ID}.dga_dq_tbls.dqaas_label_taxonomy_mtd` AS t2
-    ON 
-        t2.table_name = t1.table_name
-    WHERE 
-        t2.product_name = @productName
-        AND DATE(t1.prfl_run_dt) BETWEEN ${startDate} AND ${endDate}
-    GROUP BY 
-        t1.table_name, t1.prfl_run_dt
-), 
-ranked_data AS (
-    SELECT 
-        table_name, 
-        AVG(tbl_level_score) AS tbl_score
-    FROM 
-        filtered_data
-    GROUP BY 
-        table_name
+
+https://docs.google.com/presentation/d/1gTsBHF7Z0-D_w3fxH9tXpXD-eKsQxN8OqfGwgAkZBhI/edit#slide=id.g32c65737e08_0_562
+
+1.2 Data Processing Framework
+
+
+
+1.3 RAG Applications 
+
+
+1.4 LLMOps 
+
+
+
+
+
+
+
+1.5 Small language Models and finetunings 
+
+
+
+
+2. Responsibilities & Development RACI 
+
+
+
+2.1 Usecase ownerTeam
+
+Responsibilities ENGRAM , COE Intake , Experimentation etc 
+ 
+2.2 Data Product team ( Data Engineering) 
+Responsibilities  Data Sourcing , Onboarding , use DPF to maintain jobs and corresponding Schedules 
+
+2.3 VEGAS  CORE (Data Engineering) 
+Responsibilities 
+Build Framework 
+Build Common Service for ( processing , chunking , embedding , etc ) 
+Build observability , marketplace etc 
+Own JYSV  application 
+	Compliance 
+	Devops & CICD
+	Enable features 
+Indexing endpoints 
+LLMOPS framework 
+
+	
+
+
+2.4. VEGAS MLE endpoints 
+Responsibilities  
+VEGAS endpoints 
+VEGAS LLMOps tools 
+VEGAS 
+2.5 Data Scientists 
+Responsibilities 
+Data Processing libraries 
+Chunking methodologies 
+Embedding models 
+Ranking algorithms 
+
+2.6 SOE Application DE 
+Responsibilities 
+Integrating RAG and LLM Endpoints in applications 
+Work on index selection in case of multiple indexes 
+Query DLS for Elastic 
+Query DSL for Graph databases 
+
+2.7 Enablement Team 
+Responsibilities 
+Onboard usecase and walk through the lifecycle 
+Engram request 
+VEGAS JIRA lifecycle 
+Post production life cycle 
+LLMOPs  Lifecycle 
+
+
+
+2.8  Enterprise Architects  
+Responsibilities 
+Validate MLE/ DE  Application Architecture 
+Validate Enterprise integration with non AI&D applications 
+Validate Application ID cross silo integration 
+
+3. Data Sourcing 
+3.1 Supported Data types 
+Html 
+
+Html files should be sourced in a single folder ( should not follow foldering structures ) 
+
+Html files should share the citation url for each document 
+
+Metadata should be part of the metatags in a standard header 
+
+The inbound folder should follow the naming convention 
+
+Buckets naming convention 
+
+gk1v-prod-cwlspr-0-usmr-kms/new_files/ostinfomanager
+
+Metadata files 
+
+Sample metadata json 
+km.categories.promotions.364248.mainContent.json
+
+
+Sample file names 
+
+Sample content html file
+km.categories.features.202139.mainContent.html
+
+
+
+
+
+
+Pdf 
+Pdf files will be shared in a single folder and will be processed and moved to a folder which will be a source path. Below is the source path of PDF documents.
+Souce Path: gs://gk1v-prod-cwlspr-0-usmr-kms/ostinfomanager/pdf/documents/
+
+And metadata will be moved to a different folder.
+
+Metadata path: gs://gk1v-prod-cwlspr-0-usmr-kms/ostinfomanager/pdf/metadata
+
+Sample metadata json file for PDF documents is:
+Metadata.json
+
+Confluence 
+The files related to confluence documents are received from a different project space to JYSV and below is the source path from where we source the documents.
+
+Source Path : gs://vz-it-pr-h9vv-ceado-0/ccs/transformed_files/Confluence/history/
+		gs://vz-it-pr-h9vv-ceado-0/ccs/transformed_files/Confluence/delta/
+Images
+ 
+PPtx
+Docx 
+Video / Audio 
+3.2 Data Sources 
+3.2.1 Infomanager 
+
+
+
+Source HTML ->  (  Zipped documents )  - > MFT -> EDL ->  Composer GCS -> Composer  target folder 
+
+Source metadata -> (  Zipped documents )  - > MFT -> EDL ->Composer  GCS -> Composer target folder -> Composer BQ staging ->Composer   BQ target 
+
+Source pdf -> (  Zipped documents )  - > MFT -> EDL ->Composer  GCS -> Composer target folder 
+
+
+
+Infomanager HTML documents Detail design 
+
+Infomanager documents are basically the web pages that are being stored in the form of html.
+The source for these html documents is AEM (Adobe Enterprise Manager). 
+POC at AEM: Kristy Lynn Fitzpatrick Ratna Kishore Babu Mandalanka Buland Lnu
+Peesapati Harish
+
+We receive two kinds of zip files in every push from AEM.
+One is content.zip and the other is metadata.zip. Below are the samples for both.
+infomanager-content-2024-10-02--21-00-09-Total-42.zip
+infomanager-metadata-2024-09-10--17-01-21-Total-437.zip
+
+We receive the files from AEM to a VM server box through the MFT (Managed File transfer) process.
+
+POC at MFT : John W Boyko
+
+Related confluence page for MFT:
+
+https://oneconfluence.verizon.com/display/PEGO/Managed+File+Transfer+%28MFT%29+Process+from+On-Prem+Server++to+GCP
+
+
+Destination server : tdclpjc0va051.verizon.com 
+We have a shell script scheduled on this server to push the files to the GCS bucket path.
+Git path of the shell script:
+
+https://gitlab.verizon.com/gcp-data-projects/consumer_wireless_gcp/cwls_omega/-/blob/master/code/cwls_omega/preprocessing/bin/move_infomanager_files_to_gcp.sh?ref_type=heads
+
+
+
+Cron timing of this shell script is:
+append_crontab "30 04,08,12,16 * * * " "sh ${SOI_APP_BASE_PATH}/cwls_omega/${PROCESS_NM_LC}/bin/move_infomanager_files_to_gcp.sh"
+POC at server end: Kranthi Kumar Kusampudi
+
+At GCP, we receive the files in a zip format both for documents and metadata into GK1V and gcs paths are:
+
+For documents: gs://km_files_bucket/inbound/documents/ostinfomanager/fwd-in/
+For Metadata:
+gs://km_files_bucket/inbound/documents/ostinfomanager/fwd-in/
+
+Once the files are received into GCS, we have a dag which will be scheduled to process the documents and move them to destination paths and respective BQ table.
+
+Dag Name: unzip_and_process_ost_infomanager_files
+Schedule time: 40 0,4,8,12,16,20 * * *
+Git path for the dag:
+
+https://gitlab.verizon.com/vz-data-engineering/workforce_cl_analytics/-/blob/main/composer/dag/km_ost_infomanager_load/process_ost_infomanager_files.py
+
+https://gitlab.verizon.com/vz-data-engineering/workforce_cl_analytics/-/blob/main/composer/config/km_files_process_load_genai/km_ost_infomanager_load.yml
+
+
+Airflow links for both dev and prod for the dags that are deployed in GK1V project space:
+
+DEV Air flow link:
+https://5d9dd8aa6b9a4eb2a84aed4a9f4e57be-dot-us-east4.composer.googleusercontent.com/home
+PROD Airflow link:
+https://0caf2f7c1c00422c84a0a833c7cebe50-dot-us-east4.composer.googleusercontent.com/home
+
+Dev bucket where Dags should be deployed to(in GK1V):
+gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags/vz-it-jysv-vgdedo-0/
+
+PROD bucket where Dags should be deployed to(in GK1V):
+gs://us-east4-vz-it-pr-wdwg-aidc-5dc37683-bucket/dags/vz-it-hgsv-vikido-0/
+
+
+
+
+3.2.2	Oneconfluence 
+
+Source data Crawl -> zipped CSV -> S3 ->composer  s3-GCS ->  Composer  target folder 
+
+3.2.3 VZ Knowledge
+
+
+Source data Crawl -> zipped CSV -> S3 ->composer  s3-GCS ->  Composer  target folder 
+
+
+
+IEN 
+NRB 
+
+
+3.2.4 S3 Buckets 
+ S3 ->composer  s3-GCS ->  Composer  target folder 
+3.2.4 MFT 
+MFT -> EDL ->  Composer GCS -> Composer  target folder 
+
+
+3.2.5 Google Drive 
+
+Crawl Gdrive using API -> GCS folder - > target GCS folder 
+
+Schedule : Daily / on Demand 
+
+
+This is the document on how to crawl documents or any type of files using google drive api
+We have certain requirements for this to be achieved
+We need to raise a request with platform and Governance team to get the google drive apis.
+
+https://oneconfluence.verizon.com/display/GCP/Google+Workspace+APIs+access
+
+We need to raise second request with platform to get OAuth token and secret (~ 3 weeks)
+
+Those were provided and make sure it is not run or not used by individual user rather it should be done by some functional or service account which has access to gmail and also google account to be precise. (Only Employees can request this with CyberArk)(Currently this is still being created). (~ 4 weeks)
+Once it is generated, this service/functional user who already has google account for itself can use the oauth token and secret to hit google apis to crawl documents or any types of files from google drive.
+
+Code: https://gitlab.verizon.com/genai1/gk1v-genai/-/blob/ft-infra/enterprise-crawling/download_type_usecase_gdocs.py?ref_type=heads
+
+OAuth Token: https://gitlab.verizon.com/genai1/gk1v-genai/-/tree/ft-infra/enterprise-crawling-oauth-gdrive?ref_type=heads
+3.2.6 JIRA 
+Source data Crawl -> zipped CSV -> S3 ->composer  s3-GCS ->  Composer  target folder 
+
+3.2.7 URL Crawl
+
+3.2.8 Equipment Guide
+
+
+3.2.9 Polaris
+
+4.  Data processing Framework
+
+4.1 Document loader 
+
+Document loaders
+Document Loaders are responsible for loading documents from a variety of sources.
+
+https://python.langchain.com/api_reference/core/documents/langchain_core.documents.base.Document.html
+
+ 
+Class for storing a piece of text and associated metadata.
+
+Example
+
+from langchain_core.documents import Document
+
+document = Document(
+    page_content="Hello, world!",
+    metadata={"source": "https://example.com"}
 )
-SELECT 
-    table_name AS table, 
-    tbl_score
-FROM 
-    ranked_data
-ORDER BY 
-    tbl_score ASC
+
+
+Pass page_content in as positional or named arg.
+
+param id: str | None = None
+An optional identifier for the document.
+
+Ideally this should be unique across the document collection and formatted as a UUID, but this will not be enforced.
+ 
+
+Constraints
+:coerce_numbers_to_str = True
+
+param metadata: dict [Optional]
+Arbitrary metadata associated with the content.
+
+param page_content: str [Required]
+String text.
+
+param type: Literal['Document'] = 'Document'
 
 
 
-SELECT 
-    FORMAT_DATE('%Y-%m-%d', DATE(t1.prfl_run_dt)) as run_date,
-    AVG(t1.tbl_dq_score) as score
-FROM 
-    `my-project-id.dga_dq_tbls.dqaas_table_report` t1
-JOIN 
-    `my-project-id.dga_dq_tbls.dqaas_label_taxonomy_mtd` t2
-ON 
-    t1.table_name = t2.table_name
-WHERE 
-    t2.product_name = 'MyProduct'
-    AND DATE(t1.prfl_run_dt) BETWEEN '2024-06-01' AND '2024-06-30'
-GROUP BY 
-    run_date
-ORDER BY 
-    run_date
+How to: load PDF files
+How to: load web pages
+How to: load CSV data
+How to: load HTML data
+How to: load JSON data
+How to: load Markdown data
+How to: load Microsoft Office data
+How to: write a custom document loader
+
+
+
+4.2 Chunkings 
+
+Parent Child 
+
+
+Recursive Chunking 
+
+
+4.3 Embeddings 
+See Section 5 
+
+4.4 Metadata Extractions 
+4.5 Video/ Audio to Text 
+4.6 Summarization 
+	4.6.1 Image Summarization 
+	4.6.2 Table Summarization 
+	4.6.3 Chunk Summarization 
+
+4.7 VectorDB / Indexing
+
+5.  Indexes 
+
+5.1 Elastic indexes 
+
+5.2 Google vertexAI vector Store 
+
+5.3 Google Dialogflow Vector Store 
+
+5.4 Chroma / FAISS Etc 
+
+6. RAG Endpoints 
+
+6.1 Endpoint 
+6.2 Sample notebook 
+6.3 Prompting 
+6.4 Reranking 
+6.5 LLM Ops 
+
+
+7. Usecase DPF  onboarding : RAG DPF Framework 
+
+Overview
+This document provides step-by-step guidance for teams to onboard their use cases onto the RAG Data Processing Framework (DPF). 
+It covers following steps - 
+Use Case Configuration JSON Creation
+Data Onboarding Process
+BQ Access Steps
+By following this guide, you can ensure your use case is properly configured, onboarded, and deployed in a consistent manner.
+Use Case Configuration JSON Creation
+In the Data Processing Framework (DPF), each use case is defined by a use case configuration JSON file. This JSON file contains all the necessary details for your data along with the preprocessing steps.
+7.1 Sample Use Case Configuration JSON Structure
+Below is an example of a Sample Use Case Configuration JSON - 
+
+ {
+    "usecase_name": "Network_ien_infobot",
+    "file_types": ["PDF","HTML","DOCX","DOC","PPTX","XLSX"],
+    "alert_email_list": ["xyz.abc@verizon.com","qew.r@verizon.com"],
+    "extract_content": ["text","table","image",”table_summarization”],
+    "chunking_strategy": "parent_child",
+    "chunk_size": 750,
+    "chunk_overlap":75,
+    "parent_chunk_size": 750,
+    "parent_chunk_overlap": 75,
+    "embedding_model": "all-distilroberta-v1",
+    "vector_storage": "elastic_search"
+}
+
+7.2 Explanation of Key Fields
+usecase_name
+A unique identifier for your use case.
+Must not contain spaces or special characters (use underscores or camelCase)
+Example Usage: “network_ien”
+file_types
+Should provide the list of string elements which specifies the list of file formats to be processed by SSF.
+Any other format accidentally placed in data/input_files other than specified formats will be ignored.
+Supported formats: [“PDF”,”HTML”,”DOC”,”DOCX”, “PPT”,”CSV”,”XLSX”]
+Example Usage: [“HTML”, “PDF”, “TXT”]
+alert_email_list
+Should provide the list of strings, each element should be a verizon email id.
+Example Usage: [“xyz.abc@verizon.com”, “qwe.t@verizon.com”]
+extract_content
+This field tells which all contents should be extracted from the input files.
+Should provide the list of strings.
+Supported extractions: [“text”, ”table”, ”image”, “table_summarization”]
+“custom_metadata” should be selected only if a custom extraction logic is implemented for your use case and once re-deployed.
+Example Usage: [“text”,”table”,”image”]
+chunking_strategy
+Should provide the required chunking option to chunk the data in the given input files.
+Available lists of chunking options are “none”, “recursive_character_chunking” and “parent_child”.
+Example Usage: “recursive_character_chunking”
+chunk_size
+Should provide the chunk size in integer value.
+Example usage: 750
+chunk_overlap
+Should provide the chunk overlap in integer value.
+Example usage: 75
+parent_chunk_size
+Should provide the chunk size in integer value.
+Only applicable when the chunking strategy is “parent_child”
+Example usage: 750
+parent_chunk_overlap
+Should provide the chunk overlap in integer value.
+Only applicable when the chunking strategy is “parent_child”
+Example usage: 75
+embedding_model
+Should provide one of the embedding models supported.
+Available embedding options are “all-distilroberta-v1”, “text-embedding-004”, “mxbai-embed-large-v1”
+Example usage: “all-distilroberta-v1”
+vector_storage
+Should provide one of the vector storage options available.
+Available vector storage options are “vector_search”, “elastic_search”
+Example usage: “elastic_search”
+
+
+
+
+7.3 How to prepare your JSON
+Get access to the git repository using the following steps - 
+Login on to webtools via : https://webtools.verizon.com/Request/Applications/ADOM/Search.aspx
+
+Once logged in click on this to get access to git repository by requesting access to following ADOM groups - SDLC_JYSV_VEGASDEDOMINO_DEV
+Access the git repository using the following gitlab link  - https://gitlab.verizon.com/genai1/jysv-dpf-usecase-configuration-json
+Use the sample use case configuration JSON file shared on git repository as a baseline.
+Provide the name you have in your usecase in the “usecase_name” field.
+Name the usecase_bucket and source_truth_bucket following standard GCP conventions - 
+usecase_bucket  - jysv-{env}-vgdedo-0-usmr-dpf-{usecase_name}-work
+source_truth _bucket  - jysv-{env}-vgdedo-0-usmr-dpf-{usecase_name}-master
+	
+vsad
+VSAD value of the application
+xxxx
+4 characters as 
+
+
+Same as verizon project VSAD name
+wdwg
+zdwv
+env
+Environment 
+xxxx
+xxxx 
+prod - Production
+Ple - Production like Environment
+dev - Development
+test - Test
+prod
+ple
+test
+dev
+projectname
+Same in the GCP project 
+xxxxxx-n
+xxxxxx
+Provided by GCP team
+n - integer  
+cwlspr-0
+location/region
+Location/Region
+xxyyzzzz
+xx - Region
+us - UnitedStates
+yy - Location Type
+mr - multiregion
+du - dual
+re - regional 
+usmr - multiregion
+usre - regional 
+usdues1aw1a - dual region
+
+
+Zone (optional)
+Zone
+xxxxx
+east4 -  for zone us-east4 
+west1 - for zone us-west1 
+directoryname
+(day 1) 
+Directory name 
+xxxxxxxxxx
+In max of 10 characters
+warehouse - for hive related objects
+<source> - Bucket abbreviation
+internal - non data related, such as code, logs
+warehouse
+rtt
+internal
+
+
+Fill in other use case specific details based on the details mentioned in 7.2.
+Ensure all other values are filled based on available options mentioned in 7.2 and the JSON structure is valid (no trailing command, correct brackets, etc.).
+Once validated upload the use case configuration JSON file on git using following steps - 
+Go to   JYSV DPF Usecase Configuration JSON repository and select the branch for the current environment (dev/test/prod).
+
+Create a new branch by cloning the selected branch (dev/test/prod)
+
+Create a use-case-name sub-folder in the json-temple folder for the selected branch.
+
+		
+Once all the changes are made in your branch add the following commit message -  Updated code  for usecase:<use-case-name>
+email:<firstname.lastname@verizon.com>,:<firstname.lastname@verizon.com>
+		
+Create a merge request to push code from your branch to the selected branch. 
+While creating the merge request ensure following message is mentioned in the Title section - 
+		Updated code  for usecase:<use-case-name>
+		
+
+Create the merge request by selecting the option to delete the source branch.
+
+Once the merge request gets approved following buckets will be created
+i. work_bucket (formerly usecase_bucket)
+Ii. master_bucket (formerly source_truth_bucket )
+
+
+7.4 Observability
+       Below is the bq query to know the file level stats for a given run.
+bq query --nouse_legacy_sql \
+'select pipeline_run_id,component,feature,component_status,count(component_status)
+from vz-it-np-jysv-{env}-vgdedo-0.vzw_vde_{env}_llm_preprocessing.de_pipeline_component_tracker
+where pipeline_run_id="network_ien_20250402155854"
+group by pipeline_run_id,component,feature,component_status'
+
+
+
+Pipeline_run_id will be unique for each run. Pipeline_run_id can be identified from the dag console output of any of the task (ex. document loader) for a given run
+Below find the output of the above query for a pipeline run id
+
+For a given file if we want to know at what component processing has failed we can query on vz-it-np-jysv-{env}-vgdedo-0.vzw_vde_{env}_llm_preprocessing.de_pipeline_component_tracker table to deep dive.
+
+
+8. Onboarding Process - GCS Bucket creation
+
+Once you have your JSON file ready, an automation script will run in background creating the following  - 
+	i. usecase_bucket  - jysv-{env}-vgdedo-0-usmr-dpf-{usecase_name}-work
+	ii. Source_truth_bucket - jysv-{env}-vgdedo-0-usmr-dpf-{usecase_name}-master
+	iii. use case DAG in WDWG Project space.
+
+In the backend a Jenkins job will run to create the usecase_bucket and source_truth_bucket and upload the use case configuration JSON file. Following this a Cloud Function will generate a DAG python file and copy this to WDWG Project space and make the DAG available in Airflow.
+8.1 Bucket Access for your Use Case
+Add a data access point for GCS bucket (Input needed from Kaustubh)
+Get Access to the usecase_bucket and source_truth_bucket using the following steps - 
+8.1.1 Marketplace GCS bucket (Individual Account)
+Go to Marketplace
+Select the Data Access Request from drop options for Access Request.
+
+Enter the following information in the form - 
+VSAT ID - JYSV
+DATA Access Point - NonSec
+Data corresponding to the Data Access Point selected - use case specific gcs bucket.
+Persona Group - Developer
+Persona - Based on the role of the developer
+Do you need to view GSAM Filtered Data? - No
+Name of the project for which this data is needed - AI&D
+Business Justification - Reason for access
+ 8.1.2 Marketplace GCS bucket Access (Service Account)
+Go to Marketplace
+Select GCP Service Account Access option from Access Request.
+
+Enter the source project details and click on the service account associated with your project space (This a sample service Account you need to select the service account associated with your project space)
+
+
+Select the service account access tab (This a sample service Account you need to select the service account associated with your project space)
+
+
+Enter details as mentioned in the image below
+Which google service the requested asset belongs to? GCS
+Bucket Access Requested for (usecase_bucket and source_truth_bucket)
+
+
+
+
+Click on Validate, provide business justification on the next page and request for access
+
+
+8.2 Composer Access for your Use Case
+Login onto marketplace
+On the tabs present on the top, hover onto Access Request
+Once you hover, Click on GCP Composer User Access
+Once you click it, please select the details as printed in screenshot below
+The composer can be accessed from the link - https://4599c67b439443138b3ba0f372fa46d6-dot-us-east4.composer.googleusercontent.com/
+
+
+8.3 Sourcing Files 
+Any input files should be transferred to the data/input_files, before triggering the DAG. This sourcing script can be a DAG created by the user.
+8.4Change Data Capture (CDC)
+If your use case requires CDC operations in the Data Processing Framework (DPF), you must provide a pipe-delimited ( | ) file named lookup.txt. Place this file in the “data/lookup/input” folder of your usecase_bucket, alongside The DPF will read the lookup.txt to determine which CDC actions to apply during processing.
+Sample lookup.txt:
+—-------------------------------------------------------------------------------------------------------------------------------------------
+action|doc_id|metadata
+ADD|20080|{‘key1’:‘value1’}
+ADD|20081|{‘key1’:‘value1’}
+UPDATE|20733|{‘key1’:‘value1’}
+IGNORE|20555|{‘key1’:‘value1’}
+IGNORE|20598|{‘key1’:‘value1’}
+—-------------------------------------------------------------------------------------------------------------------------------------------
+ADD: Add new documents with the specified IDs, if those files are in the data/input_files folder.
+UPDATE: Update existing documents with the specified IDs, if those updated files are in data/input_files along with the entry in lookup.txt file
+IGNORE: Delete the data corresponding to this file in the selected vector storage index and in the selected metadata storage.
+This lookup file ensures the correct CRUD operations are applied where necessary in your data pipeline.
+9. Big Query & GCS Storage Access
+
+Raise an access for the BQ tables for auditing. 
+
+Following is the list of tables - 
+vz-it-np-jysv-dev-vgdedo-0.vzw_vde_dev_llm_preprocessing.action_lookup
+vz-it-np-jysv-dev-vgdedo-0.vzw_vde_dev_llm_preprocessing.de_pipeline_batch_status
+vz-it-np-jysv-dev-vgdedo-0.vzw_vde_dev_llm_preprocessing.de_pipeline_component_tracker
+vz-it-np-jysv-dev-vgdedo-0.vzw_vde_dev_llm_preprocessing.de_pipeline_run
+vz-it-np-jysv-dev-vgdedo-0.vzw_vde_dev_llm_preprocessing.usecase_configs
+BQ table can be accessed through marketplace request
+9.1.1 Marketplace BQ Table (Individual Account)
+Go to Marketplace
+Select the Data Access Request from drop options for Access Request.
+
+Enter the following information in the form - 
+VSAT ID - JYSV
+DATA Access Point - NonSec
+Data corresponding to the Data Access Point selected - use case specific BQ table.
+Persona Group - Developer
+Persona - Based on the role of the developer
+Do you need to view GSAM Filtered Data? - No
+Name of the project for which this data is needed - AI&D
+Business Justification - Reason for access
+ 9.1.2 Marketplace GCS bucket Access (Service Account)
+Go to Marketplace
+Select GCP Service Account Access option from Access Request.
+
+Enter the source project details and click on the service account associated with your project space (This a sample service Account you need to select the service account associated with your project space)
+
+
+Select the service account access tab (This a sample service Account you need to select the service account associated with your project space)
+
+
+Enter details as mentioned in the image below
+Which google service the requested asset belongs to? BigQuery
+Bucket Access Requested for (usecase_bucket and source_truth_bucket)
+
+
+
+
+Click on Validate, provide business justification on the next page and request for access
+
+9.2 Helpful links 
+
+
+
+
+Links
+Git access
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai_data_preprocessing
+JYSV project space
+DEV DO: https://console.cloud.google.com/welcome?project=vz-it-np-jysv-dev-vgdedo-0
+VEGAS JIRA
+https://onejira.verizon.com/projects/VEGAS/issues/VEGAS-2122?filter=allopenissues
+Jenkins
+https://jenkins-vbg2.vpc.verizon.com/vbg2/job/VES.JYSV.VEGASDE.CICD/
+Redis/BQ/GCS JYSV
+Being Tracked via JIRA
+Gk1V Marketplace
+https://marketplace.verizon.com/
+prod request portal
+https://docs.google.com/document/d/1hrZCLfuWOL1oXTx7od4c7Yq0GT7sAaHba79GishgG04/edit
+Composer acces
+https://marketplace.verizon.com/
+VertexAI Pipelines
+https://console.cloud.google.com/vertex-ai/pipelines/runs?referrer=search&project=vz-it-np-jysv-dev-vgdedo-0
+AIPFM JIRA
+https://onejira.verizon.com/browse/AIDPFM-6525
+OPSEXC JIRA
+https://onejira.verizon.com/projects/OPSEXC/issues/
+GNAI jira
+https://onejira.verizon.com/projects/GNAI/issues/
+Domino
+https://oneconfluence.verizon.com/display/PEGO/01+Request+or+get+access+to+GCP+Domino
+Domino to GCP
+GCP Non-Prod
+pbrun access
+from atyourservice
+Data Access Point for JYSV
+https://marketplace.verizon.com/
+ADEBP ID for a VDSI Resource (Non vz india folks)
+https://atyourservice.verizon.com/ays?id=ays_sc_cat_item&sys_id=5fe86fb9db79fe809257fdf51d9619be
+
+
+9.3 Server Access
+
+Click on the link: https://atyourservice.verizon.com/ays?id=ays_sc_cat_item_guide&sys_id=e54a636cdb794300b83257335e9619b2
+Now select this option “Add or remove users to/from a netgroup” and Click on Next.
+
+Once you click on next, then you should fill below options
+
+ONSHORE:
+Request Type: Add One User to Multiple Netgroups
+Group Type: ASNG
+Portfolio: AID
+Environment: NonProd
+Location: OnShore
+Application: Type in JYSV and then the app name VEGAS data   engineering services will pop out.
+User: Type in your name, Your name pops out.
+Netgroup Names: JYSV_APP_NONPROD_ONSHORE
+Business Justification: Type in the right justification with your own words.
+
+OFFSHORE:
+Request Type: Add One User to Multiple Netgroups
+Group Type: ASNG
+Portfolio: AID
+Environment: NonProd
+Location: OnShore
+Application: Type in JYSV and then the app name VEGAS data   engineering services will pop out.
+User: Type in your name, Your name pops out.
+Netgroup Names: JYSV_APP_NONPROD_ONSHORE
+Business Justification: Type in the right justification with your own words.
+
+
+Scroll down to below, Click on Next and Click on Order Now.
+ pbrun vegas_dev (or) su - vegas_dev
+
+
+
+10. Creating Custom Processor 
+
+Note: To get the idea of existing DPF, check the flow charts attached.
+
+
+
+10.1 Custom Embeddings 
+
+
+Models
+
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/tree/dev/embedding/model?ref_type=heads
+
+
+List of Approved models 
+
+https://docs.google.com/spreadsheets/d/1aeSGIJSnnvr0R0o_XBwEFAsVu8jEeh6v5laWTcNfQcM/edit?gid=226067733#gid=226067733
+
+
+  
+ inference_type = self.usecase_config["inference_type"]
+        embedding_model_name = self.usecase_config["model_name"]
+        if inference_type == "local":
+            self.embedding_function = SentenceTransformerEmbeddings(
+                model_name=f"./external_lib/{embedding_model_name}"  #comment for local version
+                #model_name=r"C:\Users\battakr\Documents\Work_Important_Docs\code\genai-common-pipeline\external_lib\all-distilroberta-v1"  #uncomment and replace with local path for local version
+
+            )
+        elif inference_type == "api":
+            vertexai.init(project=self.project_id, location=self.region)
+            self.embedding_function = TextEmbeddingModel.from_pretrained(embedding_model_name)
+
+
+
+
+
+
+all-MiniLM-L6-v2
+bert-base-uncased
+all-roberta-large-v1
+distilroberta-base
+all-mpnet-base-v2
+paraphrase-mpnet-base-v2
+msmarco-distilbert-base-v4
+paraphrase-albert-small-v2
+quora-distilbert-base
+stsb-roberta-base
+nli-roberta-base
+distiluse-base-multilingual-cased-v2
+
+
+
+10.2 Custom Chunking 
+Chunking 
+
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/tree/dev/chunking?ref_type=heads
+
+
+
+Parent Child chunking 
+
+https://python.langchain.com/docs/how_to/parent_document_retriever/
+
+Recursive Characters splitting 
+
+https://python.langchain.com/docs/how_to/recursive_text_splitter/
+
+
+Update the usecase  config 
+
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/blob/dev/config/dev/usecase_parser_config.json?ref_type=heads
+
+
+
+  "chunking": [
+        {
+          "chunking_strategy": "recursive_character_chunking",
+          "module_name": "chunking.strategy.recursive_character_chunking",
+          "class_name": "RecuresiveCharacterChunking"
+        },
+        {
+          "chunking_strategy": "parent_child",
+          "module_name": "chunking.strategy.parent_child",
+          "class_name": "ParentChild"
+        },
+        {
+          "chunking_strategy": "none",
+          "module_name": "chunking.strategy.no_chunking",
+          "class_name": "NoChunking"
+        }
+      ],
+
+
+
+10.3 Custom Document Extractor 
+10.3.1 Video Extraction Integration
+
+Overview: 
+
+To support audio and video file content extraction (specifically .mp4 and .mp3 formats), we have introduced a custom video extractor module into the document extractor framework. This integration enables transcription of audio and video files as part of the existing DPF.
+
+New component: video_extractor/
+A new component has been added at the root level in the genai-common-pipeline repository. 
+
+video_extractor/
+    - Dockerfile
+    - main.py
+    - requirements.txt
+
+main.py
+Validates incoming request JSON
+Based on the file format (.mp4,.mp3) extraction module from document_extractor/generic/media_transcriber.py will be used/imported.
+And write the extracted transcriptions to text json.
+Media_transcriber.py
+Contains core logic for audio/video transcription using tools like FFmpeg and Google Speech-to-Text.
+
+Deployment: Independent Cloud Run Service
+
+The video_extraction/ module is containerized and deployed as an independent Cloud Run Service. This service exposes an endpoint which the main Document Extractor can now invoke when encountering .mp4 or .mp3 files.
+
+Integration with Document Extractor Cloud Run Service
+
+To integrate the new service with the existing DPF, the following updates were made:
+
+document_extractor_config.json:
+Added a new entry specifying the video extractor Cloud Run endpoint in cloud_run_endpoints key.
+Added video_extractor inside generic key in workflows section.
+
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/blob/dev/config/dev/document_extractor_config.json?ref_type=heads
+
+
+usecase_parser_config.json:
+Mapped (.mp4, .mp3) file types to video extractor module to ensure correct routing in extractor section under generic use case.
+		{
+          "extension": ".mp4",
+          "module_name": "document_extractor.generic.generic_media_transcriber",
+          "class_name": "GenericMediaTranscriber"
+        },
+        {
+          "extension": ".mp3",
+          "module_name": "document_extractor.generic.generic_media_transcriber",
+          "class_name": "GenericMediaTranscriber"
+ }
+
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/blob/dev/config/dev/usecase_parser_config.json?ref_type=heads
+
+
+Integration with cloud function code (framework code)
+
+To integrate the new service with the existing framework code, the following updates were made:
+
+,Change in usecase_configs big query table schema to have enable_video_extraction column of boolean type 
+
+
+[
+  {
+    "name": "usecase_name",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "dag_id",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "usecase_bucket",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "source_truth_bucket",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "source_file_dir",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "file_formats_supported",
+    "mode": "REPEATED",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "batch_size",
+    "mode": "",
+    "type": "INTEGER",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "pattern_name",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "enable_text_extractor",
+    "mode": "",
+    "type": "BOOLEAN",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "enable_table_extractor",
+    "mode": "",
+    "type": "BOOLEAN",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "enable_image_extractor",
+    "mode": "",
+    "type": "BOOLEAN",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "enable_summarization",
+    "mode": "",
+    "type": "BOOLEAN",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "enable_url_extractor",
+    "mode": "",
+    "type": "BOOLEAN",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "enable_custom_metadata_extractor",
+    "mode": "",
+    "type": "BOOLEAN",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "chunking_strategy",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "chunk_size",
+    "mode": "",
+    "type": "INTEGER",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "chunk_overlap",
+    "mode": "",
+    "type": "INTEGER",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "inference_type",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "model_name",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "endpoint",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "vector_storage",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "metadata_choices",
+    "mode": "REPEATED",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "entry_timestamp",
+    "mode": "",
+    "type": "TIMESTAMP",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "concurrency",
+    "mode": "",
+    "type": "INTEGER",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "alert_email_list",
+    "mode": "REPEATED",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  }
+]
+
+
+
+Change in cloud function code to set enable_video_extraction column of usecase_configs big query table to true if a user provides “text_from_video” in extract_content key.
+
+
+
+ Final Steps
+
+
+
+Deploy the video_extraction Cloud Run Service.
+Redeploy Document_Extractor Cloud Run Service and Framework Cloud Function
+Ensure new use cases include mp4/mp3 in their extract_content to activate this functionality.
+
+Sample jenkins jobs
+video_extraction 
+https://jenkins-vbg2.vpc.verizon.com/vbg2/job/VES.JYSV.VEGASDE.CICD/job/VES.JYSV.USECASE.JOBS/view/DEV/job/GTS.JYSV.VIDEO.EXTRACTOR.DEV.JOB/
+Document_Extractor 
+https://jenkins-vbg2.vpc.verizon.com/vbg2/job/VES.JYSV.VEGASDE.CICD/job/VES.JYSV.USECASE.JOBS/view/DEV/job/GTS.JYSV.DOCUMENT.EXTRACTOR.DEV.JOB/
+
+10.3 Custom Indexing 
+VectorDB 
+
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/tree/dev/indexing?ref_type=heads
+
+ElasticDB 
+
+Create Index template 
+
+https://docs.google.com/spreadsheets/d/1Pw-4llhRcS3xESnK4_5Zo6jQAJk7312M9JhEL0JAt2A/edit?gid=766130283#gid=766130283
+
+Use Case onboarding 
+
+https://oneconfluence.verizon.com/pages/viewpage.action?spaceKey=PEGO&title=Use+Case+OnBoarding
+
+Create onboarding JIRA 
+https://oneconfluence.verizon.com/display/PEGO/02+Create+Onboarding+JIRA+Ticket
+
+Elastic search ( no change needed ) 
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/blob/dev/indexing/vector_db/elastic_search.py?ref_type=heads
+
+
+Add mapping from field mapping to index template 
+
+https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/blob/dev/indexing/vector_db/index_templates/tech360infobotelastic.py?ref_type=heads
+
+
+
+rom datetime import datetime
+
+
+def get_metadata(item, usecase_name):
+    elastic_metadata = {}
+    
+    if item['metadata']['custom_metadata'].get('document_created_date',None):
+        doc_created_date = datetime.strptime(item['metadata']['custom_metadata']['document_created_date'],"%Y-%m-%d").date()
+    else:
+        doc_created_date = None
+    elastic_metadata = {
+
+        # Fields added after document extraction
+        'document_id': item['metadata'].get('document_id',''),
+        'chunk_id': item['metadata'].get('chunk_id',''),
+        'document_name': item['metadata'].get('document_name',''),
+        'content_type': item['metadata'].get('content_type',''),
+        'original_content': item['metadata'].get('original_content',''),
+        'page': item['metadata'].get('page',''),
+        'document_created_date': doc_created_date,
+        'document_subtype': item['metadata']['custom_metadata'].get('document_subtype',''),
+        'document_type': item['metadata']['custom_metadata'].get('document_type',''),
+        'document_title': item['metadata'].get('document_title',''),
+        'keywords': item['metadata'].get('keywords',''),
+        
+        
+        # Fields added after chunking
+        'usecase_name': usecase_name,
+        'user_role': item['metadata']['custom_metadata'].get('user_role',''),
+        'user_type': item['metadata']['custom_metadata'].get('user_type',''),
+        'text_embedding': item['metadata'].get('text_embedding',''),
+        'chunk_file_path':item['metadata'].get('chunk_file_path',''),
+        'pipeline_run_id': item['metadata'].get('pipeline_run_id',''),
+        'parent_data': item['metadata'].get('parent_data',''),
+        
+    }
+    
+    # adding additional keys just to test dynamic=false and to see if new keys are dynamically added
+    elastic_metadata["chunk_data"] = item['metadata'].get("chunk_data","")
+    
+    # adding object type to test
+    elastic_metadata["custom_metadata"] = item['metadata'].get("custom_metadata",{})
+    
+    # # get existing keys for index
+    # mapping = es.indices.get_mapping(index=self.index_name)
+
+    return elastic_metadata
+
+
+
+Vector Search 
+
+Deprecated 
+
+
+Vertex AI data store 
+
+WIP
+
+10.4 Custom Metadata Extractor
+
+You can add custom metadata extractor 
+
+
+Link : https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/tree/dev/custom_metadata_extractor?ref_type=heads
+
+Sample Code 
+
+
+ import re
+from datetime import datetime
+from typing import List
+import os
+
+from dateutil import parser
+from langchain.schema.document import Document
+from pydantic import BaseModel
+
+from common_utils.logging_util import LogSeverity, logger
+from custom_metadata_extractor.base.custom_metadata_parser_listdict import CustomMetadataParserListDict
+from common_utils.gcs_utils import get_metadata_from_lookup
+
+import pandas as pd
+
+class HRAnswersDocumentCustomMetadata(BaseModel):
+    
+    # Common Metadata
+    chunk_file_path: str = ""
+    chunk_id: str = ""
+    content_type: str = ""
+    document_id: str = ""
+    document_name: str = ""
+    document_source: str = ""
+    image_path: str = ""
+    is_summary: bool = False
+    format: str = ""
+    neighboring_text: str = ""
+    original_content: str = ""
+    page: int = -1
+    total_pages: int = -1
+    title: str = ""
+    author: str = ""
+    keywords: str = ""
+    creationDate: str = ""
+    modifiedDate: str = ""
+    citation_source: str = ""
+    content_id: str = ""
+    file_metadata: dict = {}
+    content_number: str = ""
+    custom_metadata: dict = {}
+    
+class HRAnswersCustomMetadataParser(CustomMetadataParserListDict):
+
+    def extract_metadata(
+        self, doc_id: str, file_path: str, text_docs: List[Document], table_docs: List[Document], image_docs: List[Document]
+    ) -> List[dict]:
+            
+        metadata_list = []
+        if len(text_docs) > 0:
+            for idx, text_doc in enumerate(text_docs):
+                pass
+                # metadata = {}
+                # logger.log(f"text_doc: {text_doc}",LogSeverity.INFO)
+                # metadata = text_doc.metadata["row_content"]
+                # metadata = self.convert_nan_to_empty_string(metadata)
+                # metadata_list.append(metadata)
+        return metadata_list
+
+    
+    def update_existing_metadata(
+        self, metadata_list:List[dict], pipeline_run_id:str, lookup_table :str, text_docs: List[Document], table_docs: List[Document], image_docs: List[Document]
+    ) -> tuple:
+
+        # update text chunks
+        update_text_docs = []
+        if text_docs:
+            for doc in text_docs:
+                updated_doc = self.convert_generic_to_hranswers_doc(doc)
+                updated_doc = self.merge_metadata_from_lookup(updated_doc,pipeline_run_id,lookup_table)
+                update_text_docs.append(updated_doc)
+        else:
+            logger.log(f"No text docs to be updated with metadata =...",LogSeverity.INFO)
+        
+        # update table chunks
+        update_table_docs = []
+        if table_docs:
+            for doc in table_docs:
+                updated_doc = self.convert_generic_to_hranswers_doc(doc)
+                updated_doc = self.merge_metadata_from_lookup(updated_doc,pipeline_run_id,lookup_table)
+                update_table_docs.append(updated_doc)
+        else:
+            logger.log(f"No table docs to be updated with metadata =...",LogSeverity.INFO)
+        
+        # update image chunks
+        update_image_docs = []
+        if image_docs:
+            for doc in image_docs:
+                updated_doc = self.convert_generic_to_hranswers_doc(doc)
+                updated_doc = self.merge_metadata_from_lookup(updated_doc,pipeline_run_id,lookup_table)
+                update_image_docs.append(updated_doc)
+        else:
+            logger.log(f"No image docs to be updated with metadata =...",LogSeverity.INFO)
+
+            
+        return update_text_docs,update_table_docs,update_image_docs
+    
+    def merge_metadata_from_lookup(self, generic_doc: Document, pipeline_run_id: str, lookup_table:str) -> Document:
+        logger.log(f"merge_metadata_from_lookup started...",LogSeverity.INFO)
+        
+        file_name, file_extension = os.path.splitext(os.path.basename(generic_doc.metadata['document_name']))
+        file_name=file_name.rsplit("_", 1)[0]
+        
+        metadata=get_metadata_from_lookup(pipeline_run_id,lookup_table,file_name)
+        custom_metadatas=generic_doc.metadata.get("custom_metadata",{})
+        updated_custom_metadata = {**custom_metadatas, **metadata}
+        generic_doc.metadata["custom_metadata"] = updated_custom_metadata
+        
+        logger.log(f"merge_metadata_from_lookup completed",LogSeverity.INFO)
+        
+        return generic_doc
+
+    def convert_nan_to_empty_string(self, d):
+        """Converts NaN values to empty strings in a dictionary."""
+        return {k: '' if pd.isna(v) else v for k, v in d.items()}
+
+    def remove_extra_columns(self, d, d_keys):
+        """Remove extra columns from the dictionary."""
+        key_to_remove = "link"
+        if key_to_remove in d:
+            print("link present")
+            del d[key_to_remove]
+        return {k: v for k, v in d.items() if k in d_keys}
+
+    def title_extraction(self, document_name, document_id):
+        """Exteact title from document name"""
+        
+        # Extract the filename without the extension
+        filename_without_extension = os.path.splitext(document_name)[0]
+
+        # Split the filename by '.' and take the last part
+        parts = filename_without_extension.split('.')
+        extracted_name = parts[-1]
+
+        # Remove the part after the document_id (using regex)
+        pattern = r"_" + re.escape(document_id)  # Create a regex pattern to match _document_id
+        extracted_name = re.split(pattern, extracted_name)[0].strip()
+
+
+        # Remove trailing underscore and space if present
+        if extracted_name.endswith(" "):
+            extracted_name = extracted_name.rstrip()
+
+        return extracted_name
+
+    def convert_generic_to_hranswers_doc(self, generic_doc: Document) -> Document:
+        
+        logger.log(f"convert_generic_to_hranswers_doc started...",LogSeverity.INFO)
+        hranswers_meta = HRAnswersDocumentCustomMetadata()
+        hranswers_meta_dict = hranswers_meta.__dict__
+        doc_type = generic_doc.metadata['format']
+        doc_types = ['.pdf', '.doc', '.docx']
+        if doc_type in doc_types:
+            generic_doc.metadata['title'] = self.title_extraction(generic_doc.metadata['document_name'], 
+                                                                  generic_doc.metadata['document_id']
+                                                                  )
+        generic_doc.metadata = self.remove_extra_columns(generic_doc.metadata, hranswers_meta_dict.keys())
+        generic_doc.metadata = self.convert_nan_to_empty_string(generic_doc.metadata)
+        hranswers_meta_dict.update(
+            {k: v for k, v in generic_doc.metadata.items()}
+        )
+        
+        logger.log(f"convert_generic_to_hranswers_doc completed",LogSeverity.INFO)
+        return Document(
+            page_content=generic_doc.page_content,
+            metadata=hranswers_meta.model_dump(mode='json')
+        )
+
+    
+
+
+
+
+
+11. Appendix 
+1.1 Manual  DAG Deployment steps:
+
+
+
+One time deployment steps in (DEV,TEST,PROD) using server:
+Get config.ini from https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/tree/dev/framework/config?ref_type=heads 
+and deploy it composer using below command:
+
+gsutil cp config.ini gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags/vz-it-jysv-vgd
+edo-0/config/ssf_config/prod/config.ini
+
+Get service account json and have it in current directory and deploy it using below command:
+
+Gsutil cp sa-dev-jysv-app-vgdedo-0-oidc-28593-config.json gs://wdwg-dev-aidcom-0-usre-composer-others-4/ dags/vz-it-jysv-vgdedo-0/config/ssf_config/dev/sa-dev-jysv-app-vgdedo-0-oidc-28593-config.json
+
+Get ssf folder from https://gitlab.verizon.com/vz-data-engineering/jysv/genai-common-pipeline/-/tree/dev/frammoework/dag_latest/ssf?ref_type=heads 
+and deploy it using command:
+
+gsutil cp utils.py gs://wdwg-dev-aidcom-0-usre-composer-others-4/plugins/ssf/utils.py
+
+gsutil cp token_impersonation.py gs://wdwg-dev-aidcom-0-usre-composer-others-4/plugins/ssf/token_impersonation.py
+
+gsutil cp __init__.py gs://wdwg-dev-aidcom-0-usre-composer-others-4/plugins/ssf/__init__.py
+Note: Dag details of test, prod are in Miscellaneous section.
+
+
+Usecase DAG deployment step using server:
+
+Take the dag rendered from “jysv-dev-usecase-config-dag-generator-bucket” and place it in current director and run the below command to deploy:
+
+Gsutil cp usecase_name.py gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags/vz-it-jysv-vgdedo-0/usecase_name_dag/usecase_name.py
+
+Example:
+Gsutil cp tech360.py gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags/vz-it-jysv-vgdedo-0/tech360_dag/tech360.py
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Miscellaneous:
+
+Connect to jysv-dev-vegasde.verizon.com server using Putty/MobaXterm and run below steps.
+
+Run “pbrun vegasde”
+
+Run Below commands:
+cd  /apps/vegasde/keys
+export CLOUDSDK_ACTIVE_CONFIG_NAME=wif-sa-dev-jysv-app-vgdedo-0
+
+curl -X POST 'https://ssologinuat.verizon.com:443/ngauth/oauth2/realms/root/realms/employee/access_token?grant_type=client_credentials&client_id=sa-dev-jysv-app-vgdedo-0_618033124494_28593_gcp_gz_oauth2client&client_secret=FZT5QNMP7VHU8V&scope=read' --output oidc_token.json
+
+cat oidc_token.json
+
+gcloud auth login --cred-file=sa-dev-jysv-app-vgdedo-0-oidc-28593-config.json
+
+gcloud config set project vz-it-np-jysv-dev-vgdedo-0
+
+Open winscp and transfer your usecase_folder/usecase_dag.py to “/tmp/tmp_chandu/ssf_dags/usecase_folder/usecase_dag.py”
+
+Then run below command:
+Cp -r /tmp/tmp_chandu/ssf_dags/usecase_folder/usecase_dag.py /apps/vegasde/ssf_dags/usecase_folder/usecase_dag.py
+
+Run below command to deploy dag:
+	Example command:
+gsutil cp  -r /apps/vegasde/ssf_dags/tech360_dag/* gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags/vz-it-jysv-vgdedo-0/tech360_dag
+
+To copy config/dev/config.ini to config folder in dag, then run below command:
+gsutil cp /apps/vegasde/ssf_dags/tech360_dag/config/dev/config.ini gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags/vz-it-jysv-vgdedo-0/config/config/dev/config.ini 
+
+Copy service account to gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags/vz-it-jysv-vgdedo-0/config/config/dev/sa-dev-jysv-app-vgdedo-0-oidc-28593-config.json
+
+Example command:
+Gsutil cp sa-dev-jysv-app-vgdedo-0-oidc-28593-config.json gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags/vz-it-jysv-vgdedo-0/config/config/dev/sa-dev-jysv-app-vgdedo-0-oidc-28593-config.json
+
+
+To copy utils.py or any custom_module.py used in dag.py, we need to copy that custom_module.py to gs://wdwg-dev-aidcom-0-usre-composer-others-4/plugins/ssf
+	
+	gsutil cp -r /apps/vegasde/ssf_dags/tech360_dag/ssf/custom_module.py gs://wdwg-dev-aidcom-0-usre-composer-others-4/plugins/ssf/custom_module.py 
+	Example command:
+	gsutil cp -r /apps/vegasde/ssf_dags/tech360_dag/ssf/utils.py gs://wdwg-dev-aidcom-0-usre-composer-others-4/plugins/ssf/utils.py 
+
+Now execute the dag from https://4599c67b439443138b3ba0f372fa46d6-dot-us-east4.composer.googleusercontent.com/home.
+
+Note: Dag should be visible from the above url, if not check in Composer > DAGS in cloud console option to check out any error
+
+	
+
+Note2 : Dag should be generated using framework, so that there would be an entry in vzw_vde_dev_llm_preprocessing.usecase_configs for that usecase(in Dev).
+vzw_vde_test_llm_preprocessing.usecase_configs for that usecase(in Test).
+vzw_vde_prod_llm_preprocessing.usecase_configs for that usecase(in Prod).
+
+========================================================
+
+
+JYSV DAG DETAILS:
+
+DEV:
+====
+DAGS location: gs://wdwg-dev-aidcom-0-usre-composer-others-4/dags
+Composer URL: https://4599c67b439443138b3ba0f372fa46d6-dot-us-east4.composer.googleusercontent.com/
+Connection_ID: sa-vz-it-jysv-vgdedo-0-app
+SVC Account: sa-dev-wdwg-composer-aidcom-0@vz-it-np-wdwg-dev-aidcom-0.iam.gserviceaccount.com
+BASE_DIR = '/home/airflow/gcs/dags/vz-it-jysv-vgdedo-0'
+
+TEST:
+=====
+DAGS location: gs://us-east4-vz-it-test-wdwg-ai-da80ca7f-bucket/dags/vz-it-jysv-vgdedo-0
+Composer URL: https://ae7a4e88cdd74bff9ea6b7aff923f13f-dot-us-east4.composer.googleusercontent.com/
+Connection_ID: sa-vz-it-jysv-vgdedo-0-app
+SVC Account: sa-test-wdwg-composer-aidcom-0@vz-it-np-wdwg-test-aidcom-0.iam.gserviceaccount.com
+BASE_DIR = '/home/airflow/gcs/dags/vz-it-jysv-vgdedo-0'
+
+
+
+PROD:
+=====
+DAGS location: gs://us-east4-vz-it-pr-wdwg-aidc-8257b991-bucket/dags
+COMPOSER URL: https://ccc0cca1380545359037f537deb7fa19-dot-us-east4.composer.googleusercontent.com/home
+CONNECTION_ID: sa-vz-it-jysv-vgdedo-0-app
+SVC Account: sa-pr-wdwg-composer-aidcom-0@vz-it-pr-wdwg-aidcom-0.iam.gserviceaccount.com
+BASE_DIR = '/home/airflow/gcs/dags/vz-it-jysv-vgdedo-0'
+
+
+
+# Dev base directory
+ BASE_DIR = '/home/airflow/gcs/dags/vz-it-jysv-vgdedo-0'
+# Prod base directory
+BASE_DIR = '/home/airflow/gcs/dags/vz-it-jysv-vgdedo-0'
+
+
+====================================================
+
+
+Cloud function deployment steps:
+
+Create pub sub topic using below command:
+
+gcloud pubsub topics create topic_name –project=project_name –topic-encryption-key=key_path
+
+Create a Bucket with name “jysv-{ENV}-usecase-config-dag-generator-bucket”, where in ENV place the respective environment (dev,test,prod).
+
+Create bucket notification using below command:
+
+gcloud storage buckets create gs:://jysv-{ENV}-usecase-config-dag-generator-bucket –location=location –default-encryption-key=key_path
+
+Note: If the cloud function is not triggered then follow below steps to delete and re-create the topic. 
+          
+-- get list
+gsutil notification list gs://jysv-dev-usecase-config-dag-generator-bucket
+          -- delete existing
+gsutil notification delete projects/_/buckets/jysv-dev-usecase-config-dag-generator-bucket/notificationConfigs/7
+          -- created new one
+gsutil notification create -t ssf-dynamic-dag-topic-v1  -f json gs://jysv-dev-usecase-config-dag-generator-bucket
+
+
+
+How to Generate DAG py file:
+
+Place the usecase_config json in bucket jysv-dev-usecase-config-dag-generator-bucket and in path “usecase_config_json/input/ folder.
+
+Within a few minutes a DAG py file should be generated on the root directory of “jysv-dev-usecase-config-dag-generator-bucket” bucket.
+
+Config json which you have put in “usecase_config_json/input/” will be moved to “usecase_config_json/completed/” folder on completion.
+
+If the config json is moved to “usecase_config_json/failed/” folder, then we should check for errors in cloud logging for cloud function below.
+ssf-dynamic-dag-cfn-dev in DEV
+ssf-dynamic-dag-cfn-test in TEST
+ssf-dynamic-dag-cfn-prod in PROD
+
+
+
 
 
