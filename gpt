@@ -329,3 +329,105 @@ def download_confluence_links(links: list, pdf_path:str = parent_dir, fetch_nest
             not_downloaded_list.append(link_not_downloaded)
 
     return not_downloaded_list
+
+
+
+=====
+==========
+===============
+
+import os
+import pickle
+from langchain_community.document_loaders import PDFPlumberLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from sentence_transformers import InputExample
+import random
+from tqdm import tqdm
+
+# Define your chunking logic
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+
+# Use your functional areas
+functional_areas = [
+    "gcp", "bi_tools", "dgs", "teradata", "ml_platform",
+    "hadoop", "informatica", "data_indus", "data_discovery",
+    "bu_enablement", "ai_indus", "ai_workmate"
+]
+
+base_pdf_path = "indexes"
+triplets = []
+
+for area in functional_areas:
+    pdf_folder = os.path.join(base_pdf_path, area, "pdfs")
+    if not os.path.exists(pdf_folder):
+        continue
+
+    files = sorted(os.listdir(pdf_folder), key=lambda x: int(x.split('.')[0]) if x.endswith(".pdf") else 0)
+    all_chunks = []
+
+    for fname in tqdm(files, desc=f"Processing {area}"):
+        file_path = os.path.join(pdf_folder, fname)
+        try:
+            loader = PDFPlumberLoader(file_path)
+            pages = loader.load()
+            chunks = text_splitter.split_documents(pages)
+            texts = [c.page_content.strip().replace("\n", " ") for c in chunks if len(c.page_content.strip()) > 50]
+            all_chunks.extend(texts)
+        except:
+            continue
+
+    for _ in range(min(100, len(all_chunks))):  # Up to 100 triplets per area
+        anchor = random.choice(all_chunks)
+        pos_candidates = [c for c in all_chunks if c != anchor and c[:20] in anchor]
+        neg_candidates = [c for c in all_chunks if c != anchor and c[:20] not in anchor]
+        if not pos_candidates or not neg_candidates:
+            continue
+        positive = random.choice(pos_candidates)
+        negative = random.choice(neg_candidates)
+        triplets.append(InputExample(texts=[anchor, positive, negative]))
+
+# Save the triplets
+os.makedirs("model_training", exist_ok=True)
+with open("model_training/triplets.pkl", "wb") as f:
+    pickle.dump(triplets, f)
+
+print(f"✅ Generated {len(triplets)} triplets for training.")
+------------
+from sentence_transformers import SentenceTransformer, losses
+from torch.utils.data import DataLoader
+import pickle, os
+
+# Load triplets
+with open("model_training/triplets.pkl", "rb") as f:
+    train_examples = pickle.load(f)
+
+# Load pre-trained model
+model = SentenceTransformer("sentence-transformers/all-distilroberta-v1")
+
+# DataLoader and loss
+train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
+train_loss = losses.TripletLoss(model=model)
+
+# Output directory
+output_path = "model_training/fine_tuned_embedding_model"
+os.makedirs(output_path, exist_ok=True)
+
+# Fine-tune the model
+model.fit(
+    train_objectives=[(train_dataloader, train_loss)],
+    epochs=1,
+    warmup_steps=100,
+    output_path=output_path,
+    show_progress_bar=True
+)
+
+print(f"✅ Fine-tuned model saved to {output_path}")
+-----
+
+
+from langchain_community.embeddings import HuggingFaceEmbeddings
+import os
+
+fine_tuned_model_path = os.path.abspath("model_training/fine_tuned_embedding_model")
+embeddings = HuggingFaceEmbeddings(model_name=fine_tuned_model_path)
+
