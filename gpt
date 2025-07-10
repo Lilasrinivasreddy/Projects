@@ -1,3 +1,200 @@
+QVerse Codebase Design Document
+
+Overview
+
+QVerse is an AI-powered system that enables users to ask natural language questions and receive answers derived from structured data through automatic SQL generation. The system leverages a combination of caching mechanisms, metadata-driven catalog search, PGVector-based semantic similarity, and large language models (LLMs) to facilitate this translation process. The codebase is modular, extensible, and deployed as a microservice-based architecture on Kubernetes within the GCP environment.
+
+Key Objectives
+
+Convert user questions to SQL using LLMs.
+
+Use context-aware table metadata and semantic similarity for accurate query construction.
+
+Enhance system performance with caching for known questions.
+
+Allow domain and catalog-based fine-tuning using feedback and rules.
+
+System Architecture
+
+QVerse follows a modular architecture comprising routers, agents, services, and utility modules.
+
+Core Modules
+
+Genie Router: Handles user question input and directs it to the main pipeline for query generation and execution.
+
+Flow Agent: Orchestrates the entire NLQ to SQL process, including validation, metadata retrieval, and LLM interactions.
+
+Catalogs Agent: Interfaces with the metadata (context) layer to retrieve relevant tables and columns using PGVector.
+
+Caching Agent: Looks up previous questions and responses in the ThinkForge cache to reuse SQL and reasoning.
+
+NLQ Agent: Interacts with the LLM to construct SQL based on filtered metadata.
+
+Detailed Flow Description
+
+User Request Initiation
+
+The user initiates a query via API (e.g., /genie/converse).
+
+Authentication and authorization are validated using the session ID.
+
+Config and Metadata Retrieval
+
+The system fetches the configuration flags (use_cache, use_catalogs, use_history) from the database for the relevant domain and catalog.
+
+Depending on the flags, the system determines whether to use caching or metadata for query generation.
+
+Cache Check (ThinkForge)
+
+If enabled, the system checks if a similar question has already been asked.
+
+If a cache hit is found, the SQL and reasoning are reused.
+
+If not, the system proceeds with metadata-based processing.
+
+Metadata Search with PGVector
+
+Table descriptions are embedded and stored in PGVector.
+
+A semantic search identifies the top 100 relevant tables.
+
+LLM then narrows this list to the top 5 tables based on descriptions and usage patterns.
+
+Relevant columns are filtered based on token count and relevance.
+
+SQL Generation
+
+Filtered tables and columns are sent to the LLM along with user question.
+
+The LLM returns an SQL query.
+
+The system performs validation checks:
+
+Must be a valid SELECT query.
+
+No invalid table/column references.
+
+Must be executable.
+
+Execution and Response
+
+SQL is executed against the appropriate database (PostgreSQL, GCP, Spanner).
+
+The result is summarized and visualizations are generated if requested.
+
+The final response includes the SQL, result set, and visual insights.
+
+Metadata Context and Rules
+
+Context Management
+
+Metadata includes table names, column descriptions, data types, keys, usage patterns, and join rules.
+
+Managed through the /contexts endpoints with upload and update functionality.
+
+Supports CSV upload for bulk operations.
+
+Rule Application
+
+Table Rules: Defined manually for known issues (e.g., join on multiple keys).
+
+Catalog Rules: Generated from user feedback to enforce global logic corrections.
+
+These rules are injected into the LLM prompt during SQL generation to improve accuracy.
+
+Endpoints Summary
+
+Endpoint
+
+Description
+
+/genie/converse
+
+Chat-based NLQ to SQL with history
+
+/genie/ask_and_act
+
+Stateless API for integration with other tools
+
+/contexts/upload_contexts
+
+Uploads metadata in bulk
+
+/stats
+
+Returns usage and performance analytics
+
+Deployment Details
+
+Platform: Google Kubernetes Engine (GKE)
+
+Secrets: Managed via GCP Secret Manager and .env files
+
+Vector DB: PGVector embedded in PostgreSQL
+
+Cache: Redis
+
+Auth: LDAP + JWT
+
+Monitoring: Endpoints exposed via load balancer with future microservice split planned
+
+Codebase Organization
+
+src/
+├── agents/                 # Core business logic
+│   └── flow_agent.py, catalogs_agent.py, ...
+├── app/routers/            # FastAPI routers for various modules
+│   └── genie/, auth/, contexts/, cache/
+├── database_connections/   # Connection and service logic
+│   └── connection.py, service.py
+├── utils/                  # Logging, exceptions, vector search helpers
+├── llm/                    # LLM prompts and Vegas integration
+
+Developer Guidelines
+
+Follow CONTRIBUTING.md for code standards.
+
+No credentials in code; use secrets/config.
+
+Unit tests and CI required for all PRs.
+
+Table aliases, join conditions, and rule logic must follow catalog/domain standards.
+
+End-to-End Technical Flow (NLQ to SQL)
+
+User/API sends a query to the FastAPI endpoint (/genie/converse).
+
+Genie controller passes it to Genie service which invokes flow_agent.validate_user_request().
+
+It fetches configuration flags (use_cache, use_catalogs, use_history) from the DB.
+
+If use_cache is enabled, it checks ThinkForge cache via caching_agent.
+
+If no cache hit, it calls catalogs_agent.semantic_table_search() which uses PGVector to shortlist 100 tables.
+
+The top 5 tables are selected by LLM using table descriptions and usage patterns.
+
+Relevant columns are filtered based on token count and question relevance.
+
+NLQ is passed to the LLM through nlq_agent, which returns SQL.
+
+flow_agent.validate_sql() ensures syntax and table validity.
+
+Valid SQL is executed using flow_agent.execute_sql().
+
+Summary and visualizations are generated.
+
+Final response is returned in JSON format including result set, charts, and SQL.
+
+Conclusion
+
+QVerse provides an intelligent and extensible platform for translating business questions into executable queries using a blend of caching, metadata, and LLMs. Its modular architecture ensures flexibility, scalability, and maintainability across different domains and use cases.
+
+
+
+============
+
+
 did you get a chance to start on the design document of the entire code base flow
 12:32
 we have a call with Rajesh tomorrow night so it would be helpful to have a draft version of document
