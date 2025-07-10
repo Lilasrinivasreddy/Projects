@@ -1,433 +1,1478 @@
-import os
-import pandas as pd
-import json
-import time
-from build_index_config import parent_dir, data_path
-from downloader import download_confluence_links
+QVerse Code Documentation
 
-print(time.strftime("%H:%M:%S", time.localtime()))
+--------------------
 
-index_faiss_collection_mapping = {
-    'gcp': "aider_gcp_v1",
-    'bi_tools': "aider_bi_tools_v1",
-    'dgs': "aider_dgs_v1",
-    'ml_platform': "aider_ml_platform_v1",
-    'hadoop': "aider_hadoop_v1",
-    'teradata': "aider_teradata_v1",
-    'all': "aider_all_v1",
-    'informatica': "aider_informatica_v1",
-    'data_indus': "aider_data_indus_v1",
-    'data_discovery': "aider_data_discovery_v1",
-    'bu_enablement': "aider_bu_enablement_v1",
-    'ai_indus': "aider_ai_indus_v1",
-    'ai_workmate': "aider_ai_workmate_v1"
+ER Diagram Reference (All Tables)
+
++-------------------+         +-------------------+         +-------------------+
+|      Domain       | 1     * | UserActivityHistory| *     1 |     Catalog       |
+|-------------------|---------|-------------------|---------|-------------------|
+| domainid (PK)     |         | historyid (PK)    |         | catalogid (PK)    |
+| domainname        |         | user_id           |         | catalogname       |
+| ...               |         | domainid (FK)     |         | domainid (FK)     |
++-------------------+         | catalogid (FK)    |         | ...               |
+                              | sessionid         |         +-------------------+
+                              | ...               |
+                              +-------------------+
+                                      |
+                                      | 1
+                                      |
+                                      * 
+                              +-------------------+
+                              |   TokenUsage      |
+                              |-------------------|
+                              | usageid (PK)      |
+                              | historyid (FK)    |
+                              | ...               |
+                              +-------------------+
+
++-------------------+         +-------------------+         +-------------------+
+| ChatConversation  | 1     * |   ChatMessage     |         |    UsageLog       |
+|-------------------|---------|-------------------|         |-------------------|
+| chatid (PK)       |         | messageid (PK)    |         | id (PK)           |
+| user_id           |         | chatid (FK)       |         | user_id           |
+| domainid (FK)     |         | conversation      |         | domainid (FK)     |
+| catalogid (FK)    |         | timestamp         |         | catalogid (FK)    |
+| sessionid         |         | ...               |         | ...               |
+| ...               |         +-------------------+         +-------------------+
++-------------------+
+
++-------------------+         +-------------------+         +-------------------+
+|   Feedback        |         |  ErrorLog         |         | QuestionsCount    |
+|-------------------|         |-------------------|         |-------------------|
+| feedback_id (PK)  |         | logid (PK)        |         | questionid (PK)   |
+| historyid (FK)    |         | historyid (FK)    |         | question          |
+| ...               |         | ...               |         | count             |
++-------------------+         +-------------------+         | catalogid (FK)    |
+                                                          | domainid (FK)     |
+                                                          +-------------------+
+
++-------------------+         +-------------------+         +-------------------+
+|   Table           | 1     * |   TableColumn     | *     1 |   TableMapping    |
+|-------------------|---------|-------------------|---------|-------------------|
+| tableid (PK)      |         | columnid (PK)     |         | tablemappingid(PK)|
+| tablename         |         | tableid (FK)      |         | tableid (ARRAY)   |
+| ...               |         | ...               |         | domainid (FK)     |
++-------------------+         +-------------------+         +-------------------+
+
++-------------------+         +-------------------+         +-------------------+
+|   TableRule       |         |   CatalogRule     |         |   Session         |
+|-------------------|         |-------------------|         |-------------------|
+| tableruleid (PK)  |         | catalogruleid(PK) |         | sessionid (PK)    |
+| tableid (FK)      |         | catalogid (ARRAY) |         | username          |
+| rule_definition   |         | domainid (FK)     |         | platform          |
+| ...               |         | ...               |         | session_status    |
++-------------------+         +-------------------+         +-------------------+
+
++-------------------+         +-------------------+         +-------------------+
+|   AccessControl   |         |   AuditLog        |         |   UserFeedback    |
+|-------------------|         |-------------------|         |-------------------|
+| id (PK)           |         | audit_id (PK)     |         | userfeedbackid(PK)|
+| userid            |         | entity_type       |         | historyid (FK)    |
+| vzid              |         | entity_id         |         | feeedback         |
+| role              |         | action            |         | comment           |
++-------------------+         | changed_by        |         | date_created      |
+                              | session_id        |         +-------------------+
+                              | change_timestamp  |
+                              | change_details    |
+                              +-------------------+
+
+Note: Foreign keys (FK) and primary keys (PK) are indicated. Array fields are shown as (ARRAY). Some tables have additional fields not shown for brevity.
+# --------------------
+
+## Developer Onboarding & Quality Checklist
+
+- See CONTRIBUTING.md for coding standards, branching, and extension points.
+- See GLOSSARY.md for key terms and concepts.
+- Pre-commit hooks and CI will enforce formatting, linting, and type checks.
+- All endpoints and payloads for chat/converse/message operations require chat_id and message_id (or message_index).
+- No secrets or credentials are committed; all sensitive config is in .env or deployment secrets.
+- All business logic, API payloads, and database models are consistent with the new domain/catalog terminology and config-driven architecture.
+
+---
+
+## SESSION, CHAT, AND MESSAGE IDENTIFIERS
+
+### session_id
+- **Definition:** The login/user session identifier. Used for user authentication and user-level context only.
+- **Usage:** Only for authentication, user context, and session management. NOT for chat/message operations.
+
+### chat_id (chatid)
+- **Definition:** The chat/conversation identifier. Represents a single conversation or chat thread.
+- **Usage:** Required for all chat/converse/message operations (retry, delete, update, fetch). All chat history and message operations are scoped to a chat_id.
+
+### message_id / message_index
+- **Definition:** The unique identifier (or index) for an individual message within a chat/conversation.
+- **Usage:** Required for all message-level operations (retry, delete, update, fetch). Must be used together with chat_id.
+
+---
+
+## CORRECT USAGE
+- All chat/converse/message operations (retry, delete, update, fetch) MUST use chat_id and message_id (or message_index).
+- session_id is NOT the same as chat_id. Do NOT use session_id for chat/message operations.
+- Endpoints and payloads for chat/message operations must require chat_id and message_id (or message_index).
+
+---
+
+## EXAMPLES
+
+### Correct (for message operations):
+```json
+{
+  "chatid": "<chat_id>",
+  "message_index": 2
 }
 
-pdfs = "pdfs"
-columns = ["Functional_area", "Services", "Subtopic", "Oneconfluence_link"]
-## make sure to keep "all" at last of the list
-list_func_area = ["gcp", "data_indus", "bi_tools", "dgs", "teradata", "ml_platform", "hadoop", "informatica", 'data_discovery', 'all', 'ai_indus', 'ai_workmate']
-current_dir = os.path.join(parent_dir, "aider_kw_retriever")
-print(current_dir)
-
-combined_df = pd.DataFrame()
-
-for each in list_func_area:
-    if each == 'all':
-        # Combine data from all functional areas
-        if combined_df.empty:
-            raise ValueError("No data available to combine for 'all' index")
-        df = combined_df
-    else:
-        try:
-            df = pd.read_excel(f"{data_path}/SlackbotKBs.xlsx", each)
-            combined_df = pd.concat([combined_df, df], ignore_index=True)
-        except:
-            raise ValueError(f"Please download and make sure the excel sheet for {each} is in place")
-    
-    print(each)
-    download_pdf = True
-    faiss_col_name = index_faiss_collection_mapping[each]
-
-    os.makedirs(data_path, exist_ok=True)
-    parent_dir = f"{data_path}/{each}"
-    ulst = []
-    plst = []
-
-    for _, dt in df.iterrows():
-        if not str(dt['Oneconfluence_link']).strip().startswith("https://oneconfluence"):
-            continue
-        
-        ulst.append(dt['Oneconfluence_link'].strip())
-        pretext = f"Functional Area: {dt['Functional_area']} \n Topic: {dt['Subtopic']}"
-        plst.append(pretext)
-
-    url = ulst
-    if download_pdf:
-        not_downloaded_list = download_confluence_links(url, pdf_path=parent_dir)
-        print(not_downloaded_list)
-
-    file_path = os.path.join(current_dir, f'{each}/pdfs')
-    print(file_path)
-    files = os.listdir(file_path)
-    src_docs = []
-
-    def get_num(x):
-        return int(x.split('.')[0])
-    
-    files = sorted(files, key=get_num, reverse=False)
-    for fname in files:
-        index = get_num(fname)
-        src_doc_dict = {"source": url[index], "index": index, "pretext": plst[index]}
-        src_docs.append(src_doc_dict)
-
-    with open(f'files_not_downloaded/{each}_files_not_downloaded.txt', 'w') as f:
-        for line in not_downloaded_list:
-            f.write(f"{line}\n")
-    with open(f'mapping_docs/{each}_src_docs.txt', 'w') as convert_file:
-        convert_file.write(json.dumps(src_docs))
-
-print(time.strftime("%H:%M:%S", time.localtime()))
-====================================================================
-index builder
-=====================
-from config import parent_dir,text_chunk_size,text_chunk_overlap
-import os
-import json
-import ast
-import requests
-import time
-from pydantic import BaseModel
-from langchain.pydantic_v1 import BaseModel as langchainBaseModel, Extra, Field
-from langchain.schema.embeddings import Embeddings
-from typing import List,Any, List
-from langchain_community.document_loaders.pdf import PDFMinerLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.docstore.document import Document
-from langchain_community.retrievers import BM25Retriever
-from langchain_community.vectorstores import FAISS
-import warnings
-import pickle
-import numpy as np
-import warnings
-from langchain_community.document_loaders import PDFPlumberLoader
-
-warnings.filterwarnings("ignore")
-
-
-def create_index():
-    list_func_area=["gcp","bi_tools","dgs","teradata","ml_platform","hadoop","informatica","all","data_indus","data_discovery","bu_enablement","ai_indus","ai_workmate"]
-    #list_func_area=["teradata"]
-    current_dir=os.path.join(parent_dir,"aider_kw_retriever")
-
-    text_chunk_size=2500
-    text_chunk_overlap=300
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=text_chunk_size, chunk_overlap=text_chunk_overlap,length_function=len)
-    
-    for i in list_func_area:
-        documents=[]
-        metadata=[]
-        chunks=""
-
-        file_path=os.path.join(current_dir,f'{i}/pdfs')
-        print(file_path)
-        files=os.listdir(file_path)
-        def get_num(x): 
-            return int(x.split('.')[0])
-
-        files = sorted(files, key = get_num, reverse = False)
-
-        with (open(f'mapping_docs/{i}_src_docs.txt', 'r')) as openfile:
-            metadata=ast.literal_eval(openfile.read())
-
-        for fname in files:
-            loader=PDFPlumberLoader(os.path.join(file_path,fname))
-            j=get_num(fname)
-            print(f"file number: {j}")
-            search_dict=list(filter(lambda searchindex: searchindex['index'] == j, metadata))
-            # print(f"metadata before loading: {search_dict}")
-            raw_text=loader.load()
-            print(f"length of raw_text: {len(raw_text)}")
-            for rt in range(len(raw_text)):
-                raw_text[rt].metadata=search_dict[0]
-
-            chunks = text_splitter.split_documents(raw_text)
-            # print(f"raw_text: {raw_text}")
-            for ch in chunks:
-                ch.page_content = ch.page_content  + " \n" + f"[metadata_start: \n{search_dict[0]['pretext']} \n:metadata_end]"
-            documents.extend(chunks)
-            # print(documents)
-
-        
-        print(f'Starting process_shard of {len(documents)} chunks.')
-        st = time.time()
-        embeddings = HuggingFaceEmbeddings(model_name='all-distilroberta-v1')
-        result = FAISS.from_documents(documents, embeddings)
-        result_bm25=BM25Retriever.from_documents(documents)
-        et = time.time() - st
-        print(f'Shard completed in {et} seconds.')
-        print("------------------------------------------------------")
-
-        result.save_local(f'indexes/{i}')
-        with open(f'indexes/{i}/{i}_bm25_retriever.pkl','wb') as file:
-            pickle.dump(result_bm25,file)
-
-if __name__ == "__main__":
-    create_index()
-==========================================================
-import os
-
-cur_dir =  os.getcwd()
-# print(cur_dir)
-base_bm_path = os.path.join(cur_dir,'indexes')
-stopwords_init_path = os.path.join(cur_dir,'stopwords')
-TMP_PATH = "/tmp/stopwords"#os.path.join(cur_dir,"stopwords")
-
-MODEL_VERSION = "1.0"
-
-# print(base_bm_path)
-
-FAISS_GCP_INDEX_PATH=f"{base_bm_path}/gcp"
-FAISS_BI_TOOLS_INDEX_PATH=f"{base_bm_path}/bi_tools"
-FAISS_DGS_INDEX_PATH=f"{base_bm_path}/dgs"
-FAISS_ML_PLATFORM_INDEX_PATH=f"{base_bm_path}/ml_platform"
-FAISS_TERADATA_INDEX_PATH=f"{base_bm_path}/teradata"
-FAISS_ALL_INDEX_PATH=f"{base_bm_path}/all"
-FAISS_HADOOP_INDEX_PATH=f"{base_bm_path}/hadoop"
-FAISS_INFORMATICA_INDEX_PATH=f"{base_bm_path}/informatica"
-FAISS_DATA_INDUS_INDEX_PATH=f"{base_bm_path}/data_indus"
-FAISS_DATA_DISCOVERY_INDEX_PATH=f"{base_bm_path}/data_discovery"
-FAISS_BU_ENABLEMENT_INDEX_PATH=f"{base_bm_path}/bu_enablement"
-FAISS_AI_INDUS_INDEX_PATH=f"{base_bm_path}/ai_indus"
-FAISS_AI_WORKMATE_INDEX_PATH=f"{base_bm_path}/ai_workmate"
-
-# data_path = f"/Users/salehad/Documents/gitlab_proj/aider_kw_retriever"
-data_path = r"C:\Users\gurajma\Documents\GitHub\aider_kw_retriever"
-# os.makedirs(data_path,exist_ok=True)
-parent_dir = os.path.dirname(os.getcwd())
-
-text_chunk_size = 2000
-text_chunk_overlap = 0
-
-
-if 'ENV' in os.environ and os.environ['ENV'] in ['dev', 'uat', 'prod']:
-    env = os.environ['ENV'].lower()
-else:
-    env = "dev"
-
-# apikey = "hHBs6qEhZHP1M0JBLoEZ2DGzq7MNAEjs"
-
-if env == 'prod':
-    ### urls are same but the payload is different
-    ## embedding service
-    EMAS_URL = "https://oa.verizon.com/vegas/models/api"
-    ## cross encoder reranker service
-    url="https://oa.verizon.com/vegas/models/api"
-    apikey = os.environ.get('prod_aider_apikey',"")
-else:
-    EMAS_URL = "https://oa-uat.ebiz.verizon.com/vegas/models/api"
-    url="https://oa-uat.ebiz.verizon.com/vegas/models/api"
-    apikey = os.environ.get('uat_aider_apikey',"")
-=========================================
-
-import requests,html
-from bs4 import BeautifulSoup
-from tqdm import tqdm
-import os
-import time
-
-from build_index_config import confluence_username, confluence_password
-
-from build_index_config import parent_dir
-parent_dir = os.path.join(parent_dir,"pdfs")
-
-
-
-def get_nested_links(link):
-    username = confluence_username
-    passkey = confluence_password
-
-    reqs = requests.get(link, auth=(username, passkey))
-    soup = BeautifulSoup(reqs.text, 'html.parser')
-
-    urls = []
-    for link in soup.find_all("a"):
-        if link.get('href').startswith('/pages') or link.get('href').startswith('/display'):
-            urls.append("https://oneconfluence.verizon.com"+ link.get('href'))
-        else:
-            pass
-    return list(set(urls))
-
-def download_confluence_as_pdf(link:str, pdf_path: str = parent_dir,filename:str ="1", fetch_nested = False):
-    
-    if not link.startswith("https://oneconfluence.verizon.com"):
-        raise ValueError("this function handles only oneconfluence page")
-    
-    if fetch_nested:
-        links = get_nested_links(link)
-    else:
-        links = [link]
-    
-    username = confluence_username
-    passkey = confluence_password
-    key = "pdfpageexport"
-    
-    url_local = []
-    not_downloaded_list=[]
-    for lk in links:
-        try:
-                
-            reqs = requests.get(lk, auth=(username, passkey))
-            soup = BeautifulSoup(reqs.text, 'html.parser')
-            l = []
-        
-            for link in soup.find_all("a"):
-                if key in link.get("href", "") and link.get("id","") == "action-export-pdf-link":
-                    
-                    # print("https://oneconfluence.verizon.com" + link.get("href"))
-                    l.append("https://oneconfluence.verizon.com" + link.get("href"))
-            print("pdf found",l)
-            # if len(l) > 1:
-            #     for count in range(len(l)):
-            #         response = requests.get(l[count], stream=True,auth=(username, passkey))
-            #         filename = l[count].split("=")[-1]
-            #         print(filename)
-            #         with open("pdfs/"+filename+".pdf", "wb") as handle:
-            #             for data in tqdm(response.iter_content()):
-            #                 handle.write(data)
-            # else:
-            # filename = l[0].split("=")[-1] + "_"+str(time.time())[-5:]
-            if len(l)==0:
-                print(lk, "no pdf found")
-            elif len(l)>1:
-                print(lk, "has more than on pdf ")
-            response = requests.get(l[0], stream=True,auth=(username, passkey))
-            print(filename)
-            if not os.path.exists(os.path.join(pdf_path, "pdfs")):
-                os.makedirs(os.path.join(pdf_path, "pdfs"))
-            
-            with open(os.path.join(pdf_path, "pdfs",filename+".pdf"), "wb") as handle:
-                for data in tqdm(response.iter_content()):
-                    handle.write(data)
-                    
-            url_local.append([lk,])
-            print("PDF DOWNLOADED SUCCESSFULLY..")
-            
-        except Exception as pdfexe:
-            print(lk," ----  ****  ----" ,pdfexe)
-            return lk
-
-
-
-def download_confluence_links(links: list, pdf_path:str = parent_dir, fetch_nested=False):
-    not_downloaded_list=[]
-    for idx,link in enumerate(links):
-       link_not_downloaded = download_confluence_as_pdf(link,pdf_path, filename=str(idx))
-       if not(link_not_downloaded is  None):
-            not_downloaded_list.append(link_not_downloaded)
-
-    return not_downloaded_list
-
-
-
-=====
-==========
-===============
-
-import os
-import pickle
-from langchain_community.document_loaders import PDFPlumberLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from sentence_transformers import InputExample
-import random
-from tqdm import tqdm
-
-# Define your chunking logic
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-
-# Use your functional areas
-functional_areas = [
-    "gcp", "bi_tools", "dgs", "teradata", "ml_platform",
-    "hadoop", "informatica", "data_indus", "data_discovery",
-    "bu_enablement", "ai_indus", "ai_workmate"
-]
-
-base_pdf_path = "indexes"
-triplets = []
-
-for area in functional_areas:
-    pdf_folder = os.path.join(base_pdf_path, area, "pdfs")
-    if not os.path.exists(pdf_folder):
-        continue
-
-    files = sorted(os.listdir(pdf_folder), key=lambda x: int(x.split('.')[0]) if x.endswith(".pdf") else 0)
-    all_chunks = []
-
-    for fname in tqdm(files, desc=f"Processing {area}"):
-        file_path = os.path.join(pdf_folder, fname)
-        try:
-            loader = PDFPlumberLoader(file_path)
-            pages = loader.load()
-            chunks = text_splitter.split_documents(pages)
-            texts = [c.page_content.strip().replace("\n", " ") for c in chunks if len(c.page_content.strip()) > 50]
-            all_chunks.extend(texts)
-        except:
-            continue
-
-    for _ in range(min(100, len(all_chunks))):  # Up to 100 triplets per area
-        anchor = random.choice(all_chunks)
-        pos_candidates = [c for c in all_chunks if c != anchor and c[:20] in anchor]
-        neg_candidates = [c for c in all_chunks if c != anchor and c[:20] not in anchor]
-        if not pos_candidates or not neg_candidates:
-            continue
-        positive = random.choice(pos_candidates)
-        negative = random.choice(neg_candidates)
-        triplets.append(InputExample(texts=[anchor, positive, negative]))
-
-# Save the triplets
-os.makedirs("model_training", exist_ok=True)
-with open("model_training/triplets.pkl", "wb") as f:
-    pickle.dump(triplets, f)
-
-print(f"✅ Generated {len(triplets)} triplets for training.")
-------------
-from sentence_transformers import SentenceTransformer, losses
-from torch.utils.data import DataLoader
-import pickle, os
-
-# Load triplets
-with open("model_training/triplets.pkl", "rb") as f:
-    train_examples = pickle.load(f)
-
-# Load pre-trained model
-model = SentenceTransformer("sentence-transformers/all-distilroberta-v1")
-
-# DataLoader and loss
-train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
-train_loss = losses.TripletLoss(model=model)
-
-# Output directory
-output_path = "model_training/fine_tuned_embedding_model"
-os.makedirs(output_path, exist_ok=True)
-
-# Fine-tune the model
-model.fit(
-    train_objectives=[(train_dataloader, train_loss)],
-    epochs=1,
-    warmup_steps=100,
-    output_path=output_path,
-    show_progress_bar=True
-)
-
-print(f"✅ Fine-tuned model saved to {output_path}")
------
-
-
-from langchain_community.embeddings import HuggingFaceEmbeddings
-import os
-
-fine_tuned_model_path = os.path.abspath("model_training/fine_tuned_embedding_model")
-embeddings = HuggingFaceEmbeddings(model_name=fine_tuned_model_path)
 
+
+Incorrect (do NOT do this):
+
+{
+  "session_id": "<session_id>",
+  "message_index": 2
+}
+
+
+
+
+ENDPOINTS/PAYLOADS
+
+All endpoints and payloads for chat/converse/message operations have been updated to require chat_id and message_id (or message_index).
+See src/app/routers/genie/controller.py and src/utils/utils.py for implementation details.
+
+
+
+Overview
+This document provides an overview of the QVerse codebase, detailing the purpose, structure, and functionality of the various components. The repository is organized into multiple directories and files, each serving a specific role in the application.
+
+
+Directory Structure
+
+gcp_files/
+
+Contains configuration and token files for Google Cloud Platform (GCP) integration.
+
+
+credentials/: Stores service account configuration files.
+
+
+sa-np-gudv-aubi-an-dtwnco-0-oidc-25321-config.json: Configuration for non-production service account.
+
+sa-pr-gudv-aubi-an-dtwnco-0-oidc-25321-config.json: Configuration for production service account.
+
+
+
+token/: Contains OIDC tokens for authentication.
+
+
+oidc_token_nonprod.json: Non-production OIDC token.
+
+oidc_token.json: Production OIDC token.
+
+
+
+
+kube/
+
+Contains Kubernetes deployment files.
+
+
+deploy.yaml: Defines Kubernetes resources such as Secrets, PersistentVolumeClaims, Deployments, and Services for the application.
+
+
+src/
+
+The main source code directory, organized into subdirectories for agents, app routers, database connections, and utilities.
+
+agents/
+
+Implements core logic for various functionalities.
+
+
+caching_agent.py: Handles caching of SQL queries and entity extraction.
+
+catalogs_agent.py: Processes catalog data and generates SQL queries based on user input.
+
+flow_agent.py: Orchestrates the flow of user requests, including validation, database connection, and query execution.
+
+nlq_agent.py: Provides utilities for natural language query processing.
+
+
+app/routers/
+
+Defines FastAPI routers for handling HTTP requests.
+
+
+app_data/
+
+
+controller.py: Exposes endpoints for retrieving application data such as token usage and response times.
+
+service.py: Implements the business logic for the app_data endpoints.
+
+
+
+auth/
+
+
+controller.py: Handles user authentication and role/category retrieval.
+
+service.py: Implements authentication logic using LDAP and JWT.
+
+
+
+cache/
+
+
+controller.py: Manages caching-related endpoints, including insertion, update, and retrieval of cached questions.
+
+service.py: Implements caching logic and interacts with the database.
+
+
+
+contexts/
+
+
+controller.py: Provides endpoints for managing normalized table metadata (contexts), including tables, columns, and rules.
+
+service.py: Implements context-related logic, including uploading context metadata and managing table relationships.
+
+
+
+
+database_connections/
+
+Manages database connections and query execution.
+
+
+app_database/
+
+
+connection.py: Establishes connections to the application database.
+
+service.py: Provides database interaction methods for application data.
+
+
+
+query_execution/
+
+Contains services for executing queries on various database platforms (e.g., GCP, Postgres, Spanner).
+
+
+
+
+utils/
+
+Contains utility modules for logging, error handling, and other shared functionalities.
+
+
+error_handlers.py: Defines custom error handlers for exceptions.
+
+exceptions.py: Contains custom exception classes.
+
+log_wrapper.py: Provides logging utilities for capturing and managing logs.
+
+utils.py: Implements general-purpose utility functions.
+
+vectorstore.py: Handles interactions with the vector database for catalog retrieval.
+
+
+
+Key Functionalities
+
+1. Caching Layer
+
+
+
+Purpose: Speeds up query generation by caching frequently used SQL queries and their associated metadata.
+
+Files: caching_agent.py, cache/controller.py, cache/service.py.
+
+
+2. Catalog Management
+
+
+
+Purpose: Manages catalog data, including uploading, modifying, and retrieving metadata for SQL query generation.
+
+Files: catalogs_agent.py, catalogs/controller.py, catalogs/service.py.
+
+
+3. Domain Management
+
+
+
+Purpose: Manages domain data and configuration, including config fields (use_cache, use_catalogs, use_history) that control Genie flow logic.
+
+Files: models.py, service.py in app_database/ and routers/domains/.
+
+
+4. Authentication
+
+
+
+Purpose: Authenticates users using LDAP and generates JWT tokens for session management.
+
+Files: auth/controller.py, auth/service.py.
+
+
+5. Flow Orchestration
+
+
+
+Purpose: Orchestrates the flow of user requests, including validation, database connection, and query execution.
+
+Files: flow_agent.py.
+
+
+6. Natural Language Query (NLQ) Processing
+
+
+
+Purpose: Processes user queries and retrieves relevant catalog data.
+
+Files: nlq_agent.py.
+
+
+
+Endpoint Documentation
+
+QVerse NLQ to SQL Endpoint Documentation
+
+Overview
+The generate_and_execute endpoint generates and executes an SQL query based on the user's input query. It now uses domain and catalog (not system/category) and fetches config fields (use_cache, use_catalogs, use_history) from the database, not the request body.
+
+Endpoint Definition
+Path: /api/v1.0/genie/generate_and_execute
+Method: POST
+Payload:
+The payload for this endpoint is defined by the generate_execute_payload Pydantic model. It includes the following fields:
+
+
+session_id (str): The session ID.
+
+user_question (str): The user's input query.
+
+domain (str): The domain name.
+
+catalog (str): The catalog name.
+
+llm (str): The LLM model to use.
+
+user_profile (User_profile | None): The user profile information.
+
+viewport_boundary (Boundary | None): The viewport boundary coordinates.
+
+show_summary (bool): Whether to generate a summary.
+
+show_visualization (bool): Whether to generate a visualization.
+
+temperature (float): The temperature for the LLM model.
+
+
+Flow Description
+
+
+Transaction Initialization: Generate a unique transaction_id and start a session logger.
+
+Setting Temperature: Set the LLM model's temperature using Parameters.set_temperature.
+
+Validating User Request: Validate the session ID, retrieve domain details, and update artifacts.
+
+Fetching Database Details: Retrieve database configuration, decode credentials, and establish a connection.
+
+Fetch Domain/Catalog Config: Fetch use_cache, use_catalogs, use_history from the DB for the selected domain/catalog.
+
+Entity Search: Search for relevant entities using the caching layer (if enabled).
+
+Catalogs Search: Generate a catalog-based SQL query and update artifacts (if enabled).
+
+Validating Response: Validate the generated SQL query and handle errors.
+
+Executing Query: Execute the final SQL query, generate summaries, and visualizations.
+
+Final Output: Prepare and return the final output, including query results, visualizations, and summaries.
+
+
+Detailed Flow Diagram
+
+graph TD
+A["Start"]-->B["Generate Transaction ID"]
+B-->C["Set Temperature"]
+C-->D["Validate User Request"]
+D-->E["Fetch Database Details"]
+E-->F["Fetch Domain/Catalog Config"]
+F-->G["ThinkForge Search [if use_cache]"]
+G-->H["Catalogs Search [if use_catalogs]"]
+H-->I["Validate Response"]
+I-->J["Execute Query"]
+J-->K["Prepare Final Output"]
+K-->L["Return Response"]
+
+
+
+Code References
+
+
+Controller: src/app/routers/genie/controller.py (generate_and_execute)
+
+Service: src/app/routers/genie/service.py (Genie.generate_execute_query)
+
+Flow Methods: src/agents/flow_agent.py (validate_user_request, fetch_db_details, fetch_domain_catalog_config, entity_search, catalogs_search, validate_response, execute_query)
+
+Utility Methods: src/utils/utils.py
+
+
+Vector Store: src/utils/vectorstore.py
+
+
+LLM Services: src/llm/services.py
+
+
+Catalog Lookup: src/agents/catalogs_agent.py
+
+
+SQL Generator: src/agents/caching_agent.py
+
+
+
+
+Usage Log Analytics Endpoints
+
+/stats (GET)
+Path: /stats
+Description:
+Returns analytics and statistics about LLM/cache/tool usage events for a specific user, domain, and catalog. This endpoint is useful for tracking usage, success/failure rates, and LLM confidence for analytics and monitoring purposes.
+Query Parameters:
+
+
+user_id (str, required): The user identifier (from session/auth context).
+
+domainname (str, required): The name of the domain (e.g., "Salesforce").
+
+catalogname (str, required): The name of the catalog (e.g., "Finance").
+
+Returns:
+A JSON object with the following fields:
+
+
+total_entries: Total number of usage log entries for the user/domain/catalog.
+
+success_entries: Number of successful usage log entries.
+
+failed_entries: Number of failed usage log entries.
+
+avg_llm_confidence_score: Average LLM confidence score for the filtered logs.
+
+avg_similarity_score: Average similarity score for the filtered logs.
+
+recent_entries_last_30_days: Number of usage log entries in the last 30 days.
+
+error: (optional) Error message if the domain or catalog is not found.
+
+Example Request:
+
+GET /stats?user_id=jdoe&domainname=Salesforce&catalogname=Finance
+
+
+Example Response:
+
+{
+  "total_entries": 42,
+  "success_entries": 35,
+  "failed_entries": 7,
+  "avg_llm_confidence_score": 0.91,
+  "avg_similarity_score": 0.87,
+  "recent_entries_last_30_days": 12
+}
+
+
+Implementation Details:
+
+The endpoint is implemented in src/app/routers/app_data/controller.py and calls the service in src/app/routers/app_data/service.py.
+The service method looks up the domain and catalog IDs from their names, and filters the UsageLog table accordingly.
+Returns an error if the domain or catalog is not found.
+All three parameters are required for the endpoint to function.
+
+
+
+Architectural Flow Diagrams
+
+1. High-Level System Architecture
+
+graph TD
+A[User/API Client]-->B[API Gateway]
+B-->C[FastAPI App]
+C-->D[Genie Router]
+C-->E[Catalogs Router]
+C-->F[Feedbacks Router]
+D-->G[Genie Service Layer]
+E-->H[Catalogs Service Layer]
+F-->I[Feedbacks Service Layer]
+G-->J[AppDatabase Service]
+H-->J
+I-->J
+J-->K[PostgreSQL DB]
+J-->L[Vector DB]
+G-->M[LLM Service]
+G-->N[Cache/Redis]
+
+
+
+2. NLQ-to-SQL Main Pipeline (Converse Flow)
+
+graph TD
+A[User Query]-->B[API Endpoint /converse]
+B-->C[Genie Controller]
+C-->D["Genie Service: converse[]"] 
+D-->E[Fetch Domain/Catalog Config from DB]
+E-->F[Validate User Request]
+F-->G[Fetch DB Details]
+G-->H["ThinkForge Search [Cache]"]
+H-->I[Catalog Search]
+I-->J[Validate Response]
+J-->K[Execute Query]
+K-->L[Prepare Output]
+L-->M[Return Streaming Response]
+
+
+
+3. Config Fetch and Usage Flow
+
+graph TD
+A[User/API Request]-->B[Genie Controller]
+B-->C[Genie Service]
+C-->D["AppDatabase.get_domain_catalog_config[domain, catalog]"]
+D-->E[Domain Table]
+D-->F[Catalog Table]
+E-->G[use_cache, use_catalogs, use_history]
+F-->G
+G-->H[Genie Service Logic]
+
+
+
+4. Catalog Management Flow
+
+graph TD
+A[Admin/API Client]-->B[Catalogs Controller]
+B-->C[Catalogs Service]
+C-->D[AppDatabase Service]
+D-->E[Catalog Table]
+D-->F[Table Table]
+D-->G[TableMapping Table]
+C-->H[VectorStore]
+H-->I[Vector DB]
+
+
+
+
+Deployment
+
+Kubernetes
+The application is deployed using Kubernetes. The deploy.yaml file defines the necessary resources, including:
+
+Secrets for sensitive data.
+PersistentVolumeClaims for storage.
+Deployments for application and Redis services.
+Services for exposing the application.
+
+
+
+Testing
+
+tests/
+
+Contains test cases for various components of the application. The tests are organized to mirror the structure of the src/ directory.
+
+
+Configuration
+
+.env.example
+
+Provides a template for environment variables required by the application. This file is now fully synchronized with all variables in kube/deploy.yaml.
+
+pyproject.toml
+
+Defines the Python project configuration, including dependencies and formatting rules.
+
+
+Additional Notes
+
+Sensitive information such as credentials and tokens should be handled securely.
+The application uses external libraries like faiss, nltk, and transformers for advanced functionalities.
+Ensure proper error handling and logging for all endpoints and services.
+The catalogsamples_table and all related logic have been fully removed from the codebase and documentation.
+All business logic, API payloads, and database models are now consistent with the new domain/catalog terminology and config-driven architecture.
+
+
+
+Contexts (Table Metadata) Management
+
+Overview
+The contexts module (formerly catalogs) provides endpoints and logic for managing normalized table metadata, including tables, columns, rules, and their relationships to domains and catalogs. All endpoints and models use the new ORM structure, and all business logic is based on domain and catalog (not system/category/role).
+
+Bulk Upload Endpoint
+Path: /api/v1.0/contexts/upload_contexts
+Method: PUT
+Description:
+Uploads context metadata (tables, columns, rules, etc.) via CSV files. Each context (table) can be mapped to multiple catalogs. The upload logic uses the new normalized ORM models and relationships.
+Payload:
+
+
+files (List[UploadFile], required): CSV files for tables and columns (prefix T_ for tables, C_ for columns)
+
+domain (str, required): The domain name
+
+catalogs (List[str], required): List of catalog names to map each context to
+
+archive (bool, required): Archive status
+
+Behavior:
+
+Validates domain and catalogs
+For each table, creates a Table ORM object (with domain and mapped catalogs)
+For each column, creates a TableColumn ORM object linked to the table
+For each rule, creates a TableRule ORM object linked to the table
+All relationships are normalized; no JSON/array fields are used
+
+
+Fine-Grained Metadata Endpoints
+
+
+/add_column (POST): Add a column to a table
+
+/update_column (PUT): Update a column
+
+/delete_column/{columnid} (DELETE): Delete a column
+
+/add_rule (POST): Add a rule to a table
+
+/update_rule (PUT): Update a rule
+
+/delete_rule/{ruleid} (DELETE): Delete a rule
+
+/update_table_metadata (PUT): Update table description, usage patterns, and catalog mapping
+
+All endpoints use domain and catalog identifiers, not system/category/role.
+
+ORM Model Structure
+
+
+Table: Represents a context/table, linked to domain and catalogs
+
+TableColumn: Represents a column, linked to a table
+
+TableRule: Represents a rule, linked to a table
+
+TableMapping: Maps tables to multiple catalogs
+
+
+Example Usage
+Upload Contexts:
+
+PUT /api/v1.0/contexts/upload_contexts
+Content-Type: multipart/form-data
+files: [T_tables.csv, C_columns.csv]
+domain: "Sales"
+catalogs: ["Finance", "HR"]
+archive: false
+
+
+Add Column:
+
+POST /api/v1.0/contexts/add_column
+{
+  "tableid": 123,
+  "name": "amount",
+  "data_type": "FLOAT",
+  "description": "Transaction amount"
+}
+
+
+Update Table Metadata:
+
+PUT /api/v1.0/contexts/update_table_metadata
+{
+  "tableid": 123,
+  "table_description": "Updated description",
+  "usage_patterns": ["pattern1", "pattern2"],
+  "catalog_ids": [1, 2]
+}
+
+
+
+Migration Notes
+
+All legacy endpoints and logic using system/category/role have been removed or refactored.
+All business logic, API payloads, and database models are now consistent with the new domain/catalog terminology and normalized structure.
+
+======================================================
+WEBVTT
+
+1 "Shunmugaraj Balasekaran" (4024866304)
+00:00:00.040 --> 00:00:17.320
+Yeah, but at least Yeah whatever that you know actually right like if you could give them the clarity, it will be right and we will we will try to figure out if something is, I mean if everybody has to learn, we will figure it out, figure it out, how to do that.
+
+2 "Akhilesh Pothuri" (3007772672)
+00:00:18.207 --> 00:00:22.647
+Okay, ok. So, here you go.
+
+3 "Shunmugaraj Balasekaran" (4024866304)
+00:00:25.147 --> 00:00:28.386
+Yeah. Go ahead Raj. Yeah, one thing.
+
+4 "Rajender Nednur" (2623207168)
+00:00:28.702 --> 00:00:59.422
+Actually when talking through it, right? Because one of the thing that I was asking one of the things I was asking this team to help out was integrate with looker core as well, right? Like while talking through it, right? Kind of point out those things as well, right? Like where to do that external integration, API integration and others as well, right? Like just at a high level. Yeah, but we might have to need more than one call. I think this one call is.
+
+5 "Shunmugaraj Balasekaran" (4024866304)
+00:01:00.086 --> 00:01:08.685
+Call, whatever we could cover in this call we'll cover, and we'll set up a follow up call. I think right even I don't want them to basically have everything in one call.
+
+6 "Rajender Nednur" (2623207168)
+00:01:09.426 --> 00:01:11.786
+Yeah. Right. Yeah.
+
+7 "Shunmugaraj Balasekaran" (4024866304)
+00:01:12.424 --> 00:01:21.504
+Makes sense. Yeah dear I I am connected from my mobile but please ask questions if you need any clarification. I have recorded also, ok?
+
+8 "Diya Jain" (3754390272)
+00:01:22.766 --> 00:01:22.885
+Sure.
+
+9 "Akhilesh Pothuri" (3007772672)
+00:01:26.744 --> 00:01:40.424
+Okay, let me just to start with, right, so the code is available under auto bi, auto bill service.
+
+10 "Akhilesh Pothuri" (3007772672)
+00:01:41.339 --> 00:02:00.500
+I guess I've given access to both of you today. So within auto BS service you can find the latest branch we was deployed, which is the protected branch. So, this has all the backend service code and to just go over over a high level of what exactly.
+
+11 "Akhilesh Pothuri" (3007772672)
+00:02:00.900 --> 00:02:06.059
+Was does basically given, sorry. Yeah.
+
+12 "Shunmugaraj Balasekaran" (4024866304)
+00:02:09.096 --> 00:02:10.216
+Okay.
+
+13 "Akhilesh Pothuri" (3007772672)
+00:02:12.375 --> 00:02:13.415
+Right, just give me a second.
+
+14 "Akhilesh Pothuri" (3007772672)
+00:02:26.594 --> 00:02:43.595
+So just to give you a high level overview of what exactly Keyworse does is basically given a user language question, right? Or, you know, just given a user question, we try to look at context, which is your table metadata and identify the right set of tables columns to uncomfor.
+
+15 "Akhilesh Pothuri" (3007772672)
+00:02:43.640 --> 00:03:04.280
+Got into a SQL query. Now the SQL query is gonna be executed against the database, like say you come from EA, right? So EA probably has access to GCP database GCP prod. So we look at the GCP prod tables that you have access to. We write, we try to write the SQL query, we execute the SQL query, come back with the records, then also.
+
+16 "Akhilesh Pothuri" (3007772672)
+00:03:05.329 --> 00:03:21.530
+We write an we give out a summary based on the data, based on the user question, based on the user background. We summarize the data, we generate some visualizations and pop it up on screen, right? So this is just a high level of what exactly QoS does, ok?
+
+17 "Akhilesh Pothuri" (3007772672)
+00:03:23.949 --> 00:03:37.110
+So to show you how the flow, this is how it starts with. So given a user question, we 1st fetch the database details which identify if it has to go to GCP if it has to go to Postgres or any other database.
+
+18 "Akhilesh Pothuri" (3007772672)
+00:03:37.680 --> 00:03:57.560
+Then, we look into thinkffordge. So Thinkforce is basically our cache framework, so any frequent questions that you have or, you know, any template questions that you have could could be stored in this particular cache. So next time when someone comes with similar questions or comes with the same question, you can just look into the cache, look at the reasoning traces and try to answer the question. Now, if we are if you don't find the question of.
+
+19 "Akhilesh Pothuri" (3007772672)
+00:03:58.200 --> 00:04:12.800
+Question cache, then we fall back to the context. Now context is where you have your table metadata. So we have table metadata like you know table descriptions column descriptions and you know, what are your categorical variables, any.
+
+20 "Akhilesh Pothuri" (3007772672)
+00:04:13.020 --> 00:04:32.740
+In a primary key or if it's a null key or any such information. So all that metadata is available in this context search. So what we do is we have a vector, we use PG vector. We identify the top hundred tables, let's say for instance, you take the identify the top hundred tables relevant to the user question based on the table descriptions.
+
+21 "Akhilesh Pothuri" (3007772672)
+00:04:33.020 --> 00:04:58.059
+And once you have those hundred tables, you go to 2nd step of filtering to the LLM, where LLM is gonna identify the top five tables. Now, once you have this top five tables, we pull up the relevant columns column descriptions, and based on certain filters like so we have a filter for you know the token count if let's say a particular table has about 250 columns. So rather than sending all the 250 columns to LLM, right? We do a further.
+
+22 "Akhilesh Pothuri" (3007772672)
+00:04:59.668 --> 00:05:24.029
+So we try to identify if, you know, any particular column is relevant to the user question and we take only those subset of columns tables to the LLM asking you to write a SQL query. Now, once the query is generated or we validated for three checks. So one is for if it's a valid select query. Next, does it have any like it shouldn't have any columns or tables. 3rd, if it is an executable query.
+
+23 "Akhilesh Pothuri" (3007772672)
+00:05:25.349 --> 00:05:38.429
+Which means if it's in the right syntax. So once the execution is done, then we go to the final output where you write a summary and you also generate the visualizations. So this is the high level flow diagram, so if you have any questions so far, just let me know.
+
+24 "Shunmugaraj Balasekaran" (4024866304)
+00:05:41.196 --> 00:05:42.316
+Okay.
+
+25 "Vudumula Lila Srinivas Reddy" (3979008256)
+00:05:43.775 --> 00:05:44.936
+No, this is good.
+
+26 "Kiran Mahesh Nalam Durga" (2036525056)
+00:05:46.892 --> 00:06:00.532
+No, probably one one query from my side. So when we say about a semantic search tools pull out the relevant tables, right? Tables is nothing but what we store it as a single entry in the context, right, Raj?
+
+27 "Akhilesh Pothuri" (3007772672)
+00:06:01.455 --> 00:06:05.614
+Oh, so let me show you how the metadata looks as well.
+
+28 "Shunmugaraj Balasekaran" (4024866304)
+00:06:08.510 --> 00:06:09.630
+Okay.
+
+29 "Akhilesh Pothuri" (3007772672)
+00:06:09.852 --> 00:06:21.451
+So let me switch to admin and if I go to context to EA analytics.
+
+30 "Akhilesh Pothuri" (3007772672)
+00:06:23.168 --> 00:06:50.808
+Okay, so let's say, this particular table, right, the loyalty table. So the metadata of this includes your table description and some, you know, additional information like your column names, column analysis, the data types or categorical variables etc. So what we do is 1st look at the table description. So given the user question, the search is happening on the table descriptions if you know how close of a matches it. Now We've.
+
+31 "Kiran Mahesh Nalam Durga" (2036525056)
+00:06:51.672 --> 00:06:54.792
+Yeah, this is semantic search we are doing around the table description.
+
+32 "Akhilesh Pothuri" (3007772672)
+00:06:55.412 --> 00:07:03.892
+Right, so you're using PG vector here which does your search for you, which basically applies to signed similarity to identify the right set of tables.
+
+33 "Kiran Mahesh Nalam Durga" (2036525056)
+00:07:06.030 --> 00:07:12.671
+Okay, ok, sure. And how it is we will.
+
+34 "Akhilesh Pothuri" (3007772672)
+00:07:12.789 --> 00:07:13.629
+Let's take it offline.
+
+35 "Kiran Mahesh Nalam Durga" (2036525056)
+00:07:16.493 --> 00:07:25.974
+So it's technically the similarity between the query and the description of each table and then you'll be pulling the top hundred tables which matches this and further you will be proceeding.
+
+36 "Akhilesh Pothuri" (3007772672)
+00:07:26.191 --> 00:07:44.591
+Forward, right? Right. So once you have the top hundred tables, then you go back to the LLM saying, hey, these are the tables my PG vector has shortlisted given given the user question. Now please look at the table descriptions and any other information that I provide to further shortlist shortlist this to top five tables.
+
+37 "Akhilesh Pothuri" (3007772672)
+00:07:44.639 --> 00:07:44.919
+That's.
+
+38 "Kiran Mahesh Nalam Durga" (2036525056)
+00:07:47.033 --> 00:07:54.952
+Got it, got it. And one one small thing this PG vector, right? So you'll be storing all those details as a flat file in the vector database, is it?
+
+39 "Akhilesh Pothuri" (3007772672)
+00:07:56.014 --> 00:08:12.374
+So yeah so right now what we have is we we for PG vector, we store the embeddings in the postgress tables itself. Got it. So the PG vector extension, so all you have to do is just create a vector column, dump your embeddings in it, that's it.
+
+40 "Kiran Mahesh Nalam Durga" (2036525056)
+00:08:12.965 --> 00:08:19.726
+But whenever a user comes and add a context at the backend, it will be converted into an embedding and stored it into the post.
+
+41 "Akhilesh Pothuri" (3007772672)
+00:08:20.667 --> 00:08:25.827
+Yes, exactly. Yes. The table descriptions will be converted into embeddings and stored in all the postgress.
+
+42 "Kiran Mahesh Nalam Durga" (2036525056)
+00:08:26.406 --> 00:08:31.366
+Okay, this, this logic is handled at a UI react level or is it a backend APS that we don't.
+
+43 "Akhilesh Pothuri" (3007772672)
+00:08:32.087 --> 00:08:45.967
+Oh, it's the backend API. So there's another tool which is the context builder which helps us doing all of this stuff like you know generating the metadata and dumping it into the tables. And QoS is gonna connect to our triple A data.
+
+44 "Kiran Mahesh Nalam Durga" (2036525056)
+00:08:47.266 --> 00:08:50.265
+Okay, got it. Okay.
+
+45 "Akhilesh Pothuri" (3007772672)
+00:08:52.428 --> 00:09:09.788
+Okay so yeah so the table since we're here, so the metadata looks something like this, it has components like this, then you have some or you have the option to add rules. So like for instance, if you see this table has to be joined on, you know, customer ID and mtn. So by default probably the LLM would you know.
+
+46 "Akhilesh Pothuri" (3007772672)
+00:09:10.159 --> 00:09:28.759
+When writing joint conditions, it would have just looked at customer ID, right? It would have made assumptions to join only on customer ID, but since each customer has multiple phone numbers of, you know, mtns, you can exclusively say that, you know, whenever you're joining this table with other tables, please use these two columns, so like you're sort of providing guidance to it.
+
+47 "Akhilesh Pothuri" (3007772672)
+00:09:29.379 --> 00:09:44.659
+So that all of that comes under rules. Then usage patterns is basically kind of indicating where exactly or you know in which scenarios can this table be used. So this is also passed when after the LLM and shortlisting the tables or you know to when you're identifying the top five.
+
+48 "Kiran Mahesh Nalam Durga" (2036525056)
+00:09:46.062 --> 00:09:51.543
+Okay, so given the rules also been sent to the LLM to shortlist the top five.
+
+49 "Akhilesh Pothuri" (3007772672)
+00:09:52.764 --> 00:09:54.324
+Yes yes yes, we do.
+
+50 "Kiran Mahesh Nalam Durga" (2036525056)
+00:09:56.547 --> 00:09:59.426
+Okay, so how do we make sure that this rule talks about.
+
+51 "Akhilesh Pothuri" (3007772672)
+00:10:00.468 --> 00:10:10.309
+Sorry, rules are not being passed for table shortlisting, it's the just table description and usage patterns that are being passed. Rules are passed at the next level when you're actually going for this.
+
+52 "Kiran Mahesh Nalam Durga" (2036525056)
+00:10:11.727 --> 00:10:17.886
+But if if a rule says that you need to talk to a different table and table is not part of top five, then how are we handling that?
+
+53 "Akhilesh Pothuri" (3007772672)
+00:10:19.907 --> 00:10:52.227
+So, ok, that's a good question. So if it's not part of the top five, ideally the query is actually coming out wrong, right? So it would still restrict to whatever the top top five short listed and it's gonna try to execute that I mean, you know, write a query based out of it. Now what happens is if the query is not following any of those three checks that we talked about, like the select query clause syntax clause and highlights nations. If either of those fail, it's gonna go back and you know repeat the process or it's gonna go back to the LLM say that, you know, hey, the query that you generated is wrong, please again, please redo the query.
+
+54 "Kiran Mahesh Nalam Durga" (2036525056)
+00:10:53.106 --> 00:11:03.826
+Okay so like during that executable query checks, this will be identified and send it back. Okay. Thanks.
+
+55 "Akhilesh Pothuri" (3007772672)
+00:11:05.566 --> 00:11:14.606
+So yeah, so this is on the metadata part and, so, yeah, ok. So the cache framework also.
+
+56 "Brahmanand Singh" (1869123072)
+00:11:14.957 --> 00:11:32.717
+One question sorry the rules, right? You mentioned the the rules like in this table we have customer ID and MTN, so like, does it parses the rules based on if there is a constraint defined on the table or like how does this this comes out? You like or someone needs to manually add it?
+
+57 "Akhilesh Pothuri" (3007772672)
+00:11:33.386 --> 00:12:04.267
+Yeah, so the rules are something we manually add today based on our experience like once you start interacting with the tool, you know where exactly the tool is failing, right? And if you know the tool cause, why is it failing, you can convert that root cause into a rule or you know some kind of an instruction and pass it here. The tool by itself when it's generating the metadata, it does make some assumptions and gives you out some rules, but we are not really using it today because we didn't really find that as useful as what you know are the rest of the metadata.
+
+58 "Akhilesh Pothuri" (3007772672)
+00:12:04.419 --> 00:12:05.218
+That's being generated.
+
+59 "Brahmanand Singh" (1869123072)
+00:12:06.126 --> 00:12:15.207
+Okay, so so can can the tool read, I'm just asking this because we may have a diagram, right? Like A diagram where we define the table's relationship.
+
+60 "Akhilesh Pothuri" (3007772672)
+00:12:15.286 --> 00:12:15.846
+Tips and all.
+
+61 "Brahmanand Singh" (1869123072)
+00:12:16.507 --> 00:12:24.027
+So is, is that have the capability to to pass that and get the current current like correct rules which is defined in that diagram?
+
+62 "Akhilesh Pothuri" (3007772672)
+00:12:24.405 --> 00:12:43.125
+Got it. So NO, this rules is not just restricted to ok it applies to the scenario like you know when you're talking about joint conditions, right? So when you wanna join based on customer ID and MTN, so that definitely makes sense to write a rule. But the rules are more of other instructions as well like say are you talking about smartphone updates, right?
+
+63 "Akhilesh Pothuri" (3007772672)
+00:12:43.529 --> 00:13:03.209
+So this is one scenario where smartphone we had this question regarding smartphone upgrades and there was this particular column in the table which had you know upgrade flag, which is basically a boolean value. Now by default would say that, hey, you're asking me for upgrades, so this column has a boolean value for upgrade flags, I'm gonna use this column, right? But, the.
+
+64 "Akhilesh Pothuri" (3007772672)
+00:13:03.529 --> 00:13:24.329
+Which your logic for upgrades is completely different. There were like, you know, four or five filter conditions that we had to do, like, you know, we have to change if it's an existing customer or if it's a returning customer or you know or some sort of filters. So now the LLM wouldn't understand like even if you pass the diagram or even if you passed the actual data by itself, the LLM wouldn't by default know that. So that is what the rules actually come in.
+
+65 "Brahmanand Singh" (1869123072)
+00:13:25.244 --> 00:13:26.964
+Got it, got it, makes sense, thanks.
+
+66 "Akhilesh Pothuri" (3007772672)
+00:13:27.586 --> 00:13:54.945
+And, just to cover another thing, so this is something else called catalog rules. Now, what you're looking at here is table level rules, right? Which is manually fed, so today if I go to the tool, I ask some questions if it fails, if I find the root cause I'm coming in here, putting the rule, right? So there's something else that is called catalog rules, which is basically defined our rules at the global level. So which is kind of common to all the tables that you have under that particular configuration.
+
+67 "Akhilesh Pothuri" (3007772672)
+00:13:55.409 --> 00:14:17.409
+Right for that particular user or, you know, for that particular domain. So now how this is generated is, let's say you come into the tool, you ask a question and the tool responds for the SQL query, but you're not satisfied with it, right? So you know this particular query is wrong. So what you do you could do is there's an option for you to give feedback. So let me probably run an example and see.
+
+68 "Akhilesh Pothuri" (3007772672)
+00:14:21.069 --> 00:14:48.829
+Okay, so what so you have an option to give feedback. So when you give a feedback, you can say I have a, you know, negative feedback, you can select what are the query issues that you found based on the query generated or type in your feedback and submit it. So now, now what it does, it's basically gonna look at your feedback, look at the metadata that it referred to while writing the query and try to come up with some rules. It's gonna write some rules by itself and that is part of the catalog rules.
+
+69 "Akhilesh Pothuri" (3007772672)
+00:14:49.588 --> 00:15:06.069
+Okay, so now you see a query was generated and say this query is incorrect I can just go and say that, you know, you I gave a feedback saying that hey the query that you generated is wrong for so and so reason. At that point it's gonna give you a rule saying, ok, so to make this query actually work, this is something that I need to follow.
+
+70 "Akhilesh Pothuri" (3007772672)
+00:15:06.998 --> 00:15:20.959
+Okay so e.g. when analyzing customer sentiment changes during the call, you use sentiment scores from the beginning, middle and end of, you know, to identify the trends. So this is something the machine by itself or the tool by itself based on your feedback.
+
+71 "Akhilesh Pothuri" (3007772672)
+00:15:23.760 --> 00:15:24.479
+Okay.
+
+72 "Brahmanand Singh" (1869123072)
+00:15:25.817 --> 00:15:26.818
+Does that make sense? Yeah.
+
+73 "Diya Jain" (3754390272)
+00:15:28.278 --> 00:15:29.398
+Okay.
+
+74 "Brahmanand Singh" (1869123072)
+00:15:30.899 --> 00:15:32.498
+Yeah, I got it.
+
+75 "Kiran Mahesh Nalam Durga" (2036525056)
+00:15:32.496 --> 00:15:36.175
+So under our global configuration, I may have a number of.
+
+76 "Brahmanand Singh" (1869123072)
+00:15:36.621 --> 00:15:47.980
+Like tables and all defined and then if for each query, if I'm running and then if I provide the proper feedback it will go and update the rules based on the, the.
+
+77 "Akhilesh Pothuri" (3007772672)
+00:15:48.259 --> 00:16:07.659
+Right, if a rule already existing, then it's gonna update it based on your current feedback. Like it's gonna check which is valid and it's gonna update it. If a relevant rule is not available, it's gonna add a new rule. Now, again, this is kind of a developer interface, right? So where our developer can come and give the feedback and you know, insert the rule by itself.
+
+78 "Akhilesh Pothuri" (3007772672)
+00:16:07.939 --> 00:16:23.978
+But once we expose this to the users, right, and we are actually giving it to the end user, it wouldn't be a direct integration, it's I mean direct addition. It's gonna go through routes where you know some SMEs gonna have to approve it and then, you know, actually add the rule so that it doesn't really impact the performance.
+
+79 "Kiran Mahesh Nalam Durga" (2036525056)
+00:16:25.106 --> 00:16:29.666
+And how is the, how is this rule comes in while generating the next SQL.
+
+80 "Akhilesh Pothuri" (3007772672)
+00:16:29.938 --> 00:17:00.017
+So when yeah good question. So now once the table identification is done, right? So let's say it shortlisted the five tables, it's listed you know the columns, it has the shortlisted metadata, the final metadata. The next step, what it's gonna do is look into the catalog rules. So it's gonna come into the catalog rules, it's got this table tags to it, so it knows, ok, which rule applies to which set of tables, right? So if any of those five tables are listed in each of these rules, it's gonna do a search on it, it's gonna.
+
+81 "Akhilesh Pothuri" (3007772672)
+00:17:00.239 --> 00:17:15.599
+To find, let's say it's gonna do a simple TF idea search, right? So it's gonna do a search. It's gonna find the top ten relevant catalog rules given the user question and add it to the metadata that was being passed or that was being shortlisted earlier.
+
+82 "Kiran Mahesh Nalam Durga" (2036525056)
+00:17:16.459 --> 00:17:23.100
+Okay, when you say ten relevant means like again we are pulling out all the rules related to this tags, right?
+
+83 "Akhilesh Pothuri" (3007772672)
+00:17:25.900 --> 00:17:41.020
+Yes, so based on your roles that your domain and then the tables, it's gonna pull in those rules, let's say your short listed five tables has a cumulative of 30 catalog rules. So it's gonna do a search on this and find the top ten rules today.
+
+84 "Kiran Mahesh Nalam Durga" (2036525056)
+00:17:41.999 --> 00:17:43.799
+Okay, so how do we find this top ten?
+
+85 "Akhilesh Pothuri" (3007772672)
+00:17:46.162 --> 00:17:49.521
+Which it's creating here yes.
+
+86 "Kiran Mahesh Nalam Durga" (2036525056)
+00:17:51.614 --> 00:17:54.094
+Okay, so similarity with the query?
+
+87 "Akhilesh Pothuri" (3007772672)
+00:17:54.279 --> 00:18:00.239
+And with the user question and all the rule rule definition. Rule definitions, ok.
+
+88 "Akhilesh Pothuri" (3007772672)
+00:18:01.122 --> 00:18:02.242
+Okay.
+
+89 "Kiran Mahesh Nalam Durga" (2036525056)
+00:18:06.059 --> 00:18:07.339
+Okay, we'll more on.
+
+90 "Akhilesh Pothuri" (3007772672)
+00:18:07.721 --> 00:18:26.442
+Okay, so this is again just a high level you know how exactly it works. Now if we have to move to the cache framework, so intent registry will be with your cache framework and you can see how, yeah, so this cache entries are ok sorry.
+
+91 "Brahmanand Singh" (1869123072)
+00:18:28.740 --> 00:18:29.860
+Okay.
+
+92 "Akhilesh Pothuri" (3007772672)
+00:18:30.580 --> 00:18:51.340
+Yeah, so cache entries are basically say you have some frequently asked questions or you know any set of known questions that you have, right? So you know that your particular team is gonna ask repeatedly these set of questions. So what you could do is come into the cache, give your question, give us or give the SQL query and or, you know, let it generate reasoning. So.
+
+93 "Akhilesh Pothuri" (3007772672)
+00:18:51.719 --> 00:19:13.559
+Let's say or take an example. Yeah, so let's say I came to my cache I entered this particular question, I gave a sequel query. Now the tool, what it's gonna do is generate reasoning traces by looking at the metadata of the tables that were used here. So you don't have to provide the metadata, you just, I mean you don't have to give us the table names. Once you give the SQL query, it's gonna identify what tables are being used.
+
+94 "Akhilesh Pothuri" (3007772672)
+00:19:13.919 --> 00:19:30.279
+What columns are being used. It's gonna go back to the metadata builder, in the context builder, pull the relevant information like your table descriptions column descriptions for it. Go to the LLM say, hey, this is the metadata that I have. This was the user question and this is the expected SQL query. Now, please generate some DSL traces for me.
+
+95 "Akhilesh Pothuri" (3007772672)
+00:19:30.819 --> 00:19:50.659
+Right? So the traders are gonna be stored as part of the cash framework. So next time what happens is you come with a new questions like here it says histogram view of calls being transferred entire 0123 updated three, right? I mean number of transfers zero one to three. So let's say you come in with a new question saying, I want number of transfers 567. What it's gonna do, it's gonna.
+
+96 "Akhilesh Pothuri" (3007772672)
+00:19:50.659 --> 00:20:06.298
+You look at the traces, it's gonna look at the sequel query and try to update it with your new question. So this way you don't have to go through the entire flow, all you have to do is look into your cache for relevant question. Does that make sense?
+
+97 "Kiran Mahesh Nalam Durga" (2036525056)
+00:20:07.530 --> 00:20:25.050
+Got it. I mean there are few queries, right? I mean the components that we're using it, I mean, this forge, think forge and couple of other postgres. Is it is it something that we're planning to move it into a GCP native? Because Thinkforge I don't think so this is coming from the GCP native side of it, right?
+
+98 "Akhilesh Pothuri" (3007772672)
+00:20:25.930 --> 00:20:28.571
+This is deployed in our GCP right now.
+
+99 "Kiran Mahesh Nalam Durga" (2036525056)
+00:20:30.911 --> 00:20:38.791
+Okay, ok. And, and this caching mechanism i remember Vegas has exposed a couple of APIs.
+
+100 "Kiran Mahesh Nalam Durga" (2036525056)
+00:20:39.649 --> 00:20:42.129
+Right? Okay. Conversation analytics.
+
+101 "Akhilesh Pothuri" (3007772672)
+00:20:42.508 --> 00:20:56.147
+Taking the. Correct, so the conversational analytics is I think it's it's taking a different route where it also has your chat history in place, right? If I'm not.
+
+102 "Akhilesh Pothuri" (3007772672)
+00:20:56.969 --> 00:20:57.129
+It's.
+
+103 "Rajender Nednur" (2623207168)
+00:20:59.907 --> 00:21:00.947
+Has additional function.
+
+104 "Akhilesh Pothuri" (3007772672)
+00:21:01.469 --> 00:21:05.228
+Like, you know, it's not just for our SQL frameworks like you were saying something.
+
+105 "Rajender Nednur" (2623207168)
+00:21:06.106 --> 00:21:24.665
+No, NO, I was just gonna explain like from a Vegas perspective, Vegas caching is very different. So it is basically creating that conversational cache. Here what you are doing is, this is not a cash cache per se, this is basically what you're doing is it's persisting well known.
+
+106 "Rajender Nednur" (2623207168)
+00:21:27.499 --> 00:21:45.139
+Natural language queries to the SQL query mapping, right? So it's very different than that, which you can technically extend this particular framework to any sort of, similar entity. This is not related to the conversational caching part of it, right? Which is what.
+
+107 "Rajender Nednur" (2623207168)
+00:21:45.139 --> 00:22:10.619
+What Vegas was doing. Vegas basically wants to implement this as well, but I've not, at least mike Tang wanted to integrate it, but I have not heard from that team. So basically we have given them this code. If they integrated, we don't have to maintain this part. The thing for we don't have to maintain it. So yeah, at least just long story short, it's, it's a different one than what Vegas has today.
+
+108 "Kiran Mahesh Nalam Durga" (2036525056)
+00:22:11.991 --> 00:22:20.831
+Got it got it sure and then talking to LLM and generating that response, storing that prompt and all, are we using the Vegas layer of it or.
+
+109 "Akhilesh Pothuri" (3007772672)
+00:22:21.346 --> 00:22:36.506
+Correcting directly? Yes. So we have all the prompts in Vegas today. So so we have some use cases defined for and flash and we have it under multiple concepts.
+
+110 "Brahmanand Singh" (1869123072)
+00:22:38.744 --> 00:22:39.584
+Okay.
+
+111 "Akhilesh Pothuri" (3007772672)
+00:22:39.779 --> 00:22:44.180
+So yeah, we do use like this for that. Oh, ok. Okay.
+
+112 "Kiran Mahesh Nalam Durga" (2036525056)
+00:22:48.085 --> 00:22:49.965
+Sure, we'll more.
+
+113 "Akhilesh Pothuri" (3007772672)
+00:22:50.663 --> 00:22:56.342
+Yeah, ok. So this is with the cash framework, so we've learned through.
+
+114 "Brahmanand Singh" (1869123072)
+00:22:58.503 --> 00:23:07.704
+One question, right? So, so this all thing for general is currently installed in GCP autonomous network project space?
+
+115 "Rajender Nednur" (2623207168)
+00:23:10.352 --> 00:23:34.112
+Correct yes yeah the JPUB, that's right, yeah. Which which which we might have to move at some point of time, I I I have talked to Rajesh about it as well that we probably might be a good idea to create a different ID and move this stuff into the new space. But yeah, it might be another three months down the road we should plan for it.
+
+116 "Brahmanand Singh" (1869123072)
+00:23:34.392 --> 00:23:42.311
+Okay, and this is everything is on the GKEE cluster created under autonomous network space and then running on top of it.
+
+117 "Rajender Nednur" (2623207168)
+00:23:44.833 --> 00:23:47.513
+I think backend did you deploy I.
+
+118 "Akhilesh Pothuri" (3007772672)
+00:23:48.874 --> 00:23:50.314
+Oh, not yet, not yet ye.
+
+119 "Rajender Nednur" (2623207168)
+00:23:51.373 --> 00:24:20.133
+Yeah, that's being that's the it's work today might be today or tomorrow. It's gonna be available by the end of the day today or late or by the end of the day tomorrow. We should have it in in the back end auto BI. Think forge is already there. The front end is already there. The backend auto BI is currently on open edge which we are moving to GCP.
+
+120 "Brahmanand Singh" (1869123072)
+00:24:21.452 --> 00:24:31.211
+Okay, got it. Thanks. Thanks a lot. Probably what if it is in the GCP probably then we will be able to now access it from India as well from the dev perspective I believe.
+
+121 "Rajender Nednur" (2623207168)
+00:24:33.154 --> 00:24:37.074
+How is it? You can't access I mean anyway it's gonna be available by tomorrow.
+
+122 "Kiran Mahesh" (2304045312)
+00:24:38.709 --> 00:24:51.350
+Probably we'll have another call because you want to understand the backend deployment components, access and all we don't want to disturb this call for sure but these are the queries definitely we have it.
+
+123 "Rajender Nednur" (2623207168)
+00:24:52.307 --> 00:24:53.467
+Yeah, sounds good, yeah.
+
+124 "Kiran Mahesh" (2304045312)
+00:24:55.933 --> 00:24:56.453
+We'll move on.
+
+125 "Akhilesh Pothuri" (3007772672)
+00:24:59.549 --> 00:25:21.748
+So, yeah, so this is different high level overview of how exactly keywords works. Now we can just go into the code as well, just again a high level explanation. Okay, so the entry point again is the source folder within source, you have a config setup where I load all the environment variables.
+
+126 "Akhilesh Pothuri" (3007772672)
+00:25:23.759 --> 00:25:41.238
+Or you know the passwords or configurations or anything as such everything is coming in the config setup. Then comes your app with your name, which imports multiple routers under routers directory you'll find different types of routers. So let's say Genie is the.
+
+127 "Akhilesh Pothuri" (3007772672)
+00:25:42.319 --> 00:26:07.439
+Endpoint or you know the router which is converting taking your user question, trying to convert into the SQL query. The rest of them are like for feedbacks, context as basically, if someone wants to add new metadata or you know update existing metadata, all of that comes into context. Authentication, quarter level analytics, like, you know, if you want to look at how many tokens you have been using or you know, if you want to look at the usage stats, all of that comes under app data, then session.
+
+128 "Akhilesh Pothuri" (3007772672)
+00:26:07.579 --> 00:26:28.938
+This is basically where we are trying to manage the user history and all of that. So the endpoints related to that. So every folder or every router has the same structure of a controller file and a service file. So controller file defines your routers or your classes and the functionality respective functionality of the endpoint is listed under the service.pile.
+
+129 "Akhilesh Pothuri" (3007772672)
+00:26:29.229 --> 00:26:48.109
+Okay and for Genie or like you know for the text to SQL endpoint, we have three endpoints. Let me open the swagger. So we have three endpoints, one is.
+
+130 "Akhilesh Pothuri" (3007772672)
+00:26:48.569 --> 00:27:08.169
+Yeah. So the 1st is ask and act, which is basically a simple API that we expose to, you know, other tools if you wanna, if someone wants to integrate with the chatbot, where you come and give your user question or the chat ID is an optional field or you give your user question, you pass which you wanna interact with. So you have the option to.
+
+131 "Akhilesh Pothuri" (3007772672)
+00:27:08.409 --> 00:27:30.608
+Communicate with pro or flash. You can enable or disable if you want to look at the summary of visualizations and you can also set the temperatures as per your choice. Now, ask an act as basically a simple API which once given a user question, it's gonna write the SQL query through the flow and give you the output as a single JSON response. The next one is the streaming.
+
+132 "Akhilesh Pothuri" (3007772672)
+00:27:30.938 --> 00:28:02.059
+Endpoint, which we use it on our QoS playground screen. So once you start asking the question, it's it's basically streaming response, so everything that's happening, it's gonna just it's gonna communicate with you after each step. The functionality behind the scenes is still the same. It's just streaming versus non streaming. Then we have the 3rd endpoint which is converse, which is our point, so if you go to the chatbot screen, this basically has conversation caching in it. So every question that you ask on this chart is gonna be stored in the chat history, so we have Redis.
+
+133 "Akhilesh Pothuri" (3007772672)
+00:28:02.409 --> 00:28:23.089
+As well as the Postgres tables for chart history. So Redis stores your chart for about a week and anything beyond that that's gonna be from your postgres tables. Yeah so these are the three endpoints that we, that do the job for us and coming back to the repository.
+
+134 "Akhilesh Pothuri" (3007772672)
+00:28:26.089 --> 00:28:44.889
+Then comes the agents folder where, so this is where we have to bring in the agent, so today we have the catalogs agent which is basically the metadata agent where it's looking into the metadata find trying to find your similar description table descriptions column descriptions, all the similarity search, It's all gonna happen.
+
+135 "Akhilesh Pothuri" (3007772672)
+00:28:46.359 --> 00:29:05.999
+Then thinkfulget agent is basically calling the Thinkforce tool. It's it's a simple API call. Given the user question, it's gonna, you know, come back with the response. And NLQ agent is where I call the LLM. This is the global script we had to yeah, so yeah NLQ.
+
+136 "Akhilesh Pothuri" (3007772672)
+00:29:06.309 --> 00:29:17.788
+Agent is basically the agent which calls the LLM with your shortlisted metadata and gets back with your SQL query. Okay, yeah.
+
+137 "Kiran Mahesh" (2304045312)
+00:29:18.078 --> 00:29:27.838
+I'm sorry when we say we call LLM insights API from yes.
+
+138 "Akhilesh Pothuri" (3007772672)
+00:29:29.218 --> 00:29:45.537
+So flow urgent is basically where I try to validate, you know, the initial stuff like, you know, validating the user request if it's coming from a valid session ID or if, you know, if the user actually belongs to the given domain or catalog, then fetching your database details.
+
+139 "Akhilesh Pothuri" (3007772672)
+00:29:46.119 --> 00:30:03.039
+Or like you know based on this user that's coming in the SQL query validations like you know the three checks that we talked about. So all of the validations are happening under our flow agent. So if you wanna add new functionality, so the entry point would be your genie.
+
+140 "Akhilesh Pothuri" (3007772672)
+00:30:03.909 --> 00:30:23.229
+Where you go to service.I say that, you know, hey, flow, please call the agent in flow. Flow is gonna in return call the. So moving on then the LLM folder has also a controller file where it's setting up the configurations to.
+
+141 "Akhilesh Pothuri" (3007772672)
+00:30:23.389 --> 00:30:40.709
+All the Vegas endpoint, and we have a loop for Vegas as well, so you can set the max number of attempts. So say oh Vegas sometimes runs into timeout issues or, you know, any other issues, right? So in such cases, instead of just you know without like you know.
+
+142 "Akhilesh Pothuri" (3007772672)
+00:30:40.999 --> 00:30:59.799
+In order to not be like, you know, we didn't respond to a question, we just have a max items too, but it's gonna try for like three to five times for Vegas to respond. And the respective functions or the LLM functions for different functionalities that we have comes under services.pie so like for instance.
+
+143 "Akhilesh Pothuri" (3007772672)
+00:31:00.959 --> 00:31:26.559
+This is function determined question history. So given a user question, if it's coming from chatbot, it's gonna check if, you know, this question is relevant to the prior chat history or not. And similarly, the other functionalities for generating SQL queries, suggesting tables columns, follow up questions, all of it come here. Now the respective output structure for this is defined under pyrantic passers, so we have classes defined for each of the calls that you make. You have a pyrantic structure assigned to it.
+
+144 "Akhilesh Pothuri" (3007772672)
+00:31:27.449 --> 00:31:47.329
+Right, so this way your outputs are always consistent or, you know, in the consistent format so all of this comes under LLM start LLM and moving on to the database connections for, the table architectures, I mean, you know, the QoS architecture, all of the data.
+
+145 "Akhilesh Pothuri" (3007772672)
+00:31:47.369 --> 00:32:05.169
+Tables you can find under models.pyro. So whatever the different tables that we have, the tables we have everything listed under here, and the respective functionality is service.py, the communication is under service.py, and all of this follow the ORM structure.
+
+146 "Brahmanand Singh" (1869123072)
+00:32:06.916 --> 00:32:08.036
+Okay.
+
+147 "Akhilesh Pothuri" (3007772672)
+00:32:08.417 --> 00:32:08.897
+Okay.
+
+148 "Brahmanand Singh" (1869123072)
+00:32:12.396 --> 00:32:13.315
+Okay.
+
+149 "Akhilesh Pothuri" (3007772672)
+00:32:13.515 --> 00:32:23.196
+Oh, yeah, so any questions so far? Again I just covered on, you know, the high level scripts.
+
+150 "Kiran Mahesh" (2304045312)
+00:32:27.316 --> 00:32:43.957
+I'm not specific, I mean this is a huge information for us today just for sure. And this is similar to one we had reviewed with india side also when it comes to networking. So we will be reusing the same networking framework but we have it for this correctly.
+
+151 "Akhilesh Pothuri" (3007772672)
+00:32:45.918 --> 00:32:48.397
+Can you be a little more specific on like, you know.
+
+152 "Kiran Mahesh" (2304045312)
+00:32:49.256 --> 00:33:05.896
+The the streaming API, the query and ask API to generate the SQL statement and and conversational feature over here and the UI part of it will borrow it from but we'll be enhancing.
+
+153 "Akhilesh Pothuri" (3007772672)
+00:33:07.796 --> 00:33:16.916
+We didn't really borrow it from network genie. Again, it might be following the same structure, but it wasn't actually borrowed from network genie.
+
+154 "Kiran Mahesh" (2304045312)
+00:33:16.935 --> 00:33:32.135
+Okay so if I understand it, I mean it's an extension of we understand all these APIs have been deployed in the same G.
+
+155 "Akhilesh Pothuri" (3007772672)
+00:33:33.593 --> 00:33:44.554
+Yeah JPOV yes. So I guess QoS alone is right now in space. But we're gonna change that to JPOV as well.
+
+156 "Kiran Mahesh" (2304045312)
+00:33:46.155 --> 00:33:52.954
+Okay, I'm not completely aware of this part of GCP projects that we have it.
+
+157 "Akhilesh Pothuri" (3007772672)
+00:33:55.053 --> 00:33:55.894
+Yes, it is, it is.
+
+158 "Kiran Mahesh" (2304045312)
+00:33:57.756 --> 00:34:15.236
+Okay. I'm not sure whether she has this details but I mean can you help us what are the projects, which Kubernetes clusters and and also the prompt use cases that they're using for these particular extractions if you can help us that kick start.
+
+159 "Akhilesh Pothuri" (3007772672)
+00:34:16.756 --> 00:34:32.196
+Yeah, sure, sure. I'll give you all the Kubernetes details and for Vegas prompts I think I can just add you as in I I mean I can probably give you access to the use cases or if you want to be if you want the prompts to be listed under a Word document I could do.
+
+160 "Kiran Mahesh" (2304045312)
+00:34:32.253 --> 00:34:35.132
+That as well. No problem there are some you know.
+
+161 "Akhilesh Pothuri" (3007772672)
+00:34:36.275 --> 00:34:43.555
+Sure, I'll give you the studio access but you know some of them are like, you know, obsolete or like, you know, really old or test kind of context.
+
+162 "Shunmugaraj Balasekaran" (4024866304)
+00:34:46.167 --> 00:34:49.607
+A document actually that would be helpful, so we can track of it.
+
+163 "Akhilesh Pothuri" (3007772672)
+00:34:49.735 --> 00:34:57.815
+So separately. Yeah, that would be good. Yeah I'll give you I have an Excel sheet where I've listed the actual current or currently used use cases I'll probably give access to that.
+
+164 "Kiran Mahesh" (2304045312)
+00:34:58.833 --> 00:35:00.913
+Yeah, and also the use case name so that.
+
+165 "Akhilesh Pothuri" (3007772672)
+00:35:01.053 --> 00:35:02.293
+That can also be helpful.
+
+166 "Kiran Mahesh" (2304045312)
+00:35:04.834 --> 00:35:17.873
+You'll be reaching out to those particular use cases. If you want to have it in Excel again we need to create it from scratch, right? To have this integration, so yes, as an Excel sheet and also add us into the particular.
+
+167 "Akhilesh Pothuri" (3007772672)
+00:35:18.149 --> 00:35:33.429
+Use cases. I'll do that yes. So for the use cases, how we call it today is like if you go into models, so we have directories for each model we use. So let's say if you have we have a model registry where you're pulling the respective model class.
+
+168 "Akhilesh Pothuri" (3007772672)
+00:35:33.779 --> 00:35:47.418
+And if I, if I want to go to Gemini Pro so the structure is pretty much the same, right? So all you're changing is the use case name. So the use case is kind of hard coded based on which model you select and the context ID is a variable coming in from your script.
+
+169 "Kiran Mahesh" (2304045312)
+00:35:49.299 --> 00:35:50.819
+Got it. Sure help.
+
+170 "Akhilesh Pothuri" (3007772672)
+00:35:52.496 --> 00:35:52.576
+Yeah.
+
+171 "Kiran Mahesh" (2304045312)
+00:35:54.314 --> 00:36:10.274
+And also when you talk about Kubernetes, not just kubernetes, right? I mean, the components that we use it, the postgres, any other components that we're using respect to project details or the server details where we can look in. So, so that we will understand the access related.
+
+172 "Akhilesh Pothuri" (3007772672)
+00:36:11.813 --> 00:36:12.773
+Sure, definitely yes.
+
+173 "Kiran Mahesh" (2304045312)
+00:36:14.366 --> 00:36:25.887
+And and last question, do we have any flow diagrams where when a user asks a query, it talks to this particular API and then falls back to this API and then at the end we'll be responding back to the CCP.
+
+174 "Akhilesh Pothuri" (3007772672)
+00:36:27.633 --> 00:36:37.474
+So I do have some architecture documents, but I'm still updating it. I guess you could still take a look at the core documentation for now, but once I update I'll give you the updated part.
+
+175 "Kiran Mahesh" (2304045312)
+00:36:38.090 --> 00:36:47.410
+So all those things can be deployed as I mean, as services in the Kubernetes and we'll be exposing it via.
+
+176 "Akhilesh Pothuri" (3007772672)
+00:36:48.955 --> 00:37:07.115
+Correct. Okay. So right now every all of these functionalities are exposed under DNS or you know load balancer. The idea would be to break it down into further microservices at a later point of time, like where authentication has its own load balancing.
+
+177 "Akhilesh Pothuri" (3007772672)
+00:37:07.129 --> 00:37:12.849
+So then, you know, context builder has its own balance and all of that. I mean they have their respective DNS configured.
+
+178 "Shunmugaraj Balasekaran" (4024866304)
+00:37:14.682 --> 00:37:14.923
+Okay.
+
+179 "Kiran Mahesh" (2304045312)
+00:37:16.344 --> 00:37:23.984
+Okay. Okay.
+
+180 "Akhilesh Pothuri" (3007772672)
+00:37:29.385 --> 00:37:39.425
+Okay, so I think we have covered pretty much everything. Is please go through the documentation once and I'll as well keep updating this.
+
+181 "Diya Jain" (3754390272)
+00:37:41.719 --> 00:37:42.839
+Okay.
+
+182 "Akhilesh Pothuri" (3007772672)
+00:37:45.222 --> 00:37:48.262
+Any other questions from him?
+
+183 "Kiran Mahesh" (2304045312)
+00:37:50.242 --> 00:37:57.122
+No, you have this documentation, other access details that we can talk internally to get this?
+
+184 "Shunmugaraj Balasekaran" (4024866304)
+00:37:59.202 --> 00:38:02.802
+No, I have only the Git Link I don't have any other documentation.
+
+185 "Kiran Mahesh" (2304045312)
+00:38:04.341 --> 00:38:07.301
+Okay, when you say about documentation that you.
+
+186 "Akhilesh Pothuri" (3007772672)
+00:38:08.842 --> 00:38:18.722
+Yeah, in the same get repo you have the documentation file. Let me I'll I'll share that I'll share the branch details and everything.
+
+187 "Kiran Mahesh" (2304045312)
+00:38:19.663 --> 00:38:25.703
+Okay, and also who from India from your team that will be coordinating with this?
+
+188 "Shunmugaraj Balasekaran" (4024866304)
+00:38:27.082 --> 00:38:35.803
+Yeah right now we are the one who's going to get involved in this actually, NO other person.
+
+189 "Kiran Mahesh" (2304045312)
+00:38:37.361 --> 00:38:39.762
+Oh, got it. Okay.
+
+190 "Shunmugaraj Balasekaran" (4024866304)
+00:38:43.498 --> 00:38:45.818
+Thank you, thank you. This was really helpful.
+
+191 "Akhilesh Pothuri" (3007772672)
+00:38:46.456 --> 00:38:46.496
+Yeah.
+
+192 "Kiran Mahesh" (2304045312)
+00:38:49.258 --> 00:38:50.978
+Thanks. Thanks. Thank you.
