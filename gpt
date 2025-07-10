@@ -190,6 +190,73 @@ Conclusion
 
 QVerse provides an intelligent and extensible platform for translating business questions into executable queries using a blend of caching, metadata, and LLMs. Its modular architecture ensures flexibility, scalability, and maintainability across different domains and use cases.
 
+
+
+End-to-End Design Explanation (Code Perspective)
+The entire codebase is designed around a modular, agent-based architecture using FastAPI, where each major task — such as request handling, SQL generation, caching, summarization, and visualization — is handled by specialized classes and utilities. The entry point is main.py, which sets up the FastAPI server, adds security and observability (JWT auth + Prometheus), and routes incoming API calls to different controllers like authentication, genie (AutoBI), feedbacks, models, and contexts.
+
+🧠 Flow Orchestration with flow_agent.py
+The central orchestrator for a user’s query is the Flow class. It provides multiple async methods that drive the request from validation to execution:
+
+validate_user_request() validates the session ID against the backend database and retrieves domain-specific configuration. It also sets up initial tracking using chat history logging.
+
+fetch_db_details() connects to the appropriate data source by decoding credentials and determining the database type from catalog configuration. The DB connection object is saved into the artifacts dictionary for reuse.
+
+thinkforge_search() and ask_thinkforge() interact with the cache layer, ThinkForge, to find existing SQL queries related to the user’s NLQ. If an exact match is found, it is reused. If only similar queries are found, an LLM is used to generate SQL using reasoning_trace.
+
+catalogs_search() initiates catalog-based semantic search using vector similarity (PGVector), TF-IDF on rules, and table metadata. The context is built and then sent to the LLM for SQL generation.
+
+validate_response() plays a key role in checking whether the generated SQL is a valid SELECT query. If execution fails, it retries with a corrected query using LLM error understanding. This retry happens up to 3 times.
+
+execute_query() is responsible for running the final query, formatting the result DataFrame (especially dates and nested objects), and calling the LLM to generate chart visualizations and textual summaries. It combines these results into a structured response and updates chat history with SQL, visualization, and summary.
+
+📚 Context Building with catalog_agents.py
+The Catalog_lookup class builds the context required for SQL generation. It uses PGVector to find the top-matching tables and fields, then ranks and filters the results using TF-IDF on business_rules and catalog_rules. If the full metadata exceeds token limits, it uses LLM again to shortlist relevant columns dynamically. This context is eventually passed to the NLQ Agent for SQL generation.
+
+🧠 Cache Layer with thinkforge_agent.py
+The ThinkForge class handles all operations related to caching and reuse of past queries:
+
+retrieve_cache() finds semantically similar past queries from a dedicated cache API.
+
+insert_cache() stores successful NLQ → SQL mappings for future reusability.
+
+ask_cache() sends the user’s query to ThinkForge’s LLM backend to reason and generate SQL if similar examples exist.
+
+🤖 SQL Generation with nlq_agent.py
+The Agents class handles context-driven SQL generation:
+
+find_context_vdb() retrieves semantic context from a vector store based on the document type (rules, descriptions, etc.).
+
+generate_query() takes the enriched context and passes it to the LLM for query generation, extracting follow-up questions, token usage, tables referred, and confidence score.
+
+🛠 Utility Modules
+AppDatabase manages all persistent operations like chat history, session validation, and metadata retrieval.
+
+LLM is a centralized service that wraps LLM functionality: SQL generation, follow-up creation, query correction, summarization, and visualization.
+
+logger_capture ensures structured logging at every step (debug/info/error), useful for debugging and monitoring.
+
+📦 The Artifacts Dictionary
+At the heart of this orchestration is the artifacts dictionary, which acts like a session-wide container. It carries essential inputs and outputs between stages (e.g., user query, DB connection, context, LLM response, final SQL, chart info, and summary). Each function updates and passes artifacts forward — keeping the design stateless and scalable.
+
+Would you like this explanation inserted into your Word doc / PDF or exported as a Markdown or slide format?
+
+
+
+
+
+
+
+
+Ask ChatGPT
+
+
+
+Tools
+
+
+
+ChatGPT can make mistakes. Check important info. See Cookie Preferences.
 ============
 
 main.py
