@@ -1,3 +1,74 @@
+
+
+QVerse End-to-End Flow
+=======================
+
+                      ┌─────────────────────┐
+                      │   User Interface    │
+                      │ (AutoBI / Genie UI) │
+                      └─────────┬───────────┘
+                                │
+                                ▼
+                  ┌───────────────────────────┐
+                  │   FastAPI (main.py)       │
+                  │ - JWT Auth & CORS         │
+                  │ - API Route Dispatching   │
+                  └─────────┬─────────────────┘
+                            │
+                            ▼
+            ┌────────────────────────────────────┐
+            │            Flow Agent              │
+            │ (flow_agent.py - Flow class)       │
+            └────────────────┬───────────────────┘
+                             │
+        ┌────────────────────┼────────────────────────────┐
+        ▼                    ▼                            ▼
+┌────────────────┐  ┌─────────────────────┐       ┌────────────────────┐
+│Validate Session│  │Fetch DB Connection  │       │ ThinkForge Search  │
+│ & Chat History │  │ (Teradata, etc.)    │       │ & Reasoning Layer  │
+└────────────────┘  └─────────────────────┘       └────────────────────┘
+         │                   │                            │
+         └────────────┬──────┴──────────────┬────────────┘
+                      ▼                     ▼
+           ┌────────────────┐    ┌─────────────────────────────┐
+           │ Catalog Lookup │    │ VectorDB (Metadata Context) │
+           └────────────────┘    └─────────────────────────────┘
+                      │                     │
+                      ▼                     ▼
+            ┌────────────────────────────────────────┐
+            │        Agents.generate_query           │
+            │ - Uses LLM to generate SQL             │
+            │ - Extracts follow-up, metadata, etc.   │
+            └────────────────┬───────────────────────┘
+                             ▼
+               ┌────────────────────────────┐
+               │ validate_response (SQL     │
+               │ validation + error fix via │
+               │ LLM correction loop)       │
+               └────────────────────────────┘
+                             ▼
+               ┌────────────────────────────┐
+               │  SQL Execution via DB      │
+               │  with Time Tracking        │
+               └────────────────────────────┘
+                             ▼
+         ┌─────────────────────────────────────────────┐
+         │ execute_query:                              │
+         │ - Format result (JSON, datetime handling)   │
+         │ - LLM calls for visualization & summary     │
+         └─────────────────────────────────────────────┘
+                             ▼
+               ┌────────────────────────────┐
+               │   Final Response to UI     │
+               │ - SQL + Results + Charts   │
+               │ - Summary + Follow-ups     │
+               └────────────────────────────┘
+
+
+
+
+
+
 QVerse Codebase Design Document
 
 Overview
