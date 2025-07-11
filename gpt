@@ -1,3 +1,36 @@
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   QVerse End-to-End Flow                                    │
+│                                                                                            │
+│ 1. User inputs a query via Genie UI (FastAPI endpoint triggered).                          │
+│                                                                                            │
+│ 2. Request is passed through JWT authentication middleware.                                │
+│                                                                                            │
+│ 3. `Flow.validate_user_request()` validates session, logs history, loads config.           │
+│                                                                                            │
+│ 4. `Flow.fetch_db_details()` connects to Teradata or configured DB using secure credentials.│
+│                                                                                            │
+│ 5. `Flow.thinkforge_search()` or `Flow.ask_thinkforge()` checks if similar NLQ exists.     │
+│     - If cache hit → use cached SQL.                                                       │
+│     - Else → use reasoning trace + LLM to create SQL.                                      │
+│                                                                                            │
+│ 6. If cache fails, `Catalog_lookup.generate_catalog_query()` retrieves vector-based context│
+│     - Uses PGVector + TF-IDF over table metadata and business rules.                       │
+│                                                                                            │
+│ 7. `Agents.generate_query()` sends metadata context to LLM to generate SQL + follow-ups.   │
+│                                                                                            │
+│ 8. `Flow.validate_response()` ensures query is syntactically valid and retry up to 3x      │
+│     - Auto-corrects SQL via LLM if execution fails.                                        │
+│                                                                                            │
+│ 9. Final query is executed on DB. Results are captured and formatted using Pandas.         │
+│                                                                                            │
+│10. `Flow.execute_query()` calls LLM again to generate:                                     │
+│     - Recommended visualizations (chart type + fields)                                     │
+│     - Summary or insights from result set                                                  │
+│                                                                                            │
+│11. Final output returned to UI:                                                            │
+│     - SQL, Data, Visuals, Summary, Follow-ups, Metadata                                    │
+│                                                                                            │
+└────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 QVerse End-to-End Flow
