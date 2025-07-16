@@ -1,13 +1,28 @@
-[{"source":"https://docs.google.com/document/d/1o8ZDnDV2yYn3ZBzPQI0J827e4ZkVVKqY/edit","index": 0, "pretext": "Functional Area: bu_enablement \n Topic: bu_enablement, verizon,onboarding, gcp,data,access,request,gk1v,zdwv,marketplace,git,jenkins,composer,user,mandatory,training,netgroup,esp,eis,NOGSAM,workload,pbrun,gcs"},
-{"source":"https://docs.google.com/document/d/1FWZVf60ZXHiteHgd6gqU6E2NfQ68_sn8/edit","index": 1, "pretext": "Functional Area: bu_enablement \n Topic:Entity-Relationship,ERD,BigQuery,access,UG,data,tables,queries,review,lob,missing,job,active,inactive,ssot"},
-{"source":"https://docs.google.com/document/d/14ebtzKWeN2oTe7xNbFtIxp-ps3QNmFEZ/edit","index": 2, "pretext": "Functional Area: bu_enablement \n Topic:montoring,ops,operational,insight360,tool,processing,data,dashboard,download,environment"},
-{"source":"https://docs.google.com/document/d/1d_wh7qUlYxXR7R3iyS-cZq3W82HEe-su/edit","index": 3, "pretext": "Functional Area: bu_enablement \n Topic:new,gt,project,creation,devops,si,platform"},
-{"source":"https://docs.google.com/document/d/1edjJL-sTEfnTT0ORIzqqlQMvVvT_7cMg/edit","index": 4, "pretext": "Functional Area: bu_enablement \n Topic:compute,bgquery,data,access,request,queries,gk1v,zdwv,marketplace,prerequisites"},
-{"source":"https://docs.google.com/document/d/1rJ5tNZPNprPMTGevY1oNJkyFaBUpuffA/edit","index": 5, "pretext": "Functional Area: bu_enablement \n Topic:bq,migration,api,features,usage,integration,Capabilities,ai"},
-{"source":"https://docs.google.com/document/d/1kMm0OKJXLwRuJHDmNy_tytj5UpQiANHt/edit","index": 6, "pretext": "Functional Area: bu_enablement \n Topic:bi,serviceaccount,access,steps,request"},
-{"source":"https://docs.google.com/document/d/1zXlrrDSM-MAn4YDFukOjB7bayDOujPUz/edit","index": 7, "pretext": "Functional Area: bu_enablement \n Topic:naming,standard,dag,composer,current,new,sprint19,categories,format,application,target,jobs,export,egress-only,Ingestion,curation,etl,git"},
-{"source":"https://docs.google.com/document/d/1ynrUNugfSg2olE3u8ldX3WOUrTGt8bVb/edit","index": 8, "pretext": "Functional Area: bu_enablement \n Topic:business,persona,uat,issues,dag,failure,composer,pelican,mapping,airflow,bigquery,uid,datatypes,mismatch,count,teradata,access,NTL_PRD_ALLVM"},
-{"source":"https://docs.google.com/document/d/1elEHs1xhx4-85ecDumIkWQA6PHa23JFj/edit","index": 9, "pretext": "Functional Area: bu_enablement \n Topic:technical,persona,uat,issues,dag,failure,airflow,file not detected,404,faled,exception,500,dpf,cloud,function,csv,preprocessing,sql,retro,etl,json,query,attribute,error,python,InvalidArgument,pause,zero,Unavailable,bqload,Pelican,Mapping,CUST_ACCT_DEVICE_GSAM_SNSTVY_V"},
-{"source":"https://docs.google.com/document/d/1AFR7aIryjAYu5Jz0-ofAtt3qKedcHE5R/edit","index": 10, "pretext": "Functional Area: bu_enablement \n Topic:RBAC,strategy,Migration,guidelines,user,persona,mappings,developer,consumer,access,management,teradata,provisioning,request,marketplace,mapping,objects,gcp,project,space,information,user,end-to-end,bulk,onboarding,challenges,role,control"},
-{"source":"https://docs.google.com/document/d/1w3WixCBWtZGdQUIfPVK-QE3vNXWE_6Uj/edit","index": 11, "pretext": "Functional Area: bu_enablement \n Topic:Airflow,Composer,Overview,Environment,Deployment,Searching,Execution,Handling,Failures,Monitoring,Observability,access"},
-{"source":"https://
+from langchain.text_splitter import (
+    HTMLHeaderTextSplitter,
+    MarkdownHeaderTextSplitter,
+    SpacyTextSplitter,
+    TokenTextSplitter,
+    RecursiveCharacterTextSplitter
+)
+
+document_format = "text"  # since you're using Google Docs
+
+if document_format == "html":
+    text_splitter = HTMLHeaderTextSplitter.from_headers_to_split_on([
+        ("h1", "Title"),
+        ("h2", "Section"),
+        ("h3", "Subsection"),
+    ])
+elif document_format == "markdown":
+    text_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=[
+        ("#", "Title"),
+        ("##", "Section"),
+        ("###", "Subsection"),
+    ])
+elif document_format == "text":
+    text_splitter = SpacyTextSplitter(chunk_size=1000, chunk_overlap=200)
+elif document_format == "pdf":
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+else:
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
