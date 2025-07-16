@@ -1,3 +1,4 @@
-os.environ['ES_API_KEY'] = "S0Uw1khrX01cVV4U1pJMHDPUW6YjduxXYnNJ5bilaek9bQkdCek5jQQ=="
-os.environ['ES_API_URL'] = "https://vectordb-experimentation-np.ebiz.verizon.com"
-os.environ['ES_INDEX_NAME'] = "jysv-dpf-dev"
+# ✅ Fill values or pull from os.environ
+api_url = os.environ['ES_API_URL']  # e.g., 'https://vectordb-experimentation-np.ebiz.verizon.com'
+api_key = os.environ['ES_API_KEY']
+index_name = os.environ['ES_INDEX_NAME']
