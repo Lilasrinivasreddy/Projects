@@ -1,25 +1,728 @@
+# Retrieval-Augmented Generation (RAG) Application Documentation
+## Introduction
+
+This notebook provides an guide to setting up and using the Retrieval-Augmented Generation (RAG) application. RAG is a technique that combines retrieval-based methods with generative models to produce high-quality, contextually relevant responses. This document will cover each component of the RAG pipeline, including the embedding model service, vector search service, cross-encoder reranker, and LLM integration via the VEGAS platform.
+## Real-World Use Cases and Scenarios
+
+- **Customer Support Bots**: Enhance automated responses by retrieving and generating contextually relevant answers, improving user satisfaction.
+- **Knowledge Management**: Assist in navigating large document corpora by retrieving and summarizing relevant information.
+- **Content Recommendations**: Use context-aware retrieval to suggest articles or products based on user queries.
+### Architecture Overview
+The RAG system integrates several services to perform an efficient retrieval and generation process:
+
+- **Embedding Model Service**: Converts input queries into numerical vectors (embeddings) that represent the semantic meaning of the text.
+- **Vector Search Service**: Uses the generated embeddings to fetch relevant documents from a pre-built vector index.
+- **Cross-Encoder Reranker Service**: Re-ranks the retrieved documents based on their contextual relevance to the input query.
+- **LLM Integration via VEGAS Platform**: Utilizes a large language model (LLM) to generate coherent and contextually appropriate responses based on the most relevant documents.
+### Simple RAG Architecture Diagram
+
+![RAG Architecture Diagram](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*u4wm-Jn1ZnGhSxxhBLx_CA.png)
+The diagram above illustrates the flow of data through the RAG pipeline, highlighting the interaction between the embedding service, vector search, cross-encoder reranker, and LLM integration.
+### Compliance and Legal Approval
+
+Models that has been used underwent review ensuring that their deployment complies with internal and external regulations, including fairness and transparency and have been legally approved under Verizon’s Model Management Guidelines. This process ensures the models adhere to strict compliance and ethical guidelines, reducing risks such as bias and privacy concerns.
+
+#### Model details used for embedding service and cross encoder re-ranker
+- **Model Used**: `sentence-transformers/all-distilroberta-v1 
+    - **Link**: https://huggingface.co/sentence-transformers/all-distilroberta-v1`
+
+- **Model Used**: `ms-marco-MiniLM-L-12-v2`
+    - **Link**: https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2
+## Setup and Prerequisites
+### Environment Setup
+
+To get started, ensure you have the following Python packages installed:
+import warnings
+warnings.filterwarnings("ignore")
+! pip3 install fastapi -i https://oneartifactoryprod.verizon.com/artifactory/api/pypi/Pypi-remote/simple
+! pip3 install requests -i https://oneartifactoryprod.verizon.com/artifactory/api/pypi/Pypi-remote/simple
+! pip3 install pydantic -i https://oneartifactoryprod.verizon.com/artifactory/api/pypi/Pypi-remote/simple
+! pip3 install uvicorn -i https://oneartifactoryprod.verizon.com/artifactory/api/pypi/Pypi-remote/simple
+### Configuration
+Set up your environment variables for API keys and endpoints if required:
 import os
-from langchain.text_splitter import (
-    HTMLHeaderTextSplitter,
-    SpacyTextSplitter,
-    RecursiveCharacterTextSplitter
-)
 
-# Choose your document format
-# Options: "html", "text", "pdf"
-document_format = "text"  # 👈 For Google Docs plain text
+# teams need to procure apigee key from https://publisher.developers.verizon.com/dashboard
+# for more detailed steps checkout GET Vegas Apigee Key
+# https://oneconfluence.verizon.com/display/GEN/VEGAS+User+Guide
+os.environ['DEV_API_KEY'] = 'noio4yaGDAUnSk8zo1J42j3pJHHXLqBl'
+os.environ['UAT_API_KEY'] = 'tHg4R3CFo74nGbAjHONOgPg2iHZS2L96'
+os.environ['EMBEDDING_ENDPOINT'] = 'https://oa-dev2.ebiz.verizon.com/vegas/models/llm-embeddings'
+os.environ['VECTOR_SEARCH_ENDPOINT'] = 'https://oa-dev2.ebiz.verizon.com/vegas/vector-search/generic-v1/api'
+os.environ['CROSS_ENCODER_ENDPOINT'] = 'https://oa-uat.ebiz.verizon.com/vegas/models/api'
+os.environ['LLM_ENDPOINT'] = 'https://oa-uat.ebiz.verizon.com/vegas/apps/prompt/LLMInsight'
+## 1. Embedding Model Service
+### Description
 
-# Auto-select the best splitter
-if document_format == "html":
-    text_splitter = HTMLHeaderTextSplitter.from_headers_to_split_on([
-        ("h1", "Title"),
-        ("h2", "Section"),
-        ("h3", "Subsection"),
-    ])
-elif document_format == "text":
-    text_splitter = SpacyTextSplitter(chunk_size=1000, chunk_overlap=200)
-elif document_format == "pdf":
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-else:
-    # Fallback
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+The Embedding Model Service transforms textual input into a numerical format (embeddings) that can be processed by subsequent components. Embeddings are dense vector representations that capture the semantic meaning of the input text, enabling similarity-based searches and comparisons.
+### Compliance and Legal Approval
+The **DistilRoBERTa** model used for embedding generation is legally approved as part of Verizon's **Model Management Guidelines**. This ensures that the model adheres to Verizon’s enterprise-wide processes, mitigating risks such as bias and unethical outcomes
+#### How It Works
+
+- **Input**: A text query is submitted to the service.
+- **Processing**: The service uses a pre-trained language model to convert the text into a fixed-size vector (embedding).
+- **Output**: A numerical vector representing the input text.
+### Technical Details
+
+- **Model Used**: `sentence-transformers/all-distilroberta-v1 
+- **Link**: https://huggingface.co/sentence-transformers/all-distilroberta-v1`
+  - This model is a distilled version of RoBERTa, optimized for generating embeddings. It provides a good balance between speed and accuracy, making it suitable for real-time applications like search and retrieval.
+### Request Body Explanation
+
+- **`region`**: Specifies the geographic region where the model is deployed, e.g., `"us-east4"`.
+- **`project_id`**: The Google Cloud project ID where the service is hosted.
+- **`endpoint_id`**: The unique identifier for the specific model endpoint used for embedding generation.
+- **`usecase_name`**: Describes the use case, such as `"llm-embeddings"`, indicating this service generates embeddings using an LLM.
+- **`model_type`**: The type of model used, here it is `"llm-embeddings"`.
+- **`input_request`**: Contains the actual input text that needs to be embedded, structured as a list of instances.
+### Response Explanation
+
+- **`embedding`**: A list of floating-point numbers representing the embedding vector (e.g., `[0.01069031376391649, ...]`). This vector typically has a dimensionality of 768 or more, depending on the model used.
+
+### API Call
+import requests
+import json
+
+url = os.environ['EMBEDDING_ENDPOINT']
+
+payload = json.dumps({
+    "text" : "Report to DAG Team",
+    "model_name" : 'all-distilroberta-v1'
+
+})
+headers = {
+    'X-apikey': os.environ['DEV_API_KEY'],
+    'Content-Type': 'application/json'
+}
+
+response = requests.post(url, headers=headers, data=payload)
+embedding = response.json()
+print("Generated Embedding:", embedding)
+print("Dimensions of the Generated Embedding:", len(embedding))
+### Explanation
+
+This API call sends a text query to the Embedding Model Service, which returns a numerical vector representing the text's semantic meaning. This embedding is then used for similarity-based searches.
+## 2. Vector DB
+
+
+### 2.1 Vector Search
+### Description
+
+The Vector Search Service retrieves relevant documents based on the similarity of their embeddings to the query embedding. The service leverages a vector search engine, such as GCP’s Vector Matching Engine, to efficiently find the most similar vectors (documents) stored in an index.
+#### How It Works
+
+- **Input**: An embedding vector generated from the query text.
+- **Processing**: The service searches a vector index for documents with the closest embeddings to the input query.
+- **Output**: A list of documents ranked by their similarity to the input query.
+#### Vector Index Setup
+During the index creation process, **index structure**, **distance mechanisms** (e.g., cosine similarity, Euclidean distance) and **algorithm config** (such as TreeAh or BruteForce), **embedding dimensions**, **Machine type** and other settings are configured. These settings determine how vectors are compared and ranked for relevance.
+
+**Note:** The setup of these parameters and the creation of the index is a task that requires collaboration with the **Data Engineering Team**. This is crucial in defining the index structure, embedding dimensions, and search optimizations based on the specific use case and dataset. Once the index is created, it can be queried through the vector search API.
+- **Search Algorithm**
+![image.png](attachment:image.png)
+
+- **Distance Measure Type**
+![image-2.png](attachment:image-2.png)
+### Request Body Explanation
+
+- **`embedding`**: The query embedding generated by the Embedding Model Service.
+- **`usecase_name`**: Specifies the use case for vector search, like `"test_email_auth_vector_index"` that helps to retrieve the relevant chunks.
+- **`index_display_name`**: display name of the index from index list **(Name)**
+- **`me_index_endpoint`**: The identifier for the vector index endpoint on GCP from deployed index info. **(Index endpoint)**
+- **`deployed_index_id`**: The ID of the deployed index used for the vector search from deployed index info.. **(ID)**
+- **`num_neighbours`**: The number of nearest neighbor documents to retrieve say 5, 10 etc
+
+
+
+### Response Explanation
+
+- **`id`**: Unique identifier of the retrieved document.
+- **`distance`**: The similarity score between the query embedding and the document's embedding; lower values indicate higher similarity.
+- **`feature_vector`**: The actual embedding of the document; often returned as `null` for privacy or size reasons.
+- **`metadata`**: Additional information about the document, such as `promotion_id`, `source`, `channel_type`, `doc_title`, etc.
+### API Call
+vector_search_response = requests.post(os.environ['VECTOR_SEARCH_ENDPOINT'],
+                                       headers= {'X-apikey': os.environ['DEV_API_KEY'],'Content-Type': 'application/json'}
+,
+                                       data= json.dumps( 
+{     
+    
+
+}
+))
+
+print("Response status code:", vector_search_response)
+vector_search_results = vector_search_response.json()
+vector_search_results
+### Explanation
+
+The vector search API uses the generated embedding to find the most similar documents from the vector index. The retrieved documents are ranked based on their similarity to the input query.
+### 2.2 Elastic Search
+import requests
+import json
+
+def search_elasticsearch(api_url, api_key, index_name, query):
+    """
+    Retrieve chunks from an Elasticsearch index based on a query.
+
+    :param api_url: The base URL of the Elasticsearch instance.
+    :param api_key: The API key for authentication.
+    :param index_name: The name of the Elasticsearch index.
+    :param query: The query to search for.
+    :return: The search results.
+    """
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"ApiKey {api_key}"
+    }
+
+    search_url = f"{api_url}/{index_name}/_search"
+    payload = query
+
+    try:
+        response = requests.post(search_url, headers=headers, data=json.dumps(payload))
+        response.raise_for_status()  # Raise an error for HTTP codes 4xx/5xx
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error querying Elasticsearch: {e}")
+        return None
+
+# Example usage
+if __name__ == "__main__":
+    api_url = ""
+    api_key = ""
+    index_name = "jysv-dpf-dev"
+    query = {
+                "_source": ["chunk_data"],
+                "query": {
+                    "bool": {
+                    "filter": [
+                                {
+                                "term": {
+                                    "usecase_name": "aider"
+                                }
+                                }
+                            ],
+                    "should": [
+                        {
+                        "knn": {
+                            "field": "text_embedding_768",
+                            "query_vector": embedding,
+                            "k": 10,
+                            "num_candidates": 100
+                        }
+                        }
+                    ]
+                    }
+                }
+    }
+
+    results = search_elasticsearch(api_url, api_key, index_name, query)
+    if results:
+        print(json.dumps(results, indent=2))
+## 3. Cross-Encoder Re-ranker Service
+### Description
+
+The Cross-Encoder Reranker Service refines the initial vector search results by re-evaluating and scoring each document's relevance in relation to the input query. This service utilizes a cross-encoder model that considers both the query and document contexts to provide a more accurate ranking.
+#### How It Works
+
+- **Input**: Pairs of sentences or documents and a query.
+- **Processing**: The cross-encoder model scores each pair based on contextual relevance.
+- **Output**: A sorted list of documents based on their scores.
+### Technical Details
+
+- **Model Used**: `ms-marco-MiniLM-L-12-v2`
+- **Link**: https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2
+  - A lightweight cross-encoder model designed for re-ranking tasks in retrieval systems. It uses both the query and candidate documents to produce a relevance score, allowing for more accurate ranking compared to using embeddings alone.
+### Request Body Explanation
+
+- **`region`**: Geographic location for service deployment, e.g., `"us-east4"`.
+- **`project_id`**: The Google Cloud project ID where the service is deployed.
+- **`endpoint_id`**: The unique identifier for the cross-encoder model endpoint.
+- **`usecase_name`**: Specifies the use case, such as `"test"`.
+- **`model_type`**: Indicates the model type, here `"cross-encoder"`.
+- **`input_request`**: Contains pairs of text sentences to be scored for relevance.
+### Response Explanation
+
+- **`sentence_pairs`**: Pairs of sentences that were scored by the model.
+- **`prediction_scores`**: The relevance scores assigned to each pair by the cross-encoder model, indicating their importance.
+### API Call
+import requests
+import json
+
+url = os.environ['CROSS_ENCODER_ENDPOINT']
+
+payload = json.dumps({
+    "region": "us-east4",
+    "project_id": "688379114786",
+    "endpoint_id": "4179014998757998592",
+    "usecase_name": "cross-encoder",
+    "model_type": "cross-encoder",
+    "input_request": {
+        "instances": [
+            ["what is RAG?", "RAG is an AI framework that combines traditional information retrieval systems with generative large language models (LLMs). RAG can help generate more accurate, up-to-date, and relevant text"],
+            ["what is RAG?", "Retrieval-augmented generation (RAG) is a technique for enhancing the accuracy and reliability of generative AI models with facts fetched from external sources."]
+        ]
+    }
+})
+
+headers = {
+    'X-apikey': os.environ['UAT_API_KEY'],
+    'Content-Type': 'application/json'
+}
+
+response = requests.post(url, headers=headers, data=payload)
+reranked_results = response.json()
+
+print("Reranked Results:", reranked_results)
+### Explanation
+
+The reranker API enhances the relevance of search results by rescoring each document in the context of the input query. This step ensures that the most contextually appropriate documents are used for the next stages.
+## 4. LLM Integration via VEGAS Platform
+### Description
+
+The VEGAS platform integrates large language models (LLMs) with prompt engineering to produce contextually relevant responses. By carefully crafting prompts and selecting appropriate models, VEGAS ensures high-quality output aligned with the desired use case.
+#### How It Works
+
+- **Input**: A query, along with the top context extracted from previous steps.
+- **Processing**: The LLM processes the query and context to generate a response.
+- **Output**: A text-based response that answers the input query.
+### Request Body Explanation
+
+- **`useCase`**: Defines the specific use case, such as `"COMMON_RAG"`.
+- **`contextId`**: Identifies the context type; in this example, `"GENERIC"`.
+- **`preSeed_injection_map`**: Contains context information extracted from the reranker to enhance the query.
+- **`{QUESTION}`**: Represents the user's query or question.
+### Response Explanation
+
+- **`prediction`**: The generated response from the LLM, tailored to the input query and context.
+- **`transactionMetadata`**: Metadata about the transaction, often used for debugging or logging purposes.
+- **`responseMetadata`**: Contains additional metadata about the response, such as `vegasTransactionId`, `timeTaken`, `httpStatusMessage`, and `httpStatusCode` etc.
+### API Call
+import requests
+import json
+
+url = os.environ['LLM_ENDPOINT']
+
+payload = json.dumps({
+  "useCase": "COMMON_RAG",
+  "contextId": "GENERIC",
+  "preSeed_injection_map": {
+    "{CONTEXT}": "RAG is an AI framework that combines traditional information retrieval systems with generative large language models (LLMs). RAG can help generate more accurate, up-to-date, and relevant text",
+    "{QUESTION}": "what is RAG?"
+  }
+})
+
+headers = {
+    'X-apikey': os.environ['UAT_API_KEY'],
+    'Content-Type': 'application/json'
+}
+response = requests.post(url, headers=headers, data=payload)
+llm_response = response.json()
+
+print("LLM Response:", llm_response.get('prediction'))
+import requests
+import json
+
+url = os.environ['LLM_ENDPOINT']
+
+payload = json.dumps({
+  "useCase": "CR_SPACE",
+  "contextId": "flash",
+  "preSeed_injection_map": {
+   
+  }
+})
+
+headers = {
+    'X-apikey': os.environ['UAT_API_KEY'],
+    'Content-Type': 'application/json'
+}
+response = requests.post(url, headers=headers, data=payload)
+llm_response = response.json()
+
+print("LLM Response:", llm_response.get('prediction'))
+### Explanation
+
+The VEGAS platform's LLM API call leverages prompt engineering to produce a high-quality response, contextualized by the previous steps in the RAG pipeline.
+## 5. End-to-End RAG Flow
+### Description
+
+Combining all the steps into a single flow, this section demonstrates the full implementation of the RAG pipeline, from input query to final response generation.
+import requests
+import json
+
+# 0. User question
+user_query = "Airflow Composer Dag Failure Due to JSON Code Issues"
+
+# 1. Generate Embedding
+embedding_response = requests.post(os.environ['EMBEDDING_ENDPOINT'], 
+                                   headers={'X-apikey': os.environ['DEV_API_KEY'],'Content-Type': 'application/json'}, 
+                                   data=json.dumps({
+                                       "text" : user_query,
+                                       "model_name" : 'text-embedding-004'}))
+embedding = embedding_response.json()
+print("-------------------------------")
+print("Embedding Results:\n")
+print("Generated Embedding:", embedding[:20])
+print("Dimensions of the Generated Embedding:", len(embedding))
+
+# 2.1 Perform Vector Search
+# vector_search_response = requests.post(os.environ['VECTOR_SEARCH_ENDPOINT'], 
+#                                        headers={'X-apikey': os.environ['UAT_API_KEY'],'Content-Type': 'application/json'}, 
+#                                        data= json.dumps({
+#             "embedding": embedding,  # Use the embedding generated from the previous step
+#             "usecase_name": "cloudservices",
+#             "bq_table_id": "vzw_vegasde_ops_tbls.de_pipeline_metadata",
+#             "index_display_name" : "jysv_test_dpf_cloudservices_index",
+#             "deployed_index_id": "jysv_test_dpf_cloudservices_index_20250619231648",
+#             "me_index_id": "projects/975119644266/locations/us-east4/indexes/7133675421475799040",
+#             "me_index_endpoint_id": "projects/975119644266/locations/us-east4/indexEndpoints/7062444660181958656",
+#             "project_id": "vz-it-np-jysv-test-vgdedo-0",
+#             "content_field": "chunk_data",
+
+#         }))
+
+
+# vector_search_results = vector_search_response.json()
+# print(vector_search_results)
+
+# vector_search_results_contexts = vector_search_results['contexts']
+# print(vector_search_results_contexts)
+
+# 2.2 Perform Elastic Search
+query = {
+                "_source": ["chunk_data"],
+                "query": {
+                    "bool": {
+                    "filter": [
+                                {
+                                "term": {
+                                    "usecase_name": "aider"
+                                }
+                                }
+                            ],
+                    "should": [
+                        {
+                        "knn": {
+                            "field": "text_embedding_768",
+                            "query_vector": embedding,
+                            "k": 10,
+                            "num_candidates": 100
+                        }
+                        }
+                    ]
+                    }
+                }
+    }
+elastic_search_results = search_elasticsearch(api_url, api_key, index_name, query)['hits']['hits']
+# print(elastic_search_results)
+
+elastic_search_results_contexts = [contexts.get('_source').get('chunk_data') for contexts in elastic_search_results]
+print("-------------------------------")
+print("Elastic Search Results:\n")
+for ele in elastic_search_results:
+    print(json.dumps(ele))
+
+
+# 3. Re-rank Results
+sentence_pairs = [[user_query, context] for context in elastic_search_results_contexts]
+reranker_response = requests.post(os.environ['CROSS_ENCODER_ENDPOINT'], 
+                                  headers={'Content-Type': 'application/json', 'X-apikey': os.environ['UAT_API_KEY']}, 
+                                  data=json.dumps({
+    "region": "us-east4",
+    "project_id": "688379114786",
+    "endpoint_id": "4179014998757998592",
+    "usecase_name": "cross-encoder",
+    "model_type": "cross-encoder",
+    "input_request": {
+        "instances": sentence_pairs
+    }
+}))
+
+
+
+reranked_results = reranker_response.json()
+cross_scores = reranked_results[0][0].get("prediction_scores")
+context_list  = []
+for score, context in zip(cross_scores, elastic_search_results):  
+    reranked_dict = {}
+    reranked_dict['cross_score'] = score
+    reranked_dict['text'] = context
+    context_list.append(reranked_dict) 
+
+# define number of output documents
+# define number of output documents
+docs = sorted(context_list, key=lambda x:x["cross_score"], reverse=True)
+print("-------------------------------")
+print("Reranked Results:\n")
+for ele in docs:
+    print(ele) 
+
+top_doc = max(docs, key=lambda x: x['cross_score'])
+top_doc_context = top_doc['text']
+print("-------------------------------")
+print("Top document:\n")
+print(top_doc_context)
+ 
+# 4. Get LLM Response
+llm_response = requests.post(os.environ['LLM_ENDPOINT'], 
+                             headers={'Content-Type': 'application/json', 'X-apikey': os.environ['UAT_API_KEY']}, 
+                             data=json.dumps({
+        "useCase": "COMMON_RAG",
+        "contextId": "GENERIC",
+        "preSeed_injection_map": {
+        "{CONTEXT}": top_doc_context,
+        "{QUESTION}": user_query
+    }
+}))
+
+final_llm_response = llm_response.json()
+print("-------------------------------")
+print("Final Repsponse:\n")
+print(f"Final LLM Response for the user query is :", final_llm_response.get('prediction'))
+### Explanation
+
+This combined workflow demonstrates the complete RAG pipeline, showcasing how each component interacts to produce a coherent response to an input query.
+### **6. FastAPI Application**
+### Description
+This section demonstrates the full implementation of the RAG pipeline using FAST API Application, from input query to final response generation.
+
+- save filename as rag.py
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import requests
+import json
+from typing import List
+import uvicorn
+
+app = FastAPI()
+
+class QueryRequest(BaseModel):
+    query: str
+
+class RAGPipeline:
+    def __init__(self):
+        # Initialize endpoints and headers
+        self.embedding_endpoint = "https://oa-uat.ebiz.verizon.com/vegas/models/llm-embeddings"
+        self.vector_search_endpoint = "https://oa-dev2.ebiz.verizon.com/vegas/vector-search/generic-v1/api"
+        self.cross_encoder_endpoint = "https://oa-uat.ebiz.verizon.com/vegas/models/api"
+        self.llm_endpoint = "https://oa-uat.ebiz.verizon.com/vegas/apps/prompt/LLMInsight"
+        self.headers = {'Content-Type': 'application/json'}
+        self.dev_api_key = 'cxtQM1DfY51zI3x3HFFNBaUSXzfpe4D0'
+        self.api_key =  'tHg4R3CFo74nGbAjHONOgPg2iHZS2L96'
+
+    def generate_embedding(self, text: str) -> List[float]:
+        """
+        Generates an embedding for a given text using the embedding model service.
+        """
+        payload = json.dumps({
+                "text" : "How are you",
+                "model_name" : 'all-distilroberta-v1'
+            })
+        headers = {**self.headers, 'X-apikey': self.api_key}
+        response = requests.post(self.embedding_endpoint, headers=headers, data=payload)
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Error generating embedding")
+        
+        return response.json()
+
+    def vector_search(self, embedding: List[float], num_neighbours: int = 5):
+        """
+        Performs a vector search to retrieve documents similar to the query embedding.
+        """
+        payload = json.dumps({
+            "embedding": embedding,  # Use the embedding generated from the previous step
+            "usecase_name": "hr_answers_test",
+            "index_display_name": "jysv_hr_asnwers_test_index",
+            "bq_table_id": "vzw_vegasde_prd_tbls.hr_answers_metadata",
+            "num_neighbours": 5,
+            "me_index_endpoint_id" : "projects/618033124494/locations/us-east4/indexEndpoints/4897990050207236096",
+            "deployed_index_id" : "jysv_hr_asnwers_test_index_20241111164903",
+            "project_id": "vz-it-np-jysv-dev-vgdedo-0",
+            "content_field": "text"
+        })
+        headers = {**self.headers, 'X-apikey': self.dev_api_key}
+        response = requests.post(self.vector_search_endpoint, headers=headers, data=payload)
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Error in vector search")
+        
+        return response.json()
+
+    def rerank_results(self, sentences: List[dict]):
+        """
+        Re-ranks the retrieved documents based on their relevance to the query using the cross-encoder model.
+        """
+        payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "688379114786",
+            "endpoint_id": "4179014998757998592",
+            "usecase_name": "test",
+            "model_type": "cross-encoder",
+            "input_request": {"instances": sentences}
+        })
+        headers = {**self.headers, 'X-apikey': self.api_key}
+        response = requests.post(self.cross_encoder_endpoint, headers=headers, data=payload)
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Error in reranking results")
+        
+        return response.json()
+
+    def generate_llm_response(self, context: str, question: str):
+        """
+        Generates a response using the LLM with the provided context and question.
+        """
+        payload = json.dumps({
+            "useCase": "COMMON_RAG",
+            "contextId": "GENERIC",
+            "preSeed_injection_map": {
+            "{CONTEXT}": context,
+            "{QUESTION}": question
+                }
+            })
+        headers = {**self.headers, 'X-apikey': self.api_key}
+        response = requests.post(self.llm_endpoint, headers=headers, data=payload)
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Error generating LLM response")
+        
+        return response.json().get('prediction')
+
+pipeline = RAGPipeline()
+
+@app.post("/simple-rag")
+def run_rag_pipeline(request: QueryRequest):
+    """
+    Endpoint to run the full RAG pipeline: generates an embedding, performs a vector search, re-ranks results,
+    and generates a response using the LLM.
+    """
+    try:
+        
+        user_query = request.query
+        
+        # Step 1: Generate Embedding
+        embedding = pipeline.generate_embedding(user_query)
+        
+        # Step 2: Vector Search
+        vector_search_results = pipeline.vector_search(embedding)
+        
+        # Prepare data for reranking
+        vector_search_results_contexts = vector_search_results['contexts']
+        sentence_pairs = [[user_query, context] for context in vector_search_results_contexts]
+        
+        # Step 3: Re-rank Results
+        reranked_results = pipeline.rerank_results(sentence_pairs)
+        
+        # preparing the top context from cross encoder re-rerank results
+        cross_scores = reranked_results[0][0].get("prediction_scores")
+        context_list  = []
+        for score, context in zip(cross_scores, vector_search_results_contexts):  
+            reranked_dict = {}
+            reranked_dict['text'] = context
+            reranked_dict['cross_score'] = score
+            context_list.append(reranked_dict)
+        
+        docs = sorted(context_list, key=lambda x:x["cross_score"], reverse=True)
+
+        # define number of output documents
+        top_doc = max(docs, key=lambda x: x['cross_score'])
+        top_doc_context = top_doc['text']
+        
+        # Step 4: LLM Integration via VEGAS Platform
+        llm_response = pipeline.generate_llm_response(context=top_doc_context, question=user_query)
+        
+        return {"response": llm_response}
+
+    except HTTPException as e:
+        return {"error": str(e.detail)}
+
+@app.get("/health")
+def health_check():
+    """
+    Endpoint for health checks to ensure the service is running correctly.
+    """
+    return {"status": "Service is healthy"}
+
+if __name__ == "__main__":
+    uvicorn.run("hr_answers:app", host='localhost', port=2555, reload=True)
+### To Test In Postman
+
+curl --location 'http://127.0.0.1:2555/simple-rag' \
+--header 'Content-Type: application/json' \
+--data '{
+    "query": "Explain CID"
+}
+'
+### Common Issues and Solutions
+
+- **API Key Errors**: Ensure your API keys are correct and up-to-date.
+- **Response Timeouts**: Check network connectivity and API service availability.
+- **Incorrect Input Format**: Verify that all inputs match the expected formats.
+### Suggested Improvements
+
+- **Increase Number of Neighbors**: Experiment with increasing `num_neighbours` to improve context quality from vector search results.
+- **Dynamic Context Expansion**: Experiment with dynamically adjusting the number of contexts sent to the LLM based on query complexity or user feedback.
+- **Hybrid Retrieval Models**: Combine sparse and dense retrieval methods for improved recall.
+- **Incremental Index Updates**: Implement real-time indexing for the vector search service to maintain relevancy without downtime.
+- **Prompt Engineering**: Experiment with different prompt engineering techniques for the desired answer generation.
+## Security and Compliance Considerations
+
+- **Data Privacy**: Ensure no PII is inadvertently processed or exposed.
+- **Regulatory Compliance**: Adhere to GDPR, CCPA, and other relevant data protection regulations.
+- **Secure Communication**: Use HTTPS for all API calls and secure handling of API keys and sensitive information.
+## Model Evaluation Metrics and Techniques
+
+- **Vegas Evaluation API**: Evaluate using Vegas Evaluation API.
+- **LLM Response**: Utilize human evaluation for response relevance and coherence.
+- **Feedback**: Utilize users feedbacks
+## Conclusion
+
+This notebook provides a comprehensive guide to setting up and running a simple RAG application, detailing each component's role, function, and integration.
+### Further Reading
+
+- [RAG Documentation](https://aws.amazon.com/what-is/retrieval-augmented-generation/)
+- [GCP Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
+- [VEGAS Platform Guide](https://docs.google.com/document/d/1FUrndY9oyoygg8jeusD7sK8sCgjwi5uRzCfKR-qyB0E/edit#heading=h.gjdgxs)
+- [Hybrid Retrieval Models](https://towardsdatascience.com/how-to-use-hybrid-search-for-better-llm-rag-retrieval-032f66810ebe#:~:text=Hybrid%20search%20is%20the%20combination,then%20combine%20them%20later%20on.)
+import json
+import re
+
+# Input data
+data = """action|doc_id|metadata
+ADD|24076|{'document_type': 'fwa', 'action': 'ADD', 'sha1_hash': 'd3fe5cc6f9c0995fb4911077a0acd2ce3af1a563', 'file_size': 560479, 'file_ext': 'pdf', 'curated_doc': 'N', 'important_doc': 'N', 'work_types': nan, 'doc_name': 'User Guide- 5G Home Extender Mini', 'date_created': '2023-12-29 22:39', 'date_updated': '2023-12-29 22:39', 'doc_description': 'A list of items included with the LVX1 Extender Mini, an overview of the Extender Mini's features, and a description of the ports on the Extender Mini.', 'keywords': nan, 'favorite_count': 0, 'view_count': 1}
+"""
+# Process the data
+output_lines = []
+rows = data.splitlines()
+
+# Extract the header
+header = rows[0]
+output_lines.append(header)
+
+# Process each row
+for row in rows[1:]:
+    columns = row.split("|")
+    action, doc_id, metadata = columns[0], columns[1], columns[2]
+
+    # Replace single quotes with double quotes and handle invalid JSON elements
+    metadata = metadata.replace("'", '"')
+    metadata = re.sub(r'\bnan\b', 'null', metadata)  # Replace 'nan' with 'null'
+
+    # Parse the metadata into a valid JSON object
+    try:
+        metadata_json = json.loads(metadata)
+        metadata = json.dumps(metadata_json)  # Convert back to a JSON string
+    except json.JSONDecodeError as e:
+        print(f"Error decoding metadata for doc_id {doc_id}: {e}")
+        continue
+
+    # Reconstruct the row
+    output_lines.append(f"{action}|{doc_id}|{metadata}")
+
+# Join the output lines
+output_data = "\n".join(output_lines)
+print(output_data)
+
