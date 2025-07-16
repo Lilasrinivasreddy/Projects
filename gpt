@@ -1,28 +1,25 @@
+import os
 from langchain.text_splitter import (
     HTMLHeaderTextSplitter,
-    MarkdownHeaderTextSplitter,
     SpacyTextSplitter,
-    TokenTextSplitter,
     RecursiveCharacterTextSplitter
 )
 
-document_format = "text"  # since you're using Google Docs
+# Choose your document format
+# Options: "html", "text", "pdf"
+document_format = "text"  # 👈 For Google Docs plain text
 
+# Auto-select the best splitter
 if document_format == "html":
     text_splitter = HTMLHeaderTextSplitter.from_headers_to_split_on([
         ("h1", "Title"),
         ("h2", "Section"),
         ("h3", "Subsection"),
     ])
-elif document_format == "markdown":
-    text_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=[
-        ("#", "Title"),
-        ("##", "Section"),
-        ("###", "Subsection"),
-    ])
 elif document_format == "text":
     text_splitter = SpacyTextSplitter(chunk_size=1000, chunk_overlap=200)
 elif document_format == "pdf":
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 else:
+    # Fallback
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
