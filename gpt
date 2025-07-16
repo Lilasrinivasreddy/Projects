@@ -1,4 +1,1 @@
-# ✅ Fill values or pull from os.environ
-api_url = os.environ['ES_API_URL']  # e.g., 'https://vectordb-experimentation-np.ebiz.verizon.com'
-api_key = os.environ['ES_API_KEY']
-index_name = os.environ['ES_INDEX_NAME']
+Error querying Elasticsearch: Invalid URL '/jysv-dpf-dev/_search': No scheme supplied. Perhaps you meant https:///jysv-dpf-dev/_search
