@@ -1,566 +1,309 @@
-import numpy as np
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
 import json
-from datetime import datetime
+from typing import Dict, List, Type
+import requests
 from typing import Any
-from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore
-from sklearn.metrics.pairwise import cosine_similarity  # type: ignore
-from src.llm.services import LLM
-from src.utils.log_wrapper import logger_capture
-from src.config_setup import tokenizer
-from src.agents.nlq_agent import Agents
-from src.database_connections.app_database.service import AppDatabase
-from src.utils.vectorstore import VectorStore
+import warnings
+warnings.filterwarnings("ignore")
+import pandas as pd
+import gpudb
+from gpudb import GPUdbTable
+import os
+import time
+from datetime import datetime
 
-class Catalog_lookup:
 
-    @staticmethod
-    def generate_catalog_query(
-        session_logger: Any, artifacts: dict
-    ) -> tuple[dict[str, Any], float, float] | None | tuple[None, None, None]:
-        """
-        Generates a catalog-based SQL query based on the user query and collection name.
+# In[ ]:
 
-        Args:
-            session_logger (SessionLogger): The session logger instance.
-            historyid (int): The history ID associated with the request.
-            user_query (str): The user's input query.
-            system (str): The name of the collection to search in.
-            llm_model (str): The selected LLM model. Defaults to "gemini_pro".
 
-        Returns:
-            tuple: The generated query, catalog vector search time, and catalog LLM time.
-        """
+bearer = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InJlZGR5dnUiLCJwbGF0Zm9ybSI6ImF1dG9iaSIsIlN0YXJ0IFRpbWUiOiIyMDI1LTA3LTE3IDE0OjMzOjEyIn0.dImi8mvrIBB415J03LUf0i6eKjdyoVevXiPPPURxoa4"
+session_id = "0d7d5b47-5f0c-4613-a954-59b5dcca6f05"
 
-        historyid = artifacts["chat_history_id"]
-        user_query = artifacts["translated_question"] if artifacts["translated_question"] else artifacts["user_query"]
-        domain = artifacts["domain"]
-        catalog = artifacts["catalog"]
-        llm_model = artifacts["llm_model"]
-        db_type = artifacts["db_type"]
 
-        logger_capture.log_info(
-            session_logger, f"Parameters:, {user_query},{domain}"
-        )
+# In[2]:
 
-        # Process the catalog to find the best match
-        catalog_context, catalog_vector_search_time_taken = (
-            Catalog_lookup.process_catalog(
-                session_logger,
-                historyid,
-                user_query,
-                "contexts",
-                domain,
-                catalog,
-            )
-        )
 
-        logger_capture.log_debug(
-            session_logger, f"Best Match Catalog: {catalog_context}"
-        )
+questions = pd.read_csv("query_output_validation.csv")
 
-        if catalog_context:
-            query_feedbacks = AppDatabase.get_query_feedbacks(domain, catalog).to_dict(
-                "records"
-            )
-            if query_feedbacks:
-                questions = [feedback["question"] for feedback in query_feedbacks]
 
-                # Initialize the TF-IDF vectorizer
-                vectorizer = TfidfVectorizer()
+# In[ ]:
 
-                # Fit and transform the questions to TF-IDF vectors
-                tfidf_matrix = vectorizer.fit_transform(questions)
 
-                # Convert user question to TF-IDF vector
-                query_vector = vectorizer.transform([user_query])
+def converse_and_extract(df_questions):
+    """
+    Makes API calls to the 'converse' endpoint for each question,
+    extracts generated_query, history_id, and other relevant data.
 
-                # Compute cosine similarity between user question and feedback questions
-                cosine_similarities = cosine_similarity(
-                    query_vector, tfidf_matrix
-                ).flatten()
+    Args:
+        df_questions (pd.DataFrame): DataFrame with 'question' and 'expected_query' columns.
 
-                # Get the top N questions based on similarity score
-                top_indices = np.argsort(cosine_similarities)[-5:][::-1]
-                top_feedbacks = [query_feedbacks[i] for i in top_indices]
-                for feedback in top_feedbacks:
-                    feedback["query_feedback"] = (
-                        "Liked" if feedback["query_feedback"] else "Disliked"
-                    )
-            else:
-                top_feedbacks = []
-            catalog_llm_start_time = datetime.now()
+    Returns:
+        pd.DataFrame: DataFrame with question, expected_query, generated_query, history_id.
+    """
+    output_data_list = []
+    converse_url = "https://qverse-api-dev.verizon.com/api/v1.0/genie/converse"
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': bearer,
+        'X-Session-Id': session_id
+    }
 
-            # Generate the SQL query using the catalog context
-            output = Agents.generate_query(
-                session_logger,
-                historyid,
-                user_query,
-                catalog_context,
-                db_type,
-                "contexts",
-                None,
-                llm_model,
-                top_feedbacks,
-            )
-            catalog_llm_time_taken = (
-                datetime.now() - catalog_llm_start_time
-            ).total_seconds()
-            # Always return exactly 3 values
-            return output, catalog_vector_search_time_taken, catalog_llm_time_taken
-        # Always return exactly 3 values
-        return None, None, None
+    # Use iterrows() correctly to get index and row data
+    for index, row in df_questions.iterrows():
+        question = row['question']
+        expected_query = row['expected_query']
 
-    def vector_search_columns(user_query, columns_data, business_rules, catalog_rules):
-        # descriptions = [info['column_description'] for info in columns_data.values()]
-        print(catalog_rules)
-        combined_query = f"""{user_query}.
-        {' '.join(business_rules)}.
-        {'.'.join(descp['rule'] for descp in catalog_rules)}"""
-        print(combined_query)
-
-        descriptions = [
-            f"""{info['column_description']} 
-            {', '.join(info.get('possible_values', []))}
-            {info.get('categorical_definitions', '')}"""
-            for info in columns_data.values()
-        ]
-        column_names = list(columns_data.keys())
-
-        # Convert descriptions to TF-IDF vectors
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(descriptions)
-
-        # Convert user query to TF-IDF vector
-        query_vector = vectorizer.transform([combined_query])
-
-        # Compute cosine similarity between user query and column descriptions
-        cosine_similarities = cosine_similarity(query_vector, tfidf_matrix).flatten()
-
-        # Get the top 100 columns based on similarity score
-        top_indices = np.argsort(cosine_similarities)[-100:][::-1]
-        top_columns = {
-            column_names[i]: columns_data[column_names[i]] for i in top_indices
-        }
-        print("Vector Shortlisted Columns", top_columns)
-
-        return top_columns
-
-    def search_catalog_rules(user_query, tables, domain, catalog_id=None):
-        """
-        Search for catalog rules using semantic similarity based on description embeddings.
-        
-        Args:
-            user_query (str): The user's query to search for
-            tables (list[str]): List of table names to filter by
-            domain (str): Domain name to filter by
-            catalog_id (int, optional): Catalog ID to filter by
-            
-        Returns:
-            list[dict]: List of matching rules (excluding embeddings)
-        """
-        
-        # Get domain ID
-        domainid = AppDatabase.get_domainid(domain)
-        if not domainid:
-            print(f"Domain '{domain}' not found")
-            return []
-        
-        # Generate embedding for user query
-        try:
-            user_query_embedding = VectorStore.vegas_embedding(user_query)
-            if not user_query_embedding:
-                print("Failed to generate embedding for user query")
-                return []
-        except Exception as e:
-            print(f"Error generating embedding: {e}")
-            return []
-        
-        # Search for rules using semantic similarity
-        try:
-            matching_rules = AppDatabase.search_catalogrules_semantic(
-                domainid=domainid,
-                catalogid=catalog_id,
-                tables=tables,
-                query_embedding=user_query_embedding,
-                limit=5
-            )
-            
-            print(f"Found {len(matching_rules)} matching rules for tables: {tables}")
-            
-            # Return rules without embeddings (already excluded in the database method)
-            return matching_rules
-            
-        except Exception as e:
-            print(f"Error searching catalog rules: {e}")
-            return []
-
-    def flatten_metadata_to_text(metadata):
-        lines = []
-        for table_name, table_info in metadata.items():
-            table_description = table_info.get("description", "")
-            columns = table_info.get("columns", {})
-            rules = table_info.get("business_rules", [])
-
-            lines.append(f"Table Name: {table_name}")
-            lines.append(f"Description: {table_description}")
-            lines.append(f"Business Rules: {rules}")
-            lines.append("Columns:")
-            lines.append(
-                "column_name,column_alias,column_description,data_type,possible_values,categorical_definitions"
-            )
-
-            for column_name, column_info in columns.items():
-                column_alias = column_info.get("alias", "")
-                column_description = column_info.get("column_description", "")
-                data_type = column_info.get("data_type", "")
-                possible_values = column_info.get("possible_values", [])
-                categorical_definitions = column_info.get("categorical_definitions", "")
-
-                lines.append(
-                    f"""{column_name},{column_alias},
-                    {column_description},{data_type},
-                    {possible_values},{categorical_definitions}"""
-                )
-            lines.append("")  # Add a blank line for separation between tables
-
-        return "\n".join(lines)
-
-    @staticmethod
-    def process_catalog(
-        session_logger: Any,
-        historyid: int,
-        user_query: str,
-        doc_type: str,
-        domain: str,
-        catalog: str,
-    ) -> tuple[dict[str, Any], float]:
-        """
-        Processes the catalog to find the best match based on the user query.
-
-        Args:
-            session_logger (SessionLogger): The session logger instance.
-            historyid (int): The history ID associated with the request.
-            user_query (str): The user's input query.
-            embeddings (object): The embeddings object.
-            doc_type (str): The type of document to search.
-            domain (str): The name of the collection to search in.
-            domainid (int): The domain ID.
-            catalog (str): The catalog name.
-            catalogid (int): The catalog ID.
-
-        Returns:
-            dict: The catalog context data.
-        """
-        logger_capture.log_debug(
-            session_logger,
-            f"[DEBUG] process_catalog called with: user_query={user_query}, doc_type={doc_type}, domain={domain}, catalog={catalog}"
-        )
-        k = 500  # Vector Search catalogs search limit
-        descp_retri, catalog_vector_search_time_taken = Agents.find_context_vdb(
-            doc_type, user_query, k, domain=domain, catalog=catalog,
-        )
-        logger_capture.log_debug(
-            session_logger,
-            f"[DEBUG] find_context_vdb returned {len(descp_retri)} tables.")
-        if len(descp_retri) == 0:
-            logger_capture.log_debug(
-                session_logger,
-                f"[DEBUG] No vector tables found. user_query={user_query}, domain={domain}, catalog={catalog}, doc_type={doc_type}"
-            )
-            
-        # --- END ADDED LOGGING ---
-
-        # Log the keys of each descp_retri entry to debug what fields are present
-        for idx, entry in enumerate(descp_retri):
-            logger_capture.log_debug(session_logger, f"descp_retri[{idx}] keys: {list(entry.keys())}")
-
-        context = []
-
-        required_tables = []
-        table_meta_data = {}
-
-        table_info = []
-        vector_shortlisted_tables = []
-        for j in range(0, len(descp_retri)):
-            table_name = descp_retri[j]["tablename"]
-            table_description = descp_retri[j]["table_description"]
-            usage_patterns = descp_retri[j]["usage_patterns"]
-            business_rules = descp_retri[j]["rules"]
-            table_info.append(
-                {
-                    "table_name": table_name,
-                    "description": table_description,
-                    "usage_patterns": usage_patterns,
-                    "business rules": business_rules,
-                }
-            )
-            vector_shortlisted_tables.append(table_name)
-
-        # Ask LLM to shortlist tables
-        logger_capture.log_info(
-            session_logger,
-            "Going to LLM for table shortlisting...",
-        )
-        if len(vector_shortlisted_tables) > 5:
-            shortlisted_tables = LLM.suggest_tables(
-                session_logger, historyid, user_query, table_info
-            )
-            logger_capture.log_info(
-                session_logger,
-                f"LLM shortlisted tables: {shortlisted_tables}",
-            )
-            valid_tables = [
-                table
-                for table in shortlisted_tables
-                if table in vector_shortlisted_tables
-            ]
-            if not valid_tables:
-                shortlisted_tables = vector_shortlisted_tables[:5]
-            else:
-                shortlisted_tables = valid_tables
-        else:
-            shortlisted_tables = vector_shortlisted_tables
+        payload_converse = json.dumps({
+            "chatid": "string",
+            "user_question": question,
+            "domain": "Convoiq",
+            "catalog": "Loyalty",
+            "show_summary": "true",
+            "show_visualization": "true",
+            "temperature": 0
+        })
 
         try:
-            catalog_rules = Catalog_lookup.search_catalog_rules(
-                user_query, shortlisted_tables, domain
-            )
+            response = requests.post(converse_url, headers=headers, data=payload_converse, verify=False)
+            response.raise_for_status() # Raise an exception for HTTP errors
+            print(f"Converse API Response for '{question}': {response.status_code}")
+
+            data_string = response.text
+            # Split the string by 'data: ' and filter out empty strings
+            entries = data_string.strip().split('\n\ndata: ')
+
+            # Initialize variables for current iteration
+            current_history_id = None
+            current_generated_query = None
+            current_tables_referred = None
+
+            for entry in entries:
+                if entry.startswith('{"event"'): # Ensure it's a JSON string
+                    try:
+                        data_dict = json.loads(entry)
+                        if data_dict.get("event") == "history_id":
+                            current_history_id = data_dict.get("data")
+                        elif data_dict.get("event") == "tables_referred":
+                            current_tables_referred = data_dict.get("data")
+                        elif data_dict.get("event") == "generated_query":
+                            current_generated_query = data_dict.get("data")
+                    except json.JSONDecodeError as e:
+                        print(f"Error decoding JSON in converse response: {e} in entry: {entry}")
             
-            logger_capture.log_info(
-                session_logger,
-                f"Looked Through Catalog Rules: {catalog_rules}",
-            )
-            # Iterate through the retrieved descriptions
-            for j in range(0, len(descp_retri)):
-                table_name = descp_retri[j]["tablename"]
-                if table_name not in shortlisted_tables:
-                    continue
-                
-                # Use the new similarity_percentage if available, otherwise fall back to old calculation
-                if "similarity_percentage" in descp_retri[j]:
-                    score_str = descp_retri[j]["similarity_percentage"]
-                    # Extract numeric value from percentage string (e.g., "110.66%" -> 110.66)
-                    score = float(score_str.replace('%', '')) if score_str != "N/A" else 0.0
-                else:
-                    # Fallback to old calculation for backwards compatibility
-                    score = round((1 - descp_retri[j]["distance"]) * 100, 2)
-                
-                logger_capture.log_info(
-                    session_logger,
-                    f"{j+1} Table: {table_name}, Similarity Score: {score:.2f}%",
-                )
+            output_data_list.append({
+                'question': question,
+                'expected_query': expected_query,
+                'generated_query': current_generated_query,
+                'history_id': current_history_id,
+                'tables_referred': current_tables_referred # Added tables_referred
+            })
 
-                if score > 0: ## Skip similarity score check
-                    
-                    table_columns_data = descp_retri[j]["columns"]
-                    business_rules = descp_retri[j]["rules"]
-                    
-                    # Only use vector search for very large datasets with many tables
-                    if len(table_columns_data) >= 200 and len(shortlisted_tables) > 3:
-                        # Use vector search for very large datasets
-                        shortlisted_columns_data = Catalog_lookup.vector_search_columns(
-                            user_query,
-                            table_columns_data,
-                            business_rules,
-                            catalog_rules,
-                        )
-                    else:
-                        # Pass all columns to LLM if below threshold
-                        shortlisted_columns_data = table_columns_data
+        except requests.exceptions.RequestException as e:
+            print(f"Request error for question '{question}': {e}")
+            output_data_list.append({
+                'question': question,
+                'expected_query': expected_query,
+                'generated_query': None,
+                'history_id': None,
+                'tables_referred': None
+            })
+    
+    return pd.DataFrame(output_data_list)
 
-                    for column_name, column_info in shortlisted_columns_data.items():
 
-                        if (
-                            "possible_values" in column_info
-                            and len(column_info["possible_values"]) == 0
-                        ):
-                            shortlisted_columns_data[column_name].pop("possible_values")
-                        if (
-                            "categorical_definitions" in column_info
-                            and column_info["categorical_definitions"] == "{}"
-                        ):
-                            shortlisted_columns_data[column_name].pop(
-                                "categorical_definitions"
-                            )
+# In[ ]:
 
-                    table_meta_data[table_name] = {}
-                    table_meta_data[table_name]["description"] = descp_retri[j]["table_description"]
-                    table_meta_data[table_name]["business_rules"] = descp_retri[j]["rules"]
-                    table_meta_data[table_name]["columns"] = shortlisted_columns_data
-            logger_capture.log_info(
-                session_logger,
-                f"Shortlisted Tables Metadata: {table_meta_data}",
-            )
-            if table_meta_data:
 
-                flattened_metadata = Catalog_lookup.flatten_metadata_to_text(
-                    table_meta_data
-                )
-                logger_capture.log_info(
-                    session_logger,
-                    "Flattened Metadata",
-                )
-                # catalog_metadata_token_count = len(tokenizer.tokenize(json.dumps(table_meta_data)))
-                if tokenizer:
-                    catalog_metadata_token_count = len(
-                        tokenizer.tokenize(flattened_metadata)
-                    )
-                    logger_capture.log_info(
-                    session_logger,
-                    f"Table Meta Data Token Count: {catalog_metadata_token_count}",
-                )
-                else:
-                    catalog_metadata_token_count = 0
-                
-                model_suggested_columns = {}
+def get_catalog_rules(df_with_history):
+    """
+    Makes API calls to the 'query_feedback' endpoint for each row,
+    extracts new and modified business rules.
 
-                if catalog_metadata_token_count > 31000:
+    Args:
+        df_with_history (pd.DataFrame): DataFrame containing 'history_id' and 'expected_query'.
 
-                    # Suggest columns using the LLM
-                    logger_capture.log_info(
-                        session_logger,
-                        "Going to LLM for column suggestions...",
-                    )
-                    model_suggested_columns = LLM.suggest_columns(
-                        session_logger,
-                        historyid,
-                        user_query,
-                        flattened_metadata,  # flattened_metadata
-                    )
-                    logger_capture.log_info(
-                        session_logger,
-                        f"LLM selected columns: {model_suggested_columns} with type {type(model_suggested_columns)}",
-                    )
-                else:
-                    for table_name, meta_data in table_meta_data.items():
-                        columns = list(meta_data["columns"].keys())
-                        model_suggested_columns[table_name] = columns
-                    logger_capture.log_info(
-                        session_logger,
-                        f"Metadata columns: {model_suggested_columns} with type {type(model_suggested_columns)}",
-                    )
+    Returns:
+        pd.DataFrame: Original DataFrame with an added 'rules_list' column.
+    """
+    catalog_rules_url = 'https://qverse-api-dev.verizon.com/api/v1.0/feedbacks/feedbacks/query_feedback'
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': bearer,
+        'X-Session-Id': session_id
+    }
 
-                if model_suggested_columns:
-                    suggested_columns = model_suggested_columns
-                    logger_capture.log_info(
-                        session_logger,
-                        f"json loaded: {suggested_columns} with type {type(suggested_columns)}",
-                    )
+    # Initialize a list to store business rules for each row
+    rules_for_df = []
 
-                    # Iterate through the suggested columns and build the context entries
-                    for table_name, recommended_columns in suggested_columns.items():
-                        required_tables.append(table_name)
-                        for j in range(0, len(descp_retri)):
-                            meta_table_name = descp_retri[j][
-                                "tablename"
-                            ]
-                            if meta_table_name == table_name:
-                                
-                                table_columns_data = descp_retri[j]["columns"]
-                                for (
-                                    column_name,
-                                    column_info,
-                                ) in table_columns_data.items():
+    for index, row in df_with_history.iterrows():
+        history_id = row['history_id']
+        expected_query = row['expected_query']
+        
+        # Initialize an empty list for the current row's rules
+        current_business_rules_list = []
 
-                                    if (
-                                        "possible_values" in column_info
-                                        and len(column_info["possible_values"]) == 0
-                                    ):
-                                        table_columns_data[column_name].pop(
-                                            "possible_values"
-                                        )
-                                    if "categorical_definitions" in column_info and (
-                                        column_info["categorical_definitions"] == "{}"
-                                        or column_info["categorical_definitions"]
-                                        is None
-                                    ):
-                                        table_columns_data[column_name].pop(
-                                            "categorical_definitions"
-                                        )
-                                    if "column_description" in column_info and (
-                                        column_info["column_description"] == ""
-                                        or column_info["column_description"] is None
-                                    ):
-                                        table_columns_data[column_name].pop(
-                                            "column_description"
-                                        )
-                                column_names = [
-                                    col.split()[0].lower()
-                                    for col in recommended_columns
-                                ]
-                                logger_capture.log_info(
-                                    session_logger,
-                                    f"Suggested Columns for table: {table_name} are {column_names}",
-                                )
+        if history_id is None:
+            print(f"Skipping catalog_rules for row {index} due to missing history_id.")
+            rules_for_df.append(None) # Append None if no history_id to indicate no rules found
+            continue
 
-                                # Clean up column metadata for better LLM consumption
-                                cleaned_columns = {}
-                                for key, value in table_columns_data.items():
-                                    if key.lower() in column_names:
-                                        # Create a cleaner column structure
-                                        cleaned_col = {
-                                            "alias": value.get("column_alias", key),
-                                            "type": value.get("data_type", ""),
-                                            "description": value.get("description", "")
-                                        }
-                                        
-                                        # Only include categorical values if they exist and are useful
-                                        if value.get("categorical_values") and len(value.get("categorical_values", [])) > 0:
-                                            cleaned_col["values"] = value["categorical_values"]
-                                        
-                                        # Only include categorical definitions if they exist and are not empty
-                                        if value.get("categorical_definitions") and value.get("categorical_definitions") != "{}":
-                                            cleaned_col["definitions"] = value["categorical_definitions"]
-                                        
-                                        cleaned_columns[key] = cleaned_col
+        payload_catalog = json.dumps({
+            "feedback": "false",
+            "issues": [""],
+            "nlp_feedback": " ",
+            "historyid": history_id,
+            "suggested_sql": expected_query
+        })
 
-                                context_entry = {
-                                    "table": table_name,
-                                    "columns": cleaned_columns,
-                                    "description": descp_retri[j]["table_description"],
-                                    "rules": descp_retri[j]["rules"],
-                                }
+        try:
+            response = requests.post(catalog_rules_url, headers=headers, data=payload_catalog, verify=False)
+            response.raise_for_status() # Raise an exception for HTTP errors
+            print(f"Catalog Rules API Response for history_id {history_id}: {response.status_code}")
 
-                                context.append(context_entry)
+            data = json.loads(response.text)
 
-            if context:
-                # Add a summary section for better LLM understanding
-                table_summary = {
-                    "summary": {
-                        "total_tables": len([ctx for ctx in context if "table" in ctx]),
-                        "main_entities": [ctx.get("table", "").split(".")[-1] for ctx in context if "table" in ctx],
-                        # "key_relationships": [
-                        #     "Use ivr_call_id to join call-level data",
-                        #     "Use mtn (Mobile Telephone Number) for customer identification",
-                        #     "Use cust_id for customer-level analysis"
-                        # ]
-                    }
-                }
-                
-                # Insert summary at the beginning of context
-                context.insert(0, table_summary)
-                
-                # Only add catalog rules if they exist and are not empty
-                if catalog_rules and any(rule for rule in catalog_rules if rule):
-                    context.append({"business_rules": catalog_rules})
+            # Extract new rules
+            new_rules = data.get('business_rules', {}).get('new_rules', [])
+            for rule in new_rules:
+                current_business_rules_list.append({
+                    'rule_type': 'new',
+                    'description': rule.get('description'),
+                    'section': rule.get('section'),
+                    'tables': rule.get('tables'),
+                    'joins': rule.get('joins'),
+                    'select': rule.get('select'),
+                    'custom_dimensions': rule.get('custom_dimensions'),
+                    'group_by': rule.get('group_by'),
+                    'filters': rule.get('filters')
+                })
 
-                context_data = {"metadata": context}
-                if tokenizer:
-                    catalog_payload_token_count = len(
-                        tokenizer.tokenize(json.dumps(context_data))
-                    )
-                    # catalog_payload_token_count =0 
-                    logger_capture.log_info(
-                        session_logger,
-                        f"Final Catalog token count: {catalog_payload_token_count}",
-                    )
-                else:
-                    catalog_payload_token_count = 0
-            else:
-                context_data = {}
+            # Extract modified rules (only if there are any)
+            modified_rules = data.get('business_rules', {}).get('modified_rules', [])
+            if modified_rules:
+                for rule in modified_rules:
+                    current_business_rules_list.append({
+                        'rule_type': 'modified',
+                        'description': rule.get('description'),
+                        'section': rule.get('section'),
+                        'tables': rule.get('tables'),
+                        'joins': rule.get('joins'),
+                        'select': rule.get('select'),
+                        'custom_dimensions': rule.get('custom_dimensions'),
+                        'group_by': rule.get('group_by'),
+                        'filters': rule.get('filters')
+                    })
+            
+            rules_for_df.append(current_business_rules_list)
 
-        except Exception as e:
-            logger_capture.log_error(session_logger, f"Error: {str(e)}")
-            context_data = {}
+        except requests.exceptions.RequestException as e:
+            print(f"Request error for history_id {history_id}: {e}")
+            rules_for_df.append(None) # Append None if API call fails
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON in catalog_rules response for history_id {history_id}: {e}")
+            rules_for_df.append(None)
 
-        return context_data, catalog_vector_search_time_taken
+    # Add the collected rules list as a new column to the DataFrame
+    df_with_history['rules_list'] = rules_for_df
+    return df_with_history
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+
+
+Overall Customer Sentiment Performance & Trends			Status	Direct BQ	Rephrased question	VZ Comments	Google Comments	Expected SQL query
+1	What is the trend of customer sentiment over the past 6 months?		Done					"SELECT
+    sentiment_report_call_level_detail_convo_iq.overall_sentiment  AS sentiment_report_call_level_detail_convo_iq_overall_sentiment,
+        (FORMAT_DATE('%Y-%m', sentiment_report_call_level_detail_convo_iq.event_dt )) AS sentiment_report_call_level_detail_convo_iq_event_dt_month,
+    COUNT(*) AS sentiment_report_call_level_detail_convo_iq_callcount
+FROM `vz-it-np-j1kv-dev-earef-0.convoiq.sentiment_report_call_level_detail_convoIQ`  AS sentiment_report_call_level_detail_convo_iq
+WHERE ((( sentiment_report_call_level_detail_convo_iq.event_dt  ) >= ((DATE_ADD(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL -5 MONTH))) AND ( sentiment_report_call_level_detail_convo_iq.event_dt  ) < ((DATE_ADD(DATE_ADD(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL -5 MONTH), INTERVAL 6 MONTH)))))
+GROUP BY
+    1,
+    2
+ORDER BY
+    2
+LIMIT 5000"
+2	What is the distribution of overall sentiment for postpaid callers ?		Done					"SELECT
+    sentiment_report_call_level_detail_convo_iq.overall_sentiment  AS sentiment_report_call_level_detail_convo_iq_overall_sentiment,
+    COUNT(*) AS sentiment_report_call_level_detail_convo_iq_callcount
+FROM `vz-it-np-j1kv-dev-earef-0.convoiq.sentiment_report_call_level_detail_convoIQ`  AS sentiment_report_call_level_detail_convo_iq
+INNER JOIN `vz-it-np-j1kv-dev-earef-0.convoiq.ivr_call`  AS ivr_call ON sentiment_report_call_level_detail_convo_iq.ivr_call_id =
+      ivr_call.ivr_call_id
+WHERE NOT (CASE WHEN ivr_call.prepaid_ind = 'Y' THEN TRUE ELSE FALSE END ) OR (CASE WHEN ivr_call.prepaid_ind = 'Y' THEN TRUE ELSE FALSE END ) IS NULL
+GROUP BY
+    1
+ORDER BY
+    2 DESC
+LIMIT 5000"
+3	Which regions or locations have the lowest customer sentiment?		Done		Which are the top 10 regions having the most negative sentiment?	Even after updating data to have only camel case Negative, filter applied is for NEGATIVE	The field has both Negative and NEGATIVE. When I rephrased "What are the top regions where sentiment is Negative or NEGATIVE?" it returned the correct response.	"SELECT
+    icm_summary_fact.callers_region  AS icm_summary_fact_callers_region,
+    sentiment_report_call_level_detail_convo_iq.overall_sentiment  AS sentiment_report_call_level_detail_convo_iq_overall_sentiment,
+    COUNT(*) AS sentiment_report_call_level_detail_convo_iq_callcount
+FROM `vz-it-np-j1kv-dev-earef-0.convoiq.sentiment_report_call_level_detail_convoIQ`  AS sentiment_report_call_level_detail_convo_iq
+INNER JOIN `vz-it-np-j1kv-dev-earef-0.convoiq.icm_summary_fact`  AS icm_summary_fact ON sentiment_report_call_level_detail_convo_iq.ivr_call_id = icm_summary_fact.ivr_call_id
+WHERE (sentiment_report_call_level_detail_convo_iq.overall_sentiment ) = 'NEGATIVE'
+GROUP BY
+    1,
+    2
+ORDER BY
+    3 DESC
+LIMIT 10"
+4	How many calls had a negative sentiment in the first fortnight of March 2025?		Partial			"1. Known issue with date windows (bug reported)
+2. Case sentivitive filter not applied"		"SELECT
+    sentiment_report_call_level_detail_convo_iq.overall_sentiment  AS sentiment_report_call_level_detail_convo_iq_overall_sentiment,
+    COUNT(*) AS sentiment_report_call_level_detail_convo_iq_callcount
+FROM `vz-it-np-j1kv-dev-earef-0.convoiq.sentiment_report_call_level_detail_convoIQ`  AS sentiment_report_call_level_detail_convo_iq
+WHERE
+(sentiment_report_call_level_detail_convo_iq.overall_sentiment ) = 'NEGATIVE' AND 
+((((( sentiment_report_call_level_detail_convo_iq.event_dt  )) >= (DATE('2025-03-01')) AND ((  sentiment_report_call_level_detail_convo_iq.event_dt)) < (DATE('2025-03-14')))))
+GROUP BY
+    1
+ORDER BY
+    2 DESC
+LIMIT 500"
+5	Which primary topics are most associated with supervisor escalations?		Done		What are the primary topics ranked by their total number of supervisor escalations?			"SELECT
+    sentiment_report_call_level_detail_convo_iq.primary_topic  AS sentiment_report_call_level_detail_convo_iq_primary_topic,
+    COUNT(*) AS sentiment_report_call_level_detail_convo_iq_callcount
+FROM `vz-it-np-j1kv-dev-earef-0.convoiq.sentiment_report_call_level_detail_convoIQ`  AS sentiment_report_call_level_detail_convo_iq
+WHERE (sentiment_report_call_level_detail_convo_iq.supervisor_escalation ) = 'Yes'
+GROUP BY
+    1
+ORDER BY
+    2 DESC,
+    1 DESC
+LIMIT 5000"
+6	How does sentiment differ between first-time callers and repeat callers?	Ignore						
