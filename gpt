@@ -1,14 +1,12 @@
-try:
-    data = json.loads(response.text)
-except json.JSONDecodeError as e:
-    print(f"❌ Error decoding JSON in catalog_rules response for history_id {history_id}: {e}")
-    rules_for_df.append(None)
-    continue
+business_rules = data.get('business_rules')
+if isinstance(business_rules, dict):
+    new_rules = business_rules.get('new_rules', [])
+else:
+    new_rules = []
 
-if not data or not isinstance(data, dict):
-    print(f"❌ Empty or invalid response for history_id {history_id}. Skipping...")
-    rules_for_df.append(None)
-    continue
 
-# Extract new rules
-new_rules = data.get('business_rules', {}).get('new_rules', [])
+
+if isinstance(business_rules, dict):
+    modified_rules = business_rules.get('modified_rules', [])
+else:
+    modified_rules = []
