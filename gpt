@@ -1,12 +1,17 @@
-business_rules = data.get('business_rules')
-if isinstance(business_rules, dict):
-    new_rules = business_rules.get('new_rules', [])
-else:
-    new_rules = []
+Just to update on q-verse work Yesterday we had a KT session same thing was planned today along with code review
 
 
 
-if isinstance(business_rules, dict):
-    modified_rules = business_rules.get('modified_rules', [])
-else:
-    modified_rules = []
+
+
+
+2:29
+As of now I have to get clear information on the development work will check with @Shunmugaraj Balasekaran once KT is completed
+
+
+
+
+Hi @Harry Katuru Just an update on Q-verse:
+ @Shunmugaraj Balasekaran asked for a document flow, code overview details and I have shared it last Friday
+As requested by @Shunmugaraj Balasekaran Currently getting KT/ code overview from @Akhilesh Pothuri
+once the code review/KT is completed will work on developing a planner agent.
