@@ -1,3 +1,87 @@
+from PyPDF2 import PdfReader
+
+def convert_pdf_to_markdown_local(filepath):
+    reader = PdfReader(filepath)
+    markdown = ""
+    for page in reader.pages:
+        text = page.extract_text()
+        if text:
+            markdown += text.strip() + "\n\n"
+    return markdown.strip()
+
+if __name__ == "__main__":
+    # Update this path as needed
+    filepath = "VCG CEO Daily Performance - Contra GA Walk.pdf"
+
+    try:
+        result = convert_pdf_to_markdown_local(filepath)
+        print("✅ Markdown Output Preview:\n")
+        print(result[:1500])  # Print first 1500 characters
+        print("\n--- (Output Truncated) ---")
+    except Exception as e:
+        print(f"❌ Error reading PDF: {e}")
+
+
+
+
+CREATE TABLE report_table (
+    report_name TEXT NOT NULL,
+    report_details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+@staticmethod
+def insert_report(record: dict):
+    from src.database_connections.app_database.models import ReportTable  # your ORM model
+    session = AppDatabase.get_session()
+    try:
+        report = ReportTable(**record)
+        session.add(report)
+        session.commit()
+        return {"status": "success", "id": report.id}
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+
+
+from datetime import datetime
+from PyPDF2 import PdfReader
+from src.database_connections.app_database.service import AppDatabase
+
+def convert_pdf_to_markdown_local(filepath):
+    reader = PdfReader(filepath)
+    markdown = ""
+    for page in reader.pages:
+        text = page.extract_text()
+        if text:
+            markdown += text.strip() + "\n\n"
+    return markdown.strip()
+
+if __name__ == "__main__":
+    filepath = "VCG CEO Daily Performance - Contra GA Walk.pdf"
+    report_name = "VCG CEO Daily Performance - Contra GA Walk"
+
+    try:
+        markdown_content = convert_pdf_to_markdown_local(filepath)
+        record = {
+            "report_name": report_name,
+            "report_details": markdown_content,
+            "created_at": datetime.utcnow()
+        }
+        result = AppDatabase.insert_report(record)
+        print(f"✅ Report inserted: {result}")
+    except Exception as e:
+        print(f"❌ Failed to save report: {e}")
+
+
+
+
 1.) Add a endpoint to accept PDFs under contexts router 2.)  Push this into a new table `report_table` columns : report _name , report_details (markdown of pdf) , created_at 3.) converse endpoint under contexts 4.)
 
 ###controller.py###
