@@ -1,24 +1,49 @@
 import pdfplumber
-from datetime import datetime
+import sys
+import os
 
-def pdf_to_markdown(filepath):
-    markdown_text = ""
+def extract_markdown_from_pdf(filepath: str) -> str:
+    """
+    Extracts text content from all pages of a PDF and returns it as a markdown-formatted string.
+    """
+    content = []
     with pdfplumber.open(filepath) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
             if text:
-                markdown_text += text.strip() + "\n\n"
-    return markdown_text.strip()
+                content.append(text.strip())
+    return "\n\n".join(content)
 
 if __name__ == "__main__":
-    filepath = "VCG CEO Daily Performance - Contra GA Walk.pdf"
-    
+    # Expecting a single argument: path to the PDF file
+    if len(sys.argv) != 2:
+        print("Usage: python pdf_to_markdown.py <pdf_file_path>")
+        sys.exit(1)
+
+    input_path = sys.argv[1]
+
+    # Check if the file exists
+    if not os.path.isfile(input_path):
+        print(f"File not found: {input_path}")
+        sys.exit(1)
+
     try:
-        markdown_output = pdf_to_markdown(filepath)
-        print(markdown_output[:1000])
-        print("\n--- Extraction Complete ---")
+        # Extract markdown content from PDF
+        markdown = extract_markdown_from_pdf(input_path)
+
+        # Print preview of extracted content
+        print(markdown[:1000])
+
+        # Save output to a .md file
+        output_path = os.path.splitext(input_path)[0] + ".md"
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(markdown)
+
+        print(f"Markdown saved to: {output_path}")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error processing PDF: {e}")
+        sys.exit(1)
+
 
 
 
