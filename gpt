@@ -1,25 +1,21 @@
-from PyPDF2 import PdfReader
+import pdfplumber
 
-def convert_pdf_to_markdown_local(filepath):
-    reader = PdfReader(filepath)
-    markdown = ""
-    for page in reader.pages:
-        text = page.extract_text()
-        if text:
-            markdown += text.strip() + "\n\n"
-    return markdown.strip()
+def convert_pdf_to_markdown(filepath):
+    markdown_text = ""
+    with pdfplumber.open(filepath) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if text:
+                markdown_text += text.strip() + "\n\n"
+    return markdown_text.strip()
 
-if __name__ == "__main__":
-    # Update this path as needed
-    filepath = "VCG CEO Daily Performance - Contra GA Walk.pdf"
+# Replace this with the correct filename you uploaded
+file_path = "VCG CEO Daily Performance - Contra GA Walk.pdf"
+markdown_output = convert_pdf_to_markdown(file_path)
 
-    try:
-        result = convert_pdf_to_markdown_local(filepath)
-        print("✅ Markdown Output Preview:\n")
-        print(result[:1500])  # Print first 1500 characters
-        print("\n--- (Output Truncated) ---")
-    except Exception as e:
-        print(f"❌ Error reading PDF: {e}")
+# Print preview
+print(markdown_output[:1500])  # First 1500 characters
+
 
 
 
