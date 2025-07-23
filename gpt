@@ -1,7 +1,7 @@
 import pdfplumber
 from datetime import datetime
 
-def convert_pdf_to_markdown(filepath):
+def pdf_to_markdown(filepath):
     markdown_text = ""
     with pdfplumber.open(filepath) as pdf:
         for page in pdf.pages:
@@ -12,22 +12,14 @@ def convert_pdf_to_markdown(filepath):
 
 if __name__ == "__main__":
     filepath = "VCG CEO Daily Performance - Contra GA Walk.pdf"
-    report_name = "VCG CEO Daily Performance - Contra GA Walk"
-
+    
     try:
-        markdown_output = convert_pdf_to_markdown(filepath)
-        print("✅ Extracted Markdown (First 1000 characters):\n")
+        markdown_output = pdf_to_markdown(filepath)
         print(markdown_output[:1000])
         print("\n--- Extraction Complete ---")
-
-        # You can now insert `markdown_output` into your DB in the next step.
-        # Optionally write it to a .md file to inspect
-        with open("vcg_report.md", "w", encoding="utf-8") as f:
-            f.write(markdown_output)
-        print("✅ Markdown saved to 'vcg_report.md'")
-
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
+
 
 
 
