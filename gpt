@@ -1,3 +1,9 @@
+please create the new endpoint and have the code ready by tomorrow's call
+we have to finish the UI integration by evening tomorrow
+
+1.) Add a endpoint to accept PDFs under contexts router 2.)  Push this into a new table `report_table` columns : report _name , report_details (markdown of pdf) , created_at 3.) converse endpoint under contexts 4.)
+
+
 #### contexts controller ####
 import uuid
 from datetime import datetime
