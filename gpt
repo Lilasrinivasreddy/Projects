@@ -1,90 +1,4 @@
-class ReportTable(Base):
-    __tablename__ = "report_table"
-    report_name = Column(String, primary_key=True)
-    report_details = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-@staticmethod
-def insert_report(report_name: str, report_details: str):
-    session = AppDatabase.get_session()
-    try:
-        report = ReportTable(
-            report_name=report_name,
-            report_details=report_details
-        )
-        session.add(report)
-        session.commit()
-        return {"status": "success", "report_name": report_name}
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
-@staticmethod
-def save_report_to_db(session_logger, report_name: str, markdown: str, session_id: str):
-    from datetime import datetime
-    record = {
-        "report_name": report_name,
-        "report_details": markdown,
-        "created_at": datetime.utcnow()
-    }
-    return AppDatabase.insert_report(**record)
-
-
-
-
-@staticmethod
-def insert_report(record: dict):
-    from src.database_connections.app_database.models import ReportTable  # your ORM model
-    session = AppDatabase.get_session()
-    try:
-        report = ReportTable(**record)
-        session.add(report)
-        session.commit()
-        return {"status": "success", "id": report.id}
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
-
-
-
-from datetime import datetime
-from PyPDF2 import PdfReader
-from src.database_connections.app_database.service import AppDatabase
-
-def convert_pdf_to_markdown_local(filepath):
-    reader = PdfReader(filepath)
-    markdown = ""
-    for page in reader.pages:
-        text = page.extract_text()
-        if text:
-            markdown += text.strip() + "\n\n"
-    return markdown.strip()
-
-if __name__ == "__main__":
-    filepath = "VCG CEO Daily Performance - Contra GA Walk.pdf"
-    report_name = "VCG CEO Daily Performance - Contra GA Walk"
-
-    try:
-        markdown_content = convert_pdf_to_markdown_local(filepath)
-        record = {
-            "report_name": report_name,
-            "report_details": markdown_content,
-            "created_at": datetime.utcnow()
-        }
-        result = AppDatabase.insert_report(record)
-        print(f"✅ Report inserted: {result}")
-    except Exception as e:
-        print(f"❌ Failed to save report: {e}")
-
-
-
-
-1.) Add a endpoint to accept PDFs under contexts router 2.)  Push this into a new table `report_table` columns : report _name , report_details (markdown of pdf) , created_at 3.) converse endpoint under contexts 4.)
-
-###controller.py###
+#### contexts controller ####
 import uuid
 from datetime import datetime
 from fastapi import APIRouter, File, Form, UploadFile, Query, Body, Response
@@ -535,10 +449,9 @@ async def get_catalog_rules(
         raise handle_internal_exception(session_logger, transaction_id, e)
     finally:
         session_logger.save_logs()
-=============================================
 ======================================================================================
-================================================================================================================================
-####service###
+================================================================================================
+### context service #####
 import io
 import pandas as pd
 from src.database_connections.app_database.service import AppDatabase
@@ -942,9 +855,10 @@ class Contexts:
         config = AppDatabase.get_domain_catalog_config(domain, catalog)
         use_thinking = config.get("use_thinking", False)
         thinking_budget = config.get("thinking_budget", 0)
+        llm_model = config.get("default_llm_model","gemini_flash_2.0")
         Parameters.set_thoughts(use_thinking)
         Parameters.set_thinkingbudget(thinking_budget)
-
+        Parameters.set_llm_model(llm_model)
         # Get existing rules as a list of dictionaries (not JSON string)
         # Filter by both domain and catalog for more relevant rules
         existing_rules_df = AppDatabase.get_active_catalogrules(domain, catalog)
@@ -1376,8 +1290,10 @@ class Contexts:
         config = AppDatabase.get_domain_catalog_config(domain, catalog)
         use_thinking = config.get("use_thinking", False)
         thinking_budget = config.get("thinking_budget", 0)
+        llm_model = config.get("default_llm_model","gemini_flash_2.0")
         Parameters.set_thoughts(use_thinking)
         Parameters.set_thinkingbudget(thinking_budget)
+        Parameters.set_llm_model(llm_model)
         # 1. Extract table names from SQL
         extract_cols = LLM.extract_from_query(session_logger, sql_query)
         table_names = [table.lower() for table in extract_cols.keys()]
@@ -1541,11 +1457,15 @@ class Contexts:
             return catalog_rules
             
         except Exception as e:
+
+
             logger_capture.log_error(session_logger,f"Error fetching catalog rules: {str(e)}")
             raise
-========================================
-============================================================================================
-#####config controller.py###
+=========================================================
+===============================================================
+
+
+##configuration controller ####
 """
 Configuration controller module for system configuration management.
 FastAPI router for configuration endpoints.
@@ -1580,18 +1500,54 @@ class ConfigurationUpdate(BaseModel):
         }
 
 
-class ConfigurationResponse(BaseModel):
-    """Model for configuration response."""
-    catalogid: Optional[int] = None
-    catalogname: Optional[str] = None
-    domainid: int
-    domainname: str
+class GetCatalogConfigResponse(BaseModel):
+    """Response model for GET catalog configuration."""
+    catalogname: str
+    catalogid: int
+    status: Optional[str]
+    date_created: Optional[str]
+    date_updated: Optional[str]
     use_cache: bool
     use_contexts: bool
     use_history: bool
     use_subqueries: bool
-    date_updated: Optional[str] = None
-    updated_fields: Optional[list] = None
+    default_llm_model: Optional[str]
+    thinking_budget: Optional[int]
+    use_thinking: bool
+
+
+class UpdateCatalogConfigResponse(BaseModel):
+    """Response model for PUT catalog configuration."""
+    catalogname: str
+    catalogid: int
+    status: Optional[str]
+    date_created: Optional[str]
+    date_updated: Optional[str]
+    use_cache: bool
+    use_contexts: bool
+    use_history: bool
+    use_subqueries: bool
+    default_llm_model: Optional[str]
+    thinking_budget: Optional[int]
+    use_thinking: bool
+
+
+class GetDomainConfigResponse(BaseModel):
+    """Response model for GET domain configuration."""
+    domainname: str
+    domainid: int
+    status: Optional[str]
+    date_created: Optional[str]
+    date_updated: Optional[str]
+
+
+class UpdateDomainConfigResponse(BaseModel):
+    """Response model for PUT domain configuration."""
+    domainname: str
+    domainid: int
+    status: Optional[str]
+    date_created: Optional[str]
+    date_updated: Optional[str]
 
 
 class DomainCatalogsResponse(BaseModel):
@@ -1674,7 +1630,7 @@ def validate_admin_access() -> str:
     return username
 
 
-@router.get("/catalog/{domain}/{catalog}", response_model=ConfigurationResponse)
+@router.get("/catalog/{domain}/{catalog}")
 async def get_catalog_configuration(
     domain: str = Path(..., description="Domain name"),
     catalog: str = Path(..., description="Catalog name")
@@ -1693,15 +1649,15 @@ async def get_catalog_configuration(
     """
     try:
         validate_admin_access()
-        config = ConfigurationService.get_catalog_config(domain, catalog)
-        return ConfigurationResponse(**config)
+        return ConfigurationService.get_catalog_config(domain, catalog)
+        # return GetCatalogConfigResponse(**config)
     except ValidationException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.put("/catalog/{domain}/{catalog}", response_model=ConfigurationResponse)
+@router.put("/catalog/{domain}/{catalog}")
 async def update_catalog_configuration(
     domain: str = Path(..., description="Domain name"),
     catalog: str = Path(..., description="Catalog name"),
@@ -1730,17 +1686,17 @@ async def update_catalog_configuration(
         if not updates:
             raise HTTPException(status_code=400, detail="No configuration updates provided")
         
-        config = ConfigurationService.update_catalog_config(
+        return ConfigurationService.update_catalog_config(
             domain, catalog, updates, session_id
         )
-        return ConfigurationResponse(**config)
+        # return UpdateCatalogConfigResponse(**config)
     except ValidationException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.get("/domain/{domain}", response_model=ConfigurationResponse)
+@router.get("/domain/{domain}")
 async def get_domain_configuration(
     domain: str = Path(..., description="Domain name")
 ):
@@ -1757,15 +1713,15 @@ async def get_domain_configuration(
     """
     try:
         validate_admin_access()
-        config = ConfigurationService.get_domain_config(domain)
-        return ConfigurationResponse(**config)
+        return ConfigurationService.get_domain_config(domain)
+        # return GetDomainConfigResponse(**config)
     except ValidationException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.put("/domain/{domain}", response_model=ConfigurationResponse)
+@router.put("/domain/{domain}")
 async def update_domain_configuration(
     domain: str = Path(..., description="Domain name"),
     config_updates: ConfigurationUpdate = Body(..., description="Configuration updates")
@@ -1792,38 +1748,12 @@ async def update_domain_configuration(
         if not updates:
             raise HTTPException(status_code=400, detail="No configuration updates provided")
         
-        config = ConfigurationService.update_domain_config(domain, updates, session_id)
-        return ConfigurationResponse(**config)
+        return ConfigurationService.update_domain_config(domain, updates, session_id)
+        # return UpdateDomainConfigResponse(**config)
     except ValidationException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-
-@router.get("/domain/{domain}/catalogs", response_model=DomainCatalogsResponse)
-async def list_domain_catalogs(
-    domain: str = Path(..., description="Domain name")
-):
-    """
-    List all catalogs in a domain with their configurations.
-    
-    **Admin only endpoint**
-    
-    Args:
-        domain: Name of the domain
-        
-    Returns:
-        Domain info and list of catalogs with configurations
-    """
-    try:
-        validate_admin_access()
-        result = ConfigurationService.list_domain_catalogs(domain)
-        return DomainCatalogsResponse(**result)
-    except ValidationException as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
 
 @router.get("/health")
 async def configuration_health_check():
@@ -1836,7 +1766,7 @@ async def configuration_health_check():
     return {"status": "ok", "service": "configuration-management"}
 
 
-@router.post("/users/onboard", response_model=UserAccessResponse)
+@router.post("/users/onboard")
 async def onboard_user(
     user_request: UserOnboardRequest
 ):
@@ -1854,20 +1784,20 @@ async def onboard_user(
     try:
         validate_admin_access()
         session_id = require_session_id()
-        result = ConfigurationService.onboard_user(
+        return ConfigurationService.onboard_user(
             vzid=user_request.vzid,
             role=user_request.role,
             domain_ids=user_request.domain_ids,
             session_id=session_id
         )
-        return UserAccessResponse(**result)
+        # return UserAccessResponse(**result)
     except ValidationException as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.get("/users/{vzid}", response_model=UserAccessResponse)
+@router.get("/users/{vzid}")
 async def get_user_access(
     vzid: str = Path(..., description="Verizon ID of the user")
 ):
@@ -1884,15 +1814,15 @@ async def get_user_access(
     """
     try:
         validate_admin_access()
-        result = ConfigurationService.get_user_access(vzid)
-        return UserAccessResponse(**result)
+        return ConfigurationService.get_user_access(vzid)
+        # return UserAccessResponse(**result)
     except ValidationException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.patch("/users/{vzid}", response_model=UserAccessResponse)
+@router.patch("/users/{vzid}")
 async def update_user_access(
     vzid: str = Path(..., description="Verizon ID of the user"),
     user_update: UserUpdateRequest = Body(...)
@@ -1912,20 +1842,20 @@ async def update_user_access(
     try:
         validate_admin_access()
         session_id = require_session_id()
-        result = ConfigurationService.update_user_access(
+        return ConfigurationService.update_user_access(
             vzid=vzid,
             role=user_update.role,
             domain_ids=user_update.domain_ids,
             session_id=session_id
         )
-        return UserAccessResponse(**result)
+        # return UserAccessResponse(**result)
     except ValidationException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.get("/users", response_model=List[UserAccessResponse])
+@router.get("/users")
 async def list_users():
     """
     List all users in the access control table.
@@ -1937,12 +1867,768 @@ async def list_users():
     """
     try:
         validate_admin_access()
-        result = ConfigurationService.list_users()
-        return [UserAccessResponse(**user) for user in result]
+        return ConfigurationService.list_users()
+        # return [UserAccessResponse(**user) for user in result]
     except ValidationException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-=====================================
-===========================================
+================================
+==========================================================
 
+
+#config service ##
+
+"""
+Configuration service module for system configuration management.
+Handles business logic for updating domain and catalog configurations.
+"""
+
+from datetime import datetime
+from typing import Optional, Dict, Any, List
+from src.database_connections.app_database.service import AppDatabase
+from src.database_connections.app_database.models import Catalog, Domain, AccessControl
+from src.utils.exceptions import ValidationException
+
+
+class ConfigurationService:
+    """
+    Service class for managing system configurations at domain and catalog levels.
+    """
+
+    @staticmethod
+    def get_catalog_config(domain_name: str, catalog_name: str) -> Dict[str, Any]:
+        """
+        Get configuration for a specific catalog.
+        
+        Args:
+            domain_name: Name of the domain
+            catalog_name: Name of the catalog
+            
+        Returns:
+            Dictionary containing catalog configuration
+            
+        Raises:
+            ValidationException: If domain or catalog not found
+        """
+        session = AppDatabase.get_session()
+        try:
+            # Get domain
+            domain = session.query(Domain).filter(Domain.domainname == domain_name).first()
+            if not domain:
+                raise ValidationException(f"Domain '{domain_name}' not found")
+            
+            # Get catalog
+            catalog = session.query(Catalog).filter(
+                Catalog.catalogname == catalog_name,
+                Catalog.domainid == domain.domainid
+            ).first()
+            if not catalog:
+                raise ValidationException(f"Catalog '{catalog_name}' not found in domain '{domain_name}'")
+            
+            return {
+                "catalogname": catalog.catalogname,
+                "catalogid": catalog.catalogid,
+                "status": catalog.status,
+                "date_created": catalog.date_created.isoformat() if catalog.date_created else None,
+                "date_updated": catalog.date_updated.isoformat() if catalog.date_updated else None,
+                "use_cache": catalog.use_cache,
+                "use_contexts": catalog.use_contexts,
+                "use_history": catalog.use_history,
+                "use_subqueries": catalog.use_subqueries,
+                "default_llm_model": catalog.default_llm_model,
+                "thinking_budget": catalog.thinking_budget,
+                "use_thinking": catalog.use_thinking
+            }
+        finally:
+            session.close()
+
+    @staticmethod
+    def update_catalog_config(
+        domain_name: str, 
+        catalog_name: str, 
+        config_updates: Dict[str, Any],
+        session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Update configuration for a specific catalog.
+        
+        Args:
+            domain_name: Name of the domain
+            catalog_name: Name of the catalog
+            config_updates: Dictionary of configuration updates
+            session_id: Session ID for audit logging
+            
+        Returns:
+            Updated catalog configuration
+            
+        Raises:
+            ValidationException: If domain/catalog not found or invalid config
+        """
+        session = AppDatabase.get_session()
+        try:
+            # Get domain
+            domain = session.query(Domain).filter(Domain.domainname == domain_name).first()
+            if not domain:
+                raise ValidationException(f"Domain '{domain_name}' not found")
+            
+            # Get catalog
+            catalog = session.query(Catalog).filter(
+                Catalog.catalogname == catalog_name,
+                Catalog.domainid == domain.domainid
+            ).first()
+            if not catalog:
+                raise ValidationException(f"Catalog '{catalog_name}' not found in domain '{domain_name}'")
+            
+            # Validate configuration updates
+            allowed_fields = {'use_cache', 'use_contexts', 'use_history', 'use_subqueries'}
+            invalid_fields = set(config_updates.keys()) - allowed_fields
+            if invalid_fields:
+                raise ValidationException(f"Invalid configuration fields: {invalid_fields}")
+            
+            # Validate boolean values
+            for field, value in config_updates.items():
+                if not isinstance(value, bool):
+                    raise ValidationException(f"Field '{field}' must be a boolean value")
+            
+            # Store old values for audit
+            old_values = {
+                'use_cache': catalog.use_cache,
+                'use_contexts': catalog.use_contexts,
+                'use_history': catalog.use_history,
+                'use_subqueries': catalog.use_subqueries
+            }
+            
+            # Update catalog configuration
+            for field, value in config_updates.items():
+                setattr(catalog, field, value)
+            catalog.date_updated = datetime.now()
+            
+            session.commit()
+            
+            # Log audit trail
+            if session_id:
+                AppDatabase.log_audit(
+                    entity_type="Catalog",
+                    entity_id=catalog.catalogid,
+                    action="config_update",
+                    session_id=session_id,
+                    change_details={
+                        "old": {k: v for k, v in old_values.items() if k in config_updates},
+                        "new": config_updates
+                    },
+                    domainid=domain.domainid,
+                    catalogids=[catalog.catalogid]
+                )
+            
+            return {
+                "catalogname": catalog.catalogname,
+                "catalogid": catalog.catalogid,
+                "status": catalog.status,
+                "date_created": catalog.date_created.isoformat() if catalog.date_created else None,
+                "date_updated": catalog.date_updated.isoformat() if catalog.date_updated else None,
+                "use_cache": catalog.use_cache,
+                "use_contexts": catalog.use_contexts,
+                "use_history": catalog.use_history,
+                "use_subqueries": catalog.use_subqueries,
+                "default_llm_model": catalog.default_llm_model,
+                "thinking_budget": catalog.thinking_budget,
+                "use_thinking": catalog.use_thinking
+            }
+        except Exception as e:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    @staticmethod
+    def get_domain_config(domain_name: str) -> Dict[str, Any]:
+        """
+        Get configuration for a specific domain.
+        
+        Args:
+            domain_name: Name of the domain
+            
+        Returns:
+            Dictionary containing domain configuration
+            
+        Raises:
+            ValidationException: If domain not found
+        """
+        session = AppDatabase.get_session()
+        try:
+            domain = session.query(Domain).filter(Domain.domainname == domain_name).first()
+            if not domain:
+                raise ValidationException(f"Domain '{domain_name}' not found")
+            
+            return {
+                "domainname": domain.domainname,
+                "domainid": domain.domainid,
+                "status": domain.status,
+                "date_created": domain.date_created.isoformat() if domain.date_created else None,
+                "date_updated": domain.date_updated.isoformat() if domain.date_updated else None
+            }
+        finally:
+            session.close()
+
+    @staticmethod
+    def update_domain_config(
+        domain_name: str, 
+        config_updates: Dict[str, Any],
+        session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Update configuration for a specific domain.
+        
+        Args:
+            domain_name: Name of the domain
+            config_updates: Dictionary of configuration updates
+            session_id: Session ID for audit logging
+            
+        Returns:
+            Updated domain configuration
+            
+        Raises:
+            ValidationException: If domain not found or invalid config
+        """
+        session = AppDatabase.get_session()
+        try:
+            domain = session.query(Domain).filter(Domain.domainname == domain_name).first()
+            if not domain:
+                raise ValidationException(f"Domain '{domain_name}' not found")
+            
+            # Validate configuration updates
+            allowed_fields = {'use_cache', 'use_contexts', 'use_history', 'use_subqueries'}
+            invalid_fields = set(config_updates.keys()) - allowed_fields
+            if invalid_fields:
+                raise ValidationException(f"Invalid configuration fields: {invalid_fields}")
+            
+            # Validate boolean values
+            for field, value in config_updates.items():
+                if not isinstance(value, bool):
+                    raise ValidationException(f"Field '{field}' must be a boolean value")
+            
+            # Store old values for audit
+            old_values = {
+                'use_cache': domain.use_cache,
+                'use_contexts': domain.use_contexts,
+                'use_history': domain.use_history,
+                'use_subqueries': domain.use_subqueries
+            }
+            
+            # Update domain configuration
+            for field, value in config_updates.items():
+                setattr(domain, field, value)
+            domain.date_updated = datetime.now()
+            
+            session.commit()
+            
+            # Log audit trail
+            if session_id:
+                AppDatabase.log_audit(
+                    entity_type="Domain",
+                    entity_id=domain.domainid,
+                    action="config_update",
+                    session_id=session_id,
+                    change_details={
+                        "old": {k: v for k, v in old_values.items() if k in config_updates},
+                        "new": config_updates
+                    },
+                    domainid=domain.domainid
+                )
+            
+            return {
+                "domainname": domain.domainname,
+                "domainid": domain.domainid,
+                "status": domain.status,
+                "date_created": domain.date_created.isoformat() if domain.date_created else None,
+                "date_updated": domain.date_updated.isoformat() if domain.date_updated else None
+            }
+        except Exception as e:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    @staticmethod
+    def onboard_user(
+        vzid: str,
+        role: str,
+        domain_ids: Optional[List[int]] = None,
+        session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Onboard a new user into the access controls table.
+        
+        Args:
+            vzid: Verizon ID of the user
+            role: User role (admin, user, etc.)
+            domain_ids: List of domain IDs the user has access to (None means all domains)
+            session_id: Session ID for audit logging
+            
+        Returns:
+            Dictionary containing the created access control entry
+            
+        Raises:
+            ValidationException: If user already exists or invalid domain IDs
+        """
+        session = AppDatabase.get_session()
+        try:
+            # Check if user already exists
+            existing_user = session.query(AccessControl).filter(AccessControl.vzid == vzid).first()
+            if existing_user:
+                raise ValidationException(f"User with vzid '{vzid}' already exists")
+            
+            # Validate domain IDs if provided
+            if domain_ids:
+                # Check if all provided domain IDs exist
+                existing_domains = session.query(Domain.domainid).filter(Domain.domainid.in_(domain_ids)).all()
+                existing_domain_ids = [d.domainid for d in existing_domains]
+                invalid_domain_ids = set(domain_ids) - set(existing_domain_ids)
+                
+                if invalid_domain_ids:
+                    raise ValidationException(f"Invalid domain IDs: {list(invalid_domain_ids)}")
+            
+            # Validate role
+            valid_roles = ['admin', 'user', 'viewer']  # Add more as needed
+            if role not in valid_roles:
+                raise ValidationException(f"Invalid role '{role}'. Valid roles are: {valid_roles}")
+            
+            # Create new access control entry
+            new_user = AccessControl(
+                vzid=vzid,
+                role=role,
+                domainids=domain_ids
+            )
+            
+            session.add(new_user)
+            session.commit()
+            
+            # Log audit trail
+            if session_id:
+                AppDatabase.log_audit(
+                    entity_type="AccessControl",
+                    entity_id=new_user.id,
+                    action="user_onboard",
+                    session_id=session_id,
+                    change_details={
+                        "vzid": vzid,
+                        "role": role,
+                        "domain_ids": domain_ids
+                    },
+                    domainid=None
+                )
+            
+            return {
+                "id": new_user.id,
+                "vzid": new_user.vzid,
+                "role": new_user.role,
+                "domain_ids": new_user.domainids,
+                "access_level": "all_domains" if domain_ids is None else "specific_domains"
+            }
+        except Exception as e:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    @staticmethod
+    def get_user_access(vzid: str) -> Dict[str, Any]:
+        """
+        Get access control information for a user.
+        
+        Args:
+            vzid: Verizon ID of the user
+            
+        Returns:
+            Dictionary containing user access information
+            
+        Raises:
+            ValidationException: If user not found
+        """
+        session = AppDatabase.get_session()
+        try:
+            user = session.query(AccessControl).filter(AccessControl.vzid == vzid).first()
+            if not user:
+                raise ValidationException(f"User with vzid '{vzid}' not found")
+            
+            # Get domain names if user has specific domain access
+            domain_names = []
+            if user.domainids:
+                domains = session.query(Domain).filter(Domain.domainid.in_(user.domainids)).all()
+                domain_names = [{"domainid": d.domainid, "domainname": d.domainname} for d in domains]
+            
+            return {
+                "id": user.id,
+                "vzid": user.vzid,
+                "role": user.role,
+                "domain_ids": user.domainids,
+                "domains": domain_names,
+                "access_level": "all_domains" if user.domainids is None else "specific_domains"
+            }
+        finally:
+            session.close()
+
+    @staticmethod
+    def update_user_access(
+        vzid: str,
+        role: Optional[str] = None,
+        domain_ids: Optional[List[int]] = None,
+        session_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Update access control information for a user.
+        
+        Args:
+            vzid: Verizon ID of the user
+            role: New role (optional)
+            domain_ids: New list of domain IDs (optional, None means all domains)
+            session_id: Session ID for audit logging
+            
+        Returns:
+            Dictionary containing updated user access information
+            
+        Raises:
+            ValidationException: If user not found or invalid data
+        """
+        session = AppDatabase.get_session()
+        try:
+            user = session.query(AccessControl).filter(AccessControl.vzid == vzid).first()
+            if not user:
+                raise ValidationException(f"User with vzid '{vzid}' not found")
+            
+            # Store old values for audit
+            old_values = {
+                "role": user.role,
+                "domain_ids": user.domainids
+            }
+            
+            # Update role if provided
+            if role is not None:
+                valid_roles = ['admin', 'user', 'viewer']
+                if role not in valid_roles:
+                    raise ValidationException(f"Invalid role '{role}'. Valid roles are: {valid_roles}")
+                user.role = role
+            
+            # Update domain access if provided
+            if domain_ids is not None:
+                # Validate domain IDs if provided
+                if domain_ids:
+                    existing_domains = session.query(Domain.domainid).filter(Domain.domainid.in_(domain_ids)).all()
+                    existing_domain_ids = [d.domainid for d in existing_domains]
+                    invalid_domain_ids = set(domain_ids) - set(existing_domain_ids)
+                    
+                    if invalid_domain_ids:
+                        raise ValidationException(f"Invalid domain IDs: {list(invalid_domain_ids)}")
+                
+                user.domainids = domain_ids
+            
+            session.commit()
+            
+            # Log audit trail
+            if session_id:
+                changes = {}
+                if role is not None:
+                    changes["role"] = {"old": old_values["role"], "new": role}
+                if domain_ids is not None:
+                    changes["domain_ids"] = {"old": old_values["domain_ids"], "new": domain_ids}
+                
+                AppDatabase.log_audit(
+                    entity_type="AccessControl",
+                    entity_id=user.id,
+                    action="user_update",
+                    session_id=session_id,
+                    change_details=changes,
+                    domainid=None
+                )
+            
+            # Get updated domain names
+            domain_names = []
+            if user.domainids:
+                domains = session.query(Domain).filter(Domain.domainid.in_(user.domainids)).all()
+                domain_names = [{"domainid": d.domainid, "domainname": d.domainname} for d in domains]
+            
+            return {
+                "id": user.id,
+                "vzid": user.vzid,
+                "role": user.role,
+                "domain_ids": user.domainids,
+                "domains": domain_names,
+                "access_level": "all_domains" if user.domainids is None else "specific_domains"
+            }
+        except Exception as e:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    @staticmethod
+    def list_users() -> List[Dict[str, Any]]:
+        """
+        List all users in the access control table.
+        
+        Returns:
+            List of dictionaries containing user access information
+        """
+        session = AppDatabase.get_session()
+        try:
+            users = session.query(AccessControl).all()
+            result = []
+            
+            for user in users:
+                # Get domain names if user has specific domain access
+                domain_names = []
+                if user.domainids:
+                    domains = session.query(Domain).filter(Domain.domainid.in_(user.domainids)).all()
+                    domain_names = [{"domainid": d.domainid, "domainname": d.domainname} for d in domains]
+                
+                result.append({
+                    "id": user.id,
+                    "vzid": user.vzid,
+                    "role": user.role,
+                    "domain_ids": user.domainids,
+                    "domains": domain_names,
+                    "access_level": "all_domains" if user.domainids is None else "specific_domains"
+                })
+            
+            return result
+        finally:
+            session.close()
+=======================================
+===================================================
+
+
+
+##config setup###
+
+import os
+import json
+from dotenv import load_dotenv
+from pydantic import root_validator
+from pydantic_settings import BaseSettings
+# from transformers import GPT2Tokenizer
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Load the GPT2Tokenizer once at startup
+try:
+    # tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+    tokenizer = None
+except Exception as e:
+    tokenizer = None
+    print(f"Error loading tokenizer: {e}")
+
+
+class PathsConfig(BaseSettings):
+    ROOT_DIRECTORY: str = "/default/root/directory"
+    ldap_uswin_ca_cert_path: str = "/default/ldap/uswin/ca/cert/path"
+    ldap_vdsi_ca_cert_path: str = "/default/ldap/vdsi/ca/cert/path"
+    ldap_adepb_ca_cert_path: str = "/default/ldap/adepb/ca/cert/path"
+    TEMP: str = "/default/temp"
+    gcp_ca_read_path: str = "/default/gcp/ca/path"
+    gcp_ca_write_path: str = "/default/gcp/ca/path"
+    gcp_oidc_path: str = "/default/gcp/oidc/path"
+    gcp_np_ca_read_path: str = "/default/gcp/ca/path"
+    gcp_np_ca_write_path: str = "/default/gcp/ca/path"
+    gcp_np_oidc_path: str = "/default/gcp/oidc/path"
+    spanner_np_ca_read_path: str = "/default/spanner/ca/path"
+    spanner_np_ca_write_path: str = "/default/spanner/ca/path"
+    spanner_np_oidc_path: str = "/default/spanner/oidc/path"
+
+    db_functions_DIRECTORY: str
+
+    @root_validator(pre=True)
+    def construct_paths(cls, values):
+        """
+        Constructs absolute paths based on the current working directory.
+
+        Args:
+            values (dict): Dictionary of environment variable values.
+
+        Returns:
+            dict: Updated dictionary with absolute paths.
+        """
+        current_wrk_directory = os.getcwd()
+        values["ROOT_DIRECTORY"] = os.path.join(
+            current_wrk_directory, values["ROOT_DIRECTORY"].lstrip("/")
+        )
+
+        values["db_functions_DIRECTORY"] = os.path.join(
+            values["ROOT_DIRECTORY"], values["db_functions_DIRECTORY"].lstrip("/")
+        )
+        values["gcp_ca_read_path"] = os.path.join(
+            current_wrk_directory, values["gcp_ca_read_path"].lstrip("/")
+        )
+        values["gcp_ca_write_path"] = os.path.join(
+            current_wrk_directory, values["gcp_ca_write_path"].lstrip("/")
+        )
+        values["gcp_oidc_path"] = os.path.join(
+            current_wrk_directory, values["gcp_oidc_path"].lstrip("/")
+        )
+        values["gcp_np_ca_read_path"] = os.path.join(
+            current_wrk_directory, values["gcp_np_ca_read_path"].lstrip("/")
+        )
+        values["gcp_np_ca_write_path"] = os.path.join(
+            current_wrk_directory, values["gcp_np_ca_write_path"].lstrip("/")
+        )
+        values["gcp_np_oidc_path"] = os.path.join(
+            current_wrk_directory, values["gcp_np_oidc_path"].lstrip("/")
+        )
+        values["ldap_uswin_ca_cert_path"] = os.path.join(
+            values["ROOT_DIRECTORY"], values["ldap_uswin_ca_cert_path"].lstrip("/")
+        )
+        values["ldap_vdsi_ca_cert_path"] = os.path.join(
+            values["ROOT_DIRECTORY"], values["ldap_vdsi_ca_cert_path"].lstrip("/")
+        )
+        values["ldap_adepb_ca_cert_path"] = os.path.join(
+            values["ROOT_DIRECTORY"], values["ldap_adepb_ca_cert_path"].lstrip("/")
+        )
+        values["spanner_np_ca_read_path"] = os.path.join(
+            current_wrk_directory, values["spanner_np_ca_read_path"].lstrip("/")
+        )
+        values["spanner_np_ca_write_path"] = os.path.join(
+            current_wrk_directory, values["spanner_np_ca_write_path"].lstrip("/")
+        )
+        values["spanner_np_oidc_path"] = os.path.join(
+            current_wrk_directory, values["spanner_np_oidc_path"].lstrip("/")
+        )
+
+        values["TEMP"] = values["TEMP"]
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = values["gcp_ca_write_path"]
+        return values
+
+    class Config:
+        env_prefix = "PATHS_"  # Environment variables should start with PATHS_
+
+
+class DBConfig(BaseSettings):
+    host: str = "localhost"
+    username: str = "your_db_username"
+    password: str = "your_db_password"
+    port: int = 5432
+    db_name: str = "your_db_name"
+
+    class Config:
+        env_prefix = "DB_"  # Environment variables should start with DB_
+
+
+class RedisConfig(BaseSettings):
+    host: str = "localhost"
+    port: int =6379 
+    db: int=0
+    password: str
+    ssl: bool = False
+
+    class Config:
+        env_prefix = "Redis_"  # Environment variables should start with Redis_
+
+class EmbeddingConfig(BaseSettings):
+    Vegas_ENDPOINT: str = "vegas endpoint"
+
+    class Config:
+        env_prefix = "EMBEDDING_"  # Environment variables should start with EMBEDDING_
+
+
+class TablesConfig(BaseSettings):
+    access_control_table: str = "your_schema"
+    db_schema: str = "your_schema"
+    domains_table: str = "your_table"
+    catalogs_table: str = "your_table"
+    user_feedback_table: str = "your_table"
+    feedback_table: str = "your_table"
+    user_questions_table: str = "your_table"
+    chat_history_table: str = "your_table"
+    sessions_table: str = "your_table"
+    responsetimes_table: str = "your_table"
+    tokensusage_table: str = "your_table"
+    context_table: str = "your_table"
+    context_mapping_table: str = "your_table"
+    catalog_rules_table: str = "your_table"
+    chat_conversation_table: str = "your_table"
+    chat_message_table: str = "your_table"
+    questions_count_table: str = "your_table"
+    table_column_table: str = "your_table"
+    table_rule_table: str = "your_table"
+    audit_table: str = "your_table"
+
+    class Config:
+        env_prefix = "TABLES_"  # Environment variables should start with TABLES_
+
+
+class LLMConfig(BaseSettings):
+    vegas_llm: str = "your_api"
+    vegas_api: str = "your_api"
+
+    class Config:
+        env_prefix = "LLM_"  # Environment variables should start with LLM_
+
+
+class ThinkForgeConfig(BaseSettings):
+    cache_api: str = "your_api"
+
+    class Config:
+        env_prefix = "Cache_"  # Environment variables should start with LLM_
+
+
+class GCPConfig(BaseSettings):
+    gcp_project: str = "default_gcp_project"
+    gcp_auth_url: str = "https://default_gcp_auth_url"
+    gcp_np_project: str = "default_gcp_project"
+    gcp_np_auth_url: str = "https://default_gcp_auth_url"
+
+    class Config:
+        env_prefix = "GCP_"  # Environment variables should start with GCP_
+
+
+class SpannerConfig(BaseSettings):
+    spanner_np_project: str = "default_spanner_np_project"
+    spanner_np_auth_url: str = "https://default_spanner_np_auth_url"
+    spanner_np_instance_id: str = "default_spanner_np_instance_id"
+    spanner_np_database_id: str = "default_spanner_np_database_id"
+
+    class Config:
+        env_prefix = "SPANNER_"  # Environment variables should start with Spanner_
+
+
+class LDAPConfig(BaseSettings):
+    ldap_uswin_password: str = "default_ldap_uswin_password"
+    ldap_uswin_hostname: str = "default_ldap_uswin_hostname"
+    ldap_port: str = "389"
+    ldap_uswin_dn: str = "default_ldap_uswin_dn"
+    ldap_uswin_base_dn: str = "default_ldap_uswin_base_dn"
+    ldap_uswin_search_filter: str = "default_ldap_uswin_search_filter"
+    ldap_vdsi_password: str = "default_ldap_vdsi_password"
+    ldap_vdsi_hostname: str = "default_ldap_vdsi_hostname"
+    ldap_vdsi_dn: str = "default_ldap_vdsi_dn"
+    ldap_vdsi_base_dn: str = "default_ldap_vdsi_base_dn"
+    ldap_vdsi_search_filter: str = "default_ldap_vdsi_search_filter"
+    ldap_adepb_password: str = "default_ldap_adepb_password"
+    ldap_adepb_hostname: str = "default_ldap_adepb_hostname"
+    ldap_adepb_dn: str = "default_ldap_adepb_dn"
+    ldap_adepb_base_dn: str = "default_ldap_adepb_base_dn"
+    ldap_adepb_search_filter: str = "default_ldap_adepb_search_filter"
+
+    class Config:
+        env_prefix = "LDAP_"  # Environment variables should start with LDAP_
+
+
+class AppConfig(BaseSettings):
+    db: DBConfig = DBConfig()
+    ldap: LDAPConfig = LDAPConfig()
+    paths: PathsConfig = PathsConfig()
+    tables: TablesConfig = TablesConfig()
+    llm: LLMConfig = LLMConfig()
+    cache: ThinkForgeConfig = ThinkForgeConfig()
+    gcp: GCPConfig = GCPConfig()
+    embedding: EmbeddingConfig = EmbeddingConfig()
+    spanner: SpannerConfig = SpannerConfig()
+    redis: RedisConfig = RedisConfig()
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        extra = "allow"
+
+# Instantiate the configuration
+Config = AppConfig()
