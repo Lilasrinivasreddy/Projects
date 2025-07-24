@@ -1,8 +1,159 @@
-please create the new endpoint and have the code ready by tomorrow's call
-we have to finish the UI integration by evening tomorrow
+STEP 1: Create DB Table
+If not already created, run this SQL in your database:
 
-1.) Add a endpoint to accept PDFs under contexts router 2.)  Push this into a new table `report_table` columns : report _name , report_details (markdown of pdf) , created_at 3.) converse endpoint under contexts 4.)
+sql
+Copy
+Edit
+CREATE TABLE report_table (
+    report_name TEXT PRIMARY KEY,
+    report_details TEXT,
+    created_at TIMESTAMP
+);
+✅ STEP 2: Add ORM Model
+📁 File: src/database_connections/app_database/models.py
+📌 Add at the bottom:
 
+python
+Copy
+Edit
+from sqlalchemy import Column, String, Text, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class ReportTable(Base):
+    __tablename__ = "report_table"
+
+    report_name = Column(String, primary_key=True)
+    report_details = Column(Text)
+    created_at = Column(DateTime)
+✅ STEP 3: Add DB Utility Functions
+📁 File: src/database_connections/app_database/service.py
+📌 Add inside the AppDatabase class:
+
+python
+Copy
+Edit
+@staticmethod
+def insert_report(report_data: dict):
+    session = AppDatabase.get_session()
+    try:
+        from src.database_connections.app_database.models import ReportTable
+        report = ReportTable(**report_data)
+        session.add(report)
+        session.commit()
+    finally:
+        session.close()
+
+@staticmethod
+def get_report_by_name(report_name: str):
+    session = AppDatabase.get_session()
+    try:
+        from src.database_connections.app_database.models import ReportTable
+        report = session.query(ReportTable).filter_by(report_name=report_name).first()
+        return report.__dict__ if report else None
+    finally:
+        session.close()
+✅ STEP 4: Add Endpoints
+📁 File: src/app/routers/contexts/controller.py
+📌 Add at the bottom of the file:
+
+python
+Copy
+Edit
+from fastapi import UploadFile, File, Form
+import pdfplumber
+from datetime import datetime
+import uuid
+from fastapi import HTTPException
+
+@router.post("/upload_report_pdf", status_code=201)
+async def upload_report_pdf(
+    file: UploadFile = File(...),
+    report_name: str = Form(...),
+    response: Response = None
+):
+    transaction_id = f"{uuid.uuid4()}_{datetime.now().timestamp()}"
+    session_logger = start_new_session(transaction_id, "upload_report_pdf")
+    session_id = require_session_id()
+
+    try:
+        if not file.filename.endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+
+        # Extract markdown
+        markdown_text = ""
+        with pdfplumber.open(file.file) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    markdown_text += text.strip() + "\n\n"
+        markdown_text = markdown_text.strip()
+
+        from src.database_connections.app_database.service import AppDatabase
+        AppDatabase.insert_report({
+            "report_name": report_name,
+            "report_details": markdown_text,
+            "created_at": datetime.utcnow()
+        })
+
+        if response:
+            response.headers["transaction_id"] = transaction_id
+
+        return {"status": "success", "message": f"Report '{report_name}' uploaded successfully"}
+
+    except Exception as e:
+        logger_capture.log_error(session_logger, f"Failed to upload report: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/converse", status_code=200)
+async def converse_with_report(
+    report_name: str = Form(...),
+    question: str = Form(...),
+    response: Response = None
+):
+    transaction_id = f"{uuid.uuid4()}_{datetime.now().timestamp()}"
+    session_logger = start_new_session(transaction_id, "converse_with_report")
+    session_id = require_session_id()
+
+    try:
+        from src.database_connections.app_database.service import AppDatabase
+        report = AppDatabase.get_report_by_name(report_name)
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+
+        markdown_content = report.get("report_details", "")
+
+        from src.llm.services import LLM
+        answer = LLM.ask_question_from_text(
+            session_logger,
+            question,
+            context=markdown_content
+        )
+
+        if response:
+            response.headers["transaction_id"] = transaction_id
+
+        return {"status": "success", "answer": answer}
+
+    except Exception as e:
+        logger_capture.log_error(session_logger, f"Converse failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+✅ STEP 5: Ensure LLM Service Supports
+📁 File: src/llm/services.py
+📌 Ensure this function exists:
+
+python
+Copy
+Edit
+@staticmethod
+def ask_question_from_text(session_logger, question: str, context: str):
+    # This is just a placeholder for your real implementation
+    prompt = f"Context:\n{context}\n\nQuestion:\n{question}"
+    # Call LLM here and return the answer
+    return "Sample answer from LLM"
+If you already use Gemini/GPT API here, just ensure context and question are supported
 
 #### contexts controller ####
 import uuid
