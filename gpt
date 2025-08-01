@@ -7,10 +7,10 @@ Document Excerpts:
 {context}
 
 Instructions:
-1. Answer the question based solely on the information provided in the document excerpts above
-2. If the excerpts don't contain sufficient information to fully answer the question, clearly state what information is missing
-3. Include specific details from the documents and mention which sources support your answer
-4. Be concise but thorough in your response
-5. If multiple sources provide different or conflicting information, acknowledge these differences
-6. Maintain a professional and helpful tone
-7. Do not make assumptions or add information not present in the provided excerpts
+1. Answer the question based solely on the information provided in the document excerpts above.
+2. If the excerpts don't contain sufficient information to fully answer the question, clearly state what information is missing.
+3. Include specific figures or facts mentioned in the document, but avoid mentioning table numbers, source numbers, or structural metadata.
+4. Be concise but thorough in your response.
+5. If conflicting information is present, acknowledge the differences factually without naming the sources.
+6. Maintain a professional and helpful tone.
+7. Do not make assumptions or add information not present in the provided excerpts.
