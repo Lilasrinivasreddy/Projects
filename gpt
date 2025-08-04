@@ -26,9 +26,13 @@ index_faiss_collection_mapping = {
 pdfs = "pdfs"
 columns = ["Functional_area", "Services", "Subtopic", "Oneconfluence_link"]
 ## make sure to keep "all" at last of the list
-list_func_area = ["gcp", "data_indus", "bi_tools", "dgs", "teradata", "ml_platform", "hadoop", "informatica", 'data_discovery', 'all', 'ai_indus', 'ai_workmate']
+list_func_area = ["gcp", "data_indus", "bi_tools", "dgs", "teradata", "ml_platform", "hadoop", "informatica", 'data_discovery', 'ai_indus', 'ai_workmate', 'all']
 current_dir = os.path.join(parent_dir, "aider_kw_retriever")
 print(current_dir)
+
+os.makedirs("mapping_docs", exist_ok=True)
+os.makedirs("files_not_downloaded", exist_ok=True)
+os.makedirs("lookup_files", exist_ok=True)
 
 combined_df = pd.DataFrame()
 
@@ -40,7 +44,7 @@ for each in list_func_area:
         df = combined_df
     else:
         try:
-            df = pd.read_excel(f"{data_path}/SlackbotKBs.xlsx", each)
+            df = pd.read_excel(f"{data_path}/SlackbotKBs.xlsx", sheet_name=each)
             combined_df = pd.concat([combined_df, df], ignore_index=True)
         except:
             raise ValueError(f"Please download and make sure the excel sheet for {each} is in place")
@@ -81,10 +85,46 @@ for each in list_func_area:
         src_doc_dict = {"source": url[index], "index": index, "pretext": plst[index]}
         src_docs.append(src_doc_dict)
 
+    # Save individual mapping files
     with open(f'files_not_downloaded/{each}_files_not_downloaded.txt', 'w') as f:
         for line in not_downloaded_list:
             f.write(f"{line}\n")
+
     with open(f'mapping_docs/{each}_src_docs.txt', 'w') as convert_file:
         convert_file.write(json.dumps(src_docs))
 
+    # Skip lookup generation for "all"
+    if each != 'all':
+        # Generate lookup file for current functional area
+        lookup_lines = []
+        for doc in src_docs:
+            doc_id = str(doc["index"])
+            metadata = json.dumps({
+                "source": doc["source"],
+                "pretext": doc["pretext"]
+            })
+            line = f"UPDATE|{doc_id}|{metadata}"
+            lookup_lines.append(line)
+
+        lookup_file_path = f"lookup_files/{each}_lookup.txt"
+        with open(lookup_file_path, 'w') as lookup_file:
+            for line in lookup_lines:
+                lookup_file.write(f"{line}\n")
+
+# Combine all individual lookups into one master lookup.txt
+combined_lookup = []
+for each in list_func_area:
+    if each == 'all':
+        continue
+    try:
+        with open(f"lookup_files/{each}_lookup.txt", 'r') as f:
+            combined_lookup.extend(f.readlines())
+    except FileNotFoundError:
+        continue
+
+# Write final lookup.txt
+with open("lookup.txt", 'w') as f:
+    f.writelines(combined_lookup)
+
+print("✅ lookup.txt generated successfully.")
 print(time.strftime("%H:%M:%S", time.localtime()))
