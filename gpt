@@ -1,17 +1,90 @@
-You are an expert AI assistant that answers questions based on document content. 
-Based on the following document excerpts, provide a comprehensive and accurate answer to the user's question.
+import os
+import pandas as pd
+import json
+import time
+from build_index_config import parent_dir, data_path
+from downloader import download_confluence_links
 
-User Question: {user_query}
+print(time.strftime("%H:%M:%S", time.localtime()))
 
-Document Excerpts:
-{context}
+index_faiss_collection_mapping = {
+    'gcp': "aider_gcp_v1",
+    'bi_tools': "aider_bi_tools_v1",
+    'dgs': "aider_dgs_v1",
+    'ml_platform': "aider_ml_platform_v1",
+    'hadoop': "aider_hadoop_v1",
+    'teradata': "aider_teradata_v1",
+    'all': "aider_all_v1",
+    'informatica': "aider_informatica_v1",
+    'data_indus': "aider_data_indus_v1",
+    'data_discovery': "aider_data_discovery_v1",
+    'edw_modernization': "aider_edw_modernization_v1",
+    'ai_indus': "aider_ai_indus_v1",
+    'ai_workmate': "aider_ai_workmate_v1"
+}
 
-Instructions:
-1. Answer the question based solely on the information provided in the document excerpts above.
-2. If the excerpts don't contain sufficient information to fully answer the question, clearly state what information is missing.
-3. Include specific figures or facts mentioned in the document, but avoid mentioning table numbers, source numbers, or structural metadata.
-4. Be concise but thorough in your response.
-5. If conflicting information is present, acknowledge the differences factually without naming the sources.
-6. Maintain a professional and helpful tone.
-7. Do not make assumptions or add information not present in the provided excerpts.
-Avoid starting the response with phrases like "Based on the excerpts", "According to the document", or similar boilerplate. Begin directly with the answer.
+pdfs = "pdfs"
+columns = ["Functional_area", "Services", "Subtopic", "Oneconfluence_link"]
+## make sure to keep "all" at last of the list
+list_func_area = ["gcp", "data_indus", "bi_tools", "dgs", "teradata", "ml_platform", "hadoop", "informatica", 'data_discovery', 'all', 'ai_indus', 'ai_workmate']
+current_dir = os.path.join(parent_dir, "aider_kw_retriever")
+print(current_dir)
+
+combined_df = pd.DataFrame()
+
+for each in list_func_area:
+    if each == 'all':
+        # Combine data from all functional areas
+        if combined_df.empty:
+            raise ValueError("No data available to combine for 'all' index")
+        df = combined_df
+    else:
+        try:
+            df = pd.read_excel(f"{data_path}/SlackbotKBs.xlsx", each)
+            combined_df = pd.concat([combined_df, df], ignore_index=True)
+        except:
+            raise ValueError(f"Please download and make sure the excel sheet for {each} is in place")
+    
+    print(each)
+    download_pdf = True
+    faiss_col_name = index_faiss_collection_mapping[each]
+
+    os.makedirs(data_path, exist_ok=True)
+    parent_dir = f"{data_path}/{each}"
+    ulst = []
+    plst = []
+
+    for _, dt in df.iterrows():
+        if not str(dt['Oneconfluence_link']).strip().startswith("https://oneconfluence"):
+            continue
+        
+        ulst.append(dt['Oneconfluence_link'].strip())
+        pretext = f"Functional Area: {dt['Functional_area']} \n Topic: {dt['Subtopic']}"
+        plst.append(pretext)
+
+    url = ulst
+    if download_pdf:
+        not_downloaded_list = download_confluence_links(url, pdf_path=parent_dir)
+        print(not_downloaded_list)
+
+    file_path = os.path.join(current_dir, f'{each}/pdfs')
+    print(file_path)
+    files = os.listdir(file_path)
+    src_docs = []
+
+    def get_num(x):
+        return int(x.split('.')[0])
+    
+    files = sorted(files, key=get_num, reverse=False)
+    for fname in files:
+        index = get_num(fname)
+        src_doc_dict = {"source": url[index], "index": index, "pretext": plst[index]}
+        src_docs.append(src_doc_dict)
+
+    with open(f'files_not_downloaded/{each}_files_not_downloaded.txt', 'w') as f:
+        for line in not_downloaded_list:
+            f.write(f"{line}\n")
+    with open(f'mapping_docs/{each}_src_docs.txt', 'w') as convert_file:
+        convert_file.write(json.dumps(src_docs))
+
+print(time.strftime("%H:%M:%S", time.localtime()))
