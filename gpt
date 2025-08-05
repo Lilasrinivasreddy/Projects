@@ -1,3 +1,80 @@
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ".", " ", ""]
+    )
+    return splitter.split_text(text)
+
+
+--------------
+
+from src.utils.chunking_utils import chunk_text
+chunks = chunk_text(pdf_content, chunk_size=1000, chunk_overlap=200)
+vectorstore = VectorStore()
+chunk_records = []
+
+for i, chunk in enumerate(chunks):
+    embedding = vectorstore.vegas_embedding(chunk)
+    chunk_records.append({
+        'report_name': report_name,
+        'username': username,
+        'domainid': domainid,
+        'catalogid': catalogid,
+        'chatid': chatid,
+        'chunk_text': chunk,
+        'chunk_index': i,
+        'embedding': embedding,
+        'summary': summary if i == 0 else "",  # only in first chunk
+    })
+
+reportid = AppDatabase.insert_report_chunks(chunk_records)
+----------------
+@staticmethod
+def insert_report_chunks(chunk_records: List[Dict]) -> int:
+    """
+    Inserts chunked report content into the report_chunks table.
+    Returns the associated report ID.
+    """
+    # You can generate a unique report_id or use the first chunk to insert into `reports` table and get its ID.
+    # Then insert each chunk with that ID into `report_chunks`.
+
+    report_id = AppDatabase.generate_report_id()  # You should have a way to generate/report this
+    for chunk in chunk_records:
+        db.insert_into_report_chunks(report_id, **chunk)  # Replace with your ORM/db logic
+    return report_id
+================
+@staticmethod
+def search_reports_semantic(username, query_embedding, domain=None, catalog=None, chatid=None, report_id=None, limit=3):
+    """
+    Performs semantic search across report chunks based on embedding similarity.
+    """
+    # Example using PostgreSQL + pgvector:
+    query = """
+        SELECT reportid, chunk_text, catalogid, domainid, chunk_index
+        FROM report_chunks
+        WHERE username = %s
+        -- Optional filters
+        -- AND domainid = %s AND catalogid = %s ...
+        ORDER BY embedding <-> %s
+        LIMIT %s;
+    """
+    params = [username, query_embedding, limit]
+    result = db.execute(query, params)  # Replace with actual query call
+    return result
+========
+
+
+
+
+
+
+
+
+
+
 ##talk to report
 import json
 from datetime import datetime
