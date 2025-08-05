@@ -1,3 +1,84 @@
+
+# src/utils/chunking_utils.py
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 100):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ".", " ", ""]
+    )
+    return splitter.split_text(text)
+
+
+
+from fastapi import APIRouter, UploadFile, File
+from PyPDF2 import PdfReader
+
+router = APIRouter()
+
+# Basic chunking with overlap
+def chunk_text(text, chunk_size=1000, overlap=200):
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start += chunk_size - overlap
+    return chunks
+
+
+@router.post("/upload-chunk")
+async def upload_pdf_and_chunk(file: UploadFile = File(...)):
+    reader = PdfReader(file.file)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text() or ""
+    chunks = chunk_text(text)
+    return {
+        "filename": file.filename,
+        "num_chunks": len(chunks),
+        "chunks": chunks
+    }
+
+
+@router.post("/upload-multiple-chunks")
+async def upload_multiple_pdfs(files: list[UploadFile] = File(...)):
+    all_chunks = []
+    for file in files:
+        reader = PdfReader(file.file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+        chunks = chunk_text(text)
+        for chunk in chunks:
+            all_chunks.append({
+                "chunk": chunk,
+                "source": file.filename
+            })
+    return {
+        "total_chunks": len(all_chunks),
+        "chunks": all_chunks
+    }
+
+
+
+
+
+from fastapi import APIRouter
+from .chunking import router as chunking_router
+
+router = APIRouter()
+router.include_router(chunking_router, prefix="/contexts", tags=["chunking"])
+
+
+
+
+
+
+
+
 ### reports controller.py####
 import uuid
 from datetime import datetime
