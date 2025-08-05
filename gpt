@@ -1,3 +1,520 @@
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    DateTime,
+    Text,
+    Float,
+    ForeignKey,
+    JSON,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.orm import relationship
+from .orm_setup import Base
+from src.config_setup import Config
+import uuid
+from datetime import datetime
+
+# Add pgvector import
+
+from pgvector.sqlalchemy import Vector
+
+# Table and schema config
+TABLES = Config.tables
+SCHEMA = TABLES.db_schema
+
+class AccessControl(Base):
+    """
+    Table for access control and user roles.
+    Columns:
+        - id: Primary key.
+        - userid: User identifier.
+        - vzid: Verizon ID.
+        - role: User role (admin, user, etc.).
+        - domainids: List of domain IDs the user has access to (nullable, if null means all domains)
+        - catalogids: List of catalog IDs the user has access to (nullable, if null means all catalogs within allowed domains)
+    """
+
+    __tablename__ = TABLES.access_control_table
+    __table_args__ = {"schema": SCHEMA}
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    vzid = Column(String)
+    role = Column(Text)
+    domainids = Column(ARRAY(Integer), nullable=True)  # List of domain IDs user can access
+    catalogids = Column(ARRAY(Integer), nullable=True)  # List of catalog IDs user can access
+
+
+class Table(Base):
+    """
+    Table metadata for data context tables.
+    Columns:
+        - tableid: Primary key.
+        - tablename: Name of the table.
+        - table_description: Description.
+        - usage_patterns: Usage patterns.
+        - embedding: Vector embedding (if enabled).
+        - ...
+    """
+
+    __tablename__ = TABLES.context_table
+    __table_args__ = {"schema": SCHEMA}
+    tableid = Column(Integer, primary_key=True)
+    tablename = Column(Text)
+    table_description = Column(Text)
+    usage_patterns = Column(ARRAY(Text))
+    date_created = Column(DateTime)
+    date_updated = Column(DateTime)
+    archive = Column(Boolean)
+    # if Vector:    
+    embedding = Column(Vector(768), nullable=True)  # Adjust dimension as needed
+    # embedding = Column(JSONB)
+
+
+class TableColumn(Base):
+    """
+    Metadata for columns in a context table.
+    Columns:
+        - columnid: Primary key.
+        - tableid: Foreign key to Table.
+        - name: Column name.
+        - ...
+    """
+
+    __tablename__ = TABLES.table_column_table
+    __table_args__ = {"schema": SCHEMA}
+    columnid = Column(Integer, primary_key=True, autoincrement=True)
+    tableid = Column(Integer, ForeignKey(f"{SCHEMA}.{TABLES.context_table}.tableid"), nullable=False)
+    name = Column(String, nullable=False)
+    column_alias = Column(String, nullable=True)
+    data_type = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    categorical_values = Column(ARRAY(Text), nullable=True)
+    categorical_definitions = Column(JSON, nullable=True)
+    archive = Column(Boolean, default=False)
+    date_created = Column(DateTime)
+    date_updated = Column(DateTime)
+
+
+class TableMapping(Base):
+    """
+    Mapping between tables, domains, and catalogs.
+    Columns:
+        - tablemappingid: Primary key.
+        - tableid: Foreign key to Table (single table).
+        - domainid: Foreign key to Domain (single domain).
+        - catalogid: List of catalog IDs (multiple catalogs).
+    """
+
+    __tablename__ = TABLES.context_mapping_table
+    __table_args__ = {"schema": SCHEMA}
+    tablemappingid = Column(Integer, primary_key=True)
+    tableid = Column(Integer)  # Single table per mapping
+    domainid = Column(Integer)  # Single domain per mapping
+    catalogid = Column(ARRAY(Integer))  # Multiple catalogs per mapping
+
+
+class CatalogRule(Base):
+    """
+    Rules for catalogs within a domain.
+    New structure with improved semantic search capabilities.
+    Columns:
+        - rule_id: Primary key (VARCHAR, natural key or UUID).
+        - description: Human-readable description of the rule's business purpose.
+        - rule_detail: JSON object containing detailed, structured rule definition.
+        - desc_embedding: Vector embedding of the description for semantic search.
+        - domainid: Foreign key to Domain.
+        - catalogid: List of catalog IDs this rule applies to.
+        - tables: List of table names this rule applies to.
+        - created_at/updated_at: Standard metadata columns.
+    """
+
+    __tablename__ = TABLES.catalog_rules_table
+    __table_args__ = {"schema": SCHEMA}
+    rule_id = Column(Integer, primary_key=True)
+    description = Column(Text, nullable=False)
+    rule_detail = Column(JSONB, nullable=False)
+    desc_embedding = Column(Vector(768), nullable=False)
+    domainid = Column(Integer, nullable=False)
+    catalogid = Column(ARRAY(Integer), nullable=True)
+    tables = Column(ARRAY(String), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class Catalog(Base):
+    """
+    Data catalog within a domain.
+    Columns:
+        - catalogid: Primary key.
+        - domainid: Foreign key to Domain.
+        - catalogname: Name of the catalog.
+        - ...
+    """
+
+    __tablename__ = TABLES.catalogs_table
+    __table_args__ = {"schema": SCHEMA}
+    catalogid = Column(Integer, primary_key=True)
+    domainid = Column(Integer, ForeignKey(f"{SCHEMA}.{TABLES.domains_table}.domainid"), nullable=False)
+    catalogname = Column(String)
+    description = Column(Text)
+    status = Column(Text)
+    default_llm_model = Column(Text)
+    db_configuration = Column(JSONB)
+    use_cache = Column(Boolean, default=True)
+    use_contexts = Column(Boolean, default=True)
+    use_history = Column(Boolean, default=True)
+    use_subqueries = Column(Boolean, default=False)
+    use_thinking = Column(Boolean, default=False)
+    thinking_budget = Column(Integer, default=0)
+    date_created = Column(DateTime)
+    date_updated = Column(DateTime)
+
+
+class Domain(Base):
+    """
+    Business or data domain.
+    Columns:
+        - domainid: Primary key.
+        - domainname: Name of the domain.
+        - ...
+    """
+
+    __tablename__ = TABLES.domains_table
+    __table_args__ = {"schema": SCHEMA}
+    domainid = Column(Integer, primary_key=True)
+    domainname = Column(String)
+    description = Column(Text)
+    domain_type = Column(Text)
+    status = Column(Text)
+    domainurl = Column(String)
+    db_configuration = Column(JSONB)
+    date_created = Column(DateTime)
+    date_updated = Column(DateTime)
+
+
+class UserActivityHistory(Base):
+    """
+    Unified table for all user activity: chat, SQL, and external tool events.
+    Columns:
+        - historyid: Primary key.
+        - user_id: Username (resolved from session).
+        - domainid: Foreign key to Domain.
+        - catalogid: Foreign key to Catalog.
+        - sessionid: Session identifier.
+        - history_type: 'chat', 'sql', etc.
+        - question: The user's question.
+        - ...
+    Relationships:
+        - Linked to Domain, Catalog, and Session.
+        - Used for analytics, chat history, and token usage joins.
+    """
+
+    __tablename__ = TABLES.chat_history_table  # Use chathistory table name from config
+    __table_args__ = {"schema": SCHEMA}
+
+    historyid = Column(Integer, primary_key=True)
+    user_id = Column(String, nullable=False)
+    domainid = Column(
+        Integer, ForeignKey(f"{SCHEMA}.{TABLES.domains_table}.domainid"), nullable=False
+    )
+    catalogid = Column(
+        Integer, ForeignKey(f"{SCHEMA}.{TABLES.catalogs_table}.catalogid"), nullable=False
+    )
+    sessionid = Column(String, nullable=True)
+    transaction_id = Column(String, nullable=False)
+    history_type = Column(String, nullable=False)  # 'chat', 'sql', 'external', etc.
+    question = Column(Text, nullable=False)
+    sql_generated = Column(Text, nullable=True)
+    suggested_visualization = Column(Text, nullable=True)
+    generated_summary = Column(Text, nullable=True)
+    translated_question = Column(Text, nullable=True)
+    is_confident = Column(Boolean, default=False, nullable=False)  # NEW COLUMN
+    llm_used = Column(Text, default="gemini_flash",nullable=False)
+    status = Column(String, nullable=False)  # 'answered', 'failed', etc.
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    # Response time columns (no context fields, renamed for clarity)
+    time_taken_entity = Column(Float, nullable=True)
+    time_taken_vector_search = Column(Float, nullable=True)
+    time_taken_llm = Column(Float, nullable=True)
+    time_taken_db_connection = Column(Float, nullable=True)
+    total_time_taken_db_query_execution = Column(Float, nullable=True)
+    total_queries_executed_count = Column(Float, nullable=True)
+    total_response_time = Column(Float, nullable=True)
+
+class ChatConversation(Base):
+    """
+    Table for chat conversations (sessions).
+    Columns:
+        - chatid: Primary key.
+        - user_id: Username.
+        - domainid: Foreign key to Domain.
+        - catalogid: Foreign key to Catalog.
+        - sessionid: Session identifier.
+        - created_at, updated_at: Timestamps.
+        - chat_label: Label for the chat (first question, etc.).
+    """
+
+    __tablename__ = TABLES.chat_conversation_table
+    __table_args__ = {"schema": SCHEMA}
+
+    chatid = Column(String, primary_key=True)
+    user_id = Column(String, nullable=False)
+    domainid = Column(
+        Integer, ForeignKey(f"{SCHEMA}.{TABLES.domains_table}.domainid"), nullable=False
+    )
+    catalogid = Column(
+        Integer, ForeignKey(f"{SCHEMA}.{TABLES.catalogs_table}.catalogid"), nullable=False
+    )
+    sessionid = Column(String, nullable=True)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    chat_label = Column(String, nullable=True)
+    
+class ChatMessage(Base):
+    """
+    Table for chat messages within a conversation.
+    Columns:
+        - messageid: Primary key.
+        - chatid: Foreign key to ChatConversation.
+        - conversation: JSON object (user-bot exchange).
+        - timestamp: Timestamp.
+        - status: Message status.
+        - source: Message source (history, cache, etc.).
+    """
+
+    __tablename__ = TABLES.chat_message_table
+    __table_args__ = {"schema": SCHEMA}
+
+    def generate_messageid():
+        return f"{uuid.uuid4().hex}_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+    messageid = Column(String, primary_key=True, default=generate_messageid)
+    chatid = Column(
+        String, ForeignKey(f"{SCHEMA}.{TABLES.chat_conversation_table}.chatid"), nullable=False
+    )
+    conversation = Column(JSONB, nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    status = Column(String, default="active")  # 'active', 'deleted', 'edited', etc.
+    source = Column(String, nullable=True)  # Indicates if answered by history, cache, contexts, etc.
+    
+class Feedback(Base):
+    """
+    Table for user feedback on queries, summaries, and visualizations.
+    Columns:
+        - feedback_id: Primary key.
+        - historyid: Foreign key to UserActivityHistory.
+        - ...feedback fields...
+        - date_created, date_updated: Timestamps.
+    """
+
+    __tablename__ = TABLES.feedback_table
+    __table_args__ = {"schema": SCHEMA}
+    feedback_id = Column(Integer, primary_key=True)
+    historyid = Column(Integer)
+    query_feedback = Column(Boolean)
+    summary_feedback = Column(Boolean)
+    visualization_feedback = Column(Boolean)
+    visualization_provided = Column(Boolean)
+    insights_covered = Column(Boolean)
+    query_nlp_feedback = Column(Text)
+    suggested_sql = Column(Text)
+    suggested_charts = Column(ARRAY(Text))
+    chart_issues = Column(ARRAY(Text))
+    query_issues = Column(ARRAY(Text))
+    additional_insights = Column(Text)
+    date_created = Column(DateTime)
+    date_updated = Column(DateTime)
+
+class TokenUsage(Base):
+    """
+    Table for tracking LLM token usage per user query.
+    Columns:
+        - usageid: Primary key.
+        - historyid: Foreign key to UserActivityHistory.
+        - request_type: 'chat', 'sql', etc.
+        - model: LLM model used.
+        - prompt_tokens, candidates_tokens, total_tokens: Token counts.
+        - response_time: Time taken for the request.
+        - transaction_id: For traceability.
+        - date_created: Timestamp.
+    Relationships:
+        - Linked to UserActivityHistory via historyid.
+        - Used for per-user, per-domain, per-catalog analytics.
+    """
+
+    __tablename__ = TABLES.tokensusage_table
+    __table_args__ = {"schema": SCHEMA}
+    usageid = Column(Integer, primary_key=True)
+    historyid = Column(Integer)
+    request_type = Column(Text)
+    model = Column(Text)
+    prompt_tokens = Column(Integer)
+    candidates_tokens = Column(Integer)
+    total_tokens = Column(Integer)
+    thoughts_tokens = Column(Integer)
+    response_time = Column(Float)
+    transaction_id = Column(Text)
+    date_created = Column(DateTime)
+
+
+class UserFeedback(Base):
+    """
+    Table for user feedback on queries.
+    Columns:
+        - userfeedbackid: Primary key.
+        - historyid: Foreign key to UserActivityHistory.
+        - feeedback: Feedback text.
+        - comment: Additional comment.
+        - date_created: Timestamp.
+    """
+
+    __tablename__ = TABLES.user_feedback_table
+    __table_args__ = {"schema": SCHEMA}
+    userfeedbackid = Column(Integer, primary_key=True)
+    historyid = Column(Integer)
+    rating = Column(Integer)
+    comment = Column(Text,nullable = True)
+    date_created = Column(DateTime)
+
+
+class TableRule(Base):
+    """
+    Table for rules associated with context tables.
+    Columns:
+        - tableruleid: Primary key.
+        - tableid: Foreign key to Table.
+        - rule_definition: Rule text.
+        - archive: Boolean.
+        - date_created, date_updated: Timestamps.
+    """
+
+    __tablename__ = TABLES.table_rule_table
+    __table_args__ = {"schema": SCHEMA}
+    tableruleid = Column(Integer, primary_key=True, autoincrement=True)
+    tableid = Column(Integer, ForeignKey(f"{SCHEMA}.{TABLES.context_table}.tableid"), nullable=False)
+    rule_definition = Column(Text, nullable=False)
+    archive = Column(Boolean, default=False)
+    date_created = Column(DateTime)
+    date_updated = Column(DateTime)
+
+
+class Session(Base):
+    """
+    Table for user sessions.
+    Columns:
+        - sessionid: Primary key.
+        - start_time: Timestamp.
+        - username: Username.
+        - platform: Platform name.
+        - session_status: Boolean (active/inactive).
+    """
+
+    __tablename__ = TABLES.sessions_table
+    __table_args__ = {"schema": SCHEMA}
+    sessionid = Column(String, primary_key=True)
+    start_time = Column(DateTime, nullable=False)
+    username = Column(String, nullable=False)
+    platform = Column(String, nullable=False)
+    session_status = Column(Boolean, default=True)
+
+
+class AuditLog(Base):
+    """
+    Table for audit logging of changes to tables, columns, and rules.
+    Columns:
+        - audit_id: Primary key.
+        - entity_type: Table, TableColumn, TableRule, etc.
+        - entity_id: ID of the entity changed.
+        - action: create, update, delete.
+        - changed_by: Username or user_id.
+        - session_id: Session identifier.
+        - change_timestamp: Timestamp.
+        - change_details: JSON diff or snapshot.
+    """
+
+    __tablename__ = TABLES.audit_table
+    __table_args__ = {"schema": SCHEMA}
+    audit_id = Column(Integer, primary_key=True, autoincrement=True)
+    entity_type = Column(String, nullable=False)  # Table, TableColumn, TableRule
+    entity_id = Column(Integer, nullable=False)
+    action = Column(String, nullable=False)  # create, update, delete
+    changed_by = Column(String, nullable=False)  # username or user_id
+    session_id = Column(String, nullable=True)
+    change_timestamp = Column(DateTime, nullable=False)
+    change_details = Column(JSONB, nullable=True)  # JSON diff or snapshot
+    domainid = Column(Integer, nullable=True)
+    catalogids = Column(ARRAY(Integer), nullable=True)
+
+
+class ReportDetails(Base):
+    """
+    Table for storing report details and content.
+    Similar structure to Table model but for uploaded reports.
+    
+    Columns:
+        - reportid: Primary key
+        - report_name: Name of the report
+        - username: User who uploaded the report (for access control)
+        - domainid: Foreign key to Domain
+        - catalogid: Foreign key to Catalog
+        - report_content: Full content/markdown of the report
+        - summary: AI-generated summary of the report
+        - embedding: Vector embedding for similarity search
+        - status: Status of the report (active, deleted, etc.)
+        - created_at: Timestamp when report was uploaded
+        - updated_at: Timestamp when report was last modified
+    """
+    
+    __tablename__ = TABLES.report_details_table
+    __table_args__ = {"schema": SCHEMA}
+    
+    reportid = Column(Integer, primary_key=True, autoincrement=True)
+    report_name = Column(String, nullable=False)
+    report_content = Column(Text, nullable=False)  # Markdown content from PDF
+    summary = Column(Text, nullable=True)  # AI-generated summary
+    embedding = Column(Vector(768), nullable=True)  # Vector embedding for search
+    archive = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+class ReportMapping(Base):
+    """
+    Table for mapping reports to domains/catalogs and managing access.
+    Similar to ContextMapping but for reports.
+    
+    Columns:
+        - mappingid: Primary key
+        - reportid: Foreign key to ReportDetails
+        - domainid: Foreign key to Domain
+        - catalogid: Foreign key to Catalog
+        - username: User who has access (for user-specific access control)
+        - chatid: Chat session ID for chat-specific access control
+        - status: Status of the mapping (active, deleted)
+        - created_at: Timestamp when mapping was created
+    """
+
+    __tablename__ = TABLES.report_mapping_table
+    __table_args__ = {"schema": SCHEMA}
+    
+    mappingid = Column(Integer, primary_key=True, autoincrement=True)
+    reportid = Column(Integer, ForeignKey(f"{SCHEMA}.{TABLES.report_details_table}.reportid"), nullable=False)
+    domainid = Column(Integer, ForeignKey(f"{SCHEMA}.{TABLES.domains_table}.domainid"), nullable=False)
+    catalogid = Column(Integer, ForeignKey(f"{SCHEMA}.{TABLES.catalogs_table}.catalogid"), nullable=False)
+    username = Column(String, nullable=False)
+    chatid = Column(String, nullable=False)  # Chat session ID for access control
+    
+    # Relationships
+    report = relationship("ReportDetails", backref="mappings")
+    domain = relationship("Domain")
+    catalog = relationship("Catalog")
+
+
+
+
+========================================================================================================================
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200):
