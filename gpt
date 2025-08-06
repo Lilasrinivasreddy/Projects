@@ -1,3 +1,398 @@
+import io
+import uuid
+from datetime import datetime
+from typing import List, Optional
+import pdfplumber
+from fastapi import UploadFile, HTTPException
+
+from src.database_connections.app_database.service import AppDatabase
+from src.llm.services import LLM
+from src.utils.log_wrapper import logger_capture
+from src.utils.vectorstore import VectorStore
+from src.agents.talk2report_agent import Talk2ReportAgent
+from src.llm.services import LLM
+from src.models.model_parameters import Parameters
+
+class ReportsService:
+    """Service for handling PDF report uploads, processing, and querying."""
+
+    @staticmethod
+    async def upload_and_process_report(
+        session_logger,
+        file: UploadFile,
+        report_name: str,
+        session_id: str,
+        domain: str,
+        catalog: str,
+        chatid: str
+    ) -> dict:
+        """
+        Upload and process a PDF report with LLM summarization and vector embeddings.
+        
+        Args:
+            session_logger: Logger for session tracking
+            transaction_id: Unique transaction ID
+            file: Uploaded PDF file
+            report_name: Name for the report
+            username: User uploading the report
+            domain: Domain name
+            catalog: Catalog name
+            
+        Returns:
+            Dictionary with report details and processing status
+        """
+        try:
+            logger_capture.log_info(session_logger, f"Starting report upload and processing for {report_name}")
+            
+            username = AppDatabase.get_username_from_session(session_id)
+            # Validate file type
+            if not file.filename.lower().endswith('.pdf'):
+                raise HTTPException(status_code=400, detail="Only PDF files are supported")
+            
+            # Get domain and catalog IDs
+            domain_config = AppDatabase.get_domain_catalog_config(domain, catalog)
+            if not domain_config:
+                raise HTTPException(status_code=404, detail=f"Domain '{domain}' or catalog '{catalog}' not found")
+            
+            domainid = AppDatabase.get_domainid(domain)
+            catalogid = AppDatabase.get_catalogid(catalog,domainid)
+            use_thinking = domain_config.get("use_thinking", False)
+            thinking_budget = domain_config.get("thinking_budget", 0)
+            llm_model = domain_config.get("default_llm_model","gemini_flash_2.0")
+            
+            Parameters.set_thoughts(use_thinking)
+            Parameters.set_thinkingbudget(thinking_budget)
+            Parameters.set_llm_model(llm_model)
+            # Extract text from PDF
+            pdf_content = await ReportsService._extract_pdf_content(file, session_logger)
+            
+            if not pdf_content.strip():
+                raise HTTPException(status_code=400, detail="Could not read the PDF contents")
+            
+            # Generate AI summary and vector embedding
+            logger_capture.log_info(session_logger, "Generating summary and embeddings for report")
+            
+            # Generate AI summary using LLM service
+            
+            summary_results = LLM.generate_report_summary(session_logger, pdf_content, report_name)
+            if not summary_results:
+                raise HTTPException(status_code=500, detail="Failed to generate report summary")
+            summary = summary_results.get("summary", "")
+            followups = summary_results.get("suggested_questions", [])
+            # records = summary_results.get("suggested_dataframe", [])
+            # visualizations = summary_results.get("suggested_visualizations", [])
+            
+            # Generate vector embedding using VectorStore
+            vectorstore = VectorStore()
+            embedding = vectorstore.vegas_embedding(pdf_content)
+            
+            # Insert report into database with summary and embedding
+            report_data = {
+                'report_name': report_name,
+                'username': username,
+                'domainid': domainid,
+                'catalogid': catalogid,
+                'chatid': chatid,
+                'report_content': pdf_content,
+                'summary': summary,
+                'embedding': embedding
+            }
+            
+            reportid = AppDatabase.insert_report(report_data)
+            logger_capture.log_info(session_logger, f"Report inserted with ID: {reportid}")
+
+            return {"status": "success", 
+                    "reportid": reportid,
+                    "summary": summary,
+                    "suggested_followups": followups,
+                    # "records": records,
+                    # "suggested_visualization": visualizations
+                   }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger_capture.log_error(session_logger, f"Error uploading report: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to process report: {str(e)}")
+
+    @staticmethod
+    async def _extract_pdf_content(file: UploadFile, session_logger=None) -> str:
+        """
+        Extract table content from PDF file and convert to markdown if less than 5 pages.
+        
+        Args:
+            file: PDF file upload
+            session_logger: Logger for session tracking
+            
+        Returns:
+            Extracted and processed content (markdown if converted, otherwise raw table data)
+        """
+        try:
+            # Read file content
+            content = await file.read()
+            
+            # Extract tables using pdfplumber
+            extracted_content = []
+            page_count = 0
+            
+            with pdfplumber.open(io.BytesIO(content)) as pdf:
+                page_count = len(pdf.pages)
+                
+                for page_num, page in enumerate(pdf.pages, 1):
+                    # Extract tables from the page
+                    tables = page.extract_tables()
+                    
+                    if tables:
+                        page_content = [f"Page {page_num} Tables:"]
+                        for table_num, table in enumerate(tables, 1):
+                            page_content.append(f"Table {table_num}:")
+                            # Convert table to a readable format
+                            for row in table:
+                                if row:  # Skip empty rows
+                                    # Join non-None cells with | separator
+                                    row_data = [str(cell) if cell is not None else "" for cell in row]
+                                    page_content.append(" | ".join(row_data))
+                            page_content.append("")  # Add blank line between tables
+                        
+                        extracted_content.append("\n".join(page_content))
+                    else:
+                        # If no tables found, try to extract text as fallback
+                        page_text = page.extract_text()
+                        if page_text:
+                            extracted_content.append(f"Page {page_num} Text:\n{page_text}")
+            
+            raw_content = '\n\n'.join(extracted_content)
+            
+            # If PDF has less than 5 pages and contains table data, use LLM to convert to markdown
+            if page_count < 5 and raw_content.strip():
+                if session_logger:
+                    logger_capture.log_info(session_logger, f"PDF has {page_count} pages, converting tables to markdown using LLM")
+                
+                try:
+                    # Use LLM to convert table data to markdown format
+                    markdown_content = LLM.convert_tables_to_markdown(session_logger, raw_content)
+                    
+                    if markdown_content and markdown_content.strip():
+                        if session_logger:
+                            logger_capture.log_info(session_logger, "Successfully converted table data to markdown")
+                        return markdown_content
+                    else:
+                        if session_logger:
+                            logger_capture.log_warning(session_logger, "LLM returned empty markdown, using raw content")
+                        return raw_content
+                        
+                except Exception as llm_error:
+                    if session_logger:
+                        logger_capture.log_error(session_logger, f"Failed to convert to markdown using LLM: {str(llm_error)}")
+                    # Fallback to raw content if LLM conversion fails
+                    return raw_content
+            else:
+                if session_logger:
+                    logger_capture.log_info(session_logger, f"PDF has {page_count} pages (>= 5), using raw table extraction")
+                return raw_content
+            
+        except Exception as e:
+            raise Exception(f"Failed to extract PDF content: {str(e)}")
+
+    @staticmethod
+    def get_user_reports(session_id: str, domain: str = None, catalog: str = None, chatid: str = None) -> List[dict]:
+        """
+        Get all reports for a user, optionally filtered by domain/catalog/chatid.
+        
+        Args:
+            session_id: Session ID for user identification
+            domain: Optional domain filter
+            catalog: Optional catalog filter
+            chatid: Optional chat session filter
+            
+        Returns:
+            List of report dictionaries
+        """
+        try:
+            username = AppDatabase.get_username_from_session(session_id)
+            if not username:
+                raise HTTPException(status_code=401, detail="Invalid session")
+            
+            reports = AppDatabase.get_reports_for_user(username, domain, catalog, chatid)
+            return reports
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to retrieve reports: {str(e)}")
+
+    @staticmethod
+    def get_report_details(reportid: int, session_id: str) -> dict:
+        """
+        Get detailed information about a specific report.
+        
+        Args:
+            reportid: Report ID
+            username: Username for access control
+            
+        Returns:
+            Report details dictionary
+        """
+        try:
+            username = AppDatabase.get_username_from_session(session_id)
+            report = AppDatabase.get_report_by_id(reportid, username)
+            
+            if not report:
+                raise HTTPException(status_code=404, detail="Report not found or access denied")
+            
+            return report
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to retrieve report: {str(e)}")
+
+    @staticmethod
+    def delete_report(reportid: int, session_id: str) -> dict:
+        """
+        Delete a report (soft delete).
+        
+        Args:
+            reportid: Report ID
+            username: Username for access control
+            
+        Returns:
+            Success status
+        """
+        try:
+            username = AppDatabase.get_username_from_session(session_id)
+            success = AppDatabase.delete_report(reportid, username)
+            
+            if not success:
+                raise HTTPException(status_code=404, detail="Report not found or access denied")
+            
+            return {"message": "Report deleted successfully", "reportid": reportid}
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to delete report: {str(e)}")
+
+    @staticmethod
+    def archive_report(reportid: int, session_id: str) -> dict:
+        """
+        Archive a report (sets archive flag to True).
+        
+        Args:
+            reportid: Report ID
+            session_id: Session ID for user authentication
+            
+        Returns:
+            Success status
+        """
+        try:
+            username = AppDatabase.get_username_from_session(session_id)
+            success = AppDatabase.archive_report(reportid, username)
+            
+            if not success:
+                raise HTTPException(status_code=404, detail="Report not found or access denied")
+            
+            return {"message": "Report archived successfully", "reportid": reportid}
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to archive report: {str(e)}")
+
+    @staticmethod
+    async def search_reports_by_content(
+        session_logger,
+        username: str,
+        query: str,
+        domain: str = None,
+        catalog: str = None,
+        limit: int = 5
+    ) -> List[dict]:
+        """
+        Search reports by content similarity using vector embeddings.
+        
+        Args:
+            session_logger: Logger for session tracking
+            username: Username for access control
+            query: Search query
+            domain: Optional domain filter
+            catalog: Optional catalog filter
+            limit: Maximum number of results
+            
+        Returns:
+            List of relevant reports with similarity scores
+        """
+        try:
+            logger_capture.log_info(session_logger, f"Searching reports for query: {query}")
+            
+            # Generate embedding for the search query
+            vectorstore = VectorStore()
+            query_embedding = await vectorstore.generate_embedding(query)
+            
+            if not query_embedding:
+                raise HTTPException(status_code=500, detail="Failed to generate search embedding")
+            
+            # Get user's reports
+            user_reports = AppDatabase.get_reports_for_user(username, domain, catalog)
+            
+            # For now, return all reports (vector similarity search would require more complex DB queries)
+            # In a production system, you'd implement pgvector similarity search
+            filtered_reports = []
+            for report in user_reports[:limit]:
+                if query.lower() in (report.get('summary', '') or '').lower():
+                    filtered_reports.append(report)
+            
+            return filtered_reports
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger_capture.log_error(session_logger, f"Error searching reports: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to search reports: {str(e)}")
+
+    @staticmethod
+    async def ask_question_about_reports(
+        session_logger,
+        user_query: str,
+        username: str,
+        domain: str = None,
+        catalog: str = None,
+        report_id: int = None,
+        chatid: str = None
+    ) -> dict:
+        """
+        Ask a question about reports using the Talk2Report agent.
+        
+        Args:
+            session_logger: Logger for session tracking
+            user_query: User's question
+            username: Username for access control
+            domain: Optional domain filter
+            catalog: Optional catalog filter
+            report_id: Optional specific report ID
+            chatid: Optional chat ID for access control
+            
+        Returns:
+            Dictionary with answer and metadata
+        """
+        try:
+            result = await Talk2ReportAgent.answer_question_from_reports(
+                session_logger=session_logger,
+                user_query=user_query,
+                username=username,
+                domain=domain,
+                catalog=catalog,
+                report_id=report_id,
+                chatid=chatid
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger_capture.log_error(session_logger, f"Error asking question about reports: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to process question: {str(e)}")
+
+
 # src/utils/chunking_utils.py
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
