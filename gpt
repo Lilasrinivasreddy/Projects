@@ -1,3 +1,75 @@
+# src/utils/chunking_utils.py
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ".", " ", ""]
+    )
+    return splitter.split_text(text)
+===================
+from src.utils.chunking_utils import chunk_text
+from src.database_connections.app_database import AppDatabase
+from src.utils.vectorstore import VectorStore  # Assuming you have vegas_embedding here
+
+# ... inside upload_and_process_report()
+chunks = chunk_text(pdf_content, chunk_size=1000, chunk_overlap=200)
+vectorstore = VectorStore()
+chunk_records = []
+
+for i, chunk in enumerate(chunks):
+    embedding = vectorstore.vegas_embedding(chunk)  # You already use this
+    chunk_records.append({
+        'report_name': report_name,
+        'username': username,
+        'domainid': domainid,
+        'catalogid': catalogid,
+        'chatid': chatid,
+        'chunk_text': chunk,
+        'chunk_index': i,
+        'embedding': embedding,
+        'summary': summary if i == 0 else "",  # Store summary only once
+    })
+
+reportid = AppDatabase.insert_report_chunks(chunk_records)
+=========
+@staticmethod
+def insert_report_chunks(chunk_records: list[dict]) -> int:
+    from src.models.model import ReportChunk
+    from src.database_connections.connection import get_db_session
+    from sqlalchemy.orm import Session
+
+    with get_db_session() as session:  # type: Session
+        session.bulk_insert_mappings(ReportChunk, chunk_records)
+        session.commit()
+        return chunk_records[0]['chatid']
+==============
+class ReportChunk(Base):
+    __tablename__ = TABLES.report_chunks_table
+    __table_args__ = {"schema": SCHEMA}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    report_name = Column(String, nullable=False)
+    username = Column(String, nullable=False)
+    domainid = Column(Integer, nullable=False)
+    catalogid = Column(Integer, nullable=False)
+    chatid = Column(String, nullable=False)
+    chunk_text = Column(Text, nullable=False)
+    chunk_index = Column(Integer, nullable=False)
+    embedding = Column(Vector(768), nullable=True)
+    summary = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+
+
+
+
+
+
+
 from sqlalchemy import (
     Column,
     Integer,
