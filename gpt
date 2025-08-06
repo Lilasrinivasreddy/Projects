@@ -1,39 +1,36 @@
-# Step 1: Chunk the PDF content
-chunks = chunk_text(pdf_content, chunk_size=1000, chunk_overlap=200)
+@staticmethod
+def insert_report_chunks(chunk_records: list[dict]):
+    """
+    Insert multiple chunks (with embeddings) for a report.
+    """
+    from src.models import ReportChunks
+    from src.database_connections.app_database.db_session import db_session
 
-# Step 2: Generate embeddings per chunk
-vectorstore = VectorStore()
-chunk_records = []
+    with db_session() as session:
+        for record in chunk_records:
+            chunk = ReportChunks(**record)
+            session.add(chunk)
+        session.commit()
+    
+    return chunk_records[0]["report_name"]  # or report_id if available
+===========
+from sqlalchemy import Column, Integer, String, Text, JSON
+from src.database_connections.app_database.base import Base
 
-for i, chunk in enumerate(chunks):
-    embedding = vectorstore.vegas_embedding(chunk)
-    chunk_records.append({
-        'report_name': report_name,
-        'username': username,
-        'domainid': domainid,
-        'catalogid': catalogid,
-        'chatid': chatid,
-        'chunk_text': chunk,
-        'chunk_index': i,
-        'embedding': embedding,
-        'summary': summary if i == 0 else "",  # summary only once
-    })
+class ReportChunks(Base):
+    __tablename__ = "report_chunks"
 
-# Step 3: Store in DB (new ReportChunks table)
-reportid = AppDatabase.insert_report_chunks(chunk_records)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    report_name = Column(String)
+    username = Column(String)
+    domainid = Column(Integer)
+    catalogid = Column(Integer)
+    chatid = Column(String)
+    chunk_text = Column(Text)
+    chunk_index = Column(Integer)
+    embedding = Column(JSON)  # Store list of floats
+    summary = Column(Text)
 
-
-
-# src/utils/chunking_utils.py
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200):
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ".", " ", ""]
-    )
-    return splitter.split_text(text)
 ===================
 from src.utils.chunking_utils import chunk_text
 from src.database_connections.app_database import AppDatabase
