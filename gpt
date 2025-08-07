@@ -210,3 +210,11 @@ connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection re
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
 
 ERROR:    Application startup failed. Exiting.
+
+
+==================
+pip install \
+  fastapi uvicorn pydantic-settings python-jose[cryptography] psycopg2-binary \
+  alembic PyJWT bonsai fastapi-jwt-auth psutil \
+  --proxy http://vzproxy.verizon.com:80
+
