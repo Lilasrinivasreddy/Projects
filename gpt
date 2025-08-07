@@ -1,82 +1,108 @@
-(.venv) PS C:\Users\reddyvu\Desktop\Qverse\autobi-service> uvicorn src.app.main:app                                  
+(.venv) PS C:\Users\reddyvu\Desktop\Qverse\autobi-service> uvicorn src.app.main:app
 Warning: asyncpg not installed. Async database support disabled.
 To enable async database support, install: pip install asyncpg
 C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\pydantic\_internal\_config.py:373: UserWarning: Valid config keys have changed in V2:
 * 'schema_extra' has been renamed to 'json_schema_extra'
   warnings.warn(message, UserWarning)
-INFO:     Started server process [183240]
+INFO:     Started server process [187388]
 INFO:     Waiting for application startup.
 INFO:root:Starting QVerse Service...
 INFO:root:Initializing database with enhanced migration handling...
 INFO:src.database_connections.app_database.orm_setup:Starting database initialization...
 INFO:src.database_connections.app_database.orm_setup:Testing database connectivity...
-ERROR:src.database_connections.app_database.orm_setup:Database connectivity test failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
-connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
+INFO:src.database_connections.app_database.orm_setup:Database connectivity test passed
+INFO:src.database_connections.app_database.orm_setup:Starting database migrations...
+INFO:src.database_connections.app_database.orm_setup:Testing database connection for migrations...
+INFO:src.database_connections.app_database.orm_setup:Database connection test successful
+INFO:alembic.runtime.migration:Context impl PostgresqlImpl.
+INFO:alembic.runtime.migration:Will assume transactional DDL.
+INFO:src.database_connections.app_database.orm_setup:Current database revision: None
+INFO:src.database_connections.app_database.orm_setup:Target head revision: 2063f4053df7
+INFO:src.database_connections.app_database.orm_setup:Running Alembic upgrade to head...
+INFO:src.database_connections.app_database.orm_setup:Note: Large database migrations may take several minutes...
+INFO:src.database_connections.app_database.orm_setup:ALEMBIC MIGRATIONS TEMPORARILY DISABLED
+INFO:src.database_connections.app_database.orm_setup:To run migrations manually: alembic upgrade head
+INFO:src.database_connections.app_database.orm_setup:Database migrations completed successfully
+INFO:src.database_connections.app_database.orm_setup:Creating tables using Base.metadata.create_all (fallback)...    
+ERROR:src.database_connections.app_database.orm_setup:Table creation failed: (psycopg2.errors.InsufficientPrivilege) permission denied for schema public
+LINE 2: CREATE TABLE report_chunks (
+                     ^
 
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-ERROR:src.database_connections.app_database.orm_setup:Database initialization failed: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
-connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
+[SQL:
+CREATE TABLE report_chunks (
+        id SERIAL NOT NULL,
+        report_name VARCHAR,
+        username VARCHAR,
+        domainid INTEGER,
+        catalogid INTEGER,
+        chatid VARCHAR,
+        chunk_text TEXT,
+        chunk_index INTEGER,
+        embedding JSON,
+        summary TEXT,
+        PRIMARY KEY (id)
+)
 
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
+]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+ERROR:src.database_connections.app_database.orm_setup:Database initialization failed: (psycopg2.errors.InsufficientPrivilege) permission denied for schema public
+LINE 2: CREATE TABLE report_chunks (
+                     ^
+
+[SQL:
+CREATE TABLE report_chunks (
+        id SERIAL NOT NULL,
+        report_name VARCHAR,
+        username VARCHAR,
+        domainid INTEGER,
+        catalogid INTEGER,
+        chatid VARCHAR,
+        chunk_text TEXT,
+        chunk_index INTEGER,
+        embedding JSON,
+        summary TEXT,
+        PRIMARY KEY (id)
+)
+
+]
+(Background on this error at: https://sqlalche.me/e/20/f405)
 ERROR:src.database_connections.app_database.orm_setup:Database initialization failed in development environment      
-ERROR:root:Database initialization encountered an error: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
-connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
+ERROR:root:Database initialization encountered an error: (psycopg2.errors.InsufficientPrivilege) permission denied for schema public
+LINE 2: CREATE TABLE report_chunks (
+                     ^
 
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[SQL:
+CREATE TABLE report_chunks (
+        id SERIAL NOT NULL,
+        report_name VARCHAR,
+        username VARCHAR,
+        domainid INTEGER,
+        catalogid INTEGER,
+        chatid VARCHAR,
+        chunk_text TEXT,
+        chunk_index INTEGER,
+        embedding JSON,
+        summary TEXT,
+        PRIMARY KEY (id)
+)
+
+]
+(Background on this error at: https://sqlalche.me/e/20/f405)
 ERROR:root:Database initialization failed in development - stopping startup
 ERROR:    Traceback (most recent call last):
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__    
-    self._dbapi_connection = engine.raw_connection()
-                             ~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3297, in raw_connection
-    return self.pool.connect()
-           ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 449, in connect       
-    return _ConnectionFairy._checkout(self)
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout    
-    fairy = _ConnectionRecord.checkout(pool)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 713, in checkout      
-    rec = pool._do_get()
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 179, in _do_get       
-    with util.safe_reraise():
-         ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get       
-    return self._create_connection()
-           ~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 390, in _create_connection
-    return _ConnectionRecord(self)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 675, in __init__      
-    self.__connect()
-    ~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 901, in __connect     
-    with util.safe_reraise():
-         ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 897, in __connect     
-    self.dbapi_connection = connection = pool._invoke_creator(self)
-                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\create.py", line 646, in connect   
-    return dialect.connect(*cargs, **cparams)
-           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 625, in connect  
-    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
-           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
-    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
-psycopg2.OperationalError: connection to server at "localhost" (::1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
-connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.InsufficientPrivilege: permission denied for schema public
+LINE 2: CREATE TABLE report_chunks (
+                     ^
 
 
 The above exception was the direct cause of the following exception:
@@ -146,69 +172,108 @@ Traceback (most recent call last):
   File "C:\Users\reddyvu\Desktop\Qverse\autobi-service\src\app\main.py", line 75, in startup_event
     initialize_database()
     ~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\autobi-service\src\database_connections\app_database\orm_setup.py", line 251, in initialize_database
-    with engine.connect() as test_conn:
-         ~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3273, in connect    
-    return self._connection_cls(self)
-           ~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 147, in __init__    
-    Connection._handle_dbapi_exception_noconnection(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        err, dialect, engine
-        ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\reddyvu\Desktop\Qverse\autobi-service\src\database_connections\app_database\orm_setup.py", line 276, in initialize_database
+    Base.metadata.create_all(bind=engine)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\schema.py", line 5924, in create_all  
+    bind._run_ddl_visitor(
+    ~~~~~~~~~~~~~~~~~~~~~^
+        ddl.SchemaGenerator, self, checkfirst=checkfirst, tables=tables
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2436, in _handle_dbapi_exception_noconnection
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3248, in _run_ddl_visitor
+    conn._run_ddl_visitor(visitorcallable, element, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2455, in _run_ddl_visitor
+    ).traverse_single(element)
+      ~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 664, in traverse_single
+    return meth(obj, **kw)
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 982, in visit_metadata  
+    self.traverse_single(
+    ~~~~~~~~~~~~~~~~~~~~^
+        table,
+        ^^^^^^
+    ...<2 lines>...
+        _is_metadata_operation=True,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 664, in traverse_single
+    return meth(obj, **kw)
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 1020, in visit_table    
+    )._invoke_with(self.connection)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 321, in _invoke_with    
+    return bind.execute(self)
+           ~~~~~~~~~~~~^^^^^^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1415, in execute    
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 187, in _execute_on_connection
+    return connection._execute_ddl(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1526, in _execute_ddl
+    ret = self._execute_context(
+        dialect,
+    ...<4 lines>...
+        compiled,
+    )
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1842, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1982, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2351, in _handle_dbapi_exception
     raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__    
-    self._dbapi_connection = engine.raw_connection()
-                             ~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3297, in raw_connection
-    return self.pool.connect()
-           ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 449, in connect       
-    return _ConnectionFairy._checkout(self)
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout    
-    fairy = _ConnectionRecord.checkout(pool)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 713, in checkout      
-    rec = pool._do_get()
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 179, in _do_get       
-    with util.safe_reraise():
-         ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get       
-    return self._create_connection()
-           ~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 390, in _create_connection
-    return _ConnectionRecord(self)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 675, in __init__      
-    self.__connect()
-    ~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 901, in __connect     
-    with util.safe_reraise():
-         ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 897, in __connect     
-    self.dbapi_connection = connection = pool._invoke_creator(self)
-                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\create.py", line 646, in connect   
-    return dialect.connect(*cargs, **cparams)
-           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 625, in connect  
-    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
-           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
-    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
-sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
-connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection refused (0x0000274D/10061)
-        Is the server running on that host and accepting TCP/IP connections?
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.InsufficientPrivilege) permission denied for schema public
+LINE 2: CREATE TABLE report_chunks (
+                     ^
 
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[SQL:
+CREATE TABLE report_chunks (
+        id SERIAL NOT NULL,
+        report_name VARCHAR,
+        username VARCHAR,
+        domainid INTEGER,
+        catalogid INTEGER,
+        chatid VARCHAR,
+        chunk_text TEXT,
+        chunk_index INTEGER,
+        embedding JSON,
+        summary TEXT,
+        PRIMARY KEY (id)
+)
+
+]
+(Background on this error at: https://sqlalche.me/e/20/f405)
 
 ERROR:    Application startup failed. Exiting.
 (.venv) PS C:\Users\reddyvu\Desktop\Qverse\autobi-service> 
