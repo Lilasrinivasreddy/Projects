@@ -1,9 +1,10 @@
-(.venv) PS C:\Users\reddyvu\Desktop\qverse\autobi-service> uvicorn src.app.main:app
-Async database support enabled
-C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\pydantic\_internal\_config.py:373: UserWarning: Valid config keys have changed in V2:
+(.venv) PS C:\Users\reddyvu\Desktop\Qverse\autobi-service> uvicorn src.app.main:app                                  
+Warning: asyncpg not installed. Async database support disabled.
+To enable async database support, install: pip install asyncpg
+C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\pydantic\_internal\_config.py:373: UserWarning: Valid config keys have changed in V2:
 * 'schema_extra' has been renamed to 'json_schema_extra'
   warnings.warn(message, UserWarning)
-INFO:     Started server process [181132]
+INFO:     Started server process [183240]
 INFO:     Waiting for application startup.
 INFO:root:Starting QVerse Service...
 INFO:root:Initializing database with enhanced migration handling...
@@ -30,47 +31,47 @@ connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection re
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
 ERROR:root:Database initialization failed in development - stopping startup
 ERROR:    Traceback (most recent call last):
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__    
     self._dbapi_connection = engine.raw_connection()
                              ~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3297, in raw_connection
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3297, in raw_connection
     return self.pool.connect()
            ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 449, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 449, in connect       
     return _ConnectionFairy._checkout(self)
            ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout    
     fairy = _ConnectionRecord.checkout(pool)
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 713, in checkout
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 713, in checkout      
     rec = pool._do_get()
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 179, in _do_get
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 179, in _do_get       
     with util.safe_reraise():
          ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
     raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get       
     return self._create_connection()
            ~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 390, in _create_connection
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 390, in _create_connection
     return _ConnectionRecord(self)
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 675, in __init__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 675, in __init__      
     self.__connect()
     ~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 901, in __connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 901, in __connect     
     with util.safe_reraise():
          ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
     raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 897, in __connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 897, in __connect     
     self.dbapi_connection = connection = pool._invoke_creator(self)
                                          ~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\create.py", line 646, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\create.py", line 646, in connect   
     return dialect.connect(*cargs, **cparams)
            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 625, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 625, in connect  
     return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
            ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
     conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
 psycopg2.OperationalError: connection to server at "localhost" (::1), port 5431 failed: Connection refused (0x0000274D/10061)
         Is the server running on that host and accepting TCP/IP connections?
@@ -81,126 +82,126 @@ connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection re
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\starlette\routing.py", line 694, in lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\starlette\routing.py", line 694, in lifespan
     async with self.lifespan_context(app) as maybe_state:
                ~~~~~~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
   File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
     return await anext(self.gen)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
     async with original_context(app) as maybe_original_state:
                ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\starlette\routing.py", line 571, in __aenter__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\starlette\routing.py", line 571, in __aenter__       
     await self._router.startup()
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\starlette\routing.py", line 671, in startup
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\starlette\routing.py", line 671, in startup
     await handler()
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\src\app\main.py", line 75, in startup_event
+  File "C:\Users\reddyvu\Desktop\Qverse\autobi-service\src\app\main.py", line 75, in startup_event
     initialize_database()
     ~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\src\database_connections\app_database\orm_setup.py", line 251, in initialize_database
+  File "C:\Users\reddyvu\Desktop\Qverse\autobi-service\src\database_connections\app_database\orm_setup.py", line 251, in initialize_database
     with engine.connect() as test_conn:
          ~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3273, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3273, in connect    
     return self._connection_cls(self)
            ~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 147, in __init__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 147, in __init__    
     Connection._handle_dbapi_exception_noconnection(
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
         err, dialect, engine
         ^^^^^^^^^^^^^^^^^^^^
     )
     ^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2436, in _handle_dbapi_exception_noconnection
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2436, in _handle_dbapi_exception_noconnection
     raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__    
     self._dbapi_connection = engine.raw_connection()
                              ~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3297, in raw_connection
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3297, in raw_connection
     return self.pool.connect()
            ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 449, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 449, in connect       
     return _ConnectionFairy._checkout(self)
            ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout    
     fairy = _ConnectionRecord.checkout(pool)
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 713, in checkout
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 713, in checkout      
     rec = pool._do_get()
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 179, in _do_get
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 179, in _do_get       
     with util.safe_reraise():
          ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
     raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get       
     return self._create_connection()
            ~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 390, in _create_connection
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 390, in _create_connection
     return _ConnectionRecord(self)
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 675, in __init__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 675, in __init__      
     self.__connect()
     ~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 901, in __connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 901, in __connect     
     with util.safe_reraise():
          ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
     raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 897, in __connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 897, in __connect     
     self.dbapi_connection = connection = pool._invoke_creator(self)
                                          ~~~~~~~~~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\create.py", line 646, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\create.py", line 646, in connect   
     return dialect.connect(*cargs, **cparams)
            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 625, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 625, in connect  
     return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
            ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\qverse\autobi-service\.venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
     conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
 sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5431 failed: Connection refused (0x0000274D/10061)
         Is the server running on that host and accepting TCP/IP connections?
@@ -210,11 +211,4 @@ connection to server at "localhost" (127.0.0.1), port 5431 failed: Connection re
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
 
 ERROR:    Application startup failed. Exiting.
-
-
-==================
-pip install \
-  fastapi uvicorn pydantic-settings python-jose[cryptography] psycopg2-binary \
-  alembic PyJWT bonsai fastapi-jwt-auth psutil \
-  --proxy http://vzproxy.verizon.com:80
-
+(.venv) PS C:\Users\reddyvu\Desktop\Qverse\autobi-service> 
