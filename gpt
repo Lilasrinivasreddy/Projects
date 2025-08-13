@@ -1,3 +1,35 @@
+Here’s a concise list of where code changes were made and what functions were added for the “talk to CSV” feature:
+
+1. src/agents/talk2report_agent.py
+Function Added:
+answer_question_from_csv (async static method in Talk2ReportAgent)
+Finds the most relevant chunk from a CSV using embeddings and similarity.
+Passes that chunk to the LLM for answer generation.
+Returns a structured response with summary, follow-ups, chunk index, similarity, and processing time.
+2. service.py
+Function Added:
+get_most_relevant_report_chunk
+Fetches all chunks for a given report.
+Computes similarity between the user’s question embedding and each chunk’s embedding.
+Returns the chunk with the highest similarity above a threshold.
+3. service.py
+Function Updated:
+ask_question_about_csv
+Now calls Talk2ReportAgent.answer_question_from_csv instead of returning all chunks.
+Ensures only the most relevant chunk is used for the answer.
+4. model_registry.py
+Code Added:
+Set the default LLM model to "gemini_pro" (a valid model in your registry).
+5. model_parameters.py
+Code Added:
+Ensured the llm_model attribute is always initialized and available.
+Summary:
+
+The main new function is answer_question_from_csv in Talk2ReportAgent.
+Supporting logic for chunk selection and LLM model setup was added in the database service, reports service, and model registry.
+The workflow now finds the most relevant chunk from a CSV and generates a focused answer using the LLM.
+Let me know if you want the exact code snippets or more details for any file!
+
 Here’s a clear breakdown of the code changes for “talk to CSV” and where they were made:
 
 1. Talk2ReportAgent (src/agents/talk2report_agent.py)
