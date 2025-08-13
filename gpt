@@ -1,279 +1,32 @@
-(.venv) PS C:\Users\reddyvu\Desktop\Qverse\autobi-service> uvicorn src.app.main:app
-Warning: asyncpg not installed. Async database support disabled.
-To enable async database support, install: pip install asyncpg
-C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\pydantic\_internal\_config.py:373: UserWarning: Valid config keys have changed in V2:
-* 'schema_extra' has been renamed to 'json_schema_extra'
-  warnings.warn(message, UserWarning)
-INFO:     Started server process [187388]
-INFO:     Waiting for application startup.
-INFO:root:Starting QVerse Service...
-INFO:root:Initializing database with enhanced migration handling...
-INFO:src.database_connections.app_database.orm_setup:Starting database initialization...
-INFO:src.database_connections.app_database.orm_setup:Testing database connectivity...
-INFO:src.database_connections.app_database.orm_setup:Database connectivity test passed
-INFO:src.database_connections.app_database.orm_setup:Starting database migrations...
-INFO:src.database_connections.app_database.orm_setup:Testing database connection for migrations...
-INFO:src.database_connections.app_database.orm_setup:Database connection test successful
-INFO:alembic.runtime.migration:Context impl PostgresqlImpl.
-INFO:alembic.runtime.migration:Will assume transactional DDL.
-INFO:src.database_connections.app_database.orm_setup:Current database revision: None
-INFO:src.database_connections.app_database.orm_setup:Target head revision: 2063f4053df7
-INFO:src.database_connections.app_database.orm_setup:Running Alembic upgrade to head...
-INFO:src.database_connections.app_database.orm_setup:Note: Large database migrations may take several minutes...
-INFO:src.database_connections.app_database.orm_setup:ALEMBIC MIGRATIONS TEMPORARILY DISABLED
-INFO:src.database_connections.app_database.orm_setup:To run migrations manually: alembic upgrade head
-INFO:src.database_connections.app_database.orm_setup:Database migrations completed successfully
-INFO:src.database_connections.app_database.orm_setup:Creating tables using Base.metadata.create_all (fallback)...    
-ERROR:src.database_connections.app_database.orm_setup:Table creation failed: (psycopg2.errors.InsufficientPrivilege) permission denied for schema public
-LINE 2: CREATE TABLE report_chunks (
-                     ^
+Here’s a clear breakdown of the code changes for “talk to CSV” and where they were made:
 
-[SQL:
-CREATE TABLE report_chunks (
-        id SERIAL NOT NULL,
-        report_name VARCHAR,
-        username VARCHAR,
-        domainid INTEGER,
-        catalogid INTEGER,
-        chatid VARCHAR,
-        chunk_text TEXT,
-        chunk_index INTEGER,
-        embedding JSON,
-        summary TEXT,
-        PRIMARY KEY (id)
-)
-
-]
-(Background on this error at: https://sqlalche.me/e/20/f405)
-ERROR:src.database_connections.app_database.orm_setup:Database initialization failed: (psycopg2.errors.InsufficientPrivilege) permission denied for schema public
-LINE 2: CREATE TABLE report_chunks (
-                     ^
-
-[SQL:
-CREATE TABLE report_chunks (
-        id SERIAL NOT NULL,
-        report_name VARCHAR,
-        username VARCHAR,
-        domainid INTEGER,
-        catalogid INTEGER,
-        chatid VARCHAR,
-        chunk_text TEXT,
-        chunk_index INTEGER,
-        embedding JSON,
-        summary TEXT,
-        PRIMARY KEY (id)
-)
-
-]
-(Background on this error at: https://sqlalche.me/e/20/f405)
-ERROR:src.database_connections.app_database.orm_setup:Database initialization failed in development environment      
-ERROR:root:Database initialization encountered an error: (psycopg2.errors.InsufficientPrivilege) permission denied for schema public
-LINE 2: CREATE TABLE report_chunks (
-                     ^
-
-[SQL:
-CREATE TABLE report_chunks (
-        id SERIAL NOT NULL,
-        report_name VARCHAR,
-        username VARCHAR,
-        domainid INTEGER,
-        catalogid INTEGER,
-        chatid VARCHAR,
-        chunk_text TEXT,
-        chunk_index INTEGER,
-        embedding JSON,
-        summary TEXT,
-        PRIMARY KEY (id)
-)
-
-]
-(Background on this error at: https://sqlalche.me/e/20/f405)
-ERROR:root:Database initialization failed in development - stopping startup
-ERROR:    Traceback (most recent call last):
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1963, in _exec_single_context
-    self.dialect.do_execute(
-    ~~~~~~~~~~~~~~~~~~~~~~~^
-        cursor, str_statement, effective_parameters, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 943, in do_execute
-    cursor.execute(statement, parameters)
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-psycopg2.errors.InsufficientPrivilege: permission denied for schema public
-LINE 2: CREATE TABLE report_chunks (
-                     ^
-
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\starlette\routing.py", line 694, in lifespan
-    async with self.lifespan_context(app) as maybe_state:
-               ~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Program Files\Python313\Lib\contextlib.py", line 214, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\fastapi\routing.py", line 134, in merged_lifespan    
-    async with original_context(app) as maybe_original_state:
-               ~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\starlette\routing.py", line 571, in __aenter__       
-    await self._router.startup()
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\starlette\routing.py", line 671, in startup
-    await handler()
-  File "C:\Users\reddyvu\Desktop\Qverse\autobi-service\src\app\main.py", line 75, in startup_event
-    initialize_database()
-    ~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\reddyvu\Desktop\Qverse\autobi-service\src\database_connections\app_database\orm_setup.py", line 276, in initialize_database
-    Base.metadata.create_all(bind=engine)
-    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\schema.py", line 5924, in create_all  
-    bind._run_ddl_visitor(
-    ~~~~~~~~~~~~~~~~~~~~~^
-        ddl.SchemaGenerator, self, checkfirst=checkfirst, tables=tables
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3248, in _run_ddl_visitor
-    conn._run_ddl_visitor(visitorcallable, element, **kwargs)
-    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2455, in _run_ddl_visitor
-    ).traverse_single(element)
-      ~~~~~~~~~~~~~~~^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 664, in traverse_single
-    return meth(obj, **kw)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 982, in visit_metadata  
-    self.traverse_single(
-    ~~~~~~~~~~~~~~~~~~~~^
-        table,
-        ^^^^^^
-    ...<2 lines>...
-        _is_metadata_operation=True,
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 664, in traverse_single
-    return meth(obj, **kw)
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 1020, in visit_table    
-    )._invoke_with(self.connection)
-      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 321, in _invoke_with    
-    return bind.execute(self)
-           ~~~~~~~~~~~~^^^^^^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1415, in execute    
-    return meth(
-        self,
-        distilled_parameters,
-        execution_options or NO_OPTIONS,
-    )
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 187, in _execute_on_connection
-    return connection._execute_ddl(
-           ~~~~~~~~~~~~~~~~~~~~~~~^
-        self, distilled_params, execution_options
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1526, in _execute_ddl
-    ret = self._execute_context(
-        dialect,
-    ...<4 lines>...
-        compiled,
-    )
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1842, in _execute_context
-    return self._exec_single_context(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~^
-        dialect, context, statement, parameters
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1982, in _exec_single_context
-    self._handle_dbapi_exception(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        e, str_statement, effective_parameters, cursor, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2351, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1963, in _exec_single_context
-    self.dialect.do_execute(
-    ~~~~~~~~~~~~~~~~~~~~~~~^
-        cursor, str_statement, effective_parameters, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\reddyvu\Desktop\Qverse\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 943, in do_execute
-    cursor.execute(statement, parameters)
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-sqlalchemy.exc.ProgrammingError: (psycopg2.errors.InsufficientPrivilege) permission denied for schema public
-LINE 2: CREATE TABLE report_chunks (
-                     ^
-
-[SQL:
-CREATE TABLE report_chunks (
-        id SERIAL NOT NULL,
-        report_name VARCHAR,
-        username VARCHAR,
-        domainid INTEGER,
-        catalogid INTEGER,
-        chatid VARCHAR,
-        chunk_text TEXT,
-        chunk_index INTEGER,
-        embedding JSON,
-        summary TEXT,
-        PRIMARY KEY (id)
-)
-
-]
-(Background on this error at: https://sqlalche.me/e/20/f405)
-
-ERROR:    Application startup failed. Exiting.
-(.venv) PS C:\Users\reddyvu\Desktop\Qverse\autobi-service> 
+1. Talk2ReportAgent (src/agents/talk2report_agent.py)
+New Method Added:
+answer_question_from_csv:
+This async static method takes a user question, finds the most relevant chunk from the uploaded CSV (using embeddings and similarity), and generates an answer using the LLM.
+It logs the process, computes the embedding, calls the chunk selection, and returns a structured response.
+2. Database Service (service.py)
+Chunk Selection Logic:
+Added get_most_relevant_report_chunk:
+This method fetches all chunks for a given CSV report, computes the similarity between the user’s question embedding and each chunk’s embedding, and selects the chunk with the highest similarity above a threshold.
+It returns the best chunk’s text, index, and similarity score.
+3. Reports Service (service.py)
+Service Layer Update:
+Updated ask_question_about_csv:
+Now calls Talk2ReportAgent.answer_question_from_csv instead of returning all chunks.
+Ensures only the most relevant chunk is used for the answer, and the response is concise and focused.
+4. LLM Model Registry (model_registry.py)
+Model Selection Fix:
+Set the default LLM model to "gemini_pro" (a valid model in your registry) to avoid errors.
+5. Parameters Class (model_parameters.py)
+Bug Fixes:
+Ensured the llm_model attribute is always initialized and available, preventing attribute errors.
+6. Pydantic Response Fixes
+Sources Field:
+Ensured the sources field in the response is always a list of strings, fixing validation errors.
+Summary for Your Boss
+The new “talk to CSV” feature allows users to ask questions about uploaded spreadsheets and get precise, context-aware answers.
+The system finds the most relevant chunk of the spreadsheet using semantic similarity, then generates an answer using the LLM.
+The code is modular: agent, service, and database layers are all updated for maintainability and clarity.
+Logging and error handling are improved for easier debugging and support.
+Let me know if you want a visual diagram or more technical details for your explanation!
