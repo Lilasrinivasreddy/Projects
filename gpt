@@ -1,77 +1,629 @@
+import os
+import time
+import warnings
+# from ray import serve
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
+from typing import List, Union, Literal
+from config import *
+from langchain.retrievers import  EnsembleRetriever
+from langchain_community.vectorstores import FAISS
 
-Endpoints, in turn, are the same functions, like the end-to-end flow has to be in a sink. Okay? So that way we can handle concurrent requests. You go through, or just open the flag there to see the endpoints, or even compute, or even cache. Look for the respective codes. Right? And just change everything into a sink. Okay? I'll give you the .env, I'm running it in the local list. It's the same, the way you were doing this a second ago, it's the same thing. The .env will change, I'll give you the .env. Okay. So I will just go through this app.py file, and, okay. This, I think, I will try to get. Let's think first of what is the latest branch, so let's take a look at the latest branch. Okay. Okay.
+from typing import Any, Dict, List, Optional
+import requests
+import json
+
+from langchain.pydantic_v1 import BaseModel as langchainBaseModel, Extra, Field
+from langchain.schema.embeddings import Embeddings
+import uvicorn
+import numpy as np
+from config import EMAS_URL,apikey,url,env
+import pickle
+from langchain.retrievers import EnsembleRetriever
+
+# Import DPF configuration
+from dpf_config import (
+    DPF_ELASTICSEARCH_CONFIG, 
+    DPF_ENDPOINTS, 
+    DPF_API_KEY,
+    DPF_UAT_API_KEY, 
+    DPF_SEARCH_CONFIG,
+    DPF_CROSS_ENCODER_CONFIG,
+    DPF_LLM_CONFIG
+)
+
+warnings.filterwarnings("ignore")
+
+app = FastAPI()#docs_url=None, redoc_url=None)
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class EMAS(langchainBaseModel, Embeddings):
+
+    def __init__(self, **kwargs: Any):
+        """Initialize the sentence_transformer."""
+        super().__init__(**kwargs)
+        # self.EMAS_URL = EMAS_URL
+
+    class Config:
+        """Configuration for this pydantic object."""
+
+        extra = Extra.forbid
+
+    def get_embed(self, text: str) -> List[float]:
+        if env != "prod":
+            payload = json.dumps({
+                "region": "us-east4",
+                "project_id": "688379114786",
+                "endpoint_id": "7786939260002631680",
+                "usecase_name": "llm-embeddings",
+                "model_type": "llm-embeddings",
+                    "input_request": {
+                        "instances": [
+                            {"text": f"{text}"}]
+                }
+            })
+
+            headers = {
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            try:
+                response = requests.request(
+                    "POST", EMAS_URL, headers=headers, data=payload, verify=False).json()
+                result = response[0][0]['embedding']
+            except Exception as e:
+                print(f"Failure from embedding API. Encountered exception: {e}")
+                print(text,response)
+                raise
+        else:
+            payload = json.dumps({
+                "region": "us-east4",
+                "project_id": "783334890793",
+                "endpoint_id": "7414266390837723136",
+                "usecase_name": "llm-embeddings",
+                "model_type": "llm-embeddings",
+                    "input_request": {
+                        "instances": [
+                            {"text": f"{text}"}]
+                }
+            })
+
+            headers = {
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            try:
+                response = requests.request(
+                    "POST", EMAS_URL, headers=headers, data=payload, verify=False).json()
+                result = response[0][0]['embedding']
+            except Exception as e:
+                print(f"Failure from embedding API. Encountered exception: {e}")
+                print(text,response)
+                raise
+        return result
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Compute doc embeddings using a HuggingFace transformer model.
+
+        Args:
+            texts: The list of texts to embed.
+
+        Returns:
+            List of embeddings, one for each text.
+        """
+        res = []
+        for text in texts:
+            res.append(self.get_embed(text))
+
+        return res
+
+    def embed_query(self, text: str) -> List[float]:
+        """Compute query embeddings using a HuggingFace transformer model.
+
+        Args:
+            text: The text to embed.
+
+        Returns:
+            Embeddings for the text.
+        """
+        return self.get_embed(text)
+
+
+class LLMQuery(BaseModel):
+    query: str
+    index: Literal["gcp", "bi_tools", "dgs",
+                   "ml_platform", "teradata", "all", "hadoop","informatica","data_indus","data_discovery","edw_modernization","ai_indus","ai_workmate"] = "all"
+
+class DPFQuery(BaseModel):
+    query: str
+    index_name: str = DPF_ELASTICSEARCH_CONFIG["index_name"]
+    k: int = DPF_SEARCH_CONFIG["default_k"]
+    include_llm_response: bool = True
+
+
+st = time.time()
+faiss_embeddings=EMAS()
+# print(type(faiss_embeddings))
 
 
 
+db_dict = {
+    'all': {'faiss': FAISS.load_local(FAISS_ALL_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "gcp": {'faiss': FAISS.load_local(FAISS_GCP_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "bi_tools": {'faiss': FAISS.load_local(FAISS_BI_TOOLS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "dgs": {'faiss': FAISS.load_local(FAISS_DGS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ml_platform": {'faiss': FAISS.load_local(FAISS_ML_PLATFORM_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "teradata": {'faiss': FAISS.load_local(FAISS_TERADATA_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "hadoop": {'faiss': FAISS.load_local(FAISS_HADOOP_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "informatica": {'faiss': FAISS.load_local(FAISS_INFORMATICA_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "data_indus": {'faiss': FAISS.load_local(FAISS_DATA_INDUS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "data_discovery": {'faiss': FAISS.load_local(FAISS_DATA_DISCOVERY_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "edw_modernization": {'faiss': FAISS.load_local(FAISS_EDW_MODERNIZATION_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ai_indus": {'faiss': FAISS.load_local(FAISS_AI_INDUS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ai_workmate": {'faiss': FAISS.load_local(FAISS_AI_WORKMATE_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)}
+}
 
-Got it 👍
-Here’s how I’d break this down based on what you’re saying:
+et = time.time() - st
+# print(f'Loading database took {et} seconds.')
 
-1. Endpoints → Sink Functions
-
-Every endpoint (API route) in your app.py should be treated as a sink.
-
-That means the function should handle the entire end-to-end flow: receiving request → processing (compute/cache/flag logic) → returning response.
-
-By doing this, concurrency is handled cleanly because each request runs through its own sink.
-
-
-2. Places to Check
-
-Flags: If you’ve set feature flags or toggles, check the code path where endpoints rely on them.
-
-Compute layer: Any business logic / service call inside endpoints should now be aligned to sink-style execution.
-
-Cache layer: If you’re using Redis, local cache, or in-memory dict, ensure endpoint sinks write/read consistently.
-
-
-3. Handling Concurrent Requests
-
-With sink-style endpoints, async/await (if using FastAPI/Starlette/Quart) or worker pool (if Flask + Gunicorn) ensures concurrency.
-
-Shared resources (e.g., cache, db client) should be thread/process safe.
-
-Avoid global mutable state unless you wrap it in locks or move it into Redis/DB.
-
-
-4. .env Considerations
-
-Since you’ll give me the .env, that will control:
-
-DB connections
-
-Cache settings
-
-API keys
-
-Flags (like ENABLE_SINK=True)
-
-
-Running locally just means swapping .env values, no code changes.
-
-
-5. Next Steps
-
-1. Pull the latest branch (to confirm what’s already merged).
-
-
-2. Open app.py → Identify all endpoints (@app.get, @app.post, etc.).
-
-
-3. For each endpoint:
-
-Wrap into a sink function that orchestrates compute/cache/flag.
-
-Replace direct calls with sink logic.
+async def reranker(reranklist):
+    try:
+        if env!= "prod":
+            headers={
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "688379114786",
+            "endpoint_id": "4179014998757998592",
+            "usecase_name": "cross-encoder",
+            "model_type": "cross-encoder",
+            "input_request": {
+                "instances": reranklist
+            }
+        })
+        else:
+            headers={
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "783334890793",
+            "endpoint_id": "6356118390498656256",
+            "usecase_name": "cross-encoder",
+            "model_type": "cross-encoder",
+            "input_request": {
+                "instances": reranklist
+            }
+        })
+        response = requests.request(
+                "POST", url, headers=headers, data=payload, verify=False).json()
+        
+        return response
+    except Exception as e:
+        print(f"Failure from reranker API. Encountered exception: {e}")
+        raise
 
 
 
-4. Test locally with .env provided.
+async def faiss_search(faiss_db, request):
+    st = time.time()
+    bm25_retriever=[]
+    #retriever = faiss_db.as_retriever()
+    #faiss_results = retriever.invoke(request.query,search_kwargs={"k": 5})
+    bm25path=f'indexes/{request.index}/{request.index}_bm25_retriever.pkl'
+    with open(bm25path,'rb') as file:
+        bm25_retriever = pickle.load(file)
+        bm25_retriever.k=5
+    
 
+    faiss_retriever = faiss_db.as_retriever(search_kwargs={"k":5})
+    ensemble_retriever=EnsembleRetriever(retrievers=[bm25_retriever,faiss_retriever],
+                                       weights=[0.5,0.5])
+    #faiss_results=faiss_db.similarity_search(request.query)
+    faiss_results=ensemble_retriever.invoke(request.query)
+    # print(faiss_results)
+    et = time.time() - st
+    print(f'retrieval time {et} seconds.')
+    st = time.time()
+    reranker_list=[]
+    source_documents=[]
+    cross_encoder_updated=[]
+    if isinstance(faiss_results, list) and len(faiss_results) > 0:
+        for j in faiss_results:
+            templist=[]
+            templist.append(request.query)
+            templist.append(j.page_content)
+            reranker_list.append(templist)
 
+            
+        rerank_response=await reranker(reranker_list)
+        #print("rerank_response: ",rerank_response)
+        rerank_score =np.array(rerank_response[0][0]["prediction_scores"])
+        K=4
+        rerank_score_sorted = np.argsort(-rerank_score)[:K]
+        et = time.time() - st
+        print(f'cross encoder time {et} seconds.')
+        print("rerank_score_sorted: ",rerank_score_sorted)
+        cross_encoder_updated = [faiss_results[i] for i in rerank_score_sorted]
+        for i in cross_encoder_updated:
+            if i.metadata["source"] not in source_documents:
+                source_documents.append(i.metadata["source"])
 
+    return {"llm_context":cross_encoder_updated,"source_document":source_documents}
 
----
+@app.post("/vegas/apps/aider-retriever/api")
+async def search( request: LLMQuery):
+    try:
+        print("--------------------------------------------------------")
+        print(f"Index:{request.index} and query:{request.query}")
+        print("env: ",env)
+        print("EMAS_URL: ",EMAS_URL)
+        default_db = db_dict.get(request.index)
+        # print(default_db)
+        #search_type = request.search
 
-👉 Do you want me to go through your app.py and mark exactly which endpoints need to be converted into sinks, step by step?
+        final_result = {"faiss": []}
+        # faiss
+        faiss_db = default_db['faiss']
+        # print(faiss_db.index.ntotal)
+        final_result['faiss'] = await faiss_search(faiss_db, request)
 
+        return final_result
+    except Exception as e:
+        print(e)
+        return {"error": str(e)}
+
+@app.post("/vegas/apps/aider-retriever/dpf/api")
+async def dpf_search_endpoint(request: DPFQuery):
+    """
+    DPF search endpoint using Elasticsearch
+    """
+    try:
+        print("--------------------------------------------------------")
+        print(f"DPF API - Query: {request.query}")
+        print(f"Index: {request.index_name}, K: {request.k}")
+        print(f"Include LLM Response: {request.include_llm_response}")
+        
+        start_time = time.time()
+        result = await dpf_search(request)
+        total_time = time.time() - start_time
+        
+        result["search_metadata"]["total_pipeline_time"] = total_time
+        print(f"Total DPF pipeline time: {total_time:.2f} seconds")
+        
+        return result
+    except Exception as e:
+        print(f"DPF API Error: {e}")
+        return {"error": str(e)}
+
+@app.get("/vegas/apps/aider-retriever/dpf/health")
+async def dpf_health_check():
+    """
+    Health check endpoint for DPF service
+    """
+    try:
+        # Test Elasticsearch connectivity
+        test_query = {
+            "query": {"match_all": {}},
+            "size": 1
+        }
+        
+        es_result = await search_elasticsearch(
+            DPF_ELASTICSEARCH_CONFIG["api_url"], 
+            DPF_ELASTICSEARCH_CONFIG["api_key"], 
+            DPF_ELASTICSEARCH_CONFIG["index_name"], 
+            test_query
+        )
+        
+        return {
+            "status": "healthy",
+            "elasticsearch": "connected",
+            "index_name": DPF_ELASTICSEARCH_CONFIG["index_name"],
+            "total_documents": es_result.get("hits", {}).get("total", {}).get("value", 0),
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+async def search_elasticsearch(api_url: str, api_key: str, index_name: str, query: dict):
+    """
+    Retrieve chunks from an Elasticsearch index based on a query.
+    """
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"ApiKey {api_key}"
+    }
+
+    search_url = f"{api_url}/{index_name}/_search"
+    
+    try:
+        response = requests.post(search_url, headers=headers, data=json.dumps(query))
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error querying Elasticsearch: {e}")
+        raise HTTPException(status_code=500, detail=f"Elasticsearch query failed: {str(e)}")
+
+async def generate_dpf_embedding(text: str):
+    """
+    Generate embedding for DPF using the embedding endpoint
+    """
+    headers = {
+        'X-apikey': DPF_API_KEY,
+        'Content-Type': 'application/json'
+    }
+    
+    payload = {
+        "text": text,
+        "model_name": DPF_SEARCH_CONFIG["embedding_model"]
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["embedding_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract embedding from response - handle different response formats
+        if isinstance(result, dict) and 'embedding' in result:
+            return result['embedding']
+        elif isinstance(result, list) and len(result) > 0:
+            # If it's a list of embeddings, take the first one
+            if isinstance(result[0], list):
+                return result[0]
+            elif isinstance(result[0], dict) and 'embedding' in result[0]:
+                return result[0]['embedding']
+            else:
+                return result
+        elif isinstance(result, list):
+            return result
+        else:
+            print(f"Unexpected embedding response format: {result}")
+            raise HTTPException(status_code=500, detail="Invalid embedding response format")
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error generating embedding: {e}")
+        raise HTTPException(status_code=500, detail=f"Embedding generation failed: {str(e)}")
+
+async def dpf_reranker(sentence_pairs: List[List[str]]):
+    """
+    Rerank results using cross-encoder for DPF
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY 
+    }
+    
+    payload = {
+        "region": DPF_CROSS_ENCODER_CONFIG["region"],
+        "project_id": DPF_CROSS_ENCODER_CONFIG["project_id"],
+        "endpoint_id": DPF_CROSS_ENCODER_CONFIG["endpoint_id"],
+        "usecase_name": DPF_CROSS_ENCODER_CONFIG["usecase_name"],
+        "model_type": DPF_CROSS_ENCODER_CONFIG["model_type"],
+        "input_request": {
+            "instances": sentence_pairs
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["cross_encoder_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Handle different response formats
+        if isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], list) and len(result[0]) > 0:
+                if isinstance(result[0][0], dict) and "prediction_scores" in result[0][0]:
+                    return result
+                else:
+                    # If the structure is different, wrap it properly
+                    return [[{"prediction_scores": result[0] if isinstance(result[0], list) else [result[0]]}]]
+            else:
+                return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+        elif isinstance(result, dict) and 'predictions' in result:
+            return result['predictions']
+        else:
+            print(f"Unexpected reranker response format: {result}")
+            return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error in reranking: {e}")
+        # Return default scores on error
+        return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+
+async def generate_llm_response(user_query: str, context: str):
+    """
+    Generate LLM response using the context and query
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY  # Use UAT API key for LLM
+    }
+    
+    payload = {
+        "useCase": DPF_LLM_CONFIG["usecase"],
+        "contextId": DPF_LLM_CONFIG["context_id"],
+        "preSeed_injection_map": {
+            DPF_LLM_CONFIG["context_placeholder"]: context,
+            DPF_LLM_CONFIG["question_placeholder"]: user_query
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                return result['prediction']
+            elif 'response' in result:
+                return result['response']
+            elif 'text' in result:
+                return result['text']
+            elif 'generated_text' in result:
+                return result['generated_text']
+        elif isinstance(result, str):
+            return result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                return result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                return str(result[0])
+        
+        print(f"Unexpected LLM response format: {result}")
+        return "I apologize, but I encountered an issue generating a response. Please try again."
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error generating LLM response: {e}")
+        return f"Error generating response: {str(e)}"
+
+async def dpf_search(request: DPFQuery):
+    """
+    Complete DPF search pipeline
+    """
+    print(f"DPF Search - Query: {request.query}, Index: {request.index_name}")
+    
+    # 1. Generate embedding
+    embedding_start = time.time()
+    embedding = await generate_dpf_embedding(request.query)
+    embedding_time = time.time() - embedding_start
+    print(f"Embedding generation time: {embedding_time:.2f} seconds")
+    print(f"Embedding dimensions: {len(embedding)}")
+    
+    # 2. Elasticsearch query
+    es_query = {
+        "_source": [DPF_SEARCH_CONFIG["chunk_data"], DPF_SEARCH_CONFIG["custom_metadata"]],
+        "query": {
+            "bool": {
+                "filter": [
+                    {
+                        "term": {
+                            "usecase_name": DPF_SEARCH_CONFIG["usecase_filter"]
+                        }
+                    }
+                ],
+                "should": [
+                    {
+                        "knn": {
+                            "field": DPF_SEARCH_CONFIG["embedding_field"],
+                            "query_vector": embedding,
+                            "k": min(request.k, DPF_SEARCH_CONFIG["max_k"]),
+                            "num_candidates": DPF_SEARCH_CONFIG["num_candidates"]
+                        }
+                    }
+                ]
+            }
+        },
+        "size": min(request.k, DPF_SEARCH_CONFIG["max_k"])
+    }
+    
+    search_start = time.time()
+    es_results = await search_elasticsearch(
+        DPF_ELASTICSEARCH_CONFIG["api_url"], 
+        DPF_ELASTICSEARCH_CONFIG["api_key"], 
+        request.index_name, 
+        es_query
+    )
+    search_time = time.time() - search_start
+    print(f"Elasticsearch search time: {search_time:.2f} seconds")
+    
+    elastic_search_results = es_results['hits']['hits']
+    elastic_search_contexts = [
+        result.get('_source', {}).get(DPF_SEARCH_CONFIG["chunk_data_field"], '') 
+        for result in elastic_search_results
+    ]
+    
+    if not elastic_search_contexts:
+        return {
+            "retrieved_documents": [],
+            "reranked_results": [],
+            "llm_response": "No relevant documents found for your query.",
+            "search_metadata": {
+                "embedding_time": embedding_time,
+                "search_time": search_time,
+                "total_results": 0
+            }
+        }
+    
+    # 3. Rerank results
+    rerank_start = time.time()
+    sentence_pairs = [[request.query, context] for context in elastic_search_contexts]
+    reranked_response = await dpf_reranker(sentence_pairs)
+    rerank_time = time.time() - rerank_start
+    print(f"Reranking time: {rerank_time:.2f} seconds")
+    
+    cross_scores = reranked_response[0][0].get("prediction_scores", [])
+    
+    # Combine scores with contexts
+    context_list = []
+    for score, context, original_result in zip(cross_scores, elastic_search_contexts, elastic_search_results):
+        reranked_dict = {
+            'cross_score': score,
+            'text': context,
+            'original_result': original_result
+        }
+        context_list.append(reranked_dict)
+    
+    # Sort by cross-encoder score
+    reranked_docs = sorted(context_list, key=lambda x: x["cross_score"], reverse=True)
+    top_doc = reranked_docs[0] if reranked_docs else None
+    
+    # 4. Generate LLM response if requested
+    llm_response = None
+    llm_time = 0
+    if request.include_llm_response and top_doc:
+        llm_start = time.time()
+        llm_response = await generate_llm_response(request.query, top_doc['text'])
+        llm_time = time.time() - llm_start
+        print(f"LLM generation time: {llm_time:.2f} seconds")
+    
+    return {
+        "retrieved_documents": elastic_search_results,
+        "reranked_results": reranked_docs,
+        "top_document": top_doc,
+        "llm_response": llm_response,
+        "search_metadata": {
+            "embedding_time": embedding_time,
+            "search_time": search_time,
+            "rerank_time": rerank_time,
+            "llm_time": llm_time,
+            "total_results": len(elastic_search_results),
+            "reranked_count": len(reranked_docs)
+        }
+    }
+
+if __name__ == "__main__":
+    # #, reload=True)#, debug=True, workers=1)
+    uvicorn.run("main_serve:app", host='0.0.0.0',
+                port=2000, reload=True)
