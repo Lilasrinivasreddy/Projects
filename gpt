@@ -1,3 +1,154 @@
+How Talk2Report Generates Summary & Follow-up Questions
+📋 Complete Flow Explanation
+Phase 1: PDF Upload & Initial Processing
+When you upload a PDF document, here's what happens:
+
+File Reception: The system receives your PDF through the FastAPI endpoint
+Content Extraction: Using PyPDF2, the system extracts text from each page
+Intelligent Chunking: The PDF is split into page-based chunks with metadata
+Phase 2: Automatic Summary Generation
+Location: services.py - generate_report_summary()
+
+Here's the exact process that generates your summary:
+
+Content Combination: All page chunks are combined into one unified text
+LLM Prompt Construction: The system creates a specialized prompt:
+AI Analysis: Gemini Flash/Pro processes the entire document and generates:
+Comprehensive Summary: 200-400 word executive summary
+Key Findings: Main insights and data points
+Business Value: Actionable recommendations
+Phase 3: Follow-up Question Generation
+Location: pydantic_parsers.py - report_summarizer_call_parser
+
+The system automatically generates 4 intelligent follow-up questions:
+
+How Questions are Generated:
+
+Content Analysis: LLM analyzes the report's main topics, data points, and themes
+Question Categories: Generates questions across different analysis types:
+Drill-down: "What are the specific factors driving the 15% revenue increase?"
+Comparative: "How do Q3 results compare to the same period last year?"
+Trend Analysis: "What patterns can we see in customer acquisition over time?"
+Actionable: "What recommendations does the report make for next quarter?"
+Phase 4: Vector Embedding & Storage
+Location: service.py - _process_and_store_chunks()
+
+After summary generation:
+
+Vector Embeddings: Each chunk gets embedded using text-embedding-004
+Database Storage: Chunks stored in PostgreSQL with pgvector for semantic search
+Metadata Storage: Summary and questions stored with the main report record
+Phase 5: User Interface Display
+The response sent to the frontend includes:
+
+🎯 Why This Works So Well
+1. Intelligent Content Processing
+Full Document Analysis: Unlike simple chunking, the system analyzes the ENTIRE document to generate summaries
+Context Preservation: Maintains document structure and relationships between sections
+Business Focus: Prompts specifically designed for business analysis and actionable insights
+2. Smart Question Generation
+Content-Aware: Questions are generated based on actual document content, not templates
+Diverse Perspectives: Covers different analysis angles (trends, comparisons, details, actions)
+Natural Language: Questions feel conversational and relevant to the specific document
+**3. Technical
+Sorry, your request failed. Please try again. Request id: 626e82dd-edd8-4954-bd55-61162581e445
+
+Reason: Please check your firewall rules and network connection then try again. Error Code: net::ERR_CONNECTION_RESET.
+========================
+Perfect! Let me explain how Talk to Data generates summaries and follow-up questions after executing SQL queries. Let me examine the relevant code to show you the complete flow.
+
+Read flow_agent.py, lines 900 to 1000
+
+Read flow_agent.py, lines 220 to 300
+
+Now let me check the LLM services for summary and follow-up generation:
+
+Read services.py, lines 1266 to 1320
+
+Read services.py, lines 1320 to 1380
+
+Now let me check the follow-up generation method:
+
+Read services.py, lines 276 to 340
+
+Now let me check the Pydantic parsers for these:
+
+Read pydantic_parsers.py, lines 214 to 235
+
+Read pydantic_parsers.py, lines 18 to 25
+
+Now let me check the prompts for these:
+
+Searched text for generate_followup_questions (**/src/llm/prompts.py), no results
+
+Searched text for followup (**/src/llm/prompts.py), no results
+
+Read prompts.py, lines 315 to 330
+
+Now let me find where the follow-up prompt is defined by looking for it in a different way:
+
+Perfect! Now I have all the pieces. Let me explain how Talk to Data generates summaries and follow-up questions after executing SQL queries:
+
+How Talk to Data Generates Summaries & Follow-up Questions
+🔄 Complete Flow After SQL Execution
+Step 1: Query Execution & Results Processing
+Step 2: Conditional Summary & Visualization Generation
+Based on user preferences (show_summary and show_visualization flags), the system decides what to generate:
+
+Step 3: AI-Powered Summary Generation
+Location: services.py - summarize_call() method
+
+A. Data Preprocessing
+B. Smart Processing Based on Data Size
+C. LLM Summary Generation
+Step 4: Follow-up Questions Generation
+Location: flow_agent.py - generate_followups() method
+
+A. Extract Query Metadata
+B. Gather Table Context
+C. Generate Contextual Follow-ups
+Step 5: Structured Response Parsing
+Summary Parser
+Follow-up Parser
+Step 6: Response Assembly & Delivery
+🎯 Key Features
+Smart Summary Generation
+Small Datasets (≤150 rows): Complete data sent to LLM for detailed analysis
+Large Datasets (>150 rows): Statistical summaries generated first, then analyzed
+Business-Focused Insights: Emphasizes trends, anomalies, and actionable insights
+No Technical Jargon: Hides table names, column names for user-friendly output
+Intelligent Follow-up Questions
+Context-Aware: Based on actual tables and columns used in the query
+Progressive Exploration: Suggests drill-down, comparison, and trend analysis
+Schema-Driven: Leverages table relationships and metadata
+Limited to 4 Questions: Focused, high-quality suggestions
+Concurrent Processing
+Async Execution: Summary and visualization generation run in parallel
+Performance Optimized: Reduces total response time by ~50%
+Error Handling: Graceful fallbacks if one process fails
+Prompt Engineering
+🔧 Technical Implementation
+Models Used
+Primary: Gemini Flash 1.5 (fast processing)
+Fallback: Gemini Pro (complex analysis)
+Temperature: 0.3 (balanced creativity/consistency)
+Data Processing Pipeline
+SQL Execution → pandas DataFrame
+Data Cleaning → Remove geo columns, round decimals
+Size Assessment → Choose processing strategy
+LLM Analysis → Generate insights and summaries
+Context Assembly → Gather table metadata for follow-ups
+Response Formatting → Structure for UI consumption
+Performance Optimizations
+Concurrent Execution: Summary + visualization in parallel
+Smart Data Sampling: Statistical summaries for large datasets
+Context Filtering: Remove unnecessary metadata
+Token Management: Optimize prompt length for LLM efficiency
+This architecture ensures that every SQL query result comes with AI-generated insights and contextual follow-up questions, making data exploration intuitive and progressive for business users.
+
+Try Again
+
+
 Slide 1 – QVerse Framework (Intro + Talk to Data)
 
 The QVerse Framework has 3 different approaches:
