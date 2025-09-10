@@ -1,3 +1,62 @@
+Slide 1 – QVerse Framework (Intro + Talk to Data)
+
+The QVerse Framework has 3 different approaches:
+
+Talk to Data → Natural language → SQL queries → Live Databases
+
+Talk to Report → Question answering → Reports (PDFs/Docs)
+
+Talk to Knowledge → Conversational insights from enterprise knowledge base (optional extension)
+
+Talk to Data
+
+What it does
+
+Converts natural language questions → SQL queries
+
+Validates, retries, and executes on live databases (Postgres, BigQuery, Snowflake, etc.)
+
+Uses ThinkForge cache to avoid regeneration for repeated queries
+
+Returns results with AI summaries & chart recommendations
+
+Streams answers back in real-time
+
+Flow (Simple):
+
+User Question → Validation → Cache Check → SQL Generation → Execution → Summary + Visualization
+
+Slide 2 – Talk to Report
+
+What it does
+
+Converts reports (PDF, Docs) into searchable chunks with embeddings
+
+Uses RAG (Vector Search + Reranker + LLM) to answer questions from reports
+
+Provides concise answers with citations to the original document
+
+Supports multiple reports for knowledge discovery
+
+Ideal for archived or unstructured documents
+
+Flow (Simple):
+
+Upload Report → Chunk & Embed → Vector Search → LLM Answer → Citations to Source
+
+
+⚡ Key Difference
+
+Talk to Data → Real-time answers from live structured data
+
+Talk to Report → Knowledge retrieval from static unstructured reports
+
+👉 Do you want me to also add Slide 3 with a side-by-side comparison table (Talk to Data vs Talk to Report) so it becomes a quick interview “cheat sheet”?
+
+
+
+
+
 GitHub Copilot
 I'll help you create a comprehensive explanation for "Talk to Data" (which appears to be the main SQL query generation system in your project). Let me first examine the relevant components to understand the complete architecture.
 
