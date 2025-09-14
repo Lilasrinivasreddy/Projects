@@ -1,3 +1,229 @@
+QS Framework – Role-Based Detailed Documentation
+1. Introduction
+
+What is QS Framework?
+The QS Framework is an intelligent platform that allows employees to ask natural language questions about their data and reports. Instead of writing SQL queries or searching through files manually, users can type questions into a chatbot and instantly get meaningful answers.
+
+Modes of Use
+
+Talk to Data: Lets users ask questions on live tables in their assigned catalog or domain. The system generates SQL queries in the background but explains results in plain English.
+
+Talk to Report: Enables users to upload PDF, CSV, or Excel reports and then query them directly. The system extracts the content, indexes it, and provides answers.
+
+Talk to NSP/Looker Studio (Coming Soon): This will extend support to Looker dashboards so that questions can be asked directly on dashboards.
+
+Role-Based Access
+There are three levels of access in QS Framework: User, Developer, and Admin. Each role has its own dashboard and feature set, ensuring users only see what they are supposed to.
+
+2. Access & Roles
+
+Default Access
+Every new user is provisioned as a User by default. This means they can chat with the system and query reports but do not see advanced tools.
+
+Requesting Developer/Admin Access
+If someone needs higher access, they must contact Anjali Tanekella, Akhilesh, or Raja. A business justification is required.
+
+Domains and Catalogs
+
+A Domain is like a broad umbrella category (for example, “Sales Analytics”).
+
+A Catalog is a set of tables within that domain (for example, “Scorecard Tables”).
+
+Users are restricted to their assigned domain and catalog. This ensures security and relevance.
+
+3. User Role
+
+Chatbot Access
+
+Users see only the chatbot on their dashboard.
+
+They can choose between Talk to Data (querying authorized tables) or Talk to Report (uploading and asking about reports).
+
+For Users, only the answer explanation is displayed. The underlying SQL query is not shown.
+
+Follow-Up Questions
+
+After an answer is given, the system may suggest follow-up questions.
+
+These are AI-generated and may not always be accurate but help guide exploration.
+
+Reports Panel
+
+When using Talk to Report, uploaded PDFs/CSVs/Excels are listed in a dedicated reports panel.
+
+Users can return to these within the same chat session.
+
+Chat Management
+
+Users can filter past chats by domain or catalog.
+
+They can search for previously asked questions.
+
+They can start new chats or delete existing chat history.
+
+Feedback System
+
+If a user gives a five-star rating, it is submitted directly as positive feedback.
+
+If a rating is below five stars, a dialog box opens where the user must explain what went wrong (e.g., wrong table, missing filter, incomplete answer).
+
+This feedback is used by Developers to improve the system.
+
+Settings
+
+Users can toggle between Light Mode and Dark Mode.
+
+They can also choose which model is used (e.g., Gemini Pro or Gemini Flash) if enabled by Admin.
+
+4. Developer Role
+
+Playground
+
+The Playground allows Developers to see the SQL query generated for a natural language question.
+
+Developers can edit the query, re-run it, and validate results.
+
+Feedback can be provided as Yes/No.
+
+On negative feedback, Developers can provide the correct SQL, which the system learns from and stores as a rule for future use.
+
+Results are displayed in three views: Summary, Preview, and Visualization.
+
+Context Management
+
+Developers can access a Catalog Dashboard that shows all available catalogs and tables.
+
+They can edit metadata such as descriptions, usage patterns, rules, and relationships.
+
+If database columns are renamed, Developers can update them here so queries remain accurate.
+
+Relationships between tables (source → target, join type, join conditions) can be defined.
+
+Constraints (e.g., primary keys, foreign keys, valid data types) can be added.
+
+Usage Patterns can be set so that certain question types always map to specific tables.
+
+Context Rules can enforce behaviors (e.g., always use DISTINCT, or always use LIKE for certain queries).
+
+Intent Registry (Cache)
+
+Developers can create cache entries for fixed questions.
+
+For example: “How many calls were received for iPhone 17?” → SQL query is stored.
+
+The system detects “iPhone 17” as a filter. If someone later asks about “Google Pixel,” the same query is reused with the filter swapped.
+
+Matches can be tested as Complete Match (exact) or Partial Match (similar variants).
+
+Bulk uploads of cache entries can be done via CSV or API.
+
+Usage Logs
+
+Developers can view logs showing whether an answer was retrieved from cache or generated fresh.
+
+They can analyze success rates, cache hit rates, and user activity.
+
+5. Admin Role
+
+Chatbot Configuration
+
+Admins decide how the chatbot behaves.
+
+They can turn cache usage on or off.
+
+They can change the default LLM model (e.g., Gemini Pro → Gemini Flash).
+
+They can decide whether chat history should influence responses.
+
+They can adjust the thinking budget, which controls how much reasoning the system does before answering (affecting accuracy vs. speed).
+
+Audit Logs
+
+Every configuration change is recorded in audit logs.
+
+Admins can see who made changes, when, and what was modified (tables, metadata, configurations).
+
+This ensures full governance and accountability.
+
+6. Talk to Report Workflow
+
+Upload a PDF, CSV, or Excel file in the chat window.
+
+The system extracts content and chunks it into smaller pieces.
+
+The content is indexed for Q&A.
+
+Users can ask questions such as:
+
+“Summarize this report in 5 points.”
+
+“Which KPIs declined in Q3?”
+
+Reports are listed in the Reports panel and remain available during the session.
+
+7. Feedback Loop
+
+Why Feedback Matters
+Feedback drives system improvement. Developers use it to refine context, fix metadata, and add cache entries.
+
+How Feedback Works
+
+⭐⭐⭐⭐⭐ = positive reinforcement.
+
+⭐–⭐⭐⭐⭐ = requires explanation, which is logged and reviewed.
+
+8. Governance & Audit
+
+Governance
+
+Access control ensures users only see what they should.
+
+Developers can edit metadata but only within their allowed domains.
+
+Admins hold final authority for configuration.
+
+Audit
+
+All system changes are tracked.
+
+Admin audit logs capture what was changed and by whom.
+
+9. Best Practices
+
+For Users:
+
+Phrase questions clearly.
+
+Always comment when rating less than 5 stars.
+
+Name uploaded reports meaningfully.
+
+For Developers:
+
+Update context when database schema changes.
+
+Review and refresh intent registry entries regularly.
+
+Use usage logs to track cache success.
+
+For Admins:
+
+Review audit logs weekly.
+
+Optimize thinking budget to balance speed and accuracy.
+
+Select LLM models based on workload and use case.
+
+10. Future Enhancements
+
+Looker Studio Integration → Extend “Talk to NSP.”
+
+Automated Metadata Generation → Reduce manual edits.
+
+Interactive Onboarding → Guided tooltips and walkthroughs for new users.
+
+
+
 WEBVTT
 
 1 "Anjali Tanekella" (3016352512)
