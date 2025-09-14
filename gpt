@@ -1,44 +1,298 @@
-(0:04) So, if I go to source, so today right for the visualizations, we have this format, yeah (0:23) this one. (0:24) So, we are asking that to predict you know what are the dimensions, measures, chart type, (0:28) chart title and you know the name metadata. (0:31) Metadata is basically referring to sort filters and limitations and stuff.
-(0:35) Okay. (0:36) Okay. (0:37) So, this is the current visualization structure.
-(0:40) So, this we want to switch to VegaConfig. (0:43) So, VegaConfig looks something like this. (0:47) This is like a standard structure for visualizations.
-(0:53) So, what we can do is, can you change the prompt, like write a new prompt for visualization (1:01) where instead of responding back in this structure, it should respond back in Vega structure. (1:08) So, just look at Vega documents or Vega documentation. (1:11) Yeah, you share that link Akhilesh, I will go to that Vega document, Vega JSON file.
-(1:16) Okay. (1:17) Yeah. (1:17) There is nothing you would have to give, right.
-(1:20) You just have to exclusively mention that, return the suggested visualization in Vega (1:25) format, that's it. (1:26) Yes, yes. (1:27) Right.
-(1:28) So, just look at it, just find in the prompt to get all kinds of details, like you know (1:33) the tooltips, access, grid, grid colors or whatever information is there, right. (1:38) Oh. (1:38) Just say it is the required information and it is coming out in a correct format, right.
-(1:44) Now, the other thing is, when it is giving you the Vega config, so in the form today (1:54) we have certain checks that we do. (2:02) So, when we are suggesting a visualization, we look for certain checks. (2:07) First is the data frame size.
-(2:09) Okay. (2:11) You should give me a second. (2:14) Oh, yeah.
-(2:23) So, for visualization what we do is, we kind of get the metadata of the visualization. (2:27) Metadata refers to the statistics. (2:29) Okay.
-(2:30) So, we are not passing data frame directly, it is passing the statistics of that data (2:34) frame, right. (2:35) So, the statistics is defined something like this, where we are sending the unique counts, (2:39) unique values, missing values or like you know categorical values, whatever the summary, (2:44) right. (2:45) Okay.
-(2:45) We are trying to send the statistic information to get the visualization. (2:49) So, try with the same thing first and also in parallel do another check where, other (2:55) thing where you do, take the first 100 records or you know take random 100 records. (3:03) Like say if you have a data frame with 5000 records, right.
-(3:06) Just take a sample 100 records, any random 100 records and pass it down into the prompt. (3:12) Okay. (3:12) Instead of the metadata, you just pass the data frame, those are sample records.
-(3:17) And in the prompt, it is explicitly mentioned that you know you are sending a sample records (3:20) and now this is not the exact representation of the data or whatever it is, right. (3:24) Send that to it, see how it, how is it responding in that case. (3:29) Okay.
-(3:29) Yeah. (3:30) Okay. (3:30) And other thing is when it is responding or when it is giving you the Vega configuration, (3:35) what it will do is, it will put the data also in that same computation.
-(3:39) Okay. (3:39) In same JSON, it will give you the data frame as well. (3:43) Okay.
-(3:43) So, now what happens is if you send the random 100 records, it is going to take those random (3:48) 100 records and put it in the JSON. (3:51) Okay. (3:51) And you will have to replace it with the exact 5000 records whatever you have, right.
-(3:56) Okay. (3:56) You will have to replace it. (3:58) Okay.
-(3:59) Okay. (4:00) Yeah. (4:01) Just explore this part, we will discuss again tomorrow.
-(4:05) Sure. (4:05) Okay. (4:07) And regarding the documentation, I will connect with Anjali.
-(4:11) Yeah. (4:12) Just check with Anjali. (4:13) Okay.
-(4:13) Okay. (4:14) Sure. (4:14) I will look this.
-(4:15) Just a simple single HTML page where, you know, you just put some screenshot, okay. (4:20) I just give directions to the user, right. (4:23) So, like you just say the user is an admin person and they have access to admin tools (4:27) like metadata updation or something, right.
-(4:30) How do they update the context? (4:32) How do they update metadata and all the instructions? (4:35) Sure. (4:36) So, who wants to upload with the column, they just come and click on the column description (4:40) and stuff, right. (4:41) Yeah.
-(4:42) But just some examples like that and how do they play around with the domain catalog and (4:45) then, you know, talk to data, talk to report, talk to MSP, whatever. (4:48) So, they give that instruction. (4:51) I think that is all.
-(4:52) Just one or two pages, that is all. (4:54) Sure. (4:54) Sure.
-(4:54) That is all. (4:55) After HTML, then now we run, we will just put it up here next to documentation. (4:59) We will just put that into here.
-(5:02) Okay. (5:02) Yeah. (5:03) Yeah.
-(5:07) Yeah. (5:10) Yeah. (5:11) Yeah.
-(5:11) Yeah.
-Ready to Go Unlimited?
-Get immediate access to...
+0:00 : Vudumula Lila Srinivas Reddy : For me. Yeah.
+0:02 : Anjali Tanekella : Can you see my screen?
+0:05 : Vudumula Lila Srinivas Reddy : Yes it is up.
+0:06 : Anjali Tanekella : Okay, so for we have three levels of users.
+0:12 : Vudumula Lila Srinivas Reddy : Okay.
+0:13 : Anjali Tanekella : So we have.
+0:16 : Anjali Tanekella : Just a minute.
+0:19 : Anjali Tanekella : We have user, we have developer and we have admin. Okay, three levels of users. This page that you see is an admin level page, that is mine for a user you only get the chatbot option and for a developer you don't get you're not supposed to get audit and configuration options. Okay.
+0:38 : Anjali Tanekella : So what we are doing right now is with the chatbot, we are also including the documentation along with it. Okay. So for the user also, he can go into the documentation and this is where we want to put the user manual. And help them walk through.
+0:56 : Vudumula Lila Srinivas Reddy : Not how to use this QS framework every details I will be mentioned in that documentation.
+1:02 : Anjali Tanekella : Yes. So because our documentation is.
+1:06 : Anjali Tanekella : Similar to a HTML like this, we are expecting right now from this documentation also to have a HTML page which has the options of user developer and admin here. And how we get access is for settings and how they can ask questions and how they can give feedback. Okay.
+1:28 : Anjali Tanekella : So every user is usually provided access to a set domain and a set catalog. The domain acts like a bit larger umbrella, whereas the catalog usually has the tables within it. So scorecard FW Tangular has singular tables that answer only those kind of dashboards and questions.
+1:48 : Anjali Tanekella : So a user is kind of, yeah. Ask.
+1:52 : Vudumula Lila Srinivas Reddy : One thing, yeah, I got it. So.
+1:55 : Anjali Tanekella : The user usually kind of restricted to their specific domain and catalog only and they can ask questions on the domain and catalog. For example, we first begin, when we first enter into the system, just a minute. Let me log out again.
+2:21 : Anjali Tanekella : System you have something like this. This is your first framework where you can select any question and ask. Before you do this, we have three options that we are coming up with. One is talk to data, that is the tables that they have uploaded. One is talk to report. In this option, the user can upload their own reports CSV files.
+2:40 : Anjali Tanekella : Or PDFs and ask questions on them. And then we have talked to NSP that is going to be coming soon, that doesn't looker as well. Okay.
+2:50 : Vudumula Lila Srinivas Reddy : I'll look at studio presentation. Yeah.
+2:54 : Anjali Tanekella : After you've attached or asked your question and you click go, you see that we have.
+3:00 : Anjali Tanekella : That we'll have a new chat window here that opens up.
+3:05 : Anjali Tanekella : When we open a new chart window, there is an option of filter that shows.
+3:10 : Anjali Tanekella : Only showing engineering analytics scorecards or if you want everything that you have ever tried out.
+3:18 : Anjali Tanekella : So it filters out all of your previous charts and you can search for which kind of questions you need in the chat or what kind of questions you have tried before. You can start a new chat here and delete all the chats as well. If you don't need any. Okay.
+3:34 : Anjali Tanekella : Can you ask a question, our system generates the query first, and then.
+3:40 : Vudumula Lila Srinivas Reddy : Just to talk to data. This is to talk to data.
+3:43 : Anjali Tanekella : Yes. For the user, we don't show the query, we only show the explanation.
+3:50 : Anjali Tanekella : Okay, we only show the explanation and the.
+3:53 : Vudumula Lila Srinivas Reddy : So for user we need to show the query, not the query, right? Only that explanation we will be showing to the user. Then who will be seeing that SQL query what is generating admin and.
+4:06 : Anjali Tanekella : Would have access to the SQL query that is getting generated. Users that can only see the summary, they'll not be able to see the query, complete query.
+4:15 : Vudumula Lila Srinivas Reddy : Okay, ok.
+4:18 : Anjali Tanekella : And the records for it.
+4:21 : Anjali Tanekella : If the user likes the response, he can give a five star feedback.
+4:30 : Anjali Tanekella : They can give a five star rate, but so when you give a five star rating, there is no dialogue box that opens up. But when you give anything less than a five star rating, there is a dialogue box that opens up here and when you give that rate, you can comment on why, why you have given that rating, what kind of answer were you looking for? Why is this wrong?
+4:52 : Anjali Tanekella : First thing is that for the user you have follow up questions available and he can continue asking these follow up questions need not work hundred percent of the time. These are AI generated follow up questions. These are just suggestions.
+5:07 : Vudumula Lila Srinivas Reddy : Yes ok.
+5:07 : Anjali Tanekella : You can pick on these, they might not work based on your data, but yeah, you can still pick on these and try. Then we have something called reports.
+5:18 : Anjali Tanekella : So if you have uploaded PDFs or csvs or Excel reports for talk to report, you can see them listed here. What kind of reports are there in this chat window? Yeah. Okay.
+5:31 : Vudumula Lila Srinivas Reddy : Input time completely aware because I worked on this talk to report on so I tested multiple times. Yeah. Okay, so.
+5:40 : Vudumula Lila Srinivas Reddy : Yeah, and ok and this thing there is a team where you have to set like whether I want light or dark all this and we have an option for the LLM I mean which model to choose, right? Yes y.
+5:53 : Anjali Tanekella : Correct.
+5:55 : Vudumula Lila Srinivas Reddy : Okay I understand. Yeah.
+5:56 : Anjali Tanekella : So this is all user level.
+5:59 : Vudumula Lila Srinivas Reddy : Okay.
+6:00 : Anjali Tanekella : For developers we have features like playground context, intent registry. These are very important role for a developer. When the developer, when a, when the person asks a question and they don't like the query that is generated or it is not fitting right in or they have multiple tables and it's not picking up on the table, or they have problem.
+6:21 : Anjali Tanekella : Like this or they would like to just see what the table is, what are the columns available, and if there are any relationships within the table, they go into these categories. So first, in playground, this is just simple, no follow up, you ask a question here, you'll get the query here, and if you like the query.
+6:41 : Anjali Tanekella : You can give a feedback of.
+6:44 : Anjali Tanekella : Yes or no. And you have a summary, preview and visualization.
+6:49 : Anjali Tanekella : Sort of playground yes, you can also change the query here and run it again and see if that is the one that you want to give. You can, when giving a negative feedback, you can also provide.
+7:02 : Anjali Tanekella : SQL query that you expected it to generate, and the system will understand and generate its own rules. Okay, so next time on when this kind of question is asked, this is the answer that we have to give. This is the rule that we have to follow is what the gen, the system will generate for itself. Okay.
+7:20 : Vudumula Lila Srinivas Reddy : Okay, got it.
+7:21 : Anjali Tanekella : Yeah, in playground.
+7:25 : Anjali Tanekella : In context, we have two options here. One is a catalog dashboard, the other is relationships. So catalog dashboard is basically a list of all the tables that we're calling as catalogs present here. So you can go within the table, see the description. Now, this metadata for these.
+7:45 : Anjali Tanekella : Is a system generated metadata. So there is a very strong possibility that it might not cover everything that a developer knows.
+7:53 : Anjali Tanekella : And it is just a superficial view. So what developers can do here, everything in this page is editable, so what developers can do here is come in, edit the description, edit the usage patterns, edit the rules, edit the relationships within the tables, edit if they have any constraints, they can edit that as well. And.
+8:14 : Anjali Tanekella : Change the catalog values, categorical values, category, everything can be changed here.
+8:20 : Vudumula Lila Srinivas Reddy : Okay.
+8:21 : Anjali Tanekella : Let's say in the database, just a minute, if let's say in the database, they have changed the column's name, the database connection is all still the same and all the details are still the same. We've just changed the column name. They can change the column name here as well. And the system will pick all that.
+8:41 : Anjali Tanekella : They just have to be careful when they have added any cache entries, which I'll explain later. If they have added any cache entries with this specific column name in their SQL, those cache entries won't work if they change this column name.
+8:58 : Vudumula Lila Srinivas Reddy : Okay, ok, understand. So if the response is coming from the cache like I think I think for job framework is there so from there we are getting the responses. If that is not a matching this, it won't give any kind of response, right?
+9:12 : Anjali Tanekella : Correct, correct.
+9:14 : Vudumula Lila Srinivas Reddy : Okay, I understand.
+9:16 : Anjali Tanekella : Now, when we have rules in rules, the developer can come in and say, ok, this specific function or in this table, no matter what I would like to.
+9:30 : Anjali Tanekella : Distinct of all of these values or use like function only or use these columns when this kind of question is asked. These kind of standard rules across the table can be written in the rules section or the business rules area.
+9:43 : Vudumula Lila Srinivas Reddy : Okay.
+9:45 : Anjali Tanekella : Okay, it didn't relationships is basically in case you have two or three tables, you can identify as which table target table, target columns, source column, and where you want them to join, what kind of join is it? Is it like a inner outer join? And how confident are you about this join?
+10:06 : Vudumula Lila Srinivas Reddy : Okay, ok.
+10:08 : Anjali Tanekella : This is something similar and constraints are also like this is a primary key, this column is a primary key, this column is a foreign key, this column only has indexes or this column only has.
+10:21 : Anjali Tanekella : No other values, no alphabets, no strings, those kind of constraints can be added here.
+10:29 : Vudumula Lila Srinivas Reddy : Okay, ok.
+10:31 : Anjali Tanekella : Usage package basically are used like intent mapping. If let's say we have three or four questions and a user comes in and says, ok.
+10:40 : Anjali Tanekella : We would like to find out about calls that have happened recently. Usage patterns help to identify which table is used for questions like this.
+10:53 : Anjali Tanekella : And map it to that specific question. We map it to that specific table.
+10:59 : Anjali Tanekella : Understood. We have context rules. So for that table, what are the kind of rules that we follow.
+11:06 : Vudumula Lila Srinivas Reddy : So what does.
+11:07 : Anjali Tanekella : API performing means what kind of questions can be asked on KPI performance and in context rules you can see what table, what column is being used for that rule, what column is important for that rule.
+11:21 : Vudumula Lila Srinivas Reddy : Okay.
+11:23 : Anjali Tanekella : So it is joining or if there are any filters, then what kind of filters are available and things like that as well.
+11:30 : Vudumula Lila Srinivas Reddy : Okay, got it.
+11:31 : Anjali Tanekella : Now next we'll go to relationships I explained relationships and then we have intent registry. In intent registry, the user, the developer can come in and create a cache entry where they want, no matter how the question is asked or no matter when the question is asked, we need only this specific SQL query to generate. So this is.
+11:52 : Anjali Tanekella : Forcing the system to pull this specific SQL query every time. We want this result no matter what the question.
+12:01 : Anjali Tanekella : What follow up question exists, this is the question, this is this SQL query. So what the user does is he gives the.
+12:09 : Anjali Tanekella : Then he writes the SQL query and clicks on generate with AI. What this does is it writes a reasoning trace where it helps the system identify which parts are the filter. Like for example, if I say how many calls have we received regarding iPhone seventeen? And I've given an SQL query, the reasoning traces.
+12:29 : Anjali Tanekella : Will identify. I have seventeen as the filter. So next time a person comes in and says, how many calls have we received regarding Google Pixel? It will identify this to be the SQL query and replace the filter.
+12:44 : Vudumula Lila Srinivas Reddy : Okay, I understand.
+12:46 : Anjali Tanekella : To create the entry.
+12:50 : Anjali Tanekella : Here we can see all the entries and as you see there are template types usually they are dominantly sqls, and catalog names generally mean is it a complete match or a partial match? So if I give you a question that says retrieve the actual values for root metrics or so and so, what the system does it.
+13:10 : Anjali Tanekella : It takes that question generates partial questions similar to it. In twenty twenty four, distinct KPI names for roadmetrics, it has generated multiple values. As partial matches.
+13:22 : Anjali Tanekella : So if a user comes in and asks the question regarding root metrics and looks for similarity search.
+13:30 : Anjali Tanekella : It will give me complete and partial matches.
+13:35 : Vudumula Lila Srinivas Reddy : Good cool.
+13:38 : Anjali Tanekella : This is it registry. You can also test this intent registry by writing your own question and checking what kind of, how clear do you want it? Do you want it to be complete much or a partial match? And see how many results you can see in your system as well, how many caches do you have that answer this.
+13:59 : Vudumula Lila Srinivas Reddy : Okay.
+14:01 : Anjali Tanekella : Uploading or cache uploading, if you have a hard already a file of test questions available like a hundred, one fifty test questions, you can upload them using CSV files directly or if you have an API that you can, you have, you can upload it with, you can upload that as well.
+14:17 : Vudumula Lila Srinivas Reddy : Okay, ok, got it.
+14:21 : Vudumula Lila Srinivas Reddy : Usage log.
+14:22 : Anjali Tanekella : Basically is like, let's say there was a question that was asked and it pulled from the caches. It shows us that usage that it was directly.
+14:32 : Anjali Tanekella : Pulled from the cache itself and this was the response.
+14:39 : Vudumula Lila Srinivas Reddy : So it will give the success rate and all those similarity details and this is the stats for.
+14:45 : Vudumula Lila Srinivas Reddy : Kind of dashboard like how many success happened and what were the users. Okay.
+14:51 : Anjali Tanekella : Correct.
+14:54 : Vudumula Lila Srinivas Reddy : Okay, this is.
+14:56 : Anjali Tanekella : Developer so.
+14:57 : Vudumula Lila Srinivas Reddy : The developer.
+14:59 : Anjali Tanekella : Force the system to answer in the same way, he can change the tables, he can according to the SQL queries add caches to the system, play with it, run his own queries if he likes, and test each question and give feedback in explicit details.
+15:16 : Vudumula Lila Srinivas Reddy : Perfect. Yeah. Okay.
+15:18 : Anjali Tanekella : An admin.
+15:19 : Vudumula Lila Srinivas Reddy : So.
+15:19 : Anjali Tanekella : Admin can come in and change the configurations for the chatbot. So if the admin doesn't want us to use caches at all, that have been generated, he can turn it off or right now the default LLM model is German I Pro. So the admin can decide and remove that to germani flash or something like that. Or.
+15:40 : Anjali Tanekella : If he wants us to use history, then we can use history. So the admin decides the configurations for the chatbot.
+15:50 : Anjali Tanekella : For the chatbot and.
+15:53 : Anjali Tanekella : He can also decide the thinking budget for this chatbot as well.
+15:58 : Vudumula Lila Srinivas Reddy : Okay, that is all correct. Okay.
+16:02 : Anjali Tanekella : An audit logs basically are like if the admin comes in and changes the audit or changes anything, adds new tables, you can see them here in orders. Who changed what and what are the details for it.
+16:16 : Vudumula Lila Srinivas Reddy : Got it. I'm all these three we have to create a documentation and place it over here like for user developer and admin. Yeah. Okay.
+16:26 : Anjali Tanekella : So first, first you what you have to do is make sure that you're mentioning my name or Akhilesh's name orang or Raja's name for giving accesses in case how to We first start with how do you get access to the tool? How do you upgrade your access from user to developer and admin.
+16:49 : Anjali Tanekella : And your visit password. So that has to be mentioned.
+16:54 : Anjali Tanekella : And then you go into, ok, what are the benefits of the user? What can the user do? What can the developer do? Which links do they have to go to if they have to check something? Whom do they have to contact if they have any issues.
+17:07 : Anjali Tanekella : And things like that.
+17:07 : Vudumula Lila Srinivas Reddy : Okay, because.
+17:10 : Anjali Tanekella : Eventually, you know, as I said, we'll be changing from the.
+17:14 : Anjali Tanekella : We'll not be giving access to anybody anymore. For metadata generation or the table generation also, we'll not be doing that. We'll have a system to do that. So we'll keep updating this documentation.
+17:27 : Anjali Tanekella : Okay.
+17:28 : Vudumula Lila Srinivas Reddy : Not good. Yeah.
+17:30 : Anjali Tanekella : So you write a documentation in Google first with screenshots, make sure that you have screenshots. My idea is very, very ahead of this it's like when you open the new Google account and you you know we get those dropboxes or dialogue boxes that identify this is step one, this is step two that is like a tracker across the page.
+17:51 : Vudumula Lila Srinivas Reddy : Okay, ok. So you're doing it in any kind of Word document or in Gemini you are using any.
+17:57 : Anjali Tanekella : I thought of a Word document first, but the team wants it in a HTML that we can put it in documentation directly. So if you can write a Word document with the screenshots and then give it to Germany and ask you to write the HTML for it. And give us the HTML and the document, we'll upload both of them.
+18:17 : Vudumula Lila Srinivas Reddy : Yeah. So from where you should start preparing the documentation, I mean for which part, you are already I think you started.
+18:26 : Anjali Tanekella : So I didn't I didn't start anything.
+18:28 : Vudumula Lila Srinivas Reddy : Okay yesterday you showed some document, right? So I thought you already started.
+18:33 : Anjali Tanekella : Copilots documentation, right?
+18:35 : Vudumula Lila Srinivas Reddy : Yeah, ok, ok, got it.
+18:36 : Anjali Tanekella : Like that we need, we need screenshots and navigations.
+18:40 : Anjali Tanekella : Okay. She knows honestly as developers, we do not like confusing documentations, we like it, but it is very simple.
+18:49 : Vudumula Lila Srinivas Reddy : Yeah, yeah.
+18:49 : Anjali Tanekella : So when somebody just says point here, we are so much more comfortable than identifying where to point. So it is better if we do that.
+18:58 : Vudumula Lila Srinivas Reddy : Data.
+19:00 : Vudumula Lila Srinivas Reddy : So I will start.
+19:03 : Vudumula Lila Srinivas Reddy : Any for this Sanjali.
+19:05 : Anjali Tanekella : As soon as possible Srinos honestly speaking.
+19:10 : Vudumula Lila Srinivas Reddy : Okay I mean, discussing something in the middle of September I think so, right? So before that.
+19:16 : Anjali Tanekella : For the release, this is right now we are testing it with multiple people already. So we need all of them to understand how to use it. This is not for the release. Okay.
+19:25 : Vudumula Lila Srinivas Reddy : Okay, understand.
+19:26 : Anjali Tanekella : We need end users to already go through this documents.
+19:31 : Vudumula Lila Srinivas Reddy : Okay, ok. I understand. So probably, I think I have to complete by Tuesday maybe.
+19:39 : Anjali Tanekella : Okay that sounds good because my other my assumption of work right now for you is the recording of this transcript, put it, put the entire recording into Jamini or anything, ask you to build a.
+19:53 : Anjali Tanekella : Document and take screenshots I think that is the major work right now for.
+19:58 : Vudumula Lila Srinivas Reddy : They take it off I mean take use this then I can I think I can make it by Tuesday. So.
+20:06 : Anjali Tanekella : That is the process. You.
+20:07 : Vudumula Lila Srinivas Reddy : So you.
+20:08 : Anjali Tanekella : It's easy for you, yeah, you do whatever is easy for you. But yeah, as soon as possible, please. Yeah.
+20:16 : Vudumula Lila Srinivas Reddy : Yes I sure definitely.
+20:18 : Anjali Tanekella : Yes, thank you.
+20:20 : Vudumula Lila Srinivas Reddy : I can make it as a by Tuesday I think.
+20:23 : Anjali Tanekella : Yeah, ok.
+20:25 : Vudumula Lila Srinivas Reddy : Down on Monday morning there is Kalyani to the office and then I have to go to the office that is the instruction from my manager.
+20:35 : Anjali Tanekella : So Aliani is coming to Indy?
+20:38 : Vudumula Lila Srinivas Reddy : Yeah is coming to India Hydrabad Bangalore and all. So.
+20:43 : Vudumula Lila Srinivas Reddy : So I think on Monday and Wednesday I need to travel to office where is on office. So.
+20:50 : Anjali Tanekella : Hey Robert.
+20:52 : Vudumula Lila Srinivas Reddy : I'm not from the Bangalore.
+20:54 : Anjali Tanekella : Okay.
+20:55 : Vudumula Lila Srinivas Reddy : And so Monday.
+20:58 : Anjali Tanekella : Going to office in Bangalore three hours later.
+21:03 : Vudumula Lila Srinivas Reddy : Every Monday and Tuesday I used to travel and that is why it will be very hectic for me. I starts around seven thirty in the morning and it will take around two hours for me to reach a Verizon client office and then again I need to come back before our call like five thirty, right? So I will start early like three three thirty, but It's my.
+21:24 : Anjali Tanekella : The overall the solving.
+21:27 : Vudumula Lila Srinivas Reddy : Sorry angelate.
+21:28 : Anjali Tanekella : Literally going to office for four hours or something. Yeah.
+21:32 : Vudumula Lila Srinivas Reddy : Three to four hours is.
+21:34 : Vudumula Lila Srinivas Reddy : It's very and if it rains in bangalore, right, it will take three hours. I think once I got.
+21:41 : Vudumula Lila Srinivas Reddy : Completely it will take three hours. I don't know like in this other teams I mean other team members, no one is going I mean.
+21:51 : Vudumula Lila Srinivas Reddy : I inquired.
+21:55 : Vudumula Lila Srinivas Reddy : No, no. See I belong to HCL tech. That's.
+21:58 : Anjali Tanekella : Oh, ok, ok.
+22:01 : Vudumula Lila Srinivas Reddy : The client location I mean for Verizon I'm working, right? So.
+22:05 : Anjali Tanekella : Tweaking was only our, whatever I would talk. The contractors that we are, only we are asked to come into office regularly, sometimes I feel.
+22:15 : Vudumula Lila Srinivas Reddy : See you are also going to office.
+22:18 : Anjali Tanekella : No, I don't go because Raj, my manager is also.
+22:22 : Anjali Tanekella : Remote so I don't have to go.
+22:24 : Vudumula Lila Srinivas Reddy : Okay, ok, then you are based out in New Jersey, right? Yes. Okay, I think yeah then that's fine I think so but here.
+22:35 : Vudumula Lila Srinivas Reddy : Everyone, they asked us to come on Monday and Tuesday which is mandatory. So we have to update and they used to track those details also I mean there is no limited time I mean you can go and set for four hours or three hours, but these two days are pretty mandatory. Oh, and other companies working.
+22:57 : Anjali Tanekella : Saw something that you can use.
+23:00 : Anjali Tanekella : For office buses or something.
+23:01 : Vudumula Lila Srinivas Reddy : It will take four hours then.
+23:05 : Vudumula Lila Srinivas Reddy : So for me, it's around twenty kilometers from my house it is twenty kilometer so it will take around three hours if I take bus. It's horrible. So, so that's why Monday and Tuesday.
+23:22 : Anjali Tanekella : Driving in bangalore traffic work.
+23:25 : Vudumula Lila Srinivas Reddy : Right, it will be I mean, it's very horrible I can say no. You are based out of the right?
+23:31 : Anjali Tanekella : Yeah, yeah, I'm promoting.
+23:33 : Vudumula Lila Srinivas Reddy : So basically from.
+23:35 : Anjali Tanekella : Hi, I'm from.
+23:38 : Anjali Tanekella : Oh. I'm only.
+23:43 : Anjali Tanekella : Nailur.
+23:45 : Vudumula Lila Srinivas Reddy : At Nano born and brought up in Hydrabad, but.
+23:50 : Anjali Tanekella : Rebangaloreca.
+23:53 : Vudumula Lila Srinivas Reddy : Nano, starting like around two thousand and fifteen, two thousand fifteen Bangalore. Okay.
+24:00 : Anjali Tanekella : Oh.
+24:02 : Vudumula Lila Srinivas Reddy : So almost it's been ten years now.
+24:06 : Anjali Tanekella : Anchor Paka carrying our own.
+24:09 : Vudumula Lila Srinivas Reddy : But Canadiga, yeah.
+24:13 : Anjali Tanekella : I think.
+24:16 : Vudumula Lila Srinivas Reddy : Alright.
+24:18 : Anjali Tanekella : Nice. You can do it then, but as soon as possible on a better.
+24:25 : Vudumula Lila Srinivas Reddy : Yeah, yeah, sure. I'm getting any new Tuesday color mostly I will clear it because like I had a call with my associate director, so he's asking to focus on one more project. Okay. I don't know like how it is going to be because my contract might get end by this month or.
+24:47 : Anjali Tanekella : Or in general?
+24:49 : Vudumula Lila Srinivas Reddy : With verizon. Okay. Because, because I was in a different team earlier, I was working for data quality and observability since last one and a half year. So, they have adopted to a new tool called databack. So a data buck, there is a.
+25:07 : Anjali Tanekella : Got you know.
+25:09 : Vudumula Lila Srinivas Reddy : So they are they have got it replaced with our framework.
+25:14 : Vudumula Lila Srinivas Reddy : So they storely started ending each and everyone's contract from the team onwards. So Atlas so maybe September or October or max or December. So that what I think a contract completed to close.
+25:36 : Anjali Tanekella : I think she was Garu.
+25:38 : Vudumula Lila Srinivas Reddy : Ah, sorry.
+25:39 : Anjali Tanekella : Is that a good thing or a bad thing or they.
+25:41 : Vudumula Lila Srinivas Reddy : Yeah, it is a good thing sometimes.
+25:45 : Anjali Tanekella : I agree earlier, I agree.
+25:49 : Anjali Tanekella : Ridiculous to worry.
+25:52 : Vudumula Lila Srinivas Reddy : Too much pressure like I could have got ragged only, rag chat bottody and like onset and Charla later put down to the.
+26:03 : Anjali Tanekella : No, no, no.
+26:04 : Vudumula Lila Srinivas Reddy : Yeah, yeah.
+26:04 : Anjali Tanekella : The end of our corporate it around the clock emergency calls in memory.
+26:13 : Vudumula Lila Srinivas Reddy : India.
+26:19 : Vudumula Lila Srinivas Reddy : I understand.
+26:19 : Anjali Tanekella : So I can't hear you.
+26:21 : Vudumula Lila Srinivas Reddy : No, no, a useful situation.
+26:24 : Anjali Tanekella : This is very unable to.
+26:27 : Anjali Tanekella : Mundu before we got hired I think it was more like India had to adopt their timings according to US timings. If it is completely opposite dominant of verizon's developers are in India. So we work in India time and in US time. We have working till eleven twelve in the night because India is awake then. And then.
+26:47 : Vudumula Lila Srinivas Reddy : Okay ok in the morning also? Yeah.
+26:50 : Anjali Tanekella : Mark, There's developer support. Yeah, so it is very draining.
+26:56 : Vudumula Lila Srinivas Reddy : Yeah, and.
+26:59 : Anjali Tanekella : I think that is a problem.
+27:01 : Vudumula Lila Srinivas Reddy : There are right right right so since how long you're working under it with the horizon, or.
+27:09 : Anjali Tanekella : Two years. Huh. Okay.
+27:11 : Vudumula Lila Srinivas Reddy : Okay, so ok fine. Like I started in twenty two, twenty two January. One and a half year was just so then I got a list then the like a Chennai office in Chennai based location uh.
+27:28 : Anjali Tanekella : Okay.
+27:28 : Vudumula Lila Srinivas Reddy : So.
+27:31 : Vudumula Lila Srinivas Reddy : Then they released me, but one year FedEx I know also one and a half year again FedEx key US again are the US client. Same was timing of like two to eleven and taroo. It will go until one.
+27:46 : Vudumula Lila Srinivas Reddy : What they thoughtable but at least since one and a half year is on good channel. This is fine.
+27:52 : Anjali Tanekella : This is better.
+27:54 : Vudumula Lila Srinivas Reddy : Would become better than.
+27:57 : Anjali Tanekella : Very Nice about verizon's work. Because all of us are so upset with it. So.
+28:04 : Vudumula Lila Srinivas Reddy : Yeah, I feel this team, whatever you're working, right? This is far better.
+28:11 : Vudumula Lila Srinivas Reddy : Are A C here in India what happens is they won't even respond to your message even in Slack or even in mail, they don't even bother. Respond to another, ok. So they won't even care about a contractor. It's worst scenario here.
+28:30 : Anjali Tanekella : There is contractors for the it's Ali.
+28:37 : Vudumula Lila Srinivas Reddy : That's what right again it depends upon team. I'm not commenting all complete verizon is like that. It depends upon team. Three teams to work this I know out of that two teams are ok. One team is pretty good. One team is ok. One team is worst. So yeah, yeah. So, problem is and they will.
+28:58 : Vudumula Lila Srinivas Reddy : And we will look mid level management and like.
+29:01 : Vudumula Lila Srinivas Reddy : Senior in verizons, like fifteen years, twenty years under sooner, so our mindset owner will actually.
+29:10 : Vudumula Lila Srinivas Reddy : And they can't move out of the verizon and whatever they say, we have to follow. That is how things are happening.
+29:17 : Anjali Tanekella : Eh no sarah learning team.
+29:20 : Vudumula Lila Srinivas Reddy : Yeah, yeah, I mean until you are well and good then you ask you are slow, the proceduration wouldn't.
+29:28 : Anjali Tanekella : That is not good.
+29:31 : Anjali Tanekella : No, how long.
+29:33 : Vudumula Lila Srinivas Reddy : Em, and trump purchasing like service based key like even they don't want to give outsourcing any or even outsourcing with the tariffs and.
+29:45 : Vudumula Lila Srinivas Reddy : It could get a situation most of them.
+29:47 : Anjali Tanekella : So I didn't go to say my cloud call and.
+29:51 : Anjali Tanekella : Soliday one off.
+29:53 : Vudumula Lila Srinivas Reddy : Absolute alternately. Yeah.
+29:59 : Vudumula Lila Srinivas Reddy : At least Amigo until you are in this verizon, right?
+30:06 : Vudumula Lila Srinivas Reddy : Will anthus and we'll think there's a chance at the leid though.
+30:11 : Anjali Tanekella : So Verizon here in US doesn't have your full time emplo.
+30:15 : Vudumula Lila Srinivas Reddy : There are full time employees, there are full time employees.
+30:19 : Anjali Tanekella : I know the seniority Momma like.
+30:21 : Vudumula Lila Srinivas Reddy : Yeah, yeah, yeah.
+30:22 : Anjali Tanekella : Take like three, four years of us to be in verizon, at least seven years minimum for us to work Verizon as a contractor, then they'll convert us into full time employees, like about.
+30:33 : Vudumula Lila Srinivas Reddy : A couple of friends already.
+30:37 : Vudumula Lila Srinivas Reddy : You're slow like contractors. Experience center, then they will make it as full time.
+30:44 : Anjali Tanekella : I'll not.
+30:44 : Vudumula Lila Srinivas Reddy : That way there is a lot of dependency on it and how is the his wrap over with their managers, director level, it matters then only they will make it or else they won't do. So.
+30:58 : Anjali Tanekella : Their main concern is very simple because only tax reduction if they hire us it will be very expensive on a tax is low. So they don't go through that. So whereas the problem with Verizon is not all of this, this every business will do. The problem with Verizon is the way they work with new projects. Overnight releases I think. It's.
+31:19 : Anjali Tanekella : Not like.
+31:20 : Vudumula Lila Srinivas Reddy : Okay like, outdated.
+31:25 : Vudumula Lila Srinivas Reddy : No, yeah. India team Northan charle. Let's say for example.
+31:31 : Vudumula Lila Srinivas Reddy : Workstation and they need the project.
+31:37 : Anjali Tanekella : Still working on full stack JavaScript, we are not there yet. I understand that AI hasn't India team.
+31:44 : Vudumula Lila Srinivas Reddy : So whoever leading the team, I mean, let's say whoever leading the team.
+31:51 : Vudumula Lila Srinivas Reddy : We are working on qrs, at least we have some idea related to how to create a chatbot or something. But in India ok ok team let's say Tanuf T Untaru full time Employeeru.
+32:05 : Vudumula Lila Srinivas Reddy : Project Mutam ownership is Saru. Tany camera. So while the contractors now everything is on you. So we have to teach them and then only but management again they are going to deal with their ownership members, not.
+32:23 : Anjali Tanekella : A lot of the the India Maria particular.
+32:29 : Vudumula Lila Srinivas Reddy : Typically like here like you Chennai based on the Olderman mid level management under like fifteen to twenty years, so they can't move outside of verizon first thing. So while Underru Manchi maintenance of the higher level management though.
+32:50 : Anjali Tanekella : That's correct.
+32:51 : Vudumula Lila Srinivas Reddy : Yeah yeah exactly. Whoever comes in, maybe let's say people put together senior manager level they will understand these things. So communicated it is better. I mean, I think.
+33:09 : Vudumula Lila Srinivas Reddy : And so other problem is shown me. Culture is good, sometimes. I mean again it depends upon team.
+33:17 : Anjali Tanekella : My I stopped complaining about the culture everywhere.
+33:21 : Vudumula Lila Srinivas Reddy : It's.
+33:22 : Anjali Tanekella : Extreme competing. I mean every person I talked to not Verizon every person, whichever company they are in, they're expected to work around the clock. It's like the bare minimum you have to do. You know nine to five days to.
+33:37 : Anjali Tanekella : Worry.
+33:39 : Vudumula Lila Srinivas Reddy : Nine two five is gone because like now after Covid right, it became twelve hours is the minimum timing.
+33:45 : Anjali Tanekella : I'm am I, what expectation I don't understand it takes a lot to stand against that.
+33:54 : Vudumula Lila Srinivas Reddy : Yeah. And that's right. Twelve hours became quite normal nowadays.
+34:00 : Vudumula Lila Srinivas Reddy : Before covid scenario is to be different like hardly nine to six job we used to do and I used to be very happy, but after that, you know, things got changed completely.
+34:12 : Vudumula Lila Srinivas Reddy : So, yeah.
+34:13 : Anjali Tanekella : In.
+34:17 : Anjali Tanekella : Let you go.
+34:17 : Vudumula Lila Srinivas Reddy : How can the shallow shellow fine y.
+34:20 : Vudumula Lila Srinivas Reddy : So documentation mostly then I will ping you Angeli maybe probably I will try to finish on Tuesday afternoon from my side.
+34:32 : Vudumula Lila Srinivas Reddy : And the container three four like.
+34:37 : Anjali Tanekella : I think we're gonna check them but.
+34:43 : Anjali Tanekella : I will have to which button to click that is the concern.
+34:49 : Vudumula Lila Srinivas Reddy : Sure, sure, sure. Okay ok.
+34:52 : Vudumula Lila Srinivas Reddy : Thank you. Bye.
 
-Unlimited Transcriptions
-Unlimited transcriptions for one person.
-🚀
-10 Hour Uploads
-Each file can be up to 10 hours long / 5 GB. Upload 50 files at a time.
-Whale
-All Features
-Translation to 134+ languages. Bulk exports. All transcription modes. Unlimited storage.
-⚡️
-Highest Priority
-We'll always transcribe your files ASAP with the highest priority.
