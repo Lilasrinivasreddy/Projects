@@ -1,3 +1,481 @@
+WEBVTT
+
+1 "Anjali Tanekella" (3016352512)
+00:00:00.000 --> 00:00:04.340
+I think you can click on the AI off.
+
+2 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:00:04.340 --> 00:00:10.949
+Yeah yeah yeah I'm just going to start it. Yeah, it will be easy for me. Yeah.
+
+3 "Anjali Tanekella" (3016352512)
+00:00:10.949 --> 00:00:13.524
+Can you see my screen?
+
+4 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:00:13.524 --> 00:00:16.442
+Yes, it is up. Okay.
+
+5 "Anjali Tanekella" (3016352512)
+00:00:16.442 --> 00:00:40.170
+So for, we have three levels of users. Okay. We have, just a minute. We have user, we have developer, and we have admin, ok, three levels of users. This page that you see is an admin level page, that is mine. Okay. For a user you only get the chatbot option.
+
+6 "Anjali Tanekella" (3016352512)
+00:00:40.170 --> 00:01:00.170
+And, for a developer, you don't get, you're not supposed to get audit and configuration options. Okay? Okay. So what we are doing right now is with the chatbot, we are also including the documentation along with it. Okay. So for the user also he can go into the documentation and this is where we want to put the username.
+
+7 "Anjali Tanekella" (3016352512)
+00:01:00.170 --> 00:01:07.325
+Okay help them walk through the how to use this QS framework.
+
+8 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:01:07.325 --> 00:01:10.584
+Every details are will be mentioned in that document.
+
+9 "Anjali Tanekella" (3016352512)
+00:01:10.584 --> 00:01:35.006
+Documentation yes. So because our documentation is similar to a HTML like this, we are expecting right now from this documentation also to have a HTML page which has the options of user developer and admin here. And how we get accesses for set things and how they can ask questions and how they can give feedback.
+
+10 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:01:35.006 --> 00:01:36.125
+Okay.
+
+11 "Anjali Tanekella" (3016352512)
+00:01:36.125 --> 00:02:00.665
+Okay, so every user is usually provided access to a set domain and a set catalog. The domain acts like a bit larger umbrella, whereas the catalog usually has the tables within it. So scorecard FW has singular tables that answer only those kind of dashboards and questions. So a user is kind of, yeah, ask.
+
+12 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:02:00.665 --> 00:02:03.322
+No, NO, nothing. Yeah I got it.
+
+13 "Anjali Tanekella" (3016352512)
+00:02:03.322 --> 00:02:37.250
+So a user is usually kind of restricted to their specific domain and catalog only and they can ask questions on the domain and catalog. E.g., we 1st begin, when we 1st enter into the system, just a minute. Let me log out again. 1st enter into the system you have something like this. This is your 1st framework where you can select any question and ask. Before you.
+
+14 "Anjali Tanekella" (3016352512)
+00:02:37.250 --> 00:02:58.478
+We have three options that we are coming up with. One is talk to data, that is the tables that they have uploaded. One is talk to report. In this option, the user can upload their own reports CSV files or PDFs and ask questions on them. And then we have talked to NSP that is going to be coming soon. That is looker as well.
+
+15 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:02:58.478 --> 00:03:00.985
+Okay. Yeah, look at studio presentation.
+
+16 "Anjali Tanekella" (3016352512)
+00:03:00.985 --> 00:03:18.650
+Correct. So, after you've attached or asked your question and you click go, you see that we have, that we have a new chat window here that opens up. Okay. And when we open a new chat window, there is an option of filter that shows.
+
+17 "Anjali Tanekella" (3016352512)
+00:03:18.650 --> 00:03:26.223
+Was only showing engineering analytics scorecards or if you want everything that you have ever tried out.
+
+18 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:03:26.223 --> 00:03:27.807
+So it filters.
+
+19 "Anjali Tanekella" (3016352512)
+00:03:27.807 --> 00:03:41.459
+But all of your previous chats and you can search for which kind of questions you need in the chat or what kind of questions you have tried before. You can start a new chat here and delete all the chats as well. You don't need any.
+
+20 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:03:41.459 --> 00:03:43.908
+Okay, understand.
+
+21 "Anjali Tanekella" (3016352512)
+00:03:43.908 --> 00:03:48.337
+Take a question, our system generates the query 1st.
+
+22 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:03:48.337 --> 00:03:50.163
+This is to talk today.
+
+23 "Anjali Tanekella" (3016352512)
+00:03:50.163 --> 00:04:01.682
+This is talk to data yes. For a user, we don't show the query. We only show the explanation, ok? We only show the explanation.
+
+24 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:04:01.682 --> 00:04:09.523
+So for the user we need to show the query, not the query, right? Only that explanation we will be showing.
+
+25 "Anjali Tanekella" (3016352512)
+00:04:09.523 --> 00:04:12.548
+Yes, we.
+
+26 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:04:12.548 --> 00:04:14.867
+Query what it's generating admin or.
+
+27 "Anjali Tanekella" (3016352512)
+00:04:14.867 --> 00:04:23.866
+Admins will have access to the SQL query that is getting generated. They'll not be able to see the query, complete query.
+
+28 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:04:23.866 --> 00:04:26.038
+Okay, ok.
+
+29 "Anjali Tanekella" (3016352512)
+00:04:26.038 --> 00:04:29.401
+Okay, and the records for it.
+
+30 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:04:29.401 --> 00:04:31.597
+If the user likes the rest.
+
+31 "Anjali Tanekella" (3016352512)
+00:04:31.597 --> 00:04:58.544
+Response, he can give a five star feedback he can give a five star rating but so when you give a five star rating, there is NO dialogue box that opens up. But when you give anything less than a five star rating, there is a dialogue box that opens up here and when you give that rating, you can comment on why, why you have given that rating, what kind of answer were you looking for? Why is this wrong?
+
+32 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:04:58.544 --> 00:05:01.629
+Okay. The next thing is.
+
+33 "Anjali Tanekella" (3016352512)
+00:05:01.629 --> 00:05:15.543
+The, for the user you have follow up questions available and he can continue asking. These follow up questions need not work hundred percent of the time. These are AI generated follow up questions. These are just suggestions.
+
+34 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:05:15.543 --> 00:05:17.045
+Yes, ok.
+
+35 "Anjali Tanekella" (3016352512)
+00:05:17.045 --> 00:05:23.478
+So you can pick on these, they might not work based on your data, but yeah, you can still pick on these and try.
+
+36 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:05:23.478 --> 00:05:26.621
+Then we have something called reports.
+
+37 "Anjali Tanekella" (3016352512)
+00:05:26.621 --> 00:05:37.524
+So if you have uploaded PDFs or csvs or Excel reports for talk to report, you can see them listed here. What kind of reports are there in this chat window?
+
+38 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:05:37.524 --> 00:05:45.620
+Yes. Okay. Talk to report I'm completely aware because I worked on this talk to report only so I tested multiple times.
+
+39 "Anjali Tanekella" (3016352512)
+00:05:45.620 --> 00:05:48.284
+Yeah. Okay. And.
+
+40 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:05:48.284 --> 00:06:01.738
+Is yeah and ok under this thing there is a team where you have to set like whether I want light or dark all this and we have an option for LLM I mean which model to choose, right?
+
+41 "Anjali Tanekella" (3016352512)
+00:06:01.738 --> 00:06:04.240
+Yes, you've correct. Okay ok.
+
+42 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:06:04.240 --> 00:06:05.079
+Okay, ok, I understand.
+
+43 "Anjali Tanekella" (3016352512)
+00:06:05.079 --> 00:06:07.444
+Yep. This is all user level.
+
+44 "Anjali Tanekella" (3016352512)
+00:06:09.719 --> 00:06:27.619
+Developers we have features like playground context, intent registry. They play very important role for a developer. When the developer, when a, when the person asks a question and they don't like the query that is generated or it is not fitting right in or they have multiple tables and it's not.
+
+45 "Anjali Tanekella" (3016352512)
+00:06:27.619 --> 00:06:58.259
+Picking up on the table, or they have problems like this or they would like to just see what the table is, what are the columns available, and if there are any relationships within the table, they go into these categories. So 1st, in playground, this is just simple, NO follow up. You ask a questionnaire, you'll get the query here, and if you like the query, you can give a feedback of what yes or NO, and you have a summary, preview and visualization.
+
+46 "Anjali Tanekella" (3016352512)
+00:06:58.259 --> 00:07:18.259
+The comfort of playground is you can also change the query here and run it again and see if that is the one that you want to give. You can, when giving a negative feedback, you can also provide a SQL query that you expected it to generate. And the system will understand and generate its own rules.
+
+47 "Anjali Tanekella" (3016352512)
+00:07:18.259 --> 00:07:28.928
+Okay, so next time on when this kind of question is asked, this is the answer that we have to give. This is the rule that we have to follow, is what the gen, the system will generate for itself.
+
+48 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:07:28.928 --> 00:07:30.003
+Okay, ok.
+
+49 "Anjali Tanekella" (3016352512)
+00:07:30.003 --> 00:07:32.881
+Yeah? In playograph.
+
+50 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:07:32.881 --> 00:07:35.322
+Yeah. In context we.
+
+51 "Anjali Tanekella" (3016352512)
+00:07:35.322 --> 00:07:46.469
+We have two options here. One is a catalog dashboard, the other is relationships. So catalog dashboard is basically a list of all the tables that we're calling as catalogs.
+
+52 "Anjali Tanekella" (3016352512)
+00:07:46.469 --> 00:08:01.799
+Present here. So you can go within the table, see the description. Now, this metadata for these catalogs is a system generated metadata. So there is a very strong possibility that it might not cover everything that a developer knows.
+
+53 "Anjali Tanekella" (3016352512)
+00:08:01.799 --> 00:08:28.309
+And it is just a superficial view. So what developers can do here, everything in this page is editable, so what developers can do here is come in, edit the description, edit the usage patterns, edit their rules, edit their relationships within the tables, and if they have any constraints, they can edit that as well and change the catalog values, categorical values, category, everything can be changed here.
+
+54 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:08:28.309 --> 00:08:29.881
+Okay, ok.
+
+55 "Anjali Tanekella" (3016352512)
+00:08:29.881 --> 00:08:47.069
+If let's say in the database, just a minute. If let's say in the database, they have changed the columns name. The database connection is all still the same and all the details are still the same. They've just changed the column name, they can change the column name here as well.
+
+56 "Anjali Tanekella" (3016352512)
+00:08:47.069 --> 00:09:06.707
+And the system will pick all that. They just have to be careful when they have added any cache entries, which I'll explain later. If they have added any cache entries with this specific column name in their SQL, those cache entries won't work if they change this column name.
+
+57 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:09:06.707 --> 00:09:21.147
+Okay, ok, understand. So if the response is coming from the cache, like I think I think so from there we are getting the responses. If that is not matching this, it won't give any kind of response, right?
+
+58 "Anjali Tanekella" (3016352512)
+00:09:21.147 --> 00:09:52.086
+Correct, correct. Okay. Perfect. Now, when we have rules, in rules, the developer can come in and say, ok, this specific function or in this table, NO matter what, I would like to use distinct of all of these values or use like function only or use these columns when this kind of question is asked. These kind of standard rules across the table can be written in the rules section or the business rules area.
+
+59 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:09:52.086 --> 00:09:54.199
+Okay. All right.
+
+60 "Anjali Tanekella" (3016352512)
+00:09:54.199 --> 00:10:12.229
+Okay, in relationships is basically in case you have two or three tables, you can identify as which table target table, target column, source column, and where you want them to join, what kind of join is it? Is it like a inner outer join and how co.
+
+61 "Anjali Tanekella" (3016352512)
+00:10:12.229 --> 00:10:14.579
+How Preferent are you about this join?
+
+62 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:10:14.579 --> 00:10:16.562
+Okay.
+
+63 "Anjali Tanekella" (3016352512)
+00:10:16.562 --> 00:10:37.458
+Partitions is something similar and constraints are also like this is the primary key. This column is a primary key, this column is a foreign key, this column only has indexes or this column only has data, NO other values, NO alpha alphabets, NO strings. Those kind of constraints can be added here.
+
+64 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:10:37.458 --> 00:10:39.443
+Okay, ok.
+
+65 "Anjali Tanekella" (3016352512)
+00:10:39.443 --> 00:11:00.343
+Usage patterns basically are used like intent mapping. If let's say we have three or four questions and a user comes in and says, ok, we would like to find out about the calls that have happened recently. Usage patterns help to identify which table is used for questions like this.
+
+66 "Anjali Tanekella" (3016352512)
+00:11:02.543 --> 00:11:07.962
+And map it to that specific question map it to that specific table.
+
+67 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:11:07.962 --> 00:11:09.247
+Understood.
+
+68 "Anjali Tanekella" (3016352512)
+00:11:09.247 --> 00:11:30.103
+We have context rules. So for that table, what are the kind of rules that we follow? What does KPI performing means? What kind of questions can be asked on KPI performance? And in context rules you can see what table, what column is being used for that rule, what column is important for that rule?
+
+69 "Anjali Tanekella" (3016352512)
+00:11:31.169 --> 00:11:38.308
+How it is joining or if there are any filters, then what kind of filters are available and things like that as well.
+
+70 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:11:38.308 --> 00:11:39.604
+Okay, well.
+
+71 "Anjali Tanekella" (3016352512)
+00:11:39.604 --> 00:12:06.709
+Now next we'll go to relationships I explained relationships, and then we have intent registry. In intent registry, the user, the developer can come in and create a cache entry where they want, NO matter how the question is asked or NO matter when the question is asked, we need only this specific SQL query to generate. So this is basically forcing the system to pull this specific SQL query every time. We want this.
+
+72 "Anjali Tanekella" (3016352512)
+00:12:06.709 --> 00:12:29.359
+This is not NO matter what the question, what follow up question exists, this is the question, this is the SQL query. So what the user does is he gives the question, then he writes the SQL query and clicks on generate with the. What this does is it writes a reasoning place where it helps the system identify which parts of the filter, like.
+
+73 "Anjali Tanekella" (3016352512)
+00:12:29.359 --> 00:12:52.921
+E.g., if I say how many calls have we received regarding iPhone 17? And I've given an SQL query, the reasoning traces will identify iPhone 17 as the filter. So next time a person comes in and says, how many calls have we received regarding Google pixel? It will identify this to be the SQL query and replace the filter.
+
+74 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:12:52.921 --> 00:12:54.802
+Okay, ok, I understand.
+
+75 "Anjali Tanekella" (3016352512)
+00:12:54.802 --> 00:12:56.864
+Then we create the entry.
+
+76 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:12:56.864 --> 00:12:58.360
+Thank you.
+
+77 "Anjali Tanekella" (3016352512)
+00:12:58.360 --> 00:13:13.609
+Here we can see all the entries and as you see, there are template types. Usually they're dominantly sqls and catalog names generally mean is it a complete match or a partial match? So if I give you a question that says.
+
+78 "Anjali Tanekella" (3016352512)
+00:13:13.609 --> 00:13:43.538
+Is retrieve the actual values for root metrics or so and so. What the system does it, it takes that question generates partial questions similar to it in 2024, distinct KPI names for root metrics, it has generated multiple values as partial matches. So if a user comes in and asks the question regarding root metrics and looks for similarity search, it will give me complete and partial matches.
+
+79 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:13:43.538 --> 00:13:46.261
+Okay, got it.
+
+80 "Anjali Tanekella" (3016352512)
+00:13:46.261 --> 00:14:07.464
+This is intent registry. You can also test this intent registry by writing your own question and checking what kind of, how clear do you want it? Do you want it to be complete much or a partial much, and see how many results you can see in your system as well. How many caches do you have that answer this question?
+
+81 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:14:07.464 --> 00:14:09.040
+Okay.
+
+82 "Anjali Tanekella" (3016352512)
+00:14:09.040 --> 00:14:26.017
+For data uploading or cache uploading, if you have a already a file of test questions available like a hundred, 01:50 test questions, you can upload them using CSV files directly or if you have an API that you can, you have, you can upload it with, you can upload that as well.
+
+83 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:14:26.017 --> 00:14:29.500
+Okay, ok, got it.
+
+84 "Anjali Tanekella" (3016352512)
+00:14:29.500 --> 00:14:44.888
+Usage logs basically is like, let's say there was a question that was asked and it pulled from the caches. It shows us that usage that it was directly pulled from the cache itself and this was the response.
+
+85 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:14:44.888 --> 00:15:03.448
+Okay, ok. So it will give the success rate and all those similarity details and this is the stats for kind of dashboard like how many success happened and what were the users. Okay. Okay.
+
+86 "Anjali Tanekella" (3016352512)
+00:15:03.448 --> 00:15:24.821
+This is developer, so the developer can force the system to answer in the same way. He can change the tables. He can according to the SQL queries, add caches to the system, play with it, run his own queries if he likes, and test each question and give feedback in explicit details.
+
+87 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:15:24.821 --> 00:15:26.480
+Got it actually.
+
+88 "Anjali Tanekella" (3016352512)
+00:15:26.480 --> 00:15:57.929
+For an admin admin can come in and change the configurations for the chatbot. So if the admin doesn't want us to use caches at all that have been generated, he can turn it off or right now the default LLM model is Gemini Pro. So the admin can decide and remove that to Gemini flash or something like that. Or if he wants us to use history, then we can use history. So the admin decides the configurations for the chatbot.
+
+89 "Anjali Tanekella" (3016352512)
+00:15:57.929 --> 00:16:06.744
+For the chatbots and he can also decide the thinking budget for this chat bot as well.
+
+90 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:16:06.744 --> 00:16:10.466
+Okay. Okay.
+
+91 "Anjali Tanekella" (3016352512)
+00:16:10.466 --> 00:16:20.341
+And audit logs basically are like if the admin comes in and changes the audit or changes anything as new tables, you can see them here in orders.
+
+92 "Anjali Tanekella" (3016352512)
+00:16:21.788 --> 00:16:24.186
+And what are the details for it?
+
+93 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:16:24.186 --> 00:16:33.202
+Okay, got it. So all these three we have to create a documentation and place it over here. Like for user developer and.
+
+94 "Anjali Tanekella" (3016352512)
+00:16:33.202 --> 00:16:55.761
+Yes. Okay. So 1st you, what you have to do is make sure that you're mentioning my name or Akhilesh's name or Raja's name for giving accesses in case how to we 1st start with how do you get access to the tool? How do your access from user to developer and admin?
+
+95 "Anjali Tanekella" (3016352512)
+00:16:55.761 --> 00:17:17.944
+You log in with your ID and your password. So that has to be mentioned. And then you go into, ok, what are the benefits of the user? What can the user do? What can the developer do? Which links do they have to go to if they have to check something? Whom do they have to contact if they have any issues, and things like that.
+
+96 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:17:17.944 --> 00:17:19.864
+Because eventually, you know.
+
+97 "Anjali Tanekella" (3016352512)
+00:17:19.864 --> 00:17:36.381
+As I said, we'll be changing from the we will not be giving access to anybody anymore. For metadata generation or the table generation also, we'll not be doing that. We'll have a system to do that. So we'll keep updating this documentation.
+
+98 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:17:36.381 --> 00:17:37.721
+Okay, go ahead.
+
+99 "Anjali Tanekella" (3016352512)
+00:17:37.721 --> 00:17:57.109
+Yeah so you write a documentation in Google 1st with screenshots, make sure that you have screenshots. My idea is very, very ahead of this, it's like when you open a new Google account and you you know we get those dropboxes or dialogue boxes that identify this is step one, this is step two that.
+
+100 "Anjali Tanekella" (3016352512)
+00:17:57.109 --> 00:17:59.798
+There's like a tracker across the page.
+
+101 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:17:59.798 --> 00:18:06.041
+Okay, ok. So you're doing it in any kind of Word document or in Gemini or you.
+
+102 "Anjali Tanekella" (3016352512)
+00:18:06.041 --> 00:18:25.244
+So I thought of a Word document 1st, but the team wants it in a HTML that we can put it in documentation directly. So if you can write a Word document with the screenshots and then give it to Gemini and ask you to write the HTML for it and give us the HTML and the document, we'll upload both of them.
+
+103 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:18:25.244 --> 00:18:41.078
+Okay yeah got it. Yeah. So from where you should start preparing the documentation, I mean for which part you are already, I think you started. I didn't start anything. Oh, ok, ok. Yesterday you showed some document, right? So I thought you already.
+
+104 "Anjali Tanekella" (3016352512)
+00:18:41.078 --> 00:18:43.443
+Documentation.
+
+105 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:18:43.443 --> 00:18:46.627
+Oh ok ok ok something like that we'll.
+
+106 "Anjali Tanekella" (3016352512)
+00:18:46.627 --> 00:18:57.346
+And we need screenshots and navigations. Okay. She was honestly as developers, we do not like confusing documentations, we like it.
+
+107 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:18:57.346 --> 00:18:59.925
+Yeah yeah. When somebody just says.
+
+108 "Anjali Tanekella" (3016352512)
+00:18:59.925 --> 00:19:06.167
+Point here, we are so much more comfortable than identifying where to point. So it is better if we do that.
+
+109 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:19:06.167 --> 00:19:14.040
+Got it. So I will start and any TA for this?
+
+110 "Anjali Tanekella" (3016352512)
+00:19:14.040 --> 00:19:18.225
+As soon as possible Sheenos honestly speaking.
+
+111 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:19:18.225 --> 00:19:26.908
+Okay I mean discussing something September I think so, right? So before the release, this is right.
+
+112 "Anjali Tanekella" (3016352512)
+00:19:26.908 --> 00:19:40.086
+Now we are testing it with multiple people already, so we need all of them to understand how to use it. This is not for the release. Okay. Yeah, we need users to already go through this documents.
+
+113 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:19:40.086 --> 00:19:47.220
+Okay ok ok i understand so probably I think I have to complete by Tuesday.
+
+114 "Anjali Tanekella" (3016352512)
+00:19:47.220 --> 00:20:08.665
+Or maybe. Yeah yeah ok that sounds good because my my assumption of work right now for you is the recording of this transcript, put it, put the entire recording into Gemini or anything, ask you to build a document and take screenshots. I think that is the major work right now.
+
+115 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:20:08.665 --> 00:20:13.982
+Of I mean take use this then I can I think I can make it by Tuesday.
+
+116 "Anjali Tanekella" (3016352512)
+00:20:13.982 --> 00:20:16.562
+So that is the process you.
+
+117 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:20:16.562 --> 00:20:17.886
+Start this recording.
+
+118 "Anjali Tanekella" (3016352512)
+00:20:17.886 --> 00:20:23.924
+Easy for you yeah you do whatever is easy for you, but yeah, as soon as possible, please.
+
+119 "Vudumula Lila Srinivas Reddy" (3892979456)
+00:20:23.924 --> 00:20:26.880
+Yes yes yes. Sure.
+=================================================
 0:00 : Vudumula Lila Srinivas Reddy : For me. Yeah.
 0:02 : Anjali Tanekella : Can you see my screen?
 0:05 : Vudumula Lila Srinivas Reddy : Yes it is up.
