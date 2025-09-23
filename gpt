@@ -1,38 +1,1188 @@
-(0:00) Right, right, yes. (0:03) Yeah, so he basically sends five requests at once, then 30 requests and then 25 requests or something. (0:08) Yes, yes, yes, yeah, I do know.
-(0:09) So, we have that as a separate script right now. (0:13) Okay, okay. (0:14) So, what are we going to do is, we will create a framework.
-(0:18) Okay. (0:19) Okay, we call it a test framework, where you have this load or balance testing as one component. (0:27) Okay, okay.
-(0:28) Then the second component would be accuracy testing, where you have some golden set of (0:32) questions defined for each domain catalog. (0:34) And you will just click, you'll have a button saying that, you know, run test. (0:39) Okay.
-(0:40) You go back in the backend, you run some tests on those golden set of questions, (0:44) you do the accuracy comparison, come back with the results. (0:48) Okay, okay. (0:48) Even the load balance testing also the same, like if I select a batch number, (0:52) like if I say batch 20, then you send 20 requests at once, (0:55) do the load testing and come back with the results.
-(0:59) Okay, okay. (1:00) Right. (1:01) All of these results, you'll store it in a database, you'll keep track of it.
-(1:06) And then, you know, you can have a dashboard where you can come and monitor your performance, (1:10) like day to day, like, you know, over time, however, how many of this you do, (1:15) you can see how your tool is performing. (1:18) Okay. (1:19) Right.
-(1:20) So, if we can build that as a complete dashboard. (1:24) Okay, okay. (1:26) Which will again have the domain catalog section divided, right? (1:30) We'll have it at entire Q-verse level and then we'll put some filters for domains and catalogs.
-(1:35) And any coming in, like any admin coming in, (1:38) they can view the results for their particular domain catalog. (1:42) Okay, okay. (1:43) So, in the existing Q-verse framework only, that will be right, Akesh? (1:48) Yeah, within existing Q-verse only, we'll do it.
-(1:53) Okay, okay. (1:54) On Q-verse, we have one small dashboard, right? (1:56) On the homepage, you have four charts that we show. (1:59) Yes, yes, yes.
-(2:00) Yeah, if we mark the underscore, that breakdown, (2:04) markdown button, then we will get it, I think, charts. (2:09) Right, yeah. (2:10) So, now instead of those charts, I mean, those charts will still be there, (2:15) but we'll bring in this complete framework in place.
-(2:18) Okay. (2:18) Those charts are basically giving you user level history, right? (2:21) We'll create two more screens, one for catalog history and then system level history. (2:27) And on top of that, we'll add the second dashboard for our testing.
-(2:30) Okay, okay. (2:32) Got it, Akesh. (2:33) All right, so this, you have the entire analytics of your platform, right? (2:37) Okay, okay.
-(2:40) So, I thought if you could work on this, (2:42) but then if you are occupied with something else for next two days, then... (2:47) The thing is, I want you and Yogesh to work on this, both of you. (2:50) Okay. (2:51) It's going to be good.
-(2:52) So, Monday I can work, Akilesh. (2:55) Like, as I said, right, like, how I am doing is, see, generally in the morning session, (2:59) I complete my regular thing. (3:02) From afternoon session, I start working on keywords.
-(3:04) So, that's how I used to split. (3:09) So, actually, I can start on Monday, but... (3:13) If you can start on Monday, then I think it's fine. (3:15) But the target was, the way I was thinking is, (3:20) we'll use it in two days or three days max, (3:22) because it's going to be just APIs, (3:25) like there's no functionality there.
-(3:26) It's just APIs that you're writing. (3:28) And the scripts are already there. (3:29) Okay, okay.
-(3:30) So, I got two or three days. (3:32) But again, if you need some time, if you're occupied with something else, (3:34) you can give an additional day, I guess. (3:37) Yeah, mostly I can start on Monday.
-(3:41) I will try to finish, Akilesh, like by Tuesday only. (3:44) But Tuesday night, I have one again. (3:47) There is one more release.
-(3:50) So, it's like I cannot completely sit 50%, I can say. (3:55) But yeah, I will try to complete by Tuesday only. (3:57) I will target for Tuesday, better.
-(3:59) Tuesday or max Wednesday then. (4:02) Okay, okay. (4:03) Yeah, you have Yogesh also, right? (4:05) I mean... (4:06) Yeah, Yogesh Gupta, right? (4:07) Yeah, yeah.
-(4:08) Okay, okay. (4:09) I will connect with him. (4:11) I didn't get a chance to talk to him today.
-(4:13) So, you know, you had a chance either probably on Monday morning, right? (4:17) Uh-huh, sure. (4:17) So, even he will be working on FATEL for the LSP testing. (4:20) He's working day to day.
-(4:21) So, Monday, I think he can also start on Monday. (4:25) Okay, okay. (4:27) So, if both of you can build those APIs and bring the dashboards.
-(4:30) Because he's the one who has that script. (4:32) Okay, okay. (4:32) For batch testing.
-(4:34) Okay, okay, Akilesh. (4:35) I will ask him regarding that. (4:38) Okay, got it, Akilesh.
-(4:42) So, when you do it, right, just think of various filters you can put on the API, (4:46) like domain catalog or no filter at all. (4:48) Or like, you know, where exactly you need filters. (4:51) And also, if you're doing a test pipeline, accuracy testing, right? (4:54) Then you will put our domain catalog filter.
-(4:57) Okay, okay. (4:58) Because you're picking any golden questions for that particular domain catalog. (5:02) Then if you're doing a load balancing testing, (5:04) then you don't have to put any domain catalog, right? (5:06) It's just an overall tool that you're looking at.
-(5:08) Okay, okay. (5:09) So, we'll just, when we say batch of 30, (5:12) we'll send random domains, catalogs and the 30 requests. (5:16) Okay.
-(5:17) Something like that. (5:18) Okay, okay, yeah. (5:20) So, I will connect with Yogesh and I will get that script.
-(5:24) So, the major thing is this filter part, we have to work on the backend. (5:31) Okay, okay. (5:32) Yeah, he will have the hardcoded request body.
-(5:36) Instead, you'll have to get it on API. (5:38) Okay, okay, yeah, I understand. (5:42) Sure, Aklesh.
-(5:43) Yeah, I will connect with him and I will let you know. (5:46) If anything is there, I will connect on Monday. (5:49) At least I will start and implement some thing part.
-(5:54) This API part, I can start, I think. (5:57) So, yeah, then we can get a clear idea and Monday we can discuss on that, Aklesh. (6:03) Okay, okay.
-(6:04) And if you want to write, I mean, maybe do it this way. (6:10) Don't put it on QoS yet. (6:12) Just create it as a separate tool.
-(6:15) Okay, okay. (6:17) We'll host it as an API for now. (6:19) Okay, okay.
-(6:19) We'll create a QoS. (6:22) Okay, okay. (6:23) We'll review, we'll use it as POC and then integrate with QoS.
-(6:28) Okay, Aklesh, I understand. (6:30) Yeah, sure, sure. (6:32) Sure, Aklesh.
+import os
+import time
+import warnings
+# from ray import serve
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
+from typing import List, Union, Literal
+from config import *
+from langchain.retrievers import  EnsembleRetriever
+from langchain_community.vectorstores import FAISS
+
+from typing import Any, Dict, List, Optional
+import requests
+import json
+
+from pydantic.v1 import BaseModel as langchainBaseModel, Extra, Field
+from langchain.schema.embeddings import Embeddings
+import uvicorn
+import numpy as np
+from config import EMAS_URL,apikey,url,env
+import pickle
+from langchain.retrievers import EnsembleRetriever
+
+# Import DPF configuration
+from dpf_config import (
+    DPF_ELASTICSEARCH_CONFIG, 
+    DPF_ENDPOINTS, 
+    DPF_API_KEY,
+    DPF_UAT_API_KEY, 
+    DPF_SEARCH_CONFIG,
+    DPF_CROSS_ENCODER_CONFIG,
+    DPF_LLM_CONFIG,
+    DPF_DOCUMENT_CHUNKING_CONFIG,
+    DPF_ADVANCED_SEARCH_CONFIG
+)
+
+warnings.filterwarnings("ignore")
+
+app = FastAPI()#docs_url=None, redoc_url=None)
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class EMAS(langchainBaseModel, Embeddings):
+
+    def __init__(self, **kwargs: Any):
+        """Initialize the sentence_transformer."""
+        super().__init__(**kwargs)
+        # self.EMAS_URL = EMAS_URL
+
+    class Config:
+        """Configuration for this pydantic object."""
+
+        extra = Extra.forbid
+
+    def get_embed(self, text: str) -> List[float]:
+        if env != "prod":
+            payload = json.dumps({
+                "region": "us-east4",
+                "project_id": "688379114786",
+                "endpoint_id": "7786939260002631680",
+                "usecase_name": "llm-embeddings",
+                "model_type": "llm-embeddings",
+                    "input_request": {
+                        "instances": [
+                            {"text": f"{text}"}]
+                }
+            })
+
+            headers = {
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            try:
+                response = requests.request(
+                    "POST", EMAS_URL, headers=headers, data=payload, verify=False).json()
+                result = response[0][0]['embedding']
+            except Exception as e:
+                print(f"Failure from embedding API. Encountered exception: {e}")
+                print(text,response)
+                raise
+        else:
+            payload = json.dumps({
+                "region": "us-east4",
+                "project_id": "783334890793",
+                "endpoint_id": "7414266390837723136",
+                "usecase_name": "llm-embeddings",
+                "model_type": "llm-embeddings",
+                    "input_request": {
+                        "instances": [
+                            {"text": f"{text}"}]
+                }
+            })
+
+            headers = {
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            try:
+                response = requests.request(
+                    "POST", EMAS_URL, headers=headers, data=payload, verify=False).json()
+                result = response[0][0]['embedding']
+            except Exception as e:
+                print(f"Failure from embedding API. Encountered exception: {e}")
+                print(text,response)
+                raise
+        return result
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Compute doc embeddings using a HuggingFace transformer model.
+
+        Args:
+            texts: The list of texts to embed.
+
+        Returns:
+            List of embeddings, one for each text.
+        """
+        res = []
+        for text in texts:
+            res.append(self.get_embed(text))
+
+        return res
+
+    def embed_query(self, text: str) -> List[float]:
+        """Compute query embeddings using a HuggingFace transformer model.
+
+        Args:
+            text: The text to embed.
+
+        Returns:
+            Embeddings for the text.
+        """
+        return self.get_embed(text)
+
+
+class LLMQuery(BaseModel):
+    query: str
+    index: Literal["gcp", "bi_tools", "dgs",
+                   "ml_platform", "teradata", "all", "hadoop","informatica","data_indus","data_discovery","edw_modernization","ai_indus","ai_workmate"] = "all"
+
+class DPFQuery(BaseModel):
+    query: str
+    use_case: str # Add default use_case
+    index_name: str = DPF_ELASTICSEARCH_CONFIG["index_name"]
+    k: int = DPF_SEARCH_CONFIG["default_k"]
+    include_llm_response: bool = True
+    document_types: List[str] = None  # Filter by specific document types
+    enable_hierarchical: bool = True  # Enable document-aware chunking
+
+
+st = time.time()
+faiss_embeddings=EMAS()
+# print(type(faiss_embeddings))
+
+
+
+db_dict = {
+    'all': {'faiss': FAISS.load_local(FAISS_ALL_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "gcp": {'faiss': FAISS.load_local(FAISS_GCP_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "bi_tools": {'faiss': FAISS.load_local(FAISS_BI_TOOLS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "dgs": {'faiss': FAISS.load_local(FAISS_DGS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ml_platform": {'faiss': FAISS.load_local(FAISS_ML_PLATFORM_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "teradata": {'faiss': FAISS.load_local(FAISS_TERADATA_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "hadoop": {'faiss': FAISS.load_local(FAISS_HADOOP_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "informatica": {'faiss': FAISS.load_local(FAISS_INFORMATICA_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "data_indus": {'faiss': FAISS.load_local(FAISS_DATA_INDUS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "data_discovery": {'faiss': FAISS.load_local(FAISS_DATA_DISCOVERY_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "edw_modernization": {'faiss': FAISS.load_local(FAISS_EDW_MODERNIZATION_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ai_indus": {'faiss': FAISS.load_local(FAISS_AI_INDUS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ai_workmate": {'faiss': FAISS.load_local(FAISS_AI_WORKMATE_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)}
+}
+
+et = time.time() - st
+# print(f'Loading database took {et} seconds.')
+
+async def reranker(reranklist):
+    try:
+        if env!= "prod":
+            headers={
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "688379114786",
+            "endpoint_id": "4179014998757998592",
+            "usecase_name": "cross-encoder",
+            "model_type": "cross-encoder",
+            "input_request": {
+                "instances": reranklist
+            }
+        })
+        else:
+            headers={
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "783334890793",
+            "endpoint_id": "6356118390498656256",
+            "usecase_name": "cross-encoder",
+            "model_type": "cross-encoder",
+            "input_request": {
+                "instances": reranklist
+            }
+        })
+        response = requests.request(
+                "POST", url, headers=headers, data=payload, verify=False).json()
+        
+        return response
+    except Exception as e:
+        print(f"Failure from reranker API. Encountered exception: {e}")
+        raise
+
+
+
+async def faiss_search(faiss_db, request):
+    st = time.time()
+    bm25_retriever=[]
+    #retriever = faiss_db.as_retriever()
+    #faiss_results = retriever.invoke(request.query,search_kwargs={"k": 5})
+    bm25path=f'indexes/{request.index}/{request.index}_bm25_retriever.pkl'
+    with open(bm25path,'rb') as file:
+        bm25_retriever = pickle.load(file)
+        bm25_retriever.k=5
+    
+
+    faiss_retriever = faiss_db.as_retriever(search_kwargs={"k":5})
+    ensemble_retriever=EnsembleRetriever(retrievers=[bm25_retriever,faiss_retriever],
+                                       weights=[0.5,0.5])
+    #faiss_results=faiss_db.similarity_search(request.query)
+    faiss_results=ensemble_retriever.invoke(request.query)
+    # print(faiss_results)
+    et = time.time() - st
+    print(f'retrieval time {et} seconds.')
+    st = time.time()
+    reranker_list=[]
+    source_documents=[]
+    cross_encoder_updated=[]
+    if isinstance(faiss_results, list) and len(faiss_results) > 0:
+        for j in faiss_results:
+            templist=[]
+            templist.append(request.query)
+            templist.append(j.page_content)
+            reranker_list.append(templist)
+
+            
+        rerank_response=await reranker(reranker_list)
+        #print("rerank_response: ",rerank_response)
+        rerank_score =np.array(rerank_response[0][0]["prediction_scores"])
+        K=4
+        rerank_score_sorted = np.argsort(-rerank_score)[:K]
+        et = time.time() - st
+        print(f'cross encoder time {et} seconds.')
+        print("rerank_score_sorted: ",rerank_score_sorted)
+        cross_encoder_updated = [faiss_results[i] for i in rerank_score_sorted]
+        for i in cross_encoder_updated:
+            if i.metadata["source"] not in source_documents:
+                source_documents.append(i.metadata["source"])
+
+    return {"llm_context":cross_encoder_updated,"source_document":source_documents}
+
+# @app.post("/vegas/apps/aider-retriever/api")
+# async def search( request: LLMQuery):
+#     try:
+#         print("--------------------------------------------------------")
+#         print(f"Index:{request.index} and query:{request.query}")
+#         print("env: ",env)
+#         print("EMAS_URL: ",EMAS_URL)
+#         default_db = db_dict.get(request.index)
+#         # print(default_db)
+#         #search_type = request.search
+
+#         final_result = {"faiss": []}
+#         # faiss
+#         faiss_db = default_db['faiss']
+#         # print(faiss_db.index.ntotal)
+#         final_result['faiss'] = await faiss_search(faiss_db, request)
+
+#         return final_result
+#     except Exception as e:
+#         print(e)
+#         return {"error": str(e)}
+
+@app.post("/vegas/apps/aider-retriever/dpf/api")
+async def dpf_search_endpoint(request: DPFQuery):
+    """
+    DPF search endpoint using Elasticsearch with guaranteed consistent responses
+    """
+    try:
+        start_time = time.time()
+        result = await dpf_search(request)
+        total_time = time.time() - start_time
+        
+        result["search_metadata"]["total_pipeline_time"] = total_time
+        return result
+    except Exception as e:
+        return {"error": "Unable to process your request at this time. Please try again."}
+
+@app.get("/vegas/apps/aider-retriever/dpf/health")
+async def dpf_health_check():
+    """
+    Health check endpoint for DPF service
+    """
+    try:
+        # Test Elasticsearch connectivity
+        test_query = {
+            "query": {"match_all": {}},
+            "size": 1
+        }
+        
+        es_result = await search_elasticsearch(
+            DPF_ELASTICSEARCH_CONFIG["api_url"], 
+            DPF_ELASTICSEARCH_CONFIG["api_key"], 
+            DPF_ELASTICSEARCH_CONFIG["index_name"], 
+            test_query
+        )
+        
+        return {
+            "status": "healthy",
+            "elasticsearch": "connected",
+            "index_name": DPF_ELASTICSEARCH_CONFIG["index_name"],
+            "total_documents": es_result.get("hits", {}).get("total", {}).get("value", 0),
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+async def search_elasticsearch(api_url: str, api_key: str, index_name: str, query: dict):
+    """
+    Retrieve chunks from an Elasticsearch index based on a query.
+    """
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"ApiKey {api_key}"
+    }
+
+    search_url = f"{api_url}/{index_name}/_search"
+    
+    try:
+        response = requests.post(search_url, headers=headers, data=json.dumps(query))
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error querying Elasticsearch: {e}")
+        raise HTTPException(status_code=500, detail="Unable to search documents at this time")
+
+async def generate_dpf_embedding(text: str):
+    """
+    Generate embedding for DPF using the embedding endpoint
+    """
+    headers = {
+        'Content-Type': 'application/json',
+        'X-apikey': DPF_API_KEY  # Use DEV API key 
+    }
+    
+    # Use the payload format 
+    payload = {
+        "text": text,
+        "model_name": DPF_SEARCH_CONFIG["embedding_model"]
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["embedding_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload),
+            verify=False  # Added 
+        )
+        print(f"Embedding API Response Text: {response.text}")
+        response.raise_for_status()
+        result = response.json()
+        
+        # For the simple endpoint, the response is directly a list of floats
+        if isinstance(result, list) and all(isinstance(x, (int, float)) for x in result):
+            return result
+        
+        # Fallback extraction methods for complex response formats
+        if isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], list) and len(result[0]) > 0:
+                if isinstance(result[0][0], dict) and 'embedding' in result[0][0]:
+                    return result[0][0]['embedding']
+        
+        if isinstance(result, dict) and 'embedding' in result:
+            return result['embedding']
+        elif isinstance(result, list) and len(result) > 0:
+            # If it's a list of embeddings, take the first one
+            if isinstance(result[0], list):
+                return result[0]
+            elif isinstance(result[0], dict) and 'embedding' in result[0]:
+                return result[0]['embedding']
+            else:
+                return result
+        elif isinstance(result, list):
+            return result
+        else:
+            print(f"Unexpected embedding response format: {result}")
+            raise HTTPException(status_code=500, detail="Invalid embedding response format")
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error generating embedding: {e}")
+        raise HTTPException(status_code=500, detail="Unable to process your query at this time")
+
+async def dpf_reranker(sentence_pairs: List[List[str]]):
+    """
+    Rerank results using cross-encoder for DPF
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY 
+    }
+    
+    payload = {
+        "region": DPF_CROSS_ENCODER_CONFIG["region"],
+        "project_id": DPF_CROSS_ENCODER_CONFIG["project_id"],
+        "endpoint_id": DPF_CROSS_ENCODER_CONFIG["endpoint_id"],
+        "usecase_name": DPF_CROSS_ENCODER_CONFIG["usecase_name"],
+        "model_type": DPF_CROSS_ENCODER_CONFIG["model_type"],
+        "input_request": {
+            "instances": sentence_pairs
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["cross_encoder_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Handle different response formats
+        if isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], list) and len(result[0]) > 0:
+                if isinstance(result[0][0], dict) and "prediction_scores" in result[0][0]:
+                    return result
+                else:
+                    # If the structure is different, wrap it properly
+                    return [[{"prediction_scores": result[0] if isinstance(result[0], list) else [result[0]]}]]
+            else:
+                return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+        elif isinstance(result, dict) and 'predictions' in result:
+            return result['predictions']
+        else:
+            print(f"Unexpected reranker response format: {result}")
+            return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error in reranking: {e}")
+        # Return default scores on error
+        return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+
+async def generate_llm_response(user_query: str, context: str, use_case: str):
+    """
+    Generate LLM response using with Gemini fallback 
+    """
+    # Check cache first for absolute consistency
+    cache_key = get_llm_cache_key(user_query, context)
+    if cache_key in RESPONSE_CACHE:
+        return RESPONSE_CACHE[cache_key]
+
+    # Try primary LLM first
+    print(f"Calling primary LLM with context: {DPF_LLM_CONFIG['context_id']}")
+    primary_response = await _call_llm_api(user_query, context, DPF_LLM_CONFIG["context_id"], use_case)
+    print(f"Primary response: {primary_response[:200]}...")
+    
+    # Check if primary response is unhelpful and fallback is enabled
+    is_unhelpful = _is_unhelpful_response(primary_response)
+    print(f"Is primary response unhelpful? {is_unhelpful}")
+    
+    if DPF_LLM_CONFIG["enable_gemini_fallback"] and is_unhelpful:
+        print(f"Primary LLM gave unhelpful response, trying Gemini fallback")
+        print(f"Primary response: {primary_response[:100]}")
+        # Create enhanced context for fallback ---use any prompts 
+        enhanced_context = f"""
+Based on the available information and general knowledge, please help answer this question: {user_query}
+
+Context from documents:
+{context}
+
+Instructions: If the exact answer isn't in the documents, provide a helpful general explanation based on common knowledge, industry practices, or similar concepts. Be helpful and informative even if the specific term isn't mentioned in the provided documents.
+"""
+        
+        gemini_response = await _call_llm_api_enhanced_with_different_usecase(
+            user_query, 
+            enhanced_context, 
+            DPF_LLM_CONFIG["gemini_fallback_usecase"],
+            DPF_LLM_CONFIG["gemini_fallback_context_id"]
+        )
+        
+        if not _is_unhelpful_response(gemini_response):
+            print(f"Gemini fallback successful: {gemini_response[:100]}...")
+            # Cache and return successful Gemini response
+            RESPONSE_CACHE[cache_key] = gemini_response
+            save_response_cache()
+            return gemini_response
+        else:
+            print(f"Gemini also gave unhelpful response: {gemini_response[:100]}...")
+            
+            # Try one more fallback with knowledge-based approach
+            print("Trying knowledge-based fallback...")
+            knowledge_response = await _generate_knowledge_based_response(user_query)
+            if knowledge_response and not _is_unhelpful_response(knowledge_response):
+                print(f"Knowledge-based fallback successful: {knowledge_response[:100]}...")
+                RESPONSE_CACHE[cache_key] = knowledge_response
+                save_response_cache()
+                return knowledge_response
+    
+    # Cache and return primary response (whether helpful or not)
+    RESPONSE_CACHE[cache_key] = primary_response
+    save_response_cache()
+    print(f"Final LLM Response: {primary_response[:200]}...")
+    return primary_response
+
+async def _call_llm_api(user_query: str, context: str, context_id: str, use_case: str):
+    """
+    Helper function to call LLM API with specified context ID
+    """
+    
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY  # Use UAT API key for LLM
+    }
+    
+    # usecases and contextID's
+    use_case_mapping = {
+        "aider": {
+            "useCase": "AIDER",
+            "contextId": "aider_context"
+        },
+        "dpf-agentic-copilot": {
+            "useCase": "dpf-agentic-copilot-prompt",
+            "contextId": "copilot-rag"
+        },
+        "default": {
+            "useCase": "AIDER",
+            "contextId": "aider_context"
+        }
+    }
+    
+    # Get the usecase config or use default
+    select_config = use_case_mapping[use_case]
+    print("select_config",select_config)
+
+    payload = {
+        "useCase": select_config["useCase"],
+        "contextId": select_config["contextId"],
+        "preSeed_injection_map": {
+            DPF_LLM_CONFIG["context_placeholder"]: context,
+            DPF_LLM_CONFIG["question_placeholder"]: user_query
+        }
+    }
+    print("payload",payload)
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload),
+            timeout=30  # Add timeout for reliability
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        # Cache the response immediately for consistency
+        # RESPONSE_CACHE[cache_key] = llm_response
+        # save_response_cache()
+        # print(f"LLM Response Generated: {llm_response[:200]}...")
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        # # Cache error responses for consistency
+        # RESPONSE_CACHE[cache_key] = error_response
+        # save_response_cache()
+        # print(f"LLM Error Response: {error_response}")
+        print(f"LLM API Error with context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
+
+async def _call_llm_api_enhanced(user_query: str, enhanced_context: str, context_id: str):
+    """
+    Enhanced LLM API call with modified prompt strategy for fallback
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY #update key
+    }
+    
+    # Use a different prompt structure for enhanced fallback
+    payload = {
+        "useCase": DPF_LLM_CONFIG["usecase"],
+        "contextId": context_id,
+        "preSeed_injection_map": {
+            DPF_LLM_CONFIG["context_placeholder"]: enhanced_context,
+            DPF_LLM_CONFIG["question_placeholder"]: "Please provide a helpful response based on the context and instructions above."
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload),
+            timeout=15
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        print(f"Enhanced LLM API Error with context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
+
+async def _call_llm_api_enhanced_with_different_usecase(user_query: str, enhanced_context: str, usecase: str, context_id: str):
+    """
+    Enhanced LLM API call with different usecase and context for Gemini fallback
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY
+    }
+    
+    # Use different usecase and context for Gemini fallback
+    payload = {
+        "useCase": usecase,  # Use AIDER instead of COMMON_RAG
+        "contextId": context_id,  # Use aider_gemini instead of GENERIC
+        "preSeed_injection_map": {
+            DPF_LLM_CONFIG["context_placeholder"]: enhanced_context,
+            DPF_LLM_CONFIG["question_placeholder"]: "Please provide a helpful response based on the context and instructions above."
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload),
+            timeout=15
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        print(f"Gemini LLM API Error with usecase {usecase} and context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
+
+def _is_unhelpful_response(response: str) -> bool:
+    """
+    Check if LLM response is unhelpful and should trigger fallback
+    """
+    if not response:
+        return True
+        
+    # Use configured unhelpful phrases
+    unhelpful_phrases = DPF_LLM_CONFIG["unhelpful_phrases"]
+    print(f"Checking response against {len(unhelpful_phrases)} unhelpful phrases")
+    
+    response_lower = response.lower()
+    for phrase in unhelpful_phrases:
+        if phrase.lower() in response_lower:
+            print(f"Found unhelpful phrase: '{phrase}'")
+            return True
+    
+    # Also check if response is too short (likely unhelpful)
+    if len(response.strip()) < DPF_LLM_CONFIG["min_response_length"]:
+        print(f"Response too short: {len(response.strip())} < {DPF_LLM_CONFIG['min_response_length']}")
+        return True
+        
+    print(f"Response seems helpful (length: {len(response.strip())})")
+    return False
+
+async def dpf_search(request: DPFQuery):
+    """
+    Complete DPF search pipeline with enhanced caching for 100% consistency
+    """
+    # Generate comprehensive cache key including all parameters that affect results
+    search_cache_key = get_query_cache_key(
+        request.query, 
+        request.index_name,
+        request.use_case,
+        request.k, 
+        request.include_llm_response,
+        request.enable_hierarchical
+    )
+    # print("search_cache_key",search_cache_key)
+    # Check cache first for absolute consistency
+    if search_cache_key in RESPONSE_CACHE:
+        cached_result = RESPONSE_CACHE[search_cache_key].copy()
+        
+        # Ensure response format matches current request
+        if not request.include_llm_response and 'llm_response' in cached_result:
+            cached_result['llm_response'] = None
+        elif request.include_llm_response and not cached_result.get('llm_response'):
+            # Generate LLM response for cached results if needed
+            if cached_result.get('reranked_results'):
+                top_doc = cached_result['reranked_results'][0]
+                # source_links = cached_result.get('source_links', [])
+                
+                base_llm_response = await generate_llm_response(request.query, top_doc['text'])
+                
+                # if source_links:
+                #     llm_response = f"{base_llm_response}\n\n**Sources:**\n"
+                #     for i, source_info in enumerate(source_links, 1):
+                #         llm_response += f"[{i}] {source_info['url']}\n"
+                # else:
+                llm_response = base_llm_response
+                
+                cached_result['llm_response'] = llm_response
+        
+        return cached_result
+    
+    # 1. Generate embedding with error handling
+    embedding_start = time.time()
+    try:
+        embedding = await generate_dpf_embedding(request.query)
+    except Exception as e:
+        error_result = {
+            "retrieved_documents": [],
+            "reranked_results": [],
+            "llm_response": "Unable to process your query at this time. Please try again.",
+            "source_links": [],
+            "search_metadata": {
+                "embedding_time": 0,
+                "search_time": 0,
+                "rerank_time": 0,
+                "llm_time": 0,
+                "total_results": 0,
+                "reranked_count": 0,
+                "sources_found": 0
+            }
+        }
+        RESPONSE_CACHE[search_cache_key] = error_result.copy()
+        save_response_cache()
+        return error_result
+        
+    embedding_time = time.time() - embedding_start
+
+    # Set up dynamic filter clause based on use case
+    filter_clause = None
+    if hasattr(request, 'use_case') and request.use_case == "aider":
+        filter_clause = [{ "term": { "usecase_name": "aider" } }]
+        print(f"Using aider filter: {filter_clause}")
+    if hasattr(request, 'use_case') and request.use_case == "dpf-agentic-copilot":
+        filter_clause = [
+                { "term": { "usecase_name": "aider_csv" } },
+                { "term": { "usecase_name": "aider_pdf" } }
+            # "term": { "usecase_name": "aider_json" }
+        ]
+        print(f"Using copilot filter: {filter_clause}")
+    if filter_clause is None:
+        # Default filter for aider
+        filter_clause = [{ "term": { "usecase_name": "aider" } }]    
+        print(f"Using default aider filter: {filter_clause}")
+    
+    # 2. Elasticsearch query 
+    es_query = {
+        "_source": [DPF_SEARCH_CONFIG["chunk_data_field"], DPF_SEARCH_CONFIG["custom_metadata_field"]],
+        "query": {
+            "bool": {
+                "filter": [
+                    {
+                        "bool": {
+                            "should": filter_clause,
+                            "minimum_should_match": 1
+                        }
+                    }
+                ],
+                "should": [
+                    {
+                        "knn": {
+                            "field": DPF_SEARCH_CONFIG["embedding_field"],
+                            "query_vector": embedding,
+                            "k": min(request.k, DPF_SEARCH_CONFIG["max_k"]),
+                            "num_candidates": DPF_SEARCH_CONFIG["num_candidates"]
+                        }
+                    }
+                ]
+            }
+        },
+        "size": min(request.k, DPF_SEARCH_CONFIG["max_k"])
+    }
+    # print("es_query",es_query)
+    search_start = time.time()
+    try:
+        es_results = await search_elasticsearch(
+            DPF_ELASTICSEARCH_CONFIG["api_url"], 
+            DPF_ELASTICSEARCH_CONFIG["api_key"], 
+            request.index_name, 
+            es_query
+        )
+    except Exception as e:
+        error_result = {
+            "retrieved_documents": [],
+            "reranked_results": [],
+            "llm_response": "Unable to search documents at this time. Please try again.",
+            "source_links": [],
+            "search_metadata": {
+                "embedding_time": embedding_time,
+                "search_time": 0,
+                "rerank_time": 0,
+                "llm_time": 0,
+                "total_results": 0,
+                "reranked_count": 0,
+                "sources_found": 0
+            }
+        }
+        RESPONSE_CACHE[search_cache_key] = error_result
+        return error_result
+        
+    search_time = time.time() - search_start
+    elastic_search_results = es_results['hits']['hits']
+    elastic_search_results = sorted(elastic_search_results, 
+                                   key=lambda x: (-x.get('_score', 0), x.get('_id', '')))
+    print("elastic_search_results",elastic_search_results)
+    # Use enhanced document
+    elastic_search_contexts = await get_document_context(elastic_search_results, request.query)
+    
+    if not elastic_search_contexts:
+        no_results = {
+            "retrieved_documents": [],
+            "reranked_results": [],
+            "llm_response": "No relevant documents found for your query.",
+            "source_links": [],
+            "search_metadata": {
+                "embedding_time": embedding_time,
+                "search_time": search_time,
+                "rerank_time": 0,
+                "llm_time": 0,
+                "total_results": 0,
+                "reranked_count": 0,
+                "sources_found": 0
+            }
+        }
+        RESPONSE_CACHE[search_cache_key] = no_results
+        return no_results
+    
+    # 3. Rerank results with error handling
+    rerank_start = time.time()
+    sentence_pairs = [[request.query, context] for context in elastic_search_contexts]
+    
+    try:
+        reranked_response = await dpf_reranker(sentence_pairs)
+    except Exception as e:
+        # Use original order if reranking fails
+        reranked_response = [[{"prediction_scores": [0.5] * len(sentence_pairs)}]]
+        
+    rerank_time = time.time() - rerank_start
+    cross_scores = reranked_response[0][0].get("prediction_scores", [])
+    
+    # Combine scores with contexts
+    context_list = []
+    for score, context, original_result in zip(cross_scores, elastic_search_contexts, elastic_search_results):
+        context_list.append({
+            'cross_score': score,
+            'text': context,
+            'original_result': original_result
+        })
+    
+    # Sort by cross-encoder 
+    reranked_docs = sorted(context_list, 
+                          key=lambda x: (x["cross_score"], x["original_result"].get('_id', '')), 
+                          reverse=True)
+    top_doc = reranked_docs[0] if reranked_docs else None
+    
+    llm_response = None
+    llm_time = 0
+    source_links = []
+    
+    if request.include_llm_response and top_doc:
+        llm_start = time.time()
+        
+        # Extract source links from top documents
+        # source_links = await extract_source_links(reranked_docs, top_k=1)
+        # print(f"Source Links Extracted: {len(source_links)} links found")
+        # for i, link in enumerate(source_links):
+            # print(f"  Link {i+1}: {link['url']} (score: {link['score']:.4f})")
+        
+        # LLM response
+        all_content = [doc['text'] for doc in reranked_docs]
+        combined_context = "\n\n".join(all_content)
+        base_llm_response = await generate_llm_response(request.query, combined_context,request.use_case)
+        
+        # # Enhance LLM response with source links
+        # if source_links:
+        #     # llm_response = f"{base_llm_response}\n\n**Sources:**\n"
+        #     # for i, source_info in enumerate(source_links, 1):
+        #     #     llm_response += f"[{i}] {source_info['url']}\n"
+        #     if len(source_links) == 1:
+        #         # Single source - cleaner formatting
+        #         llm_response = f"{base_llm_response}\n\n**Source:** {source_links[0]['url']}"
+        #     else:
+        #         # Multiple sources - numbered list
+        #         llm_response = f"{base_llm_response}\n\n**Sources:**\n"
+        #         for i, source_info in enumerate(source_links, 1):
+        #             llm_response += f"[{i}] {source_info['url']}\n"
+        #     print(f"Final LLM Response with Sources: {llm_response[:300]}...")
+        # else:
+        #     llm_response = base_llm_response
+        #     print(f"Final LLM Response (no sources): {llm_response[:300]}...")
+        llm_response = base_llm_response
+        print(f"Final LLM Response (source): {llm_response[:300]}...")
+
+        llm_time = time.time() - llm_start
+    
+    # Prepare final result
+    result = {
+        "retrieved_documents": elastic_search_results,
+        "reranked_results": reranked_docs,
+        "top_document": top_doc,
+        "llm_response": llm_response,
+        # "source_links": source_links,
+        "search_metadata": {
+            "embedding_time": embedding_time,
+            "search_time": search_time,
+            "rerank_time": rerank_time,
+            "llm_time": llm_time,
+            "total_results": len(elastic_search_results),
+            "reranked_count": len(reranked_docs),
+            # "sources_found": len(source_links)
+        }
+    }
+    
+    RESPONSE_CACHE[search_cache_key] = result
+    return result
+
+async def detect_document_type(es_result):
+    """
+    Detect document type from Elasticsearch result for chunking strategy
+    """
+    source = es_result.get('_source', {})
+    
+    # Check for document type indicators in metadata
+    if 'file_extension' in source:
+        ext = source['file_extension'].lower()
+        if ext == 'pdf':
+            return 'pdf'
+    
+    if 'source_system' in source:
+        system = source['source_system'].lower()
+        if 'confluence' in system:
+            return 'confluence'
+        elif 'jira' in system:
+            return 'jira'
+        elif 'sharepoint' in system:
+            return 'sharepoint'
+    
+    if 'document_type' in source:
+        return source['document_type'].lower()
+    
+    return 'default'
+
+async def get_document_context(es_results, query):
+    """
+    Enhanced document context retrieval with hierarchical chunking
+    """
+    if not DPF_ADVANCED_SEARCH_CONFIG["enable_document_context"]:
+        # Fallback to original simple extraction
+        return [result.get('_source', {}).get(DPF_SEARCH_CONFIG["chunk_data_field"], '') 
+                for result in es_results]
+    
+    enhanced_contexts = []
+    
+    # Process each result directly since they're already individual chunks
+    for result in es_results:
+        source = result.get('_source', {})
+        
+        # Get the main content using the configured field name
+        main_content = source.get(DPF_SEARCH_CONFIG["chunk_data_field"], '')
+        
+        # If the main field is empty, try alternative field names
+        if not main_content:
+            main_content = (source.get('original_content', '') or 
+                           source.get('chunk_data', '') or 
+                           source.get('content', '') or 
+                           source.get('text', ''))
+        
+        # Add the content (with minimal metadata if needed)
+        if main_content:
+            enhanced_contexts.append(main_content)
+        else:
+            # Fallback: combine all available text fields
+            all_text = []
+            for key, value in source.items():
+                if isinstance(value, str) and len(value) > 10:  # Reasonable content length
+                    all_text.append(value)
+            enhanced_contexts.append(' '.join(all_text) if all_text else '')
+    
+    return enhanced_contexts
+
+# Source link extraction disabled by Lila
+# async def extract_source_links(reranked_docs, top_k=1):
+#     """
+#     Extract source links from reranked documents
+#     """
+#     source_links = []
+#     seen_links = set()
+    
+#     # Extract from top K documents to provide multiple sources
+#     for doc in reranked_docs[:top_k]:
+#         if 'original_result' in doc:
+#             source_data = doc['original_result'].get('_source', {})
+#             custom_metadata = source_data.get(DPF_SEARCH_CONFIG["custom_metadata_field"], {})
+            
+#             source_link = None
+#             if isinstance(custom_metadata, dict):
+#                 source_link = (custom_metadata.get('source_link') or
+#                              custom_metadata.get('source_url') or 
+#                              custom_metadata.get('url') or 
+#                              custom_metadata.get('link') or 
+#                              custom_metadata.get('source') or
+#                              custom_metadata.get('document_url') or
+#                              custom_metadata.get('page_url'))
+#             elif isinstance(custom_metadata, str) and custom_metadata.strip():
+#                 source_link = custom_metadata.strip()
+            
+#             # Check other potential source fields in the main document
+#             if not source_link:
+#                 source_link = (source_data.get('source_url') or 
+#                              source_data.get('url') or 
+#                              source_data.get('source') or
+#                              source_data.get('document_url'))
+            
+#             # Add unique source links
+#             if source_link and source_link not in seen_links:
+#                 source_links.append({
+#                     'url': source_link,
+#                     'score': doc.get('cross_score', 0),
+#                     'preview': doc.get('text', '')[:100] + '...' if doc.get('text') else ''
+#                 })
+#                 seen_links.add(source_link)
+#                 print(f"Added source link: {source_link} (score: {doc.get('cross_score', 0):.4f})")
+    
+#     print(f"Total unique source links found: {len(source_links)}")
+#     return source_links
+
+import hashlib
+from typing import Dict, Any
+
+# Response cache 
+RESPONSE_CACHE: Dict[str, Any] = {}
+
+def load_response_cache():
+    """Load response cache - DISABLED for in-memory only"""
+    global RESPONSE_CACHE
+    RESPONSE_CACHE = {}
+
+def save_response_cache():
+    """Save response cache - DISABLED for in-memory only"""
+    pass
+
+def get_query_cache_key(query: str, index_name: str,use_case: str, k: int, include_llm: bool = True, enable_hierarchical: bool = True) -> str:
+    """Generate a comprehensive cache key for a query to ensure consistency"""
+    normalized_query = query.strip().lower().replace('\n', ' ').replace('\r', ' ')
+    normalized_query = ' '.join(normalized_query.split())
+    
+    cache_data = f"{normalized_query}|{index_name}|{use_case}|{k}|{include_llm}|{enable_hierarchical}"
+    return hashlib.md5(cache_data.encode('utf-8')).hexdigest()
+
+def get_llm_cache_key(query: str, context: str) -> str:
+    """Generate a consistent cache key for LLM responses"""
+    normalized_query = query.strip().lower().replace('\n', ' ').replace('\r', ' ')
+    normalized_query = ' '.join(normalized_query.split())
+    
+    normalized_context = context.strip().replace('\n', ' ').replace('\r', ' ')
+    normalized_context = ' '.join(normalized_context.split())
+    
+    cache_data = f"{normalized_query}|{normalized_context}"
+    return hashlib.md5(cache_data.encode('utf-8')).hexdigest()
+
+# Load cache on startup
+load_response_cache()
+
+async def _generate_knowledge_based_response(user_query: str) -> str:
+    """
+    Generate a knowledge-based response as a final fallback
+    """
+    try:
+        #knowledge-based response
+        return f"Based on your query about '{user_query}', I recommend checking the relevant documentation or contacting the appropriate team for more specific information."
+    except Exception as e:
+        print(f"Error in knowledge-based response: {e}")
+        return "I apologize, but I'm unable to provide a helpful response at this time."
+
+if __name__ == "__main__":
+    # #, reload=True)#, debug=True, workers=1)
+    uvicorn.run("main_serve:app", host='0.0.0.0',
+                port=2000, reload=True)
