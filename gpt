@@ -1,3 +1,7 @@
+0:00) Right, right, yes. (0:03) Yeah, so he basically sends five requests at once, then 30 requests and then 25 requests or something. (0:08) Yes, yes, yes, yeah, I do know. (0:09) So, we have that as a separate script right now. (0:13) Okay, okay. (0:14) So, what are we going to do is, we will create a framework. (0:18) Okay. (0:19) Okay, we call it a test framework, where you have this load or balance testing as one component. (0:27) Okay, okay. (0:28) Then the second component would be accuracy testing, where you have some golden set of (0:32) questions defined for each domain catalog. (0:34) And you will just click, you'll have a button saying that, you know, run test. (0:39) Okay. (0:40) You go back in the backend, you run some tests on those golden set of questions, (0:44) you do the accuracy comparison, come back with the results. (0:48) Okay, okay. (0:48) Even the load balance testing also the same, like if I select a batch number, (0:52) like if I say batch 20, then you send 20 requests at once, (0:55) do the load testing and come back with the results. (0:59) Okay, okay. (1:00) Right. (1:01) All of these results, you'll store it in a database, you'll keep track of it. (1:06) And then, you know, you can have a dashboard where you can come and monitor your performance, (1:10) like day to day, like, you know, over time, however, how many of this you do, (1:15) you can see how your tool is performing. (1:18) Okay. (1:19) Right. (1:20) So, if we can build that as a complete dashboard. (1:24) Okay, okay. (1:26) Which will again have the domain catalog section divided, right? (1:30) We'll have it at entire Q-verse level and then we'll put some filters for domains and catalogs. (1:35) And any coming in, like any admin coming in, (1:38) they can view the results for their particular domain catalog. (1:42) Okay, okay. (1:43) So, in the existing Q-verse framework only, that will be right, Akesh? (1:48) Yeah, within existing Q-verse only, we'll do it. (1:53) Okay, okay. (1:54) On Q-verse, we have one small dashboard, right? (1:56) On the homepage, you have four charts that we show. (1:59) Yes, yes, yes. (2:00) Yeah, if we mark the underscore, that breakdown, (2:04) markdown button, then we will get it, I think, charts. (2:09) Right, yeah. (2:10) So, now instead of those charts, I mean, those charts will still be there, (2:15) but we'll bring in this complete framework in place. (2:18) Okay. (2:18) Those charts are basically giving you user level history, right? (2:21) We'll create two more screens, one for catalog history and then system level history. (2:27) And on top of that, we'll add the second dashboard for our testing. (2:30) Okay, okay. (2:32) Got it, Akesh. (2:33) All right, so this, you have the entire analytics of your platform, right? (2:37) Okay, okay. (2:40) So, I thought if you could work on this, (2:42) but then if you are occupied with something else for next two days, then... (2:47) The thing is, I want you and Yogesh to work on this, both of you. (2:50) Okay. (2:51) It's going to be good. (2:52) So, Monday I can work, Akilesh. (2:55) Like, as I said, right, like, how I am doing is, see, generally in the morning session, (2:59) I complete my regular thing. (3:02) From afternoon session, I start working on keywords. (3:04) So, that's how I used to split. (3:09) So, actually, I can start on Monday, but... (3:13) If you can start on Monday, then I think it's fine. (3:15) But the target was, the way I was thinking is, (3:20) we'll use it in two days or three days max, (3:22) because it's going to be just APIs, (3:25) like there's no functionality there. (3:26) It's just APIs that you're writing. (3:28) And the scripts are already there. (3:29) Okay, okay. (3:30) So, I got two or three days. (3:32) But again, if you need some time, if you're occupied with something else, (3:34) you can give an additional day, I guess. (3:37) Yeah, mostly I can start on Monday. (3:41) I will try to finish, Akilesh, like by Tuesday only. (3:44) But Tuesday night, I have one again. (3:47) There is one more release. (3:50) So, it's like I cannot completely sit 50%, I can say. (3:55) But yeah, I will try to complete by Tuesday only. (3:57) I will target for Tuesday, better. (3:59) Tuesday or max Wednesday then. (4:02) Okay, okay. (4:03) Yeah, you have Yogesh also, right? (4:05) I mean... (4:06) Yeah, Yogesh Gupta, right? (4:07) Yeah, yeah. (4:08) Okay, okay. (4:09) I will connect with him. (4:11) I didn't get a chance to talk to him today. (4:13) So, you know, you had a chance either probably on Monday morning, right? (4:17) Uh-huh, sure. (4:17) So, even he will be working on FATEL for the LSP testing. (4:20) He's working day to day. (4:21) So, Monday, I think he can also start on Monday. (4:25) Okay, okay. (4:27) So, if both of you can build those APIs and bring the dashboards. (4:30) Because he's the one who has that script. (4:32) Okay, okay. (4:32) For batch testing. (4:34) Okay, okay, Akilesh. (4:35) I will ask him regarding that. (4:38) Okay, got it, Akilesh. (4:42) So, when you do it, right, just think of various filters you can put on the API, (4:46) like domain catalog or no filter at all. (4:48) Or like, you know, where exactly you need filters. (4:51) And also, if you're doing a test pipeline, accuracy testing, right? (4:54) Then you will put our domain catalog filter. (4:57) Okay, okay. (4:58) Because you're picking any golden questions for that particular domain catalog. (5:02) Then if you're doing a load balancing testing, (5:04) then you don't have to put any domain catalog, right? (5:06) It's just an overall tool that you're looking at. (5:08) Okay, okay. (5:09) So, we'll just, when we say batch of 30, (5:12) we'll send random domains, catalogs and the 30 requests. (5:16) Okay. (5:17) Something like that. (5:18) Okay, okay, yeah. (5:20) So, I will connect with Yogesh and I will get that script. (5:24) So, the major thing is this filter part, we have to work on the backend. (5:31) Okay, okay. (5:32) Yeah, he will have the hardcoded request body. (5:36) Instead, you'll have to get it on API. (5:38) Okay, okay, yeah, I understand. (5:42) Sure, Aklesh. (5:43) Yeah, I will connect with him and I will let you know. (5:46) If anything is there, I will connect on Monday. (5:49) At least I will start and implement some thing part. (5:54) This API part, I can start, I think. (5:57) So, yeah, then we can get a clear idea and Monday we can discuss on that, Aklesh. (6:03) Okay, okay. (6:04) And if you want to write, I mean, maybe do it this way. (6:10) Don't put it on QoS yet. (6:12) Just create it as a separate tool. (6:15) Okay, okay. (6:17) We'll host it as an API for now. (6:19) Okay, okay.
+
+=========================
+
 (0:17) This should be like a dashboard, however, any example like looker dashboard or whatever (0:28) we take, it should be a kind of dashboard where we have to show the filters as well (0:36) as. (0:38) So, this testing whatever latency testing is doing, those results only we need to show (0:43) right at this. (0:45) Correct, latency testing and also accuracy testing.
 (0:48) Yeah, latency and accuracy. (0:49) So, what you wish to do is latency, yeah. (0:51) So, what you wish to do is latency, but you will have accuracy testing also.
 (0:55) Okay. (0:55) Right. (0:56) And based on that accuracy testing you can do this.
@@ -30,3 +34,85 @@ Translation to 134+ languages. Bulk exports. All transcription modes. Unlimited 
 ⚡️
 Highest Priority
 We'll always transcribe your files ASAP with the highest priority.
+==============================
+
+🛠️ Your Work (after Akhilesh’s instructions)
+1. Backend APIs
+
+Build a test framework router (like /test-framework) with APIs for:
+
+Latency testing (using Yogesh’s script logic).
+
+Accuracy testing (using golden questions).
+
+Add environment filter → option to run tests on Dev / PLU / Prod.
+
+Keep it as a separate tool (don’t push into QVerse UI yet), but reuse helper functions from QVerse codebase (like GCP upload).
+
+2. Golden Questions (Accuracy Testing)
+
+On UI (later) → allow admin to upload a CSV (questions + SQL).
+
+Backend should:
+
+Store file in GCP bucket under folder structure:
+golden_questions/<domain>/<catalog>/<filename.csv>
+
+When accuracy test runs → pull the file from bucket → execute test → compare results.
+
+Use existing helper function (already in branch Akhilesh mentioned) for uploading files to GCS.
+
+3. Dashboard Data
+
+The dashboard must show:
+
+Latency trends (time-series charts, p95/avg/max).
+
+Accuracy trends (per domain/catalog).
+
+Filters for domain, catalog, environment.
+
+For now → just ensure backend APIs return summaries that can feed charts later.
+
+4. Environment Handling
+
+Framework must work across Dev / PLU / Prod by switching URLs + Auth.
+
+Expose environment as a parameter in API → user can select where to run the test.
+
+Note: GCS bucket works only with Prod account (Dev may throw “file not saved” error).
+
+5. Phased Delivery
+
+Phase 1: APIs + environment filter + CSV upload to GCS.
+
+Phase 2: Accuracy testing integrated with golden questions.
+
+Phase 3: Dashboard integration with charts/filters.
+
+✅ What You Should Confirm with Akhilesh
+
+Golden Questions Format
+
+Should the CSV always have question + SQL query?
+
+Do we need to store expected answers too, or just SQL?
+
+Accuracy Checking Logic
+
+Compare model output vs SQL result → exact match or similarity threshold?
+
+Dashboard Metrics
+
+For latency: avg / p95 / max?
+
+For accuracy: % correct per domain/catalog?
+
+Any other KPIs (throughput, error rate)?
+
+Timeline
+
+You mentioned Friday as target — confirm if this is okay for delivering Phase 1 (backend + upload + basic APIs).
+
+👉 In short:
+Your job is to build a backend test framework (APIs + GCS integration + env filter), feed results for latency & accuracy, and later extend to dashboard.
