@@ -75,3 +75,157 @@ conversation 3
 (1:25) Okay. (1:27) Okay, good. (1:27) CSP file is one thing right, but this golden questions you are currently pulling it from CSP right as part of the framework? (1:34) So this CSP, from that script, whatever Yogesh is running that script for testing right.
 (1:40) So that CSP sample I have taken. (1:41) Okay, okay that's fine. (1:44) So what we'll do is once you have that right, we'll put it on the GCP bucket and read it from there.
 (1:49) Rather than from CSP file right, we'll read the golden set of questions from GCP buckets based on domains and categories. (1:55) Okay, yeah got it. (1:56) Yeah, okay.
+
+
+
+====
+
+
+The framework will provide systematic testing and monitoring of QVerse performance across domains and catalogs, covering:
+
+Load / Latency Testing (stress and concurrency simulation).
+
+Accuracy Testing (using golden questions per domain/catalog).
+
+Centralized Dashboard (trend tracking, historical view, filters).
+
+⚙️ Components
+1. Load / Latency Testing
+
+Existing script already simulates batches of requests (e.g., 5, 30, 25).
+
+Convert the hardcoded script into API-driven batch testing.
+
+API parameters:
+
+batch_size: number of concurrent requests.
+
+filters: none (since load test is system-wide).
+
+Execution:
+
+Send random requests across domains/catalogs.
+
+Measure latency, success/failure, throughput.
+
+Store results in DB with metadata (timestamp, environment, batch size, metrics).
+
+2. Accuracy Testing
+
+Golden Questions: predefined set of queries + expected SQL.
+
+Storage:
+
+Upload via CSV file on UI.
+
+Stored in GCP bucket under folder structure:
+
+golden-questions/{domain}/{catalog}/{file.csv}
+
+
+Test Execution:
+
+On “Run Test,” backend pulls CSV from bucket.
+
+Executes each query → compares system output with expected SQL.
+
+Computes accuracy metrics (match %, precision, recall if needed).
+
+API parameters:
+
+domain, catalog (mandatory filters).
+
+environment (dev/test/prod switch).
+
+3. Data Storage & Tracking
+
+Database Tables (BigQuery / Postgres):
+
+test_results: stores load + accuracy test outcomes with timestamps.
+
+golden_questions_index: stores references to CSVs in GCP bucket.
+
+Benefits:
+
+Historical trends.
+
+Comparison across runs (daily, weekly).
+
+Environment-level segregation.
+
+4. Dashboard
+
+Embedded in QVerse UI (but POC may run standalone).
+
+Views:
+
+System-level history → latency & accuracy trends over time.
+
+Domain/Catalog-level history → filtered accuracy results.
+
+User-level history → already exists, will remain.
+
+Charts:
+
+Time series trend (latency over days).
+
+Accuracy % trend (per domain/catalog).
+
+Comparison across environments (dev/test/prod).
+
+Admin can filter by:
+
+Domain
+
+Catalog
+
+Environment
+
+Date range
+
+🚀 Implementation Phases
+Phase 1 – API Layer
+
+Convert existing latency & accuracy scripts into APIs.
+
+Add filtering (domain, catalog, environment).
+
+Integrate with GCP bucket for golden questions.
+
+Phase 2 – Database Integration
+
+Store test results in DB.
+
+Build queries for trend analysis.
+
+Phase 3 – Dashboard UI
+
+Extend QVerse dashboard with new test framework views.
+
+Add filters and charts.
+
+Export option (CSV, PDF).
+
+🔑 Key Considerations
+
+Environment Switching: APIs should allow dev, uat, prod.
+
+GCP Bucket Access: may require prod service account for file upload/read.
+
+Filters:
+
+Accuracy → requires domain & catalog filters.
+
+Load → no filters (system-wide).
+
+Golden Questions Maintenance: CSV uploads with strict format (question, expected SQL).
+
+Collaboration:
+
+Yogesh → already has load test script.
+
+You → API + backend integration.
+
+Anirban → will provide extra metrics if needed.
+
+✅ Outcome: A self-contained test framework with APIs + dashboard to continuously measure QVerse’s latency, accuracy, and historical performance, enabling admins to monitor and benchmark system quality.
