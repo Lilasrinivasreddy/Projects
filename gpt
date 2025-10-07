@@ -1,3 +1,177 @@
+# DPF Elasticsearch Configuration
+import os
+
+# Environment
+if 'ENV' in os.environ and os.environ['ENV'] in ['dev', 'uat', 'prod']:
+    env = os.environ['ENV'].lower()
+else:
+    env = "dev"
+
+# API Keys from environment variables
+if env == 'prod':
+    DPF_API_KEY = os.environ.get('prod_aider_apikey', "")
+    # DPF API Endpoints for Production
+    DPF_ENDPOINTS = {
+        "embedding_endpoint": "https://oa.verizon.com/vegas/models/api",  # PROD endpoint
+        "cross_encoder_endpoint": "https://oa.verizon.com/vegas/models/api",
+        "llm_endpoint": "https://oa.verizon.com/vegas/apps/prompt/LLMInsight"
+    }
+    DPF_ELASTICSEARCH_CONFIG = {
+        "api_url": "https://vectordb-experimentation-np.ebiz.verizon.com",
+        "api_key": os.environ.get('es_api_key', ""),
+        "index_name": "jysv-dpf-prod"
+    }
+elif env == 'uat':
+    DPF_API_KEY = os.environ.get('uat_aider_apikey', "")
+    # DPF API Endpoints for UAT
+    DPF_ENDPOINTS = {
+        "embedding_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",  # UAT endpoint
+        "cross_encoder_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",
+        "llm_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/apps/prompt/LLMInsight"
+    }
+    DPF_ELASTICSEARCH_CONFIG = {
+        "api_url": "https://vectordb-experimentation-np.ebiz.verizon.com",
+        "api_key": os.environ.get('es_api_key', ""),
+        "index_name": "jysv-dpf-uat"
+    }
+else:  # dev environment
+    DPF_API_KEY = os.environ.get('dev_aider_apikey', "")
+    # DPF API Endpoints for Development
+    DPF_ENDPOINTS = {
+        "embedding_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",  # Using UAT for dev
+        "cross_encoder_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",
+        "llm_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/apps/prompt/LLMInsight"
+    }
+    DPF_ELASTICSEARCH_CONFIG = {
+        "api_url": "https://vectordb-experimentation-np.ebiz.verizon.com",
+        "api_key": os.environ.get('es_api_key', ""),
+        "index_name": "jysv-dpf-dev1"
+    }
+
+
+# Validate that required environment variables are set
+if not DPF_API_KEY:
+    raise ValueError(f"DPF_API_KEY is required but not found for environment: {env}")
+
+# Validate Elasticsearch API key
+if not DPF_ELASTICSEARCH_CONFIG["api_key"]:
+    raise ValueError(f"Elasticsearch API key is required but not found for environment: {env}")
+
+# DPF Search Configuration
+DPF_SEARCH_CONFIG = {
+    "default_k": 10,
+    "max_k": 10,
+    "num_candidates": 100,
+    "embedding_model": 'all-distilroberta-v1',
+    "usecase_filter_aider": 'aider',
+    "usecase_filter_copilot": ["aider_json","aider_pdf","aider_csv"],
+    "usecase_filter": 'aider',
+    "embedding_field": 'text_embedding_768',
+    "chunk_data_field": 'original_content',  # Use original_content field
+    "custom_metadata_field": 'custom_metadata'
+}
+
+# DPF Cross-encoder Configuration
+DPF_CROSS_ENCODER_CONFIG = {
+    "region": "us-east4",
+    "project_id": "688379114786", 
+    "endpoint_id": "4179014998757998592",
+    "usecase_name": "cross-encoder",
+    "model_type": "cross-encoder"
+}
+
+# DPF LLM Configuration
+DPF_LLM_CONFIG = {
+    "usecase": 'AIDER',
+    "context_id": 'AIDER_CONTEXT',
+    "gemini_fallback_usecase": 'AIDER',  # For Gemini fallback
+    "gemini_fallback_context_id": 'aider_gemini',  # Context for Gemini fallback
+    "context_placeholder": "{CONTEXT}",
+    "question_placeholder": "{QUESTION}",
+    "enable_gemini_fallback": True,  # Enable Gemini fallback for better responses
+    "min_response_length": 50,  # Minimum response length 
+    "max_output_tokens": 20480,  # Added 
+    "unhelpful_phrases": [  # Phrases that indicate unhelpful responses
+        "I couldn't find an answer",
+        "Please rephrase your question", 
+        "refine your search",
+        "create a Jira ticket",
+        "I don't have enough information",
+        "I cannot provide an answer",
+        "No relevant information found",
+        "I'm unable to answer",
+        "I don't know",
+        "I cannot find",
+        "I am sorry, but this document does not contain",
+        "this document does not contain information",
+        "the document does not provide",
+        "I apologize, but the provided",
+        "the provided document does not",
+        "does not contain information about",
+        "I'm sorry, but I don't see",
+        "the document doesn't mention",
+        "no information about",
+        "I'm experiencing technical difficulties",
+        "experiencing technical difficulties",
+        "technical difficulties",
+        "I am sorry, but I cannot answer your question",
+        "the context does not provide information",
+        "cannot answer your question, as the context does not",
+        "I cannot answer your question, as the context",
+        "as the context does not provide",
+        "the provided passages describe"
+    ]
+}
+
+# Document-Specific Chunking Configuration
+DPF_DOCUMENT_CHUNKING_CONFIG = {
+    "pdf": {
+        "chunk_fields": ["chunk_data", "page_content", "section_header"],
+        "metadata_fields": ["document_title", "page_number", "section_type"],
+        "chunk_size": 512,
+        "overlap": 50,
+        "use_hierarchical": True
+    },
+    "confluence": {
+        "chunk_fields": ["chunk_data", "page_title", "breadcrumb"],
+        "metadata_fields": ["space_key", "page_id", "parent_page"],
+        "chunk_size": 256,
+        "overlap": 30,
+        "use_hierarchical": True
+    },
+    "jira": {
+        "chunk_fields": ["chunk_data", "issue_summary", "description"],
+        "metadata_fields": ["project_key", "issue_type", "priority"],
+        "chunk_size": 128,
+        "overlap": 20,
+        "use_hierarchical": False
+    },
+    "sharepoint": {
+        "chunk_fields": ["chunk_data", "file_name", "folder_path"],
+        "metadata_fields": ["site_collection", "library_name", "file_type"],
+        "chunk_size": 384,
+        "overlap": 40,
+        "use_hierarchical": True
+    },
+    "default": {
+        "chunk_fields": ["chunk_data"],
+        "metadata_fields": ["source", "document_type"],
+        "chunk_size": 256,
+        "overlap": 25,
+        "use_hierarchical": False
+    }
+}
+
+# Advanced Search Configuration
+DPF_ADVANCED_SEARCH_CONFIG = {
+    "enable_document_context": True,
+    "max_chunks_per_document": 3,
+    "document_boost_factor": 1.2,
+    "enable_section_grouping": True,
+    "enable_parent_chunk_retrieval": True,
+    "context_window_expansion": 2  # Number of neighboring chunks to include
+}
+
 What is the endpoint, embedding endpoint, cross endpoint? (0:06) Right, right. (0:34) We have this OS.endron (0:40) Sorry, I lost for a while. (1:14) Right. (1:20) Right. (1:28) In the test we have. (1:47) We can refer that one here. (1:50) No need this JSON (1:51) and calling that key and all. (1:54) We don't require this. (1:55) Okay, okay. (1:57) You can refer the previous (1:59) config.py and I will create (2:01) I will modify this (2:03) Elasticsearch one. (2:05) We have this IEMP (2:07) threat manager. (2:10) Let me (2:11) Yeah. (2:37) So what Ashish said, (2:39) but how is the responses? (2:40) Is it too bad than previous one (2:43) or it is like similar? (2:46) No, it's like okay. (2:47) But still couple of questions (2:49) whatever is testing is not getting (2:51) response. I mean wrong (2:53) answer or something. (2:55) But we are getting the (2:58) responses in our (2:59) current. Yeah, yeah. (3:01) With the current we are getting, yes. (3:04) I mean not with the (3:05) current one, with the old (3:07) and not with the (3:08) you are saying it's with the rug, right? (3:10) No, no, not like that. (3:12) So I mean (3:14) see what (3:16) Ashish sometimes he tests (3:18) in different way like which (3:22) so configuration (3:23) for with connectivity (3:25) how to configure like how (3:26) or something he is not giving sometimes. (3:28) So I think that is also sometimes (3:30) causing. (3:32) So that we have to (3:34) test it (3:36) like (3:39) not in a proper (3:41) meaning he is (3:42) giving sometimes. (3:44) Okay. (3:48) But for now he said it is almost (3:51) okay. But for (3:53) few things still we need (3:55) improvement. (3:57) Okay. (4:42) Here I have provided (4:44) three keys but I should avoid this. (4:50) This is for UAT, right? (4:53) Yeah, but I don't need this (4:54) dev API key, UAT API key (4:56) because we already have a secret (4:58) for this API key. (5:00) UAT API key we have already (5:02) secret created here. (5:04) So we don't need that (5:05) these two. I will (5:08) just add only this secret. (5:19) Don't add this directly. (5:22) Okay, I will update this (5:23) and maybe you can (5:25) just use the secret name (5:30) Leela. (5:31) I think for (5:34) Okay. (5:34) Directly we can use the secret name. (5:38) Use the secret name for Elasticsearch (5:41) so os.environ. (5:43) So like that you can use this for (5:44) Elasticsearch. We don't need (5:46) to take like (5:49) key value pair. We don't need to load this (5:50) JSON and take the key value pair. (5:52) Directly I am going to provide this key only (5:54) here. So you can take that (5:57) for Elasticsearch. So (5:58) you do the modifications in the code. (6:00) I will update this here as well. (6:02) Okay, so you will be adding whatever (6:05) Saesh has shared, right? (6:06) That also? (6:08) No, no, no. That is for (6:11) prod, right? (6:13) Prod I cannot add it. (6:14) But I can keep it in the deployment instructions. (6:17) Tomorrow Vegas team will create it (6:19) in the prod. Yeah, I don't have (6:21) access to do that. (6:22) Yeah, yeah. I understand. (6:23) Senthil will be, not Senthil. (6:26) Selvakumar. Selvar team. (6:27) Yeah, yeah. I understand. (6:30) Sure. I will just change. (6:32) Because why I am saying this, (6:34) we have to add it because (6:35) we are going to push the same code to the (6:37) main branch. And based on (6:39) the environment key in the (6:41) prod environment, it will fetch the values (6:44) so that our code should be up to (6:45) date. It should work in both prod (6:47) and the test environment based on (6:49) the environment variable coming in. (6:52) So when the (6:53) ENV is prod, we should have (6:55) that URL should be in the place in the (6:57) dpf.config.py (6:59) and whatever the (7:01) secrets we are going to create in the (7:03) prod, that value (7:05) should be used in the code, right? (7:08) So that's what I am saying. (7:10) Whatever config we kept it for (7:11) the UID and we have to update (7:14) it for prod as well. (7:15) Based on the (7:17) key and everything (7:18) based on that environment. (7:21) You just update it and let (7:22) me know. So I will (7:24) update this instead of JSON (7:26) file upload. I will just directly (7:28) add the key to the secret. (7:31) Sure. I will update it. (7:33) So let me...
 
 
