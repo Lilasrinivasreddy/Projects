@@ -1,698 +1,1369 @@
-(.venv) PS C:\Users\reddyvu\Desktop\autobi-service> python explain_dashboard_architecture.py
-🏗️ DASHBOARD SYSTEM ARCHITECTURE
-============================================================
+import os
+import time
+import warnings
+# from ray import serve
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
+from typing import List, Union, Literal
+from config import *
+from langchain.retrievers import  EnsembleRetriever
+from langchain_community.vectorstores import FAISS
 
-📊 PART 1: DATA SOURCES
-------------------------------
-We have TWO data sources:
-1. 📄 CSV File: 'Lsp_05_new_17_09_25_0 - Lsp_05_new_17_09_25_0.csv'
-   - Contains: 65 real test records
-   - Fields: Request_ID, Total_Latency_sec, Status_Code, Chat_UserQuestion, etc.
-   - Used for: Static dashboard with real historical data   
+from typing import Any, Dict, List, Optional
+import requests
+import json
 
-2. 🗄️ Database Tables: PostgreSQL (qverse schema)
-   - test_executions: Test run metadata
-   - test_results: Individual test results
-   - golden_questions: Test questions library
-   - golden_question_data: Question details
-   - test_environments: Environment configurations
-   - Used for: Live dashboard with real-time data
+from pydantic.v1 import BaseModel as langchainBaseModel, Extra, Field
+from langchain.schema.embeddings import Embeddings
+import uvicorn
+import numpy as np
+from config import EMAS_URL,apikey,url,env
+import pickle
+from langchain.retrievers import EnsembleRetriever
 
-🎨 PART 2: DASHBOARD TYPES
-------------------------------
-We have TWO dashboard implementations:
+# Import DPF configuration
+from dpf_config import (
+    DPF_ELASTICSEARCH_CONFIG, 
+    DPF_ENDPOINTS, 
+    DPF_API_KEY,
+    DPF_UAT_API_KEY, 
+    DPF_SEARCH_CONFIG,
+    DPF_CROSS_ENCODER_CONFIG,
+    DPF_LLM_CONFIG,
+    DPF_DOCUMENT_CHUNKING_CONFIG,
+    DPF_ADVANCED_SEARCH_CONFIG
+)
 
-TYPE A: Static CSV Dashboard
-File: dashboard_with_csv_data.html
-How it works:
-  📄 CSV → 🐼 Pandas → 📊 Chart.js → 🌐 HTML
-  ↳ Python reads CSV
-  ↳ Processes data into JSON
-  ↳ Embeds JSON in HTML
-  ↳ JavaScript creates charts
+warnings.filterwarnings("ignore")
 
-TYPE B: Live API Dashboard
-File: src/app/routers/test_framework/service.py
-How it works:
-  🗄️ Database → 🔧 SQLAlchemy → 🌐 FastAPI → 📊 Chart.js    
-  ↳ Database queries
-  ↳ API endpoints return JSON
-  ↳ JavaScript fetches data via AJAX
-  ↳ Charts update in real-time
+app = FastAPI()#docs_url=None, redoc_url=None)
 
-🔄 PART 3: DATA FLOW DIAGRAM
-------------------------------
-STATIC DASHBOARD FLOW:
-┌─────────────┐    ┌──────────────┐    ┌─────────────┐      
-│ CSV File    │───▶│ Python Script│───▶│ HTML + Data │      
-│ (65 records)│    │ (pandas)     │    │ (embedded)  │      
-└─────────────┘    └──────────────┘    └─────────────┘      
-                                              │
-                                              ▼
-                                       ┌─────────────┐      
-                                       │ Browser     │      
-                                       │ (Chart.js)  │      
-                                       └─────────────┘      
+origins = ["*"]
 
-LIVE DASHBOARD FLOW:
-┌─────────────┐    ┌──────────────┐    ┌─────────────┐      
-│ PostgreSQL  │───▶│ FastAPI      │───▶│ Browser     │      
-│ (5 tables)  │    │ (SQLAlchemy) │    │ (AJAX calls)│      
-└─────────────┘    └──────────────┘    └─────────────┘      
-       ▲                   │                   │
-       │                   ▼                   ▼
-┌─────────────┐    ┌──────────────┐    ┌─────────────┐      
-│ Test Runner │    │ /analytics   │    │ Chart.js    │      
-│ (new data)  │    │ /dashboard   │    │ (updates)   │      
-└─────────────┘    └──────────────┘    └─────────────┘      
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-⚙️ PART 4: TECHNICAL COMPONENTS
-------------------------------
-FRONTEND (JavaScript):
-• Chart.js library for visualizations
-• AJAX calls to fetch live data
-• Auto-refresh every 30 seconds
-• Responsive CSS for mobile/desktop
+class EMAS(langchainBaseModel, Embeddings):
 
-BACKEND (Python FastAPI):
-• FastAPI web framework
-• SQLAlchemy ORM for database
-• Pydantic models for validation
-• Async/await for performance
+    def __init__(self, **kwargs: Any):
+        """Initialize the sentence_transformer."""
+        super().__init__(**kwargs)
+        # self.EMAS_URL = EMAS_URL
 
-DATABASE (PostgreSQL):
-• Alembic migrations for schema
-• Indexed tables for performance
-• Foreign key relationships
-• JSONB columns for flexible data
+    class Config:
+        """Configuration for this pydantic object."""
 
-🚀 PART 5: API ENDPOINTS
-------------------------------
-Dashboard endpoints:
-GET /api/v1.0/test-framework/dashboard
-  ↳ Returns: HTML page with embedded JavaScript
+        extra = Extra.forbid
 
-GET /api/v1.0/test-framework/analytics
-  ↳ Returns: JSON with metrics and chart data
-  ↳ Example: {
-       "total_tests": 150,
-       "avg_response_time": 2.34,
-       "success_rate": 95.2,
-       "response_times": [...],
-       "test_distribution": {...}
-     }
+    def get_embed(self, text: str) -> List[float]:
+        if env != "prod":
+            payload = json.dumps({
+                "region": "us-east4",
+                "project_id": "688379114786",
+                "endpoint_id": "7786939260002631680",
+                "usecase_name": "llm-embeddings",
+                "model_type": "llm-embeddings",
+                    "input_request": {
+                        "instances": [
+                            {"text": f"{text}"}]
+                }
+            })
 
-POST /api/v1.0/test-framework/load-test
-  ↳ Starts new load test
-  ↳ Updates database with results
-  ↳ Dashboard shows new data automatically
+            headers = {
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            try:
+                response = requests.request(
+                    "POST", EMAS_URL, headers=headers, data=payload, verify=False).json()
+                result = response[0][0]['embedding']
+            except Exception as e:
+                print(f"Failure from embedding API. Encountered exception: {e}")
+                print(text,response)
+                raise
+        else:
+            payload = json.dumps({
+                "region": "us-east4",
+                "project_id": "783334890793",
+                "endpoint_id": "7414266390837723136",
+                "usecase_name": "llm-embeddings",
+                "model_type": "llm-embeddings",
+                    "input_request": {
+                        "instances": [
+                            {"text": f"{text}"}]
+                }
+            })
 
-🎯 PART 6: HOW CHARTS ARE CREATED
-------------------------------
-Chart Creation Process:
-1. 📊 Data Collection:
-   - Query database for metrics
-   - Group by time, status, type
-   - Calculate averages, counts, percentages
+            headers = {
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            try:
+                response = requests.request(
+                    "POST", EMAS_URL, headers=headers, data=payload, verify=False).json()
+                result = response[0][0]['embedding']
+            except Exception as e:
+                print(f"Failure from embedding API. Encountered exception: {e}")
+                print(text,response)
+                raise
+        return result
 
-2. 🔧 Data Processing:
-   - Convert to JSON format
-   - Format timestamps
-   - Prepare labels and values
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Compute doc embeddings using a HuggingFace transformer model.
 
-3. 🎨 Chart Rendering:
-   - Chart.js reads JSON data
-   - Creates interactive charts:
-     • Line chart: Response times over time
-     • Bar chart: Success vs failure rates
-     • Pie chart: Test type distribution
-     • Doughnut chart: Status code breakdown
+        Args:
+            texts: The list of texts to embed.
 
-4. 🔄 Real-time Updates:
-   - JavaScript timer calls API every 30s
-   - Updates charts with new data
-   - Smooth animations for changes
+        Returns:
+            List of embeddings, one for each text.
+        """
+        res = []
+        for text in texts:
+            res.append(self.get_embed(text))
 
-📁 PART 7: FILE STRUCTURE
-------------------------------
-Key files and their roles:
+        return res
 
-📄 dashboard_with_csv_data.html
-  ↳ Static dashboard (ready to view)
-  ↳ Contains embedded Chart.js and data
+    def embed_query(self, text: str) -> List[float]:
+        """Compute query embeddings using a HuggingFace transformer model.
 
-🔧 src/app/routers/test_framework/service.py
-  ↳ Backend service with embedded HTML
-  ↳ Database queries and analytics
+        Args:
+            text: The text to embed.
 
-🎮 src/app/routers/test_framework/controller.py
-  ↳ API endpoints (GET /dashboard, /analytics)
+        Returns:
+            Embeddings for the text.
+        """
+        return self.get_embed(text)
 
-🗄️ src/models/test_framework.py
-  ↳ Database table definitions
 
-📋 alembic/versions/2025_09_30_1200-test_framework_tables.py
-  ↳ Database migration script
+class LLMQuery(BaseModel):
+    query: str
+    index: Literal["gcp", "bi_tools", "dgs",
+                   "ml_platform", "teradata", "all", "hadoop","informatica","data_indus","data_discovery","edw_modernization","ai_indus","ai_workmate"] = "all"
 
-✨ PART 8: THE MAGIC HAPPENS HERE
-------------------------------
-When you access the dashboard:
+class DPFQuery(BaseModel):
+    query: str
+    use_case: str # Add default use_case
+    index_name: str = DPF_ELASTICSEARCH_CONFIG["index_name"]
+    k: int = DPF_SEARCH_CONFIG["default_k"]
+    # include_llm_response: bool = True
+    # document_types: List[str] = None  # Filter by specific document types
+    # enable_hierarchical: bool = True  # Enable document-aware chunking
 
-1. Browser requests: /api/v1.0/test-framework/dashboard     
-2. FastAPI routes to: controller.get_dashboard()
-3. Controller calls: TestFrameworkService.get_dashboard_html()
-4. Service returns: Complete HTML with JavaScript
-5. Browser renders: Dashboard with loading message
-6. JavaScript calls: /api/v1.0/test-framework/analytics     
-7. Service queries: Database for real data
-8. JavaScript receives: JSON data
-9. Chart.js creates: Beautiful interactive charts
-10. Result: Live dashboard with real-time data!
 
-🎨 VISUALIZATION TYPES
-------------------------------
-The dashboard shows these charts:
-📊 Metrics Cards: Total tests, avg time, success rate       
-📈 Line Chart: Response times trending over time
-📊 Bar Chart: Success vs failure counts
-🥧 Pie Chart: Distribution of test types
-🍩 Doughnut Chart: Status code breakdown
-📋 Data Table: Recent test results
-⏱️ Timeline: Test execution history
+st = time.time()
+faiss_embeddings=EMAS()
+# print(type(faiss_embeddings))
 
-============================================================
-🎯 SUMMARY: TWO WAYS TO VIEW THE SAME DATA
-============================================================
-1. 📄 STATIC: Open 'dashboard_with_csv_data.html' in browser
-   - Uses CSV data (65 real records)
-   - Beautiful charts ready now
-   - No server needed
 
-2. 🚀 LIVE: Start FastAPI server + database
-   - Same beautiful charts
-   - Real-time data from database
-   - Interactive features
-   - Auto-refresh capabilities
 
-Both use the SAME chart types and visual design!
-The only difference is the data source: CSV vs Database
-(.venv) PS C:\Users\reddyvu\Desktop\autobi-service>
-===============================
-(.venv) PS C:\Users\reddyvu\Desktop\autobi-service> python explain_dashboard.py
-🤔 DASHBOARD WORKING EXPLANATION
-============================================================
+db_dict = {
+    'all': {'faiss': FAISS.load_local(FAISS_ALL_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "gcp": {'faiss': FAISS.load_local(FAISS_GCP_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "bi_tools": {'faiss': FAISS.load_local(FAISS_BI_TOOLS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "dgs": {'faiss': FAISS.load_local(FAISS_DGS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ml_platform": {'faiss': FAISS.load_local(FAISS_ML_PLATFORM_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "teradata": {'faiss': FAISS.load_local(FAISS_TERADATA_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "hadoop": {'faiss': FAISS.load_local(FAISS_HADOOP_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "informatica": {'faiss': FAISS.load_local(FAISS_INFORMATICA_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "data_indus": {'faiss': FAISS.load_local(FAISS_DATA_INDUS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "data_discovery": {'faiss': FAISS.load_local(FAISS_DATA_DISCOVERY_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "edw_modernization": {'faiss': FAISS.load_local(FAISS_EDW_MODERNIZATION_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ai_indus": {'faiss': FAISS.load_local(FAISS_AI_INDUS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ai_workmate": {'faiss': FAISS.load_local(FAISS_AI_WORKMATE_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)}
+}
 
-📊 **YOUR DOUBT IS VALID!** Here's the difference:       
+et = time.time() - st
+# print(f'Loading database took {et} seconds.')
 
-🔸 **STATIC CSV DASHBOARD** (what you saw)
-   ┌─────────────────────────────────────────┐
-   │ 1. Read CSV file ONCE                   │
-   │ 2. Generate HTML with embedded data     │
-   │ 3. Create charts with Chart.js          │
-   │ 4. Save as static HTML file             │
-   │ ❌ NO real-time updates                 │
-   └─────────────────────────────────────────┘
+async def reranker(reranklist):
+    try:
+        if env!= "prod":
+            headers={
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "688379114786",
+            "endpoint_id": "4179014998757998592",
+            "usecase_name": "cross-encoder",
+            "model_type": "cross-encoder",
+            "input_request": {
+                "instances": reranklist
+            }
+        })
+        else:
+            headers={
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "783334890793",
+            "endpoint_id": "6356118390498656256",
+            "usecase_name": "cross-encoder",
+            "model_type": "cross-encoder",
+            "input_request": {
+                "instances": reranklist
+            }
+        })
+        response = requests.request(
+                "POST", url, headers=headers, data=payload, verify=False).json()
+        
+        return response
+    except Exception as e:
+        print(f"Failure from reranker API. Encountered exception: {e}")
+        raise
 
-🔸 **REAL-TIME DASHBOARD** (in production)
-   ┌─────────────────────────────────────────┐
-   │ 1. Browser loads dashboard HTML         │
-   │ 2. JavaScript calls API every 30 sec    │
-   │ 3. API queries DATABASE (not CSV)       │
-   │ 4. Charts update with fresh data        │
-   │ ✅ REAL-TIME updates                    │
-   └─────────────────────────────────────────┘
 
-🔄 **DATA FLOW COMPARISON:**
 
-📁 CSV Dashboard:
-   CSV File → Pandas → Static HTML → Charts
-   (One-time generation)
+async def faiss_search(faiss_db, request):
+    st = time.time()
+    bm25_retriever=[]
+    #retriever = faiss_db.as_retriever()
+    #faiss_results = retriever.invoke(request.query,search_kwargs={"k": 5})
+    bm25path=f'indexes/{request.index}/{request.index}_bm25_retriever.pkl'
+    with open(bm25path,'rb') as file:
+        bm25_retriever = pickle.load(file)
+        bm25_retriever.k=5
+    
 
-🔴 Real-time Dashboard:
-   Database → API → JSON → JavaScript → Charts
-   (Updates every 30 seconds)
+    faiss_retriever = faiss_db.as_retriever(search_kwargs={"k":5})
+    ensemble_retriever=EnsembleRetriever(retrievers=[bm25_retriever,faiss_retriever],
+                                       weights=[0.5,0.5])
+    #faiss_results=faiss_db.similarity_search(request.query)
+    faiss_results=ensemble_retriever.invoke(request.query)
+    # print(faiss_results)
+    et = time.time() - st
+    print(f'retrieval time {et} seconds.')
+    st = time.time()
+    reranker_list=[]
+    source_documents=[]
+    cross_encoder_updated=[]
+    if isinstance(faiss_results, list) and len(faiss_results) > 0:
+        for j in faiss_results:
+            templist=[]
+            templist.append(request.query)
+            templist.append(j.page_content)
+            reranker_list.append(templist)
 
-============================================================
-❓ **ANSWER TO YOUR DOUBT:**
+            
+        rerank_response=await reranker(reranker_list)
+        #print("rerank_response: ",rerank_response)
+        rerank_score =np.array(rerank_response[0][0]["prediction_scores"])
+        K=4
+        rerank_score_sorted = np.argsort(-rerank_score)[:K]
+        et = time.time() - st
+        print(f'cross encoder time {et} seconds.')
+        print("rerank_score_sorted: ",rerank_score_sorted)
+        cross_encoder_updated = [faiss_results[i] for i in rerank_score_sorted]
+        for i in cross_encoder_updated:
+            if i.metadata["source"] not in source_documents:
+                source_documents.append(i.metadata["source"])
 
-✅ YES - Same beautiful graphs and design
-✅ YES - Same chart types (pie, bar, line)
-✅ YES - Same layout and styling
+    return {"llm_context":cross_encoder_updated,"source_document":source_documents}
 
-❌ NO - It will NOT read CSV in real-time
-❌ NO - It reads from DATABASE tables instead
+# @app.post("/vegas/apps/aider-retriever/api")
+# async def search( request: LLMQuery):
+#     try:
+#         print("--------------------------------------------------------")
+#         print(f"Index:{request.index} and query:{request.query}")
+#         print("env: ",env)
+#         print("EMAS_URL: ",EMAS_URL)
+#         default_db = db_dict.get(request.index)
+#         # print(default_db)
+#         #search_type = request.search
 
-🎯 **THE KEY DIFFERENCE:**
-   • CSV Dashboard: Shows HISTORICAL data from your CSV  
-   • Live Dashboard: Shows CURRENT data from database    
-   • Both look identical, but data source is different!  
-(.venv) PS C:\Users\reddyvu\Desktop\autobi-service> python code_difference.py
-💻 CODE DIFFERENCE EXAMPLE
-==================================================
+#         final_result = {"faiss": []}
+#         # faiss
+#         faiss_db = default_db['faiss']
+#         # print(faiss_db.index.ntotal)
+#         final_result['faiss'] = await faiss_search(faiss_db, request)
 
-📁 **CSV DASHBOARD CODE** (create_csv_dashboard.py):     
-```python
-# Read CSV file ONCE
-df = pd.read_csv('your_file.csv')
-analytics_data = generate_dashboard_data(df)
+#         return final_result
+#     except Exception as e:
+#         print(e)
+#         return {"error": str(e)}
 
-# Embed data directly in HTML
-html = f'''
-  <script>
-    const data = {json.dumps(analytics_data)};
-    // Charts created with static data
-  </script>
-'''
-```
+@app.post("/vegas/apps/aider-retriever/dpf/api")
+async def dpf_search_endpoint(request: DPFQuery):
+    """
+    DPF search endpoint using Elasticsearch with guaranteed consistent responses
+    """
+    try:
+        start_time = time.time()
+        result = await dpf_search(request)
+        total_time = time.time() - start_time
+        
+        result["search_metadata"]["total_pipeline_time"] = total_time
+        return result
+    except Exception as e:
+        return {"error": "Unable to process your request at this time. Please try again."}
 
-🔴 **REAL-TIME DASHBOARD CODE** (service.py):
-```python
-# Dashboard HTML with JavaScript
-html = '''
-  <script>
-    async function loadDashboard() {
-      // Call API every 30 seconds
-      const response = await fetch('/api/v1.0/test-framework/analytics');
-      const data = await response.json();
-      updateCharts(data);  // Update charts with fresh data
+@app.get("/vegas/apps/aider-retriever/dpf/health")
+async def dpf_health_check():
+    """
+    Health check endpoint for DPF service
+    """
+    try:
+        # Test Elasticsearch connectivity
+        test_query = {
+            "query": {"match_all": {}},
+            "size": 1
+        }
+        
+        es_result = await search_elasticsearch(
+            DPF_ELASTICSEARCH_CONFIG["api_url"], 
+            DPF_ELASTICSEARCH_CONFIG["api_key"], 
+            DPF_ELASTICSEARCH_CONFIG["index_name"], 
+            test_query
+        )
+        
+        return {
+            "status": "healthy",
+            "elasticsearch": "connected",
+            "index_name": DPF_ELASTICSEARCH_CONFIG["index_name"],
+            "total_documents": es_result.get("hits", {}).get("total", {}).get("value", 0),
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+async def search_elasticsearch(api_url: str, api_key: str, index_name: str, query: dict):
+    """
+    Retrieve chunks from an Elasticsearch index based on a query.
+    """
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"ApiKey {api_key}"
     }
-    setInterval(loadDashboard, 30000);  // Every 30 seconds
-  </script>
-'''
-```
-
-🔄 **WHAT HAPPENS IN PRODUCTION:**
-
-1️⃣  User opens dashboard URL
-2️⃣  Browser loads HTML (with JavaScript)
-3️⃣  JavaScript calls /analytics API
-4️⃣  API queries database tables:
-     • test_executions
-     • test_results
-     • golden_questions
-5️⃣  API returns JSON data
-6️⃣  JavaScript updates charts
-7️⃣  Repeat every 30 seconds
-
-🎯 **SUMMARY:**
-• CSV Dashboard: Static snapshot of your test data       
-• Live Dashboard: Dynamic view of current test activity  
-• Same appearance, different data sources!
-(.venv) PS C:\Users\reddyvu\Desktop\autobi-service> 
-
-===================================================
-
-📋 Q-VERSE TEST FRAMEWORK - EXECUTIVE SUMMARY
-============================================================
-Date: October 6, 2025
-Status: READY FOR UAT DEPLOYMENT
-
-🎯 PROJECT OVERVIEW
-==================
-Built a comprehensive, production-ready Test Framework for Q-verse system with:
-- Load Testing & Accuracy Testing capabilities
-- Real-time Dashboard with beautiful visualizations
-- Golden Questions management (database-driven)
-- Complete audit trail and performance monitoring
-- Safe, demo-only testing environment
-
-✅ COMPLETED DELIVERABLES
-=========================
-
-1. DATABASE ARCHITECTURE
-   ├── 5 Core Tables Designed:
-   │   ├── test_executions (main test records)
-   │   ├── test_results (individual test outcomes)
-   │   ├── golden_questions (test scenarios)
-   │   ├── golden_question_data (question bank)
-   │   └── test_environments (env management)
-   ├── Alembic Migration: 2025_09_30_1200-test_framework_tables.py
-   └── Sample Data: Auto-populated golden questions
-
-2. API LAYER (FastAPI)
-   ├── Controller: /api/v1.0/test-framework/*
-   │   ├── GET /dashboard (main dashboard UI)
-   │   ├── GET /analytics (performance metrics)
-   │   ├── POST /load-test (start load testing)
-   │   ├── POST /accuracy-test (run accuracy tests)
-   │   └── CRUD /golden-questions (manage test data)
-   ├── Service Layer: Business logic & data processing
-   └── Async Tester: Rate-limited, safe test execution
-
-3. DASHBOARD & VISUALIZATIONS
-   ├── Embedded HTML Dashboard (no external files needed)
-   ├── Real-time Charts: Chart.js integration
-   │   ├── Response Time Trends (line chart)
-   │   ├── Success Rate Distribution (bar chart)
-   │   ├── Test Type Breakdown (pie chart)
-   │   └── Live Performance Metrics
-   ├── Interactive Controls: Start tests, manage questions
-   └── Auto-refresh: Updates every 30 seconds
-
-4. SAFETY & COMPLIANCE
-   ├── Demo-only Environment (no prod/dev endpoints)
-   ├── Rate Limiting: Prevents system overload
-   ├── Timeout Protection: 30-second max per test
-   ├── Error Handling: Comprehensive exception management
-   └── Audit Trail: Complete test execution logging
-
-🔧 TECHNICAL IMPLEMENTATION
-===========================
-
-ARCHITECTURE PATTERN:
-```
-Browser → FastAPI Controller → Service Layer → Database
-                 ↓                 ↓
-            Dashboard HTML    AsyncTester
-                 ↓                 ↓
-            Chart.js          Rate Limiter
-```
-
-KEY COMPONENTS:
-├── Models: SQLAlchemy ORM (src/models/test_framework.py)
-├── Controllers: REST API endpoints (src/app/routers/test_framework/controller.py)
-├── Services: Business logic (src/app/routers/test_framework/service.py)
-├── Testing Engine: Async test execution (src/app/routers/test_framework/async_tester.py)
-└── Migration: Database schema (alembic/versions/2025_09_30_1200-test_framework_tables.py)
-
-📊 DASHBOARD FEATURES
-====================
-
-REAL-TIME ANALYTICS:
-✅ Total Tests Executed
-✅ Average Response Time
-✅ Success Rate Percentage  
-✅ Active Test Count
-
-INTERACTIVE CHARTS:
-✅ Response Time Trends (time series)
-✅ Status Code Distribution
-✅ Test Type Breakdown
-✅ Golden Questions Analysis
-
-FUNCTIONAL CAPABILITIES:
-✅ Start Load Tests (configurable users/duration)
-✅ Run Accuracy Tests (against golden questions)
-✅ Manage Golden Questions (CRUD operations)
-✅ View Test History & Results
-✅ Export Test Data
-
-🚀 DEPLOYMENT STATUS
-===================
-
-CURRENT STATE: READY FOR UAT
-├── ✅ All code components completed
-├── ✅ Database migration ready
-├── ✅ API endpoints functional
-├── ✅ Dashboard UI complete
-├── ✅ Router enabled in main application
-├── ✅ Environment configuration set
-└── ✅ Production safety measures in place
-
-INTEGRATION STATUS:
-├── ✅ Test framework router imported in main.py
-├── ✅ Models imported in Alembic env.py
-├── ✅ Database connection configured
-└── ✅ All dependencies available
-
-📋 UAT DEPLOYMENT CHECKLIST
-===========================
-
-IMMEDIATE ACTIONS REQUIRED:
-1. 🔄 Run Database Migration:
-   Command: `alembic upgrade head`
-   Creates: All 5 test framework tables
-   Time: ~2-3 minutes
-
-2. 🚀 Start Application:
-   Command: `uvicorn src.app.main:app --host 0.0.0.0 --port 8000`
-   Access: http://[server]/api/v1.0/test-framework/dashboard
-
-3. ✅ Verify Endpoints:
-   - Dashboard: GET /api/v1.0/test-framework/dashboard
-   - Analytics: GET /api/v1.0/test-framework/analytics
-   - Health: GET /health
-
-TESTING SCENARIOS:
-├── Load Test: Configure 5-10 concurrent users, 2-minute duration
-├── Accuracy Test: Run against sample golden questions
-├── Dashboard: Verify real-time chart updates
-└── Golden Questions: Add/edit/delete test scenarios
-
-⚠️ ENVIRONMENT REQUIREMENTS
-===========================
-
-DATABASE:
-├── PostgreSQL connection (configured in .env)
-├── Schema: qverse
-└── Tables: Will be created by migration
-
-DEPENDENCIES:
-├── ✅ FastAPI, SQLAlchemy, Alembic (installed)
-├── ✅ Pandas for data processing (available)
-└── ✅ Async libraries for performance (ready)
-
-CONFIGURATION:
-├── ✅ Database credentials in .env
-├── ✅ API endpoints properly routed
-└── ✅ Logging and monitoring configured
-
-🎯 BUSINESS VALUE DELIVERED
-==========================
-
-TESTING CAPABILITIES:
-✅ Automated load testing with configurable parameters
-✅ Accuracy testing against golden question dataset
-✅ Real-time performance monitoring
-✅ Historical test data analysis
-
-OPERATIONAL BENEFITS:
-✅ Reduces manual testing effort by 80%
-✅ Provides immediate feedback on system performance
-✅ Enables data-driven performance optimization
-✅ Complete audit trail for compliance
-
-DASHBOARD VALUE:
-✅ Executive-level performance visibility
-✅ Technical team operational insights
-✅ Trend analysis and performance tracking
-✅ Issue identification and troubleshooting
-
-💡 POST-DEPLOYMENT ENHANCEMENTS
-===============================
-
-PHASE 2 POTENTIAL FEATURES:
-├── Multi-environment support (if needed)
-├── Advanced alerting and notifications
-├── Integration with monitoring systems
-├── Automated performance regression detection
-└── Custom test scenario scripting
-
-🏁 CONCLUSION & NEXT STEPS
-==========================
-
-STATUS: ✅ PRODUCTION READY
-CONFIDENCE LEVEL: HIGH (All components tested and verified)
-
-IMMEDIATE NEXT STEPS:
-1. Schedule UAT deployment window
-2. Run database migration in UAT environment
-3. Perform end-to-end testing
-4. Train team on dashboard usage
-5. Go-live approval
-
-ESTIMATED DEPLOYMENT TIME: 30 minutes
-RISK LEVEL: LOW (All safety measures in place)
-
-KEY SUCCESS METRICS:
-├── Dashboard loads successfully ✅
-├── Load tests execute without errors ✅
-├── Charts display real-time data ✅
-├── Golden questions management works ✅
-└── System performs under test load ✅
-
-CONTACT FOR TECHNICAL QUESTIONS:
-- Code Repository: /src/app/routers/test_framework/
-- Migration File: /alembic/versions/2025_09_30_1200-test_framework_tables.py
-- Dashboard URL: /api/v1.0/test-framework/dashboard
-
-============================================================
-✅ READY FOR UAT DEPLOYMENT - ALL SYSTEMS GO! 🚀
-============================================================
-
-
-
-
-
-
-🏗️ Q-VERSE TEST FRAMEWORK - TECHNICAL ARCHITECTURE
-========================================================
-
-📐 SYSTEM ARCHITECTURE DIAGRAM
-==============================
-
-┌─────────────────────────────────────────────────────────────┐
-│                        USER INTERFACE                       │
-│  ┌─────────────────┐  ┌──────────────────┐  ┌─────────────┐ │
-│  │   Dashboard     │  │   API Testing    │  │  Monitoring │ │
-│  │   Charts &      │  │   Tools (Postman │  │   Logs &    │ │
-│  │   Controls      │  │   curl, etc.)    │  │   Metrics   │ │
-│  └─────────────────┘  └──────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     FASTAPI APPLICATION                     │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                    MAIN APPLICATION                     │ │
-│  │        src/app/main.py (Router Registration)           │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                               │                             │
-│                               ▼                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │              TEST FRAMEWORK MODULE                      │ │
-│  │                                                         │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │ │
-│  │  │ Controller  │  │   Service   │  │  Async Tester   │  │ │
-│  │  │             │  │             │  │                 │  │ │
-│  │  │ • Dashboard │  │ • Analytics │  │ • Rate Limiting │  │ │
-│  │  │ • Analytics │  │ • Test Mgmt │  │ • Load Testing  │  │ │
-│  │  │ • Load Test │  │ • Golden Q  │  │ • Accuracy Test │  │ │
-│  │  │ • Accuracy  │  │ • History   │  │ • Safe Execute  │  │ │
-│  │  │ • Golden Q  │  │ • Export    │  │ • Timeout Ctrl  │  │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘  │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     DATABASE LAYER                         │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                  SQLALCHEMY ORM                         │ │
-│  │        src/models/test_framework.py                     │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                               │                             │
-│                               ▼                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                 POSTGRESQL DATABASE                     │ │
-│  │                    Schema: qverse                       │ │
-│  │                                                         │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │ │
-│  │  │test_execut- │  │test_results │  │golden_questions │  │ │
-│  │  │ions         │  │             │  │                 │  │ │
-│  │  │• ID         │  │• execution  │  │• question_text  │  │ │
-│  │  │• test_type  │  │• response   │  │• expected_resp  │  │ │
-│  │  │• status     │  │• latency    │  │• category       │  │ │
-│  │  │• start_time │  │• success    │  │• active         │  │ │
-│  │  │• params     │  │• error_msg  │  │• created_at     │  │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘  │ │
-│  │                                                         │ │
-│  │  ┌─────────────┐  ┌─────────────────────────────────────┐ │ │
-│  │  │golden_quest-│  │test_environments                   │ │ │
-│  │  │ion_data     │  │                                    │ │ │
-│  │  │• question   │  │• environment_name                  │ │ │
-│  │  │• category   │  │• description                       │ │ │
-│  │  │• expected   │  │• config                            │ │ │
-│  │  │• metadata   │  │• active                            │ │ │
-│  │  └─────────────┘  └─────────────────────────────────────┘ │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-
-🔄 DATA FLOW SEQUENCE
-====================
-
-1. USER ACTION
-   └── Browser → Dashboard Load/Test Start
-
-2. API REQUEST
-   └── HTTP → FastAPI Controller
-
-3. BUSINESS LOGIC
-   └── Controller → Service Layer → Validation
-
-4. TEST EXECUTION
-   └── Service → AsyncTester → Rate Limited Execution
-
-5. DATA PERSISTENCE
-   └── Results → SQLAlchemy → PostgreSQL
-
-6. REAL-TIME UPDATE
-   └── Database → API → JSON → Dashboard Charts
-
-🛡️ SECURITY & SAFETY LAYERS
-===========================
-
-┌─────────────────────────────────────────────────────────────┐
-│                      SAFETY MEASURES                       │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │  Rate Limiting  │  │ Timeout Control │  │Environment  │ │
-│  │                 │  │                 │  │Isolation    │ │
-│  │• Max 10 tests/  │  │• 30 sec max     │  │• Demo only  │ │
-│  │  minute         │  │• Auto cleanup   │  │• No prod    │ │
-│  │• Queue overflow │  │• Resource mgmt  │  │  access     │ │
-│  │  protection     │  │• Memory limits  │  │• Safe env   │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-│                                                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
-│  │Error Handling   │  │   Audit Trail   │  │Input Valid- │ │
-│  │                 │  │                 │  │ation        │ │
-│  │• Try/catch all  │  │• Full logging   │  │• Sanitize   │ │
-│  │• Graceful fail  │  │• Test history   │  │• Validate   │ │
-│  │• User feedback  │  │• Performance    │  │• Type check │ │
-│  │• Recovery auto  │  │• Compliance     │  │• Range chk  │ │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-
-📊 DASHBOARD COMPONENTS
-======================
-
-Frontend (Embedded HTML + JavaScript):
-┌─────────────────────────────────────────────────────────────┐
-│                       DASHBOARD UI                          │
-│                                                             │
-│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │
-│ │Total Tests  │ │Avg Response │ │Success Rate │ │Active   │ │
-│ │    125     │ │   2.3s     │ │   97.2%    │ │Tests: 3 │ │
-│ └─────────────┘ └─────────────┘ └─────────────┘ └─────────┘ │
-│                                                             │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │              CHART.JS VISUALIZATIONS                   │ │
-│ │                                                         │ │
-│ │ ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │ │
-│ │ │Line Chart   │  │Bar Chart    │  │Pie Chart        │  │ │
-│ │ │Response     │  │Status Codes │  │Test Types       │  │ │
-│ │ │Time Trends  │  │Success/Fail │  │Load/Accuracy    │  │ │
-│ │ └─────────────┘  └─────────────┘  └─────────────────┘  │ │
-│ └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │                 CONTROL PANELS                          │ │
-│ │                                                         │ │
-│ │ [Start Load Test] [Run Accuracy] [Manage Questions]     │ │
-│ │ [View History]   [Export Data]   [Refresh Dashboard]    │ │
-│ └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-
-🚀 DEPLOYMENT ARCHITECTURE
-==========================
-
-Development → UAT → Production Pipeline:
-
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   DEVELOPMENT   │    │       UAT       │    │   PRODUCTION    │
-│                 │    │                 │    │                 │
-│• Local testing  │───▶│• Migration run  │───▶│• Live system    │
-│• Code complete  │    │• End-to-end     │    │• Real users     │
-│• Unit tests     │    │• User accept    │    │• Monitoring     │
-│• Integration    │    │• Performance    │    │• Maintenance    │
-│                 │    │• Security       │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-        ✅                     🔄                     ⏳
-
-Current Status: Ready for UAT deployment
-Migration Required: alembic upgrade head
-Estimated Deployment Time: 30 minutes
+
+    search_url = f"{api_url}/{index_name}/_search"
+    
+    try:
+        response = requests.post(search_url, headers=headers, data=json.dumps(query))
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error querying Elasticsearch: {e}")
+        raise HTTPException(status_code=500, detail="Unable to search documents at this time")
+
+async def generate_dpf_embedding(text: str):
+    """
+    Generate embedding for DPF using the embedding endpoint
+    """
+    headers = {
+        'Content-Type': 'application/json',
+        'X-apikey': DPF_UAT_API_KEY  # Use DEV/UAT API key 
+    }
+    
+    # # Use the payload format 
+    payload = {
+        "region": "us-east4",
+        "project_id": "688379114786",
+        "endpoint_id": "7786939260002631680",
+        "usecase_name": "llm-embeddings",
+        "model_type": "llm-embeddings",
+        "input_request": {
+            "instances": [
+                {"text": text}
+            ]
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["embedding_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload),
+            verify=False  # Added 
+        )
+        print(f"Embedding API Response Text: {response.text}")
+        response.raise_for_status()
+        result = response.json()
+        
+        # For the simple endpoint, the response is directly a list of floats
+        if isinstance(result, list) and all(isinstance(x, (int, float)) for x in result):
+            return result
+        
+        # Fallback extraction methods for complex response formats
+        if isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], list) and len(result[0]) > 0:
+                if isinstance(result[0][0], dict) and 'embedding' in result[0][0]:
+                    return result[0][0]['embedding']
+        
+        if isinstance(result, dict) and 'embedding' in result:
+            return result['embedding']
+        elif isinstance(result, list) and len(result) > 0:
+            # If it's a list of embeddings, take the first one
+            if isinstance(result[0], list):
+                return result[0]
+            elif isinstance(result[0], dict) and 'embedding' in result[0]:
+                return result[0]['embedding']
+            else:
+                return result
+        elif isinstance(result, list):
+            return result
+        else:
+            print(f"Unexpected embedding response format: {result}")
+            raise HTTPException(status_code=500, detail="Invalid embedding response format")
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error generating embedding: {e}")
+        raise HTTPException(status_code=500, detail="Unable to process your query at this time")
+
+async def dpf_reranker(sentence_pairs: List[List[str]]):
+    """
+    Rerank results using cross-encoder for DPF
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY 
+    }
+    
+    payload = {
+        "region": DPF_CROSS_ENCODER_CONFIG["region"],
+        "project_id": DPF_CROSS_ENCODER_CONFIG["project_id"],
+        "endpoint_id": DPF_CROSS_ENCODER_CONFIG["endpoint_id"],
+        "usecase_name": DPF_CROSS_ENCODER_CONFIG["usecase_name"],
+        "model_type": DPF_CROSS_ENCODER_CONFIG["model_type"],
+        "input_request": {
+            "instances": sentence_pairs
+        }
+    }
+    print("reranker")
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["cross_encoder_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Handle different response formats
+        if isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], list) and len(result[0]) > 0:
+                if isinstance(result[0][0], dict) and "prediction_scores" in result[0][0]:
+                    return result
+                else:
+                    # If the structure is different, wrap it properly
+                    return [[{"prediction_scores": result[0] if isinstance(result[0], list) else [result[0]]}]]
+            else:
+                return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+        elif isinstance(result, dict) and 'predictions' in result:
+            return result['predictions']
+        else:
+            print(f"Unexpected reranker response format: {result}")
+            return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error in reranking: {e}")
+        # Return default scores on error
+        return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+
+async def generate_llm_response(user_query: str, context, use_case: str):
+    """
+    Generate LLM response using with Gemini fallback 
+    """
+    # Check cache first for absolute consistency
+    # cache_key = get_llm_cache_key(user_query, context)
+    # if cache_key in RESPONSE_CACHE:
+    #     return RESPONSE_CACHE[cache_key]
+
+    primary_response = await _call_llm_api(user_query, context, use_case)
+    print("primary",primary_response)
+    return primary_response
+    # Check if primary response is unhelpful and fallback is enabled
+    # is_unhelpful = _is_unhelpful_response(primary_response)
+    
+#     if DPF_LLM_CONFIG["enable_gemini_fallback"] and is_unhelpful:
+#         print(f"Primary LLM gave unhelpful response, trying Gemini fallback")
+#         print(f"Primary response: {primary_response[:100]}")
+#         # Create enhanced context for fallback ---use any prompts 
+#         enhanced_context = f"""
+# Based on the available information and general knowledge, please help answer this question: {user_query}
+
+# Context from documents:
+# {context}
+
+# Instructions: If the exact answer isn't in the documents, provide a helpful general explanation based on common knowledge, industry practices, or similar concepts. Be helpful and informative even if the specific term isn't mentioned in the provided documents.
+# """
+        
+#         gemini_response = await _call_llm_api_enhanced_with_different_usecase(
+#             user_query, 
+#             enhanced_context, 
+#             DPF_LLM_CONFIG["gemini_fallback_usecase"],
+#             DPF_LLM_CONFIG["gemini_fallback_context_id"]
+#         )
+        
+#         if not _is_unhelpful_response(gemini_response):
+#             print(f"Gemini fallback successful: {gemini_response[:100]}...")
+#             # Cache and return successful Gemini response
+#             RESPONSE_CACHE[cache_key] = gemini_response
+#             save_response_cache()
+#             return gemini_response
+#         else:
+#             print(f"Gemini also gave unhelpful response: {gemini_response[:100]}...")
+            
+#             # Try one more fallback with knowledge-based approach
+#             print("Trying knowledge-based fallback...")
+#             knowledge_response = await _generate_knowledge_based_response(user_query)
+#             if knowledge_response and not _is_unhelpful_response(knowledge_response):
+#                 print(f"Knowledge-based fallback successful: {knowledge_response[:100]}...")
+#                 RESPONSE_CACHE[cache_key] = knowledge_response
+#                 save_response_cache()
+#                 return knowledge_response
+    
+#     # Cache and return primary response (whether helpful or not)
+#     RESPONSE_CACHE[cache_key] = primary_response
+#     save_response_cache()
+#     print(f"Final LLM Response: {primary_response[:200]}...")
+    
+
+async def _call_llm_api(user_query: str, context: str, use_case: str):
+    """
+    Helper function to call LLM API with specified context ID
+    """
+    
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY  # Use UAT API key for LLM
+    }
+    
+    # usecases and contextID's
+    if use_case == "aider":
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aider_context",
+            "preSeed_injection_map": {
+                "{CHUNK_INPUT}": context,  # Used CHUNK_INPUT recent changes as discussed with team
+                "{QUESTION}": user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    elif use_case == "dpf-agentic-copilot":
+        payload = {
+            "useCase": "dpf-agentic-copilot-prompt",
+            "contextId": "copilot-rag",
+            "preSeed_injection_map": {
+                DPF_LLM_CONFIG["context_placeholder"]: context,
+                DPF_LLM_CONFIG["question_placeholder"]: user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    elif use_case == "ai_workmate":
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aiworkmate_context",
+            "preSeed_injection_map": {
+                "{CHUNK_INPUT}": context,  # Used CHUNK_INPUT recent changes as discussed with team
+                "{QUESTION}": user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    else:
+        # Default fallback
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aider_context", 
+            "preSeed_injection_map": {
+                "{CHUNK_INPUT}": context,
+                "{QUESTION}": user_query
+            }
+        }
+    print("payload",payload)
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        # Cache the response immediately for consistency
+        # RESPONSE_CACHE[cache_key] = llm_response
+        # save_response_cache()
+        print(f"LLM Response Generated: {llm_response[:200]}...")
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        # # Cache error responses for consistency
+        # RESPONSE_CACHE[cache_key] = error_response
+        # save_response_cache()
+        # print(f"LLM Error Response: {error_response}")
+        print(f"LLM API Error with context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
+
+async def _call_llm_api_enhanced(user_query: str, enhanced_context: str, context_id: str):
+    """
+    Enhanced LLM API call with modified prompt strategy for fallback
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY #update key
+    }
+    
+    # Use a different prompt structure for enhanced fallback
+    payload = {
+        "useCase": DPF_LLM_CONFIG["usecase"],
+        "contextId": context_id,
+        "preSeed_injection_map": {
+            DPF_LLM_CONFIG["context_placeholder"]: enhanced_context,
+            DPF_LLM_CONFIG["question_placeholder"]: "Please provide a helpful response based on the context and instructions above."
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        print(f"Enhanced LLM API Error with context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
+
+async def _call_llm_api_enhanced_with_different_usecase(user_query: str, enhanced_context: str, usecase: str, context_id: str):
+    """
+    Enhanced LLM API call with different usecase and context for Gemini fallback
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_UAT_API_KEY
+    }
+    
+    # Use different usecase and context for Gemini fallback
+    payload = {
+        "useCase": usecase,  # Use AIDER instead of COMMON_RAG
+        "contextId": context_id,  # Use aider_gemini instead of GENERIC
+        "preSeed_injection_map": {
+            DPF_LLM_CONFIG["context_placeholder"]: enhanced_context,
+            DPF_LLM_CONFIG["question_placeholder"]: "Please provide a helpful response based on the context and instructions above."
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        print(f"Gemini LLM API Error with usecase {usecase} and context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
+
+def _is_unhelpful_response(response: str) -> bool:
+    """
+    Check if LLM response is unhelpful and should trigger fallback
+    """
+    if not response:
+        return True
+        
+    # Use configured unhelpful phrases
+    unhelpful_phrases = DPF_LLM_CONFIG["unhelpful_phrases"]
+    print(f"Checking response against {len(unhelpful_phrases)} unhelpful phrases")
+    
+    response_lower = response.lower()
+    for phrase in unhelpful_phrases:
+        if phrase.lower() in response_lower:
+            print(f"Found unhelpful phrase: '{phrase}'")
+            return True
+    
+    # Also check if response is too short (likely unhelpful)
+    if len(response.strip()) < DPF_LLM_CONFIG["min_response_length"]:
+        print(f"Response too short: {len(response.strip())} < {DPF_LLM_CONFIG['min_response_length']}")
+        return True
+        
+    print(f"Response seems helpful (length: {len(response.strip())})")
+    return False
+
+async def dpf_search(request: DPFQuery):
+    """
+    Complete DPF search pipeline with enhanced caching for 100% consistency
+    """
+    # Generate comprehensive cache key including all parameters that affect results
+    # search_cache_key = get_query_cache_key(
+    #     request.query, 
+    #     request.index_name,
+    #     request.use_case,
+    #     request.k, 
+    #     request.include_llm_response,
+    #     request.enable_hierarchical
+    # )
+    # # print("search_cache_key",search_cache_key)
+    # # Check cache first for absolute consistency
+    # if search_cache_key in RESPONSE_CACHE:
+    #     cached_result = RESPONSE_CACHE[search_cache_key].copy()
+        
+    #     # Ensure response format matches current request
+    #     if not request.include_llm_response and 'llm_response' in cached_result:
+    #         cached_result['llm_response'] = None
+    #     elif request.include_llm_response and not cached_result.get('llm_response'):
+    #         # Generate LLM response for cached results if needed
+    #         if cached_result.get('reranked_results'):
+    #             top_doc = cached_result['reranked_results'][0]
+    #             # source_links = cached_result.get('source_links', [])
+                
+    #             base_llm_response = await generate_llm_response(request.query, top_doc['text'])
+                
+    #             # if source_links:
+    #             #     llm_response = f"{base_llm_response}\n\n**Sources:**\n"
+    #             #     for i, source_info in enumerate(source_links, 1):
+    #             #         llm_response += f"[{i}] {source_info['url']}\n"
+    #             # else:
+    #             llm_response = base_llm_response
+                
+    #             cached_result['llm_response'] = llm_response
+        
+    #     return cached_result
+    
+    # 1. Generate embedding with error handling
+    embedding_start = time.time()
+    try:
+        embedding = await generate_dpf_embedding(request.query)
+    except Exception as e:
+        error_result = {
+            "retrieved_documents": [],
+            "reranked_results": [],
+            "llm_response": "Unable to process your query at this time. Please try again.",
+            "source_links": [],
+            "search_metadata": {
+                "embedding_time": 0,
+                "search_time": 0,
+                "rerank_time": 0,
+                "llm_time": 0,
+                "total_results": 0,
+                "reranked_count": 0,
+                "sources_found": 0
+            }
+        }
+        # RESPONSE_CACHE[search_cache_key] = error_result.copy()
+        # save_response_cache()
+        return error_result
+        
+    embedding_time = time.time() - embedding_start
+
+    # Set up dynamic filter clause based on use case
+    filter_clause = None
+    if hasattr(request, 'use_case') and request.use_case == "aider":
+        filter_clause = [{ "term": { "usecase_name": "aider" } }]
+        print(f"Using aider filter: {filter_clause}")
+    if hasattr(request, 'use_case') and request.use_case == "dpf-agentic-copilot":
+        filter_clause = [
+                { "term": { "usecase_name": "aider_csv" } },
+                { "term": { "usecase_name": "aider_pdf" } }
+            # "term": { "usecase_name": "aider_json" }
+        ]
+        print(f"Using copilot filter: {filter_clause}")
+    if hasattr(request, 'use_case') and request.use_case == "ai_workmate":
+        filter_clause = [
+                { "term": { "usecase_name": "aider_ai_workmate" } }       
+        ]
+        print(f"Using ai_workmate filter: {filter_clause}")
+    if filter_clause is None:
+        # Default filter for aider
+        filter_clause = [{ "term": { "usecase_name": "aider" } }]    
+        print(f"Using default aider filter: {filter_clause}")
+    
+    # 2. Elasticsearch query 
+    es_query = {
+        "_source": [DPF_SEARCH_CONFIG["chunk_data_field"], DPF_SEARCH_CONFIG["custom_metadata_field"]],
+        "query": {
+            "bool": {
+                "filter": [
+                    {
+                        "bool": {
+                            "should": filter_clause,
+                            "minimum_should_match": 1
+                        }
+                    }
+                ],
+                "should": [
+                    {
+                        "knn": {
+                            "field": DPF_SEARCH_CONFIG["embedding_field"],
+                            "query_vector": embedding,
+                            "k": min(request.k, DPF_SEARCH_CONFIG["max_k"]),
+                            "num_candidates": DPF_SEARCH_CONFIG["num_candidates"]
+                        }
+                    }
+                ]
+            }
+        },
+        "size": min(request.k, DPF_SEARCH_CONFIG["max_k"])
+    }
+    # print("es_query",es_query)
+    search_start = time.time()
+    try:
+        es_results = await search_elasticsearch(
+            DPF_ELASTICSEARCH_CONFIG["api_url"], 
+            DPF_ELASTICSEARCH_CONFIG["api_key"], 
+            request.index_name, 
+            es_query
+        )
+    except Exception as e:
+        error_result = {
+            "retrieved_documents": [],
+            "reranked_results": [],
+            "llm_response": "Unable to search documents at this time. Please try again.",
+            "source_links": [],
+            "search_metadata": {
+                "embedding_time": embedding_time,
+                "search_time": 0,
+                "rerank_time": 0,
+                "llm_time": 0,
+                "total_results": 0,
+                "reranked_count": 0,
+                "sources_found": 0
+            }
+        }
+        RESPONSE_CACHE[search_cache_key] = error_result
+        return error_result
+        
+    search_time = time.time() - search_start
+    elastic_search_results = es_results['hits']['hits']
+    elastic_search_results = sorted(elastic_search_results, 
+                                   key=lambda x: (-x.get('_score', 0), x.get('_id', '')))
+    print("elastic_search_results",elastic_search_results)
+    # Use enhanced document
+    # elastic_search_contexts = await get_document_context(elastic_search_results, request.query)
+    elastic_search_contexts = [contexts.get('_source').get('original_content') for contexts in elastic_search_results]
+    # if not elastic_search_contexts:
+    #     no_results = {
+    #         "retrieved_documents": [],
+    #         "reranked_results": [],
+    #         "llm_response": "No relevant documents found for your query.",
+    #         "source_links": [],
+    #         "search_metadata": {
+    #             "embedding_time": embedding_time,
+    #             "search_time": search_time,
+    #             "rerank_time": 0,
+    #             "llm_time": 0,
+    #             "total_results": 0,
+    #             "reranked_count": 0,
+    #             "sources_found": 0
+    #         }
+    #     }
+    #     RESPONSE_CACHE[search_cache_key] = no_results
+    #     return no_results
+    
+    # 3. Rerank results with error handling
+    rerank_start = time.time()
+    sentence_pairs = [[request.query, context] for context in elastic_search_contexts]
+    print("sentence_pairs",sentence_pairs)
+    try:
+        reranked_response = await dpf_reranker(sentence_pairs)
+        print("reranked_response",reranked_response)
+    except Exception as e:
+        # Use original order if reranking fails
+        reranked_response = [[{"prediction_scores": [0.5] * len(sentence_pairs)}]]
+        
+    rerank_time = time.time() - rerank_start
+    cross_scores = reranked_response[0][0].get("prediction_scores", [])
+    print("cross_scores",cross_scores)
+    # Combine scores with contexts
+    context_list = []
+    for score, context in zip(cross_scores, elastic_search_results):
+        reranked_dict = {}
+        reranked_dict['cross_score'] = score
+        reranked_dict['text'] = context
+        context_list.append(reranked_dict)
+        
+    # Sort by cross-encoder 
+    reranked_docs = sorted(context_list, key=lambda x: x["cross_score"], reverse=True)
+
+    top_doc = top_doc = max(reranked_docs, key=lambda x: x['cross_score'])
+    
+    llm_response = None
+    llm_time = 0
+    source_links = []
+    all_content = []
+    all_content = [doc['text'] for doc in reranked_docs]
+    print("all_content",all_content)
+    base_llm_response = await generate_llm_response(request.query, all_content, request.use_case)
+    llm_response = base_llm_response
+    # if request.include_llm_response and top_doc:
+    #     llm_start = time.time()
+    #     print("entering _llm")
+    #     # Extract source links from top documents
+    #     # source_links = await extract_source_links(reranked_docs, top_k=1)
+    #     # print(f"Source Links Extracted: {len(source_links)} links found")
+    #     # for i, link in enumerate(source_links):
+    #         # print(f"  Link {i+1}: {link['url']} (score: {link['score']:.4f})")
+        
+    #     # LLM response
+    #     all_content = [doc['text'] for doc in reranked_docs]
+    #     print("all_content",all_content)
+    #     # if request.use_case == "dpf-agentic-copilot":
+    #     base_llm_response = await generate_llm_response(request.query, all_content, request.use_case)
+    #     llm_response = base_llm_response
+    #     # else:
+    #     #     # combined_context = "\n\n".join(all_content)
+    #     #     # base_llm_response = await generate_llm_response(request.query, combined_context, request.use_case)
+    #     #     # top_doc_context = top_doc['text']
+    #     #     base_llm_response = await generate_llm_response(request.query, all_content, request.use_case)
+    #     # llm_time = time.time() - llm_start
+    print(f"Final LLM Response (source): {llm_response[:300]}...")
+    # Prepare final result
+    result = {
+        "retrieved_documents": elastic_search_results,
+        "reranked_results": reranked_docs,
+        "top_document": top_doc,
+        "llm_response": llm_response,
+        # "source_links": source_links,
+        "search_metadata": {
+            "embedding_time": embedding_time,
+            "search_time": search_time,
+            "rerank_time": rerank_time,
+            "llm_time": llm_time,
+            "total_results": len(elastic_search_results),
+            "reranked_count": len(reranked_docs),
+            # "sources_found": len(source_links)
+        }
+    }
+    
+    # RESPONSE_CACHE[search_cache_key] = result
+    return result
+
+async def detect_document_type(es_result):
+    """
+    Detect document type from Elasticsearch result for chunking strategy
+    """
+    source = es_result.get('_source', {})
+    
+    # Check for document type indicators in metadata
+    if 'file_extension' in source:
+        ext = source['file_extension'].lower()
+        if ext == 'pdf':
+            return 'pdf'
+    
+    if 'source_system' in source:
+        system = source['source_system'].lower()
+        if 'confluence' in system:
+            return 'confluence'
+        elif 'jira' in system:
+            return 'jira'
+        elif 'sharepoint' in system:
+            return 'sharepoint'
+    
+    if 'document_type' in source:
+        return source['document_type'].lower()
+    
+    return 'default'
+
+# async def get_document_context(es_results, query):
+#     """
+#     Enhanced document context retrieval with hierarchical chunking
+#     """
+#     if not DPF_ADVANCED_SEARCH_CONFIG["enable_document_context"]:
+#         # Fallback to original simple extraction
+#         return [result.get('_source', {}).get(DPF_SEARCH_CONFIG["chunk_data_field"], '') 
+#                 for result in es_results]
+    
+#     enhanced_contexts = []
+    
+#     # Process each result directly since they're already individual chunks
+#     for result in es_results:
+#         source = result.get('_source', {})
+        
+#         # Get the main content using the configured field name
+#         main_content = source.get(DPF_SEARCH_CONFIG["chunk_data_field"], '')
+        
+#         # If the main field is empty, try alternative field names
+#         if not main_content:
+#             main_content = (source.get('original_content', '') or 
+#                            source.get('chunk_data', '') or 
+#                            source.get('content', '') or 
+#                            source.get('text', ''))
+        
+#         # Add the content (with minimal metadata if needed)
+#         if main_content:
+#             enhanced_contexts.append(main_content)
+#         else:
+#             # Fallback: combine all available text fields
+#             all_text = []
+#             for key, value in source.items():
+#                 if isinstance(value, str) and len(value) > 10:  # Reasonable content length
+#                     all_text.append(value)
+#             enhanced_contexts.append(' '.join(all_text) if all_text else '')
+    
+#     return enhanced_contexts
+
+# Source link extraction disabled by Lila
+# async def extract_source_links(reranked_docs, top_k=1):
+#     """
+#     Extract source links from reranked documents
+#     """
+#     source_links = []
+#     seen_links = set()
+    
+#     # Extract from top K documents to provide multiple sources
+#     for doc in reranked_docs[:top_k]:
+#         if 'original_result' in doc:
+#             source_data = doc['original_result'].get('_source', {})
+#             custom_metadata = source_data.get(DPF_SEARCH_CONFIG["custom_metadata_field"], {})
+            
+#             source_link = None
+#             if isinstance(custom_metadata, dict):
+#                 source_link = (custom_metadata.get('source_link') or
+#                              custom_metadata.get('source_url') or 
+#                              custom_metadata.get('url') or 
+#                              custom_metadata.get('link') or 
+#                              custom_metadata.get('source') or
+#                              custom_metadata.get('document_url') or
+#                              custom_metadata.get('page_url'))
+#             elif isinstance(custom_metadata, str) and custom_metadata.strip():
+#                 source_link = custom_metadata.strip()
+            
+#             # Check other potential source fields in the main document
+#             if not source_link:
+#                 source_link = (source_data.get('source_url') or 
+#                              source_data.get('url') or 
+#                              source_data.get('source') or
+#                              source_data.get('document_url'))
+            
+#             # Add unique source links
+#             if source_link and source_link not in seen_links:
+#                 source_links.append({
+#                     'url': source_link,
+#                     'score': doc.get('cross_score', 0),
+#                     'preview': doc.get('text', '')[:100] + '...' if doc.get('text') else ''
+#                 })
+#                 seen_links.add(source_link)
+#                 print(f"Added source link: {source_link} (score: {doc.get('cross_score', 0):.4f})")
+    
+#     print(f"Total unique source links found: {len(source_links)}")
+#     return source_links
+
+import hashlib
+from typing import Dict, Any
+
+# Response cache 
+# RESPONSE_CACHE: Dict[str, Any] = {}
+
+def load_response_cache():
+    """Load response cache - DISABLED for in-memory only"""
+    global RESPONSE_CACHE
+    RESPONSE_CACHE = {}
+
+def save_response_cache():
+    """Save response cache - DISABLED for in-memory only"""
+    pass
+
+def get_query_cache_key(query: str, index_name: str,use_case: str, k: int, include_llm: bool = True, enable_hierarchical: bool = True) -> str:
+    """Generate a comprehensive cache key for a query to ensure consistency"""
+    normalized_query = query.strip().lower().replace('\n', ' ').replace('\r', ' ')
+    normalized_query = ' '.join(normalized_query.split())
+    
+    cache_data = f"{normalized_query}|{index_name}|{use_case}|{k}|{include_llm}|{enable_hierarchical}"
+    return hashlib.md5(cache_data.encode('utf-8')).hexdigest()
+
+def get_llm_cache_key(query: str, context) -> str:
+    """Generate a consistent cache key for LLM responses"""
+    normalized_query = query.strip().lower().replace('\n', ' ').replace('\r', ' ')
+    normalized_query = ' '.join(normalized_query.split())
+
+    if isinstance(context, list):
+        # For array context
+        normalized_context = "|".join([str(item).strip().replace('\n', ' ').replace('\r', ' ') for item in context])
+    else:
+        # For string
+        normalized_context = str(context).strip().replace('\n', ' ').replace('\r', ' ')
+    normalized_context = ' '.join(normalized_context.split())
+    
+    cache_data = f"{normalized_query}|{normalized_context}"
+    return hashlib.md5(cache_data.encode('utf-8')).hexdigest()
+
+# Load cache on startup
+# load_response_cache()
+
+async def _generate_knowledge_based_response(user_query: str) -> str:
+    """
+    Generate a knowledge-based response as a final fallback
+    """
+    try:
+        #knowledge-based response
+        return f"Based on your query about '{user_query}', I recommend checking the relevant documentation or contacting the appropriate team for more specific information."
+    except Exception as e:
+        print(f"Error in knowledge-based response: {e}")
+        return "I apologize, but I'm unable to provide a helpful response at this time."
+
+if __name__ == "__main__":
+    # #, reload=True)#, debug=True, workers=1)
+    uvicorn.run("main_serve:app", host='0.0.0.0',
+                port=2000, reload=True)
+=====================================
+==================================
+# DPF Elasticsearch Configuration
+import os
+import json
+
+# path 
+secret_file_path = "/etc/secrets/AIDER_DPF_API"
+
+# Read and parse the secrets.json file
+with open(secret_file_path, "r") as secret_file:
+    secrets = json.load(secret_file)
+
+if 'ENV' in os.environ and os.environ['ENV'] in ['dev', 'uat', 'prod']:
+    env = os.environ['ENV'].lower()
+else:
+    env = "dev"
+
+if env == 'prod':
+    DPF_API_KEY = secrets["PROD_API_KEY"]
+else:
+    DPF_API_KEY = secrets["DEV_API_KEY "]
+    DPF_UAT_API_KEY = secrets["UAT_API_KEY"]
+    # DPF API Endpoints
+    DPF_ENDPOINTS = {
+    "embedding_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",  # UAT endpoint
+    # "embedding_endpoint": "https://oa-dev2.ebiz.verizon.com/vegas/models/llm-embeddings",  # Current DEV endpoint
+    "cross_encoder_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",
+    "llm_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/apps/prompt/LLMInsight"
+    }
+    DPF_ELASTICSEARCH_CONFIG = {
+    "api_url": "https://vectordb-experimentation-np.ebiz.verizon.com",
+    "api_key": secrets["ES_API_KEY"],
+    "index_name": "jysv-dpf-dev1"
+    }
+
+
+# Validate that required environment variables are set
+if not DPF_API_KEY:
+    raise ValueError("DPF_API_KEY is required but not found")
+if not DPF_UAT_API_KEY:
+    raise ValueError("DPF_UAT_API_KEY is required but not found")
+
+# DPF Search Configuration
+DPF_SEARCH_CONFIG = {
+    "default_k": 10,
+    "max_k": 10,
+    "num_candidates": 100,
+    "embedding_model": 'all-distilroberta-v1',
+    "usecase_filter_aider": 'aider',
+    "usecase_filter_copilot": ["aider_json","aider_pdf","aider_csv"],
+    "usecase_filter": 'aider',
+    "embedding_field": 'text_embedding_768',
+    "chunk_data_field": 'original_content',  # Use original_content field
+    "custom_metadata_field": 'custom_metadata'
+}
+
+# DPF Cross-encoder Configuration
+DPF_CROSS_ENCODER_CONFIG = {
+    "region": "us-east4",
+    "project_id": "688379114786", 
+    "endpoint_id": "4179014998757998592",
+    "usecase_name": "cross-encoder",
+    "model_type": "cross-encoder"
+}
+
+# DPF LLM Configuration
+DPF_LLM_CONFIG = {
+    "usecase": 'AIDER',
+    "context_id": 'AIDER_CONTEXT',
+    "gemini_fallback_usecase": 'AIDER',  # For Gemini fallback
+    "gemini_fallback_context_id": 'aider_gemini',  # Context for Gemini fallback
+    "context_placeholder": "{CONTEXT}",
+    "question_placeholder": "{QUESTION}",
+    "enable_gemini_fallback": True,  # Enable Gemini fallback for better responses
+    "min_response_length": 50,  # Minimum response length 
+    "max_output_tokens": 20480,  # Added 
+    "unhelpful_phrases": [  # Phrases that indicate unhelpful responses
+        "I couldn't find an answer",
+        "Please rephrase your question", 
+        "refine your search",
+        "create a Jira ticket",
+        "I don't have enough information",
+        "I cannot provide an answer",
+        "No relevant information found",
+        "I'm unable to answer",
+        "I don't know",
+        "I cannot find",
+        "I am sorry, but this document does not contain",
+        "this document does not contain information",
+        "the document does not provide",
+        "I apologize, but the provided",
+        "the provided document does not",
+        "does not contain information about",
+        "I'm sorry, but I don't see",
+        "the document doesn't mention",
+        "no information about",
+        "I'm experiencing technical difficulties",
+        "experiencing technical difficulties",
+        "technical difficulties",
+        "I am sorry, but I cannot answer your question",
+        "the context does not provide information",
+        "cannot answer your question, as the context does not",
+        "I cannot answer your question, as the context",
+        "as the context does not provide",
+        "the provided passages describe"
+    ]
+}
+
+# Document-Specific Chunking Configuration
+DPF_DOCUMENT_CHUNKING_CONFIG = {
+    "pdf": {
+        "chunk_fields": ["chunk_data", "page_content", "section_header"],
+        "metadata_fields": ["document_title", "page_number", "section_type"],
+        "chunk_size": 512,
+        "overlap": 50,
+        "use_hierarchical": True
+    },
+    "confluence": {
+        "chunk_fields": ["chunk_data", "page_title", "breadcrumb"],
+        "metadata_fields": ["space_key", "page_id", "parent_page"],
+        "chunk_size": 256,
+        "overlap": 30,
+        "use_hierarchical": True
+    },
+    "jira": {
+        "chunk_fields": ["chunk_data", "issue_summary", "description"],
+        "metadata_fields": ["project_key", "issue_type", "priority"],
+        "chunk_size": 128,
+        "overlap": 20,
+        "use_hierarchical": False
+    },
+    "sharepoint": {
+        "chunk_fields": ["chunk_data", "file_name", "folder_path"],
+        "metadata_fields": ["site_collection", "library_name", "file_type"],
+        "chunk_size": 384,
+        "overlap": 40,
+        "use_hierarchical": True
+    },
+    "default": {
+        "chunk_fields": ["chunk_data"],
+        "metadata_fields": ["source", "document_type"],
+        "chunk_size": 256,
+        "overlap": 25,
+        "use_hierarchical": False
+    }
+}
+
+# Advanced Search Configuration
+DPF_ADVANCED_SEARCH_CONFIG = {
+    "enable_document_context": True,
+    "max_chunks_per_document": 3,
+    "document_boost_factor": 1.2,
+    "enable_section_grouping": True,
+    "enable_parent_chunk_retrieval": True,
+    "context_window_expansion": 2  # Number of neighboring chunks to include
+}
+
+
+
+# apikey = "hHBs6qEhZHP1M0JBLoEZ2DGzq7MNAEjs"
 
