@@ -1,212 +1,3 @@
-(0:25) So, when you are passing the file here, when you are calling this function, there is a (0:30) block name, I think you need to give the folder name. So, here you will give that golden question (0:34) slash domain slash catalog. Okay.
-Okay. So, this will create the folder and then you can (0:40) pass your file. Okay.
-Got it. So, add that one. So, CSV, we can directly create that (0:48) endpoint for uploading.
-And yeah. Yeah. Okay.
-And then we'll see. So, hey, Tata, you're on. (0:57) Did Anirudh mention anything about the metrics that we need to track? Not yet.
-I think Yogesh (1:12) didn't catch up with Anirudh again. Did Anirudh mention anything? Yogesh, you're on. What? No, (1:33) at least I will have to again check with Anirudh.
-So, Tata, can you do something like probably you (1:37) and me and Anirudh can meet once. Yeah, yeah, sure. For this availability and we will meet (1:42) today or tomorrow, right? Because now she knows and Yogesh is ready with this framework, right? So, (1:49) we can decide on what metrics we need and we can bring them.
-Yeah, sure. Because yesterday and (1:59) today Yogesh and Amey were working on the metrics part. So, I completed that usage log part but when (2:13) I'm running this application now, so at that time I'm getting some error actually.
-Input should be (2:19) a valid string. So, I'm getting this type of error. So, I'm just writing the root cause like (2:26) I'm just resolving that error actually.
-Okay, fine. You can fix that and then push it on the (2:34) branch. Okay, sure.
-So, the usage, yeah, after fixing that error, I will just test that API (2:43) and after that I will just push that branch in GitLab. Okay, okay. And do you know anything about (2:51) the metrics or just accuracy metrics or are you working with Anirudh on that? Yeah, I was working (2:58) with Anirudh on that.
-So, basically the accuracy metrics, so there is one like a particular metrics (3:05) which is accuracy. So, we have this for that accuracy part, we are like comparing the ground (3:12) truth and the generated answer. Right, yeah.
-So, with that we are finding, calculating that (3:20) accuracy only. Okay, and anything, any other metrics that Anirudh had mentioned? No, not yet. So, all the metrics, (3:31) whichever metrics are present in that tag, so we are working on that.
-Okay, so she knows the accuracy (3:38) metrics you already have in this code, correct? Yes, Akhilesh. So, still whatever changes I think (3:45) I need to connect with Anirudh on that. So, I will check with him.
-He is on off or something, (3:52) I am not sure. I think two days before. I will connect with him.
-So, based on that, (3:57) the whatever the metrics he wants, we can implement that Akhilesh. Okay, so in that case, can you just (4:05) follow up with Anirudh on this? Yeah, Akhilesh, so as far as I know, so I had prepared, I mean there (4:14) was a call with Anil last week. So, let me know if this is the same thing that we are going to implement.
-(4:20) So, the accuracy part, one is we are going to have some set of ground truths and I mean I am talking (4:28) both about top data and LSP both. So, we are going to have some ground truth and so one thing is like (4:39) for each day or like per week or like per month, you are going to generate these metrics. How (4:45) accurate is the system performing to the real-time questions that the users are asking.
-So, that is (4:51) one thing and another thing, I mean that is the main focus right at this point. Correct, yes. Yeah, (4:57) so in that case, no matter how many ground truths that we have, we will not be able to match it with (5:04) the actual user queries.
-So, here what we did is, one is knowledge retention score. So, we are (5:12) going to generate that score that is mainly for the multi-term conversation part and other part (5:19) is the answer relevancy. So, right now the way it is done for LSP is, we are expecting like a SQL (5:28) query or a looker query and we are providing the explore files or the view files and we are not (5:34) passing the final like, so we are basically taking the query and then from that query, we are passing (5:42) the explore and the view data and then we are generating some set of questions based on the (5:48) query.
-So, if that question is relevant to the user question, basically we are performing the (5:54) reverse engineering approach and then we are performing the semantic search, sorry, semantic (6:00) similarity and then we are estimating how close are the generated questions with the user query. (6:05) So, if most of those questions match and align with the user question, we are estimating that (6:10) it is like aligned, the final answer also is like aligned with the user query. So, this way, (6:17) we are estimating answer relevancy.
-The knowledge retention score, the way we are doing it is, we (6:24) ask, I mean, let us say there are like 3 or 4 or 5 terms of questions that the user is asking. So, (6:30) for each term that the user is asking, he is not completing the question, he is only like wording (6:36) half of it and then rest of the context in DrData, it is rephrasing and then it is giving a new (6:41) question, right. So, we are going to take that question and we will be comparing it with the (6:49) previous question.
-So, basically, previous question plus the user question, current question (6:54) combined, how close is it to the LM input question. So, we are going to compare that and then we are (7:02) going to get a score for that and here we will set like a threshold and see if that threshold is (7:07) matching or not. So, we will be picking some random, like you know, let us say there are like (7:12) 500 conversations, we can pick like 100 conversations randomly because we cannot do it for everything.
-(7:17) So, we can pick some random 100 conversations and we can run this pipeline and it will generate (7:22) the scores per day or per week or per month. So, this is one thing I know, but there might be more (7:33) to this, we can again discuss. You understood the concept, right? (7:37) No, I got it now.
-So, this relevancy matrix and all, right, have you already built for LSP or is (7:42) it in progress? Yogesh, it is already built for LSP, right? (7:51) I guess, yeah. Okay, where is this hosted, like you have it in local or? (7:59) For now, it is with Yogesh and Anil, but they have the scripts. (8:05) So, that is the one thing, right? So, like since you have it for LSP, right, can you share it with (8:10) Srinivas so that he can build a similar one for Talk2Data? See, at the end of the day, (8:15) we have to bring everything into a single platform, right? We have to get Qversus or not (8:21) just LSP or not just Talk2Data.
-Right, so you are going to build this as a module, right? (8:27) Right, yes, this will be as a module and whatever Talk2Data Srinivas is building on, (8:32) that is going to be a module under the same test framework. So, the way I was asking Srinivas (8:39) on whatever UI you build for test framework, we will have the option to test individual tools. (8:44) Like if I want to just do testing on Talk2LSP, I can go to Talk2LSP and you know, whatever metrics (8:49) are available for Talk2LSP, I can do those two things.
-If I want to test only Talk2Data, (8:53) I can do that. If I want to test Qversus as a whole, we will do that. At that point, (8:58) the orchestration tool will come in and it will decide which tool to pick for that particular (9:02) question.
-
-==============
-======================
-===============================
-
-# DPF Elasticsearch Configuration
-import os
-
-# Environment
-if 'ENV' in os.environ and os.environ['ENV'] in ['dev', 'uat', 'prod']:
-    env = os.environ['ENV'].lower()
-else:
-    env = "dev"
-
-# API Keys from environment variables
-if env == 'prod':
-    DPF_API_KEY = os.environ.get('prod_aider_apikey', "")
-    # DPF API Endpoints for Production
-    DPF_ENDPOINTS = {
-        "embedding_endpoint": "https://oa.verizon.com/vegas/models/api",  # PROD endpoint
-        "cross_encoder_endpoint": "https://oa.verizon.com/vegas/models/api",
-        "llm_endpoint": "https://oa.verizon.com/vegas/apps/prompt/LLMInsight"
-    }
-    DPF_ELASTICSEARCH_CONFIG = {
-        "api_url": "https://vectordb-experimentation-np.ebiz.verizon.com",
-        "api_key": os.environ.get('es_api_key', ""),
-        "index_name": "jysv-dpf-prod"
-    }
-elif env == 'uat':
-    DPF_API_KEY = os.environ.get('uat_aider_apikey', "")
-    # DPF API Endpoints for UAT
-    DPF_ENDPOINTS = {
-        "embedding_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",  # UAT endpoint
-        "cross_encoder_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",
-        "llm_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/apps/prompt/LLMInsight"
-    }
-    DPF_ELASTICSEARCH_CONFIG = {
-        "api_url": "https://vectordb-experimentation-np.ebiz.verizon.com",
-        "api_key": os.environ.get('es_api_key', ""),
-        "index_name": "jysv-dpf-uat"
-    }
-else:  # dev environment
-    DPF_API_KEY = os.environ.get('dev_aider_apikey', "")
-    # DPF API Endpoints for Development
-    DPF_ENDPOINTS = {
-        "embedding_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",  # Using UAT for dev
-        "cross_encoder_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",
-        "llm_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/apps/prompt/LLMInsight"
-    }
-    DPF_ELASTICSEARCH_CONFIG = {
-        "api_url": "https://vectordb-experimentation-np.ebiz.verizon.com",
-        "api_key": os.environ.get('es_api_key', ""),
-        "index_name": "jysv-dpf-dev1"
-    }
-
-
-# Validate that required environment variables are set
-if not DPF_API_KEY:
-    raise ValueError(f"DPF_API_KEY is required but not found for environment: {env}")
-
-# Validate Elasticsearch API key
-if not DPF_ELASTICSEARCH_CONFIG["api_key"]:
-    raise ValueError(f"Elasticsearch API key is required but not found for environment: {env}")
-
-# DPF Search Configuration
-DPF_SEARCH_CONFIG = {
-    "default_k": 10,
-    "max_k": 10,
-    "num_candidates": 100,
-    "embedding_model": 'all-distilroberta-v1',
-    "usecase_filter_aider": 'aider',
-    "usecase_filter_copilot": ["aider_json","aider_pdf","aider_csv"],
-    "usecase_filter": 'aider',
-    "embedding_field": 'text_embedding_768',
-    "chunk_data_field": 'original_content',  # Use original_content field
-    "custom_metadata_field": 'custom_metadata'
-}
-
-# DPF Cross-encoder Configuration
-DPF_CROSS_ENCODER_CONFIG = {
-    "region": "us-east4",
-    "project_id": "688379114786", 
-    "endpoint_id": "4179014998757998592",
-    "usecase_name": "cross-encoder",
-    "model_type": "cross-encoder"
-}
-
-# DPF LLM Configuration
-DPF_LLM_CONFIG = {
-    "usecase": 'AIDER',
-    "context_id": 'AIDER_CONTEXT',
-    "gemini_fallback_usecase": 'AIDER',  # For Gemini fallback
-    "gemini_fallback_context_id": 'aider_gemini',  # Context for Gemini fallback
-    "context_placeholder": "{CONTEXT}",
-    "question_placeholder": "{QUESTION}",
-    "enable_gemini_fallback": True,  # Enable Gemini fallback for better responses
-    "min_response_length": 50,  # Minimum response length 
-    "max_output_tokens": 20480,  # Added 
-    "unhelpful_phrases": [  # Phrases that indicate unhelpful responses
-        "I couldn't find an answer",
-        "Please rephrase your question", 
-        "refine your search",
-        "create a Jira ticket",
-        "I don't have enough information",
-        "I cannot provide an answer",
-        "No relevant information found",
-        "I'm unable to answer",
-        "I don't know",
-        "I cannot find",
-        "I am sorry, but this document does not contain",
-        "this document does not contain information",
-        "the document does not provide",
-        "I apologize, but the provided",
-        "the provided document does not",
-        "does not contain information about",
-        "I'm sorry, but I don't see",
-        "the document doesn't mention",
-        "no information about",
-        "I'm experiencing technical difficulties",
-        "experiencing technical difficulties",
-        "technical difficulties",
-        "I am sorry, but I cannot answer your question",
-        "the context does not provide information",
-        "cannot answer your question, as the context does not",
-        "I cannot answer your question, as the context",
-        "as the context does not provide",
-        "the provided passages describe"
-    ]
-}
-
-# Document-Specific Chunking Configuration
-DPF_DOCUMENT_CHUNKING_CONFIG = {
-    "pdf": {
-        "chunk_fields": ["chunk_data", "page_content", "section_header"],
-        "metadata_fields": ["document_title", "page_number", "section_type"],
-        "chunk_size": 512,
-        "overlap": 50,
-        "use_hierarchical": True
-    },
-    "confluence": {
-        "chunk_fields": ["chunk_data", "page_title", "breadcrumb"],
-        "metadata_fields": ["space_key", "page_id", "parent_page"],
-        "chunk_size": 256,
-        "overlap": 30,
-        "use_hierarchical": True
-    },
-    "jira": {
-        "chunk_fields": ["chunk_data", "issue_summary", "description"],
-        "metadata_fields": ["project_key", "issue_type", "priority"],
-        "chunk_size": 128,
-        "overlap": 20,
-        "use_hierarchical": False
-    },
-    "sharepoint": {
-        "chunk_fields": ["chunk_data", "file_name", "folder_path"],
-        "metadata_fields": ["site_collection", "library_name", "file_type"],
-        "chunk_size": 384,
-        "overlap": 40,
-        "use_hierarchical": True
-    },
-    "default": {
-        "chunk_fields": ["chunk_data"],
-        "metadata_fields": ["source", "document_type"],
-        "chunk_size": 256,
-        "overlap": 25,
-        "use_hierarchical": False
-    }
-}
-
-# Advanced Search Configuration
-DPF_ADVANCED_SEARCH_CONFIG = {
-    "enable_document_context": True,
-    "max_chunks_per_document": 3,
-    "document_boost_factor": 1.2,
-    "enable_section_grouping": True,
-    "enable_parent_chunk_retrieval": True,
-    "context_window_expansion": 2  # Number of neighboring chunks to include
-}
-
-What is the endpoint, embedding endpoint, cross endpoint? (0:06) Right, right. (0:34) We have this OS.endron (0:40) Sorry, I lost for a while. (1:14) Right. (1:20) Right. (1:28) In the test we have. (1:47) We can refer that one here. (1:50) No need this JSON (1:51) and calling that key and all. (1:54) We don't require this. (1:55) Okay, okay. (1:57) You can refer the previous (1:59) config.py and I will create (2:01) I will modify this (2:03) Elasticsearch one. (2:05) We have this IEMP (2:07) threat manager. (2:10) Let me (2:11) Yeah. (2:37) So what Ashish said, (2:39) but how is the responses? (2:40) Is it too bad than previous one (2:43) or it is like similar? (2:46) No, it's like okay. (2:47) But still couple of questions (2:49) whatever is testing is not getting (2:51) response. I mean wrong (2:53) answer or something. (2:55) But we are getting the (2:58) responses in our (2:59) current. Yeah, yeah. (3:01) With the current we are getting, yes. (3:04) I mean not with the (3:05) current one, with the old (3:07) and not with the (3:08) you are saying it's with the rug, right? (3:10) No, no, not like that. (3:12) So I mean (3:14) see what (3:16) Ashish sometimes he tests (3:18) in different way like which (3:22) so configuration (3:23) for with connectivity (3:25) how to configure like how (3:26) or something he is not giving sometimes. (3:28) So I think that is also sometimes (3:30) causing. (3:32) So that we have to (3:34) test it (3:36) like (3:39) not in a proper (3:41) meaning he is (3:42) giving sometimes. (3:44) Okay. (3:48) But for now he said it is almost (3:51) okay. But for (3:53) few things still we need (3:55) improvement. (3:57) Okay. (4:42) Here I have provided (4:44) three keys but I should avoid this. (4:50) This is for UAT, right? (4:53) Yeah, but I don't need this (4:54) dev API key, UAT API key (4:56) because we already have a secret (4:58) for this API key. (5:00) UAT API key we have already (5:02) secret created here. (5:04) So we don't need that (5:05) these two. I will (5:08) just add only this secret. (5:19) Don't add this directly. (5:22) Okay, I will update this (5:23) and maybe you can (5:25) just use the secret name (5:30) Leela. (5:31) I think for (5:34) Okay. (5:34) Directly we can use the secret name. (5:38) Use the secret name for Elasticsearch (5:41) so os.environ. (5:43) So like that you can use this for (5:44) Elasticsearch. We don't need (5:46) to take like (5:49) key value pair. We don't need to load this (5:50) JSON and take the key value pair. (5:52) Directly I am going to provide this key only (5:54) here. So you can take that (5:57) for Elasticsearch. So (5:58) you do the modifications in the code. (6:00) I will update this here as well. (6:02) Okay, so you will be adding whatever (6:05) Saesh has shared, right? (6:06) That also? (6:08) No, no, no. That is for (6:11) prod, right? (6:13) Prod I cannot add it. (6:14) But I can keep it in the deployment instructions. (6:17) Tomorrow Vegas team will create it (6:19) in the prod. Yeah, I don't have (6:21) access to do that. (6:22) Yeah, yeah. I understand. (6:23) Senthil will be, not Senthil. (6:26) Selvakumar. Selvar team. (6:27) Yeah, yeah. I understand. (6:30) Sure. I will just change. (6:32) Because why I am saying this, (6:34) we have to add it because (6:35) we are going to push the same code to the (6:37) main branch. And based on (6:39) the environment key in the (6:41) prod environment, it will fetch the values (6:44) so that our code should be up to (6:45) date. It should work in both prod (6:47) and the test environment based on (6:49) the environment variable coming in. (6:52) So when the (6:53) ENV is prod, we should have (6:55) that URL should be in the place in the (6:57) dpf.config.py (6:59) and whatever the (7:01) secrets we are going to create in the (7:03) prod, that value (7:05) should be used in the code, right? (7:08) So that's what I am saying. (7:10) Whatever config we kept it for (7:11) the UID and we have to update (7:14) it for prod as well. (7:15) Based on the (7:17) key and everything (7:18) based on that environment. (7:21) You just update it and let (7:22) me know. So I will (7:24) update this instead of JSON (7:26) file upload. I will just directly (7:28) add the key to the secret. (7:31) Sure. I will update it. (7:33) So let me...
-
-
-
 import os
 import time
 import warnings
@@ -236,8 +27,7 @@ from langchain.retrievers import EnsembleRetriever
 from dpf_config import (
     DPF_ELASTICSEARCH_CONFIG, 
     DPF_ENDPOINTS, 
-    DPF_API_KEY,
-    DPF_UAT_API_KEY, 
+    DPF_API_KEY, 
     DPF_SEARCH_CONFIG,
     DPF_CROSS_ENCODER_CONFIG,
     DPF_LLM_CONFIG,
@@ -479,27 +269,27 @@ async def faiss_search(faiss_db, request):
 
     return {"llm_context":cross_encoder_updated,"source_document":source_documents}
 
-# @app.post("/vegas/apps/aider-retriever/api")
-# async def search( request: LLMQuery):
-#     try:
-#         print("--------------------------------------------------------")
-#         print(f"Index:{request.index} and query:{request.query}")
-#         print("env: ",env)
-#         print("EMAS_URL: ",EMAS_URL)
-#         default_db = db_dict.get(request.index)
-#         # print(default_db)
-#         #search_type = request.search
+@app.post("/vegas/apps/aider-retriever/api")
+async def search( request: LLMQuery):
+    try:
+        print("--------------------------------------------------------")
+        print(f"Index:{request.index} and query:{request.query}")
+        print("env: ",env)
+        print("EMAS_URL: ",EMAS_URL)
+        default_db = db_dict.get(request.index)
+        # print(default_db)
+        #search_type = request.search
 
-#         final_result = {"faiss": []}
-#         # faiss
-#         faiss_db = default_db['faiss']
-#         # print(faiss_db.index.ntotal)
-#         final_result['faiss'] = await faiss_search(faiss_db, request)
+        final_result = {"faiss": []}
+        # faiss
+        faiss_db = default_db['faiss']
+        # print(faiss_db.index.ntotal)
+        final_result['faiss'] = await faiss_search(faiss_db, request)
 
-#         return final_result
-#     except Exception as e:
-#         print(e)
-#         return {"error": str(e)}
+        return final_result
+    except Exception as e:
+        print(e)
+        return {"error": str(e)}
 
 @app.post("/vegas/apps/aider-retriever/dpf/api")
 async def dpf_search_endpoint(request: DPFQuery):
@@ -574,7 +364,7 @@ async def generate_dpf_embedding(text: str):
     """
     headers = {
         'Content-Type': 'application/json',
-        'X-apikey': DPF_UAT_API_KEY  # Use DEV/UAT API key 
+        'X-apikey': DPF_API_KEY # Use API key 
     }
     
     # # Use the payload format 
@@ -638,7 +428,7 @@ async def dpf_reranker(sentence_pairs: List[List[str]]):
     """
     headers = {
         'Content-Type': 'application/json', 
-        'X-apikey': DPF_UAT_API_KEY 
+        'X-apikey': DPF_API_KEY 
     }
     
     payload = {
@@ -748,7 +538,7 @@ async def _call_llm_api(user_query: str, context: str, use_case: str):
     
     headers = {
         'Content-Type': 'application/json', 
-        'X-apikey': DPF_UAT_API_KEY  # Use UAT API key for LLM
+        'X-apikey': DPF_API_KEY   # Use API key 
     }
     
     # usecases and contextID's
@@ -856,7 +646,7 @@ async def _call_llm_api_enhanced(user_query: str, enhanced_context: str, context
     """
     headers = {
         'Content-Type': 'application/json', 
-        'X-apikey': DPF_UAT_API_KEY #update key
+        'X-apikey': DPF_API_KEY #update key
     }
     
     # Use a different prompt structure for enhanced fallback
@@ -918,7 +708,7 @@ async def _call_llm_api_enhanced_with_different_usecase(user_query: str, enhance
     """
     headers = {
         'Content-Type': 'application/json', 
-        'X-apikey': DPF_UAT_API_KEY
+        'X-apikey': DPF_API_KEY
     }
     
     # Use different usecase and context for Gemini fallback
@@ -1075,17 +865,15 @@ async def dpf_search(request: DPFQuery):
                 { "term": { "usecase_name": "aider_csv" } },
                 { "term": { "usecase_name": "aider_pdf" } }
             # "term": { "usecase_name": "aider_json" }
-        ]
-        print(f"Using copilot filter: {filter_clause}")
+        ]    
     if hasattr(request, 'use_case') and request.use_case == "ai_workmate":
         filter_clause = [
                 { "term": { "usecase_name": "aider_ai_workmate" } }       
-        ]
-        print(f"Using ai_workmate filter: {filter_clause}")
+        ]     
     if filter_clause is None:
         # Default filter for aider
         filter_clause = [{ "term": { "usecase_name": "aider" } }]    
-        print(f"Using default aider filter: {filter_clause}")
+       
     
     # 2. Elasticsearch query 
     es_query = {
@@ -1414,165 +1202,3 @@ if __name__ == "__main__":
     # #, reload=True)#, debug=True, workers=1)
     uvicorn.run("main_serve:app", host='0.0.0.0',
                 port=2000, reload=True)
-=====================================
-==================================
-# DPF Elasticsearch Configuration
-import os
-import json
-
-# path 
-secret_file_path = "/etc/secrets/AIDER_DPF_API"
-
-# Read and parse the secrets.json file
-with open(secret_file_path, "r") as secret_file:
-    secrets = json.load(secret_file)
-
-if 'ENV' in os.environ and os.environ['ENV'] in ['dev', 'uat', 'prod']:
-    env = os.environ['ENV'].lower()
-else:
-    env = "dev"
-
-if env == 'prod':
-    DPF_API_KEY = secrets["PROD_API_KEY"]
-else:
-    DPF_API_KEY = secrets["DEV_API_KEY "]
-    DPF_UAT_API_KEY = secrets["UAT_API_KEY"]
-    # DPF API Endpoints
-    DPF_ENDPOINTS = {
-    "embedding_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",  # UAT endpoint
-    # "embedding_endpoint": "https://oa-dev2.ebiz.verizon.com/vegas/models/llm-embeddings",  # Current DEV endpoint
-    "cross_encoder_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/models/api",
-    "llm_endpoint": "https://oa-uat.ebiz.verizon.com/vegas/apps/prompt/LLMInsight"
-    }
-    DPF_ELASTICSEARCH_CONFIG = {
-    "api_url": "https://vectordb-experimentation-np.ebiz.verizon.com",
-    "api_key": secrets["ES_API_KEY"],
-    "index_name": "jysv-dpf-dev1"
-    }
-
-
-# Validate that required environment variables are set
-if not DPF_API_KEY:
-    raise ValueError("DPF_API_KEY is required but not found")
-if not DPF_UAT_API_KEY:
-    raise ValueError("DPF_UAT_API_KEY is required but not found")
-
-# DPF Search Configuration
-DPF_SEARCH_CONFIG = {
-    "default_k": 10,
-    "max_k": 10,
-    "num_candidates": 100,
-    "embedding_model": 'all-distilroberta-v1',
-    "usecase_filter_aider": 'aider',
-    "usecase_filter_copilot": ["aider_json","aider_pdf","aider_csv"],
-    "usecase_filter": 'aider',
-    "embedding_field": 'text_embedding_768',
-    "chunk_data_field": 'original_content',  # Use original_content field
-    "custom_metadata_field": 'custom_metadata'
-}
-
-# DPF Cross-encoder Configuration
-DPF_CROSS_ENCODER_CONFIG = {
-    "region": "us-east4",
-    "project_id": "688379114786", 
-    "endpoint_id": "4179014998757998592",
-    "usecase_name": "cross-encoder",
-    "model_type": "cross-encoder"
-}
-
-# DPF LLM Configuration
-DPF_LLM_CONFIG = {
-    "usecase": 'AIDER',
-    "context_id": 'AIDER_CONTEXT',
-    "gemini_fallback_usecase": 'AIDER',  # For Gemini fallback
-    "gemini_fallback_context_id": 'aider_gemini',  # Context for Gemini fallback
-    "context_placeholder": "{CONTEXT}",
-    "question_placeholder": "{QUESTION}",
-    "enable_gemini_fallback": True,  # Enable Gemini fallback for better responses
-    "min_response_length": 50,  # Minimum response length 
-    "max_output_tokens": 20480,  # Added 
-    "unhelpful_phrases": [  # Phrases that indicate unhelpful responses
-        "I couldn't find an answer",
-        "Please rephrase your question", 
-        "refine your search",
-        "create a Jira ticket",
-        "I don't have enough information",
-        "I cannot provide an answer",
-        "No relevant information found",
-        "I'm unable to answer",
-        "I don't know",
-        "I cannot find",
-        "I am sorry, but this document does not contain",
-        "this document does not contain information",
-        "the document does not provide",
-        "I apologize, but the provided",
-        "the provided document does not",
-        "does not contain information about",
-        "I'm sorry, but I don't see",
-        "the document doesn't mention",
-        "no information about",
-        "I'm experiencing technical difficulties",
-        "experiencing technical difficulties",
-        "technical difficulties",
-        "I am sorry, but I cannot answer your question",
-        "the context does not provide information",
-        "cannot answer your question, as the context does not",
-        "I cannot answer your question, as the context",
-        "as the context does not provide",
-        "the provided passages describe"
-    ]
-}
-
-# Document-Specific Chunking Configuration
-DPF_DOCUMENT_CHUNKING_CONFIG = {
-    "pdf": {
-        "chunk_fields": ["chunk_data", "page_content", "section_header"],
-        "metadata_fields": ["document_title", "page_number", "section_type"],
-        "chunk_size": 512,
-        "overlap": 50,
-        "use_hierarchical": True
-    },
-    "confluence": {
-        "chunk_fields": ["chunk_data", "page_title", "breadcrumb"],
-        "metadata_fields": ["space_key", "page_id", "parent_page"],
-        "chunk_size": 256,
-        "overlap": 30,
-        "use_hierarchical": True
-    },
-    "jira": {
-        "chunk_fields": ["chunk_data", "issue_summary", "description"],
-        "metadata_fields": ["project_key", "issue_type", "priority"],
-        "chunk_size": 128,
-        "overlap": 20,
-        "use_hierarchical": False
-    },
-    "sharepoint": {
-        "chunk_fields": ["chunk_data", "file_name", "folder_path"],
-        "metadata_fields": ["site_collection", "library_name", "file_type"],
-        "chunk_size": 384,
-        "overlap": 40,
-        "use_hierarchical": True
-    },
-    "default": {
-        "chunk_fields": ["chunk_data"],
-        "metadata_fields": ["source", "document_type"],
-        "chunk_size": 256,
-        "overlap": 25,
-        "use_hierarchical": False
-    }
-}
-
-# Advanced Search Configuration
-DPF_ADVANCED_SEARCH_CONFIG = {
-    "enable_document_context": True,
-    "max_chunks_per_document": 3,
-    "document_boost_factor": 1.2,
-    "enable_section_grouping": True,
-    "enable_parent_chunk_retrieval": True,
-    "context_window_expansion": 2  # Number of neighboring chunks to include
-}
-
-
-
-# apikey = "hHBs6qEhZHP1M0JBLoEZ2DGzq7MNAEjs"
-
