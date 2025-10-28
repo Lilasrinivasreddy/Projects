@@ -1,3 +1,40 @@
+
+STEP 1: SESSION CREATION
+
+A new session is created when the user starts a conversation.
+
+The session details are saved, and an empty context is initialized.
+
+STEP 2: CONVERSATION STORAGE
+
+Each user question is processed, and a response is generated.
+
+The question and answer are saved in the conversation history.
+
+The latest few messages are kept in the active context for quick reference.
+
+STEP 3: CONTEXT RETRIEVAL
+
+When the user asks a new question, the system checks the session.
+
+It retrieves recent messages to understand the conversation.
+
+The response is generated using the existing context.
+
+STEP 4: PERIODIC CLEANUP
+
+A background process runs regularly to remove old sessions.
+
+It also deletes unused or leftover context records.
+
+Cleanup details are logged for monitoring.
+
+
+
+
+
+
+
 # AIDER CONVERSATIONAL FEATURE ARCHITECTURE
 ## Spanner-Based Conversation Management for DataX Copilot
 
