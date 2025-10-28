@@ -1,46 +1,31 @@
-Let me read the current lines 574-599 to understand exactly what's happening in the code and explain the changes we made for the list of strings part.
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    AUTOMATED TESTING FRAMEWORK ARCHITECTURE                  │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-Read main_serve.py, lines 574 to 599
+                              ┌─ ORCHESTRATION LAYER ─┐
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   GitHub    │    │    Apex     │    │   Test      │    │  Parallel   │
+│  Actions    │───▶│ Framework   │───▶│ Scheduler   │───▶│ Execution   │
+│   (CI/CD)   │    │             │    │             │    │  Engine     │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 
-Perfect! Now I can explain exactly what's happening in lines 574-599. Here's a comprehensive explanation you can give to your lead:
+                              ┌─ TEST EXECUTION LAYER ─┐
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ Functional  │    │Performance  │    │Integration  │    │  Quality    │
+│   Tests     │    │   Tests     │    │   Tests     │    │Assurance    │
+│ (300+ TCs)  │    │ (Load/Perf) │    │ (E2E Flow)  │    │   Tests     │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 
-Explanation of Lines 574-599: Context Processing Logic
-What This Code Section Does:
-This code section (lines 574-599) is responsible for normalizing the input context into a standardized format - specifically, converting it into a list of strings called context_strings that gets sent to the LLM API.
+                              ┌─ TARGET SYSTEMS LAYER ─┐
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Legacy    │    │     DPF     │    │   Slack     │    │    Web      │
+│   FAISS     │    │  Pipeline   │    │    Bot      │    │    APIs     │
+│  Pipeline   │    │ (Elasticsearch) │    │  (bot.py)   │    │             │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 
-The Problem We're Solving:
-The context parameter can come in various formats:
-
-List of strings: ["document1 content", "document2 content"]
-List of objects: [{"text_content": "doc1"}, {"text_content": "doc2"}]
-Single string: "single document content"
-Single object: {"text_content": "content"}
-Mixed types: ["string1", {"text_content": "content2"}, 123]
-Step-by-Step Breakdown:
-1. List Processing (Lines 575-586):
-2. Single Item Processing (Lines 587-594):
-Key Changes We Made During Our Session:
-Evolution 1: Original Complex Logic → Simplified Logic → Back to Context Processing
-Started with: Complex nested conditions for logging
-Simplified to: Direct context usage (context = context)
-Reverted to: Current context processing logic (what you see now)
-Evolution 2: Variable Usage in Payloads
-Initially: Used context_strings in all LLM API payloads
-Temporarily: Used context directly
-Final: Back to using context_strings for consistent formatting
-Why This Approach Is Important:
-1. API Compatibility:
-2. Data Integrity:
-Extracts actual content from complex objects
-Preserves all document content regardless of input format
-Handles edge cases (null values, unexpected types)
-3. Consistent Output:
-Input: [{"text_content": "doc1"}, "doc2", 123]
-Output: ["doc1", "doc2", "123"]
-Real-World Example:
-Benefits for Your Lead:
-Reliability: Handles any input format gracefully
-Performance: No data loss or formatting issues
-Maintainability: Clear, predictable data flow
-Debugging: Easy to trace what content is being sent to LLM
-This processing ensures that regardless of how the retrieval system sends context data, the LLM always receives clean, properly formatted document content as a list of strings.
+                              ┌─ REPORTING LAYER ─┐
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  Quality    │    │Performance  │    │   Test      │    │   Business  │
+│   Gates     │    │ Dashboards  │    │  Reports    │    │  Metrics    │
+│ (Pass/Fail) │    │ (Real-time) │    │ (Detailed)  │    │ (KPIs/ROI)  │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
