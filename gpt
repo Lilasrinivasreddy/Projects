@@ -1,3 +1,94 @@
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                   AIDER / DataX Copilot – Architecture Flow                │
+│                      (Spanner-Based Conversation Memory)                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+USER CHANNELS
+┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│  DataX Copilot│   │   Slack Bot   │   │   Web Portal  │   │   Mobile App  │
+└───────┬───────┘   └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
+        │                   │                   │                   │
+        └───────────────┬───┴───────────────────┴───────────────────┘
+                        │  user_query
+                        ▼
+                ┌─────────────────────────────┐
+                │   CONVERSATION MANAGER      │
+                │ (conversation_manager.py)   │
+                └───────────┬─────────────────┘
+                            │
+                ┌───────────┴─────────────────────────────────────────────────┐
+                │                         FLOW                                 │
+                └──────────────────────────────────────────────────────────────┘
+
+   [1] SESSION CHECK / CREATE
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │  Does session_id exist & not expired?                                   │
+   │        ┌───────────────┐        yes                                     │
+   │   no ─▶│ Create session │──────────────┐                                 │
+   │        └──────┬────────┘              │                                 │
+   │               │ set TTL = now+24h     │                                 │
+   │               ▼                        ▼                                 │
+   │        ┌────────────────┐      ┌───────────────────────────────────────┐ │
+   │        │conversation_   │      │ active_contexts: fast context lookup  │ │
+   │        │sessions INSERT │      │ (context_window: last 10, summary)    │ │
+   │        └────────────────┘      └───────────────────────────────────────┘ │
+   └──────────────────────────────────────────────────────────────────────────┘
+
+   [2] CONTEXT RETRIEVAL
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │ Fetch session’s context_window & context_summary from active_contexts    │
+   │ → Use as input context for LLM prompting                                 │
+   └──────────────────────────────────────────────────────────────────────────┘
+
+   [3] RESPONSE GENERATION
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │ Process user_query with AIDER/DataX pipeline (+ retrieved context)       │
+   │ → Produce llm_response                                                   │
+   └──────────────────────────────────────────────────────────────────────────┘
+
+   [4] PERSIST TURN + REFRESH CONTEXT
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │ conversation_history INSERT:                                             │
+   │  - conversation_id, session_id, turn_number                              │
+   │  - user_query, llm_response, timestamps                                  │
+   │  - context_used[], response_metadata, use_case, platform                 │
+   │ Update active_contexts:                                                  │
+   │  - push latest turn (cap last 10)                                        │
+   │  - update last_updated and (optional) context_summary                    │
+   │ Update conversation_sessions.last_activity                               │
+   └──────────────────────────────────────────────────────────────────────────┘
+
+   [5] RETURN
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │ Return llm_response to originating channel (DataX/Slack/Web/Mobile)     │
+   └──────────────────────────────────────────────────────────────────────────┘
+
+
+SPANNER DATABASE OPERATIONS (tables)
+┌─────────────────────────┐   ┌─────────────────────────┐   ┌───────────────────┐
+│ conversation_sessions   │   │ conversation_history    │   │  active_contexts  │
+│ - session_id (PK)       │   │ - conversation_id (PK)  │   │ - session_id (PK) │
+│ - user_id               │   │ - session_id            │   │ - context_window  │
+│ - created_at            │   │ - turn_number           │   │ - last_updated    │
+│ - last_activity         │   │ - user_query            │   │ - context_summary │
+│ - expires_at (TTL 24h)  │   │ - llm_response          │   └───────────────────┘
+│ - session_metadata JSON │   │ - timestamps, metadata  │
+│ - is_active             │   │ - use_case, platform    │
+└─────────────────────────┘   └─────────────────────────┘
+
+PERIODIC CLEANUP (every 6h)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Job scans conversation_sessions where expires_at < now → delete session     │
+│ → cascade/handle orphans in active_contexts & history → log stats           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+
+
+
 # AIDER CONVERSATIONAL FEATURE ARCHITECTURE
 ## Spanner-Based Conversation Management for DataX Copilot
 
