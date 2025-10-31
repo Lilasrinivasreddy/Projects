@@ -1,1109 +1,1459 @@
+import os
+import time
+import warnings
+# from ray import serve
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
+from typing import List, Union, Literal
+from config import *
+from langchain.retrievers import  EnsembleRetriever
+from langchain_community.vectorstores import FAISS
 
-STEP 1: SESSION CREATION
+from typing import Any, Dict, List, Optional
+import requests
+import json
 
-A new session is created when the user starts a conversation.
+from pydantic.v1 import BaseModel as langchainBaseModel, Extra, Field
+from langchain.schema.embeddings import Embeddings
+import uvicorn
+import numpy as np
+from config import EMAS_URL,apikey,url,env
+import pickle
+from langchain.retrievers import EnsembleRetriever
 
-The session details are saved, and an empty context is initialized.
+# Import DPF configuration
+from dpf_config import (
+    DPF_ELASTICSEARCH_CONFIG, 
+    DPF_ENDPOINTS, 
+    DPF_API_KEY, 
+    DPF_SEARCH_CONFIG,
+    DPF_CROSS_ENCODER_CONFIG,
+    DPF_LLM_CONFIG,
+    DPF_DOCUMENT_CHUNKING_CONFIG,
+    DPF_ADVANCED_SEARCH_CONFIG
+)
 
-STEP 2: CONVERSATION STORAGE
+warnings.filterwarnings("ignore")
 
-Each user question is processed, and a response is generated.
+app = FastAPI()#docs_url=None, redoc_url=None)
 
-The question and answer are saved in the conversation history.
+origins = ["*"]
 
-The latest few messages are kept in the active context for quick reference.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-STEP 3: CONTEXT RETRIEVAL
+class EMAS(langchainBaseModel, Embeddings):
 
-When the user asks a new question, the system checks the session.
+    def __init__(self, **kwargs: Any):
+        """Initialize the sentence_transformer."""
+        super().__init__(**kwargs)
+        # self.EMAS_URL = EMAS_URL
 
-It retrieves recent messages to understand the conversation.
+    class Config:
+        """Configuration for this pydantic object."""
 
-The response is generated using the existing context.
+        extra = Extra.forbid
 
-STEP 4: PERIODIC CLEANUP
+    def get_embed(self, text: str) -> List[float]:
+        if env != "prod":
+            payload = json.dumps({
+                "region": "us-east4",
+                "project_id": "688379114786",
+                "endpoint_id": "7786939260002631680",
+                "usecase_name": "llm-embeddings",
+                "model_type": "llm-embeddings",
+                    "input_request": {
+                        "instances": [
+                            {"text": f"{text}"}]
+                }
+            })
 
-A background process runs regularly to remove old sessions.
+            headers = {
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            try:
+                response = requests.request(
+                    "POST", EMAS_URL, headers=headers, data=payload, verify=False).json()
+                result = response[0][0]['embedding']
+            except Exception as e:
+                print(f"Failure from embedding API. Encountered exception: {e}")
+                print(text,response)
+                raise
+        else:
+            payload = json.dumps({
+                "region": "us-east4",
+                "project_id": "783334890793",
+                "endpoint_id": "7414266390837723136",
+                "usecase_name": "llm-embeddings",
+                "model_type": "llm-embeddings",
+                    "input_request": {
+                        "instances": [
+                            {"text": f"{text}"}]
+                }
+            })
 
-It also deletes unused or leftover context records.
+            headers = {
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            try:
+                response = requests.request(
+                    "POST", EMAS_URL, headers=headers, data=payload, verify=False).json()
+                result = response[0][0]['embedding']
+            except Exception as e:
+                print(f"Failure from embedding API. Encountered exception: {e}")
+                print(text,response)
+                raise
+        return result
 
-Cleanup details are logged for monitoring.
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Compute doc embeddings using a HuggingFace transformer model.
+
+        Args:
+            texts: The list of texts to embed.
+
+        Returns:
+            List of embeddings, one for each text.
+        """
+        res = []
+        for text in texts:
+            res.append(self.get_embed(text))
+
+        return res
+
+    def embed_query(self, text: str) -> List[float]:
+        """Compute query embeddings using a HuggingFace transformer model.
+
+        Args:
+            text: The text to embed.
+
+        Returns:
+            Embeddings for the text.
+        """
+        return self.get_embed(text)
+
+
+class LLMQuery(BaseModel):
+    query: str
+    index: Literal["gcp", "bi_tools", "dgs",
+                   "ml_platform", "teradata", "all", "hadoop","informatica","data_indus","data_discovery","edw_modernization","ai_indus","ai_workmate"] = "all"
+
+class DPFQuery(BaseModel):
+    query: str
+    use_case: str # Add default use_case
+    index_name: str = DPF_ELASTICSEARCH_CONFIG["index_name"]
+    k: int = DPF_SEARCH_CONFIG["default_k"]
+    # include_llm_response: bool = True
+    # document_types: List[str] = None  # Filter by specific document types
+    # enable_hierarchical: bool = True  # Enable document-aware chunking
+
+
+st = time.time()
+faiss_embeddings=EMAS()
+# print(type(faiss_embeddings))
 
 
 
-
-
-
-
-# AIDER CONVERSATIONAL FEATURE ARCHITECTURE
-## Spanner-Based Conversation Management for DataX Copilot
-
-### 🎯 **EXECUTIVE SUMMARY**
-The conversational feature transforms AIDER from a stateless Q&A system into an intelligent, context-aware assistant that remembers user interactions. This is particularly valuable for **DataX Copilot** where users engage in complex, multi-step data analysis workflows.
-
----
-
-## 📊 **ARCHITECTURE DIAGRAM**
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CONVERSATIONAL FEATURE ARCHITECTURE                       │
-│                         (Google Cloud Spanner Backend)                       │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-                              ┌─ USER INTERACTION LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   DataX     │    │   Slack     │    │    Web      │    │   Mobile    │
-│  Copilot    │───▶│   Bot       │───▶│   Portal    │───▶│    App      │
-│             │    │  (bot.py)   │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       └───────────────────┼───────────────────┼───────────────────┘
-                           │                   │
-                           ▼                   ▼
-                    ┌─────────────────────────────────┐
-                    │     CONVERSATION MANAGER        │
-                    │    (conversation_manager.py)    │
-                    └─────────────────────────────────┘
-                                      │
-                                      ▼
-              ┌─ SPANNER DATABASE OPERATIONS ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   SESSION   │    │CONVERSATION │    │   ACTIVE    │    │   CLEANUP   │
-│ MANAGEMENT  │───▶│  HISTORY    │───▶│ CONTEXTS    │───▶│    JOBS     │
-│             │    │             │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       ▼                   ▼                   ▼                   ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│CREATE/TRACK │    │ STORE TURNS │    │FAST CONTEXT │    │PERIODIC TTL │
-│  SESSIONS   │    │ Q&A PAIRS   │    │  RETRIEVAL  │    │   PURGING   │
-│   (24hr)    │    │(Turn-by-Turn)│    │ (Last 10)   │    │ (Every 6h)  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-```
-
----
-
-## 🗄️ **SPANNER DATABASE SCHEMA**
-
-### **Table 1: conversation_sessions**
-```sql
-CREATE TABLE conversation_sessions (
-    session_id STRING(MAX) NOT NULL,           -- Unique session identifier
-    user_id STRING(MAX) NOT NULL,              -- Slack user ID or DataX user
-    created_at TIMESTAMP NOT NULL,             -- Session creation time
-    last_activity TIMESTAMP NOT NULL,          -- Last interaction timestamp
-    expires_at TIMESTAMP NOT NULL,             -- TTL expiration (24 hours)
-    session_metadata JSON,                     -- Use case, platform, etc.
-    is_active BOOL NOT NULL,                   -- Active/inactive flag
-) PRIMARY KEY (session_id);
-```
-
-### **Table 2: conversation_history**
-```sql
-CREATE TABLE conversation_history (
-    conversation_id STRING(MAX) NOT NULL,      -- Unique conversation turn ID
-    session_id STRING(MAX) NOT NULL,           -- Links to session
-    turn_number INT64 NOT NULL,                -- Sequential turn counter
-    user_query STRING(MAX),                    -- User's question
-    query_timestamp TIMESTAMP,                 -- When question was asked
-    llm_response STRING(MAX),                  -- AIDER's response
-    response_timestamp TIMESTAMP,              -- When response was generated
-    context_used ARRAY<STRING(MAX)>,           -- Document chunks used
-    response_metadata JSON,                    -- Quality metrics, tokens, etc.
-    use_case STRING(MAX),                      -- aider, dpf-agentic-copilot
-    platform STRING(MAX),                     -- slack, web, mobile
-) PRIMARY KEY (conversation_id);
-```
-
-### **Table 3: active_contexts**
-```sql
-CREATE TABLE active_contexts (
-    session_id STRING(MAX) NOT NULL,           -- Links to session
-    context_window ARRAY<STRING(MAX)>,         -- Last 10 conversation turns
-    last_updated TIMESTAMP,                    -- Context refresh time
-    context_summary STRING(MAX),               -- AI-generated summary
-) PRIMARY KEY (session_id);
-```
-
----
-
-## 🔄 **CONVERSATION LIFECYCLE FLOW**
-
-### **STEP 1: SESSION CREATION**
-```
-User starts conversation → Generate session_id → Store in conversation_sessions
-                                                ↓
-                           Set TTL = current_time + 24 hours
-                                                ↓
-                           Initialize empty active_contexts record
-```
-
-### **STEP 2: CONVERSATION STORAGE**
-```
-User asks question → Process through AIDER pipeline → Generate response
-                                    ↓
-         Store turn in conversation_history (user_query + llm_response)
-                                    ↓
-         Update active_contexts with new turn (keep last 10 turns)
-                                    ↓
-         Update session last_activity timestamp
-```
-
-### **STEP 3: CONTEXT RETRIEVAL**
-```
-New user question → Check session validity (TTL not expired)
-                                    ↓
-            Retrieve context from active_contexts (fast lookup)
-                                    ↓
-            Inject context into current query processing
-                                    ↓
-            Generate context-aware response
-```
-
-### **STEP 4: PERIODIC CLEANUP**
-```
-Every 6 hours → Cleanup job runs → Find expired sessions (expires_at < now)
-                                                ↓
-                     Delete from conversation_sessions (cascades to other tables)
-                                                ↓
-                     Delete orphaned records from active_contexts
-                                                ↓
-                     Log cleanup statistics
-```
-
----
-
-## 💼 **BUSINESS VALUE FOR DataX COPILOT**
-
-### **Use Case Examples:**
-
-#### **Data Analysis Workflow**
-```
-Turn 1: "Show me sales data for Q3 2024"
-       → AIDER retrieves and displays data
-
-Turn 2: "What's the trend compared to Q2?"
-       → AIDER knows context is Q3 2024 sales, compares with Q2
-
-Turn 3: "Which regions performed best?"
-       → AIDER maintains Q3 sales context, analyzes by region
-
-Turn 4: "Create a visualization for the top 3 regions"
-       → AIDER uses accumulated context to generate targeted viz
-```
-
-#### **Troubleshooting Session**
-```
-Turn 1: "My data pipeline is failing"
-       → AIDER helps diagnose the issue
-
-Turn 2: "The error mentions connection timeout"
-       → AIDER knows it's about the same pipeline, focuses on connectivity
-
-Turn 3: "How do I increase the timeout setting?"
-       → AIDER provides specific configuration steps for that pipeline
-```
-
----
-
-## ⚙️ **CONFIGURATION FROM DPF_CONFIG.PY**
-
-### **Key Settings:**
-```python
-DPF_CONVERSATION_CONFIG = {
-    "enable_conversations": True,               # Feature toggle
-    "session_ttl_hours": 24,                   # 24-hour session memory
-    "max_context_turns": 10,                   # Keep last 10 interactions
-    "max_context_length": 4000,                # Character limit for context
-    "cleanup_interval_hours": 6,               # Cleanup frequency
-    "conversation_weight": 0.3,                # 30% context + 70% fresh search
-    "supported_use_cases": [                   # Where to enable conversations
-        "aider", 
-        "dpf-agentic-copilot",                 # Primary target: DataX Copilot
-        "ai_workmate"
-    ],
-    "spanner_project_id": "vz-it-np-jvtv-dev-aidedo-0",
-    "spanner_instance_id": "aider-conversations",
-    "spanner_database_id": "conversation-db"
+db_dict = {
+    'all': {'faiss': FAISS.load_local(FAISS_ALL_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "gcp": {'faiss': FAISS.load_local(FAISS_GCP_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "bi_tools": {'faiss': FAISS.load_local(FAISS_BI_TOOLS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "dgs": {'faiss': FAISS.load_local(FAISS_DGS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ml_platform": {'faiss': FAISS.load_local(FAISS_ML_PLATFORM_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "teradata": {'faiss': FAISS.load_local(FAISS_TERADATA_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "hadoop": {'faiss': FAISS.load_local(FAISS_HADOOP_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "informatica": {'faiss': FAISS.load_local(FAISS_INFORMATICA_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "data_indus": {'faiss': FAISS.load_local(FAISS_DATA_INDUS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "data_discovery": {'faiss': FAISS.load_local(FAISS_DATA_DISCOVERY_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "edw_modernization": {'faiss': FAISS.load_local(FAISS_EDW_MODERNIZATION_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ai_indus": {'faiss': FAISS.load_local(FAISS_AI_INDUS_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)},
+    "ai_workmate": {'faiss': FAISS.load_local(FAISS_AI_WORKMATE_INDEX_PATH, faiss_embeddings,allow_dangerous_deserialization=True)}
 }
-```
 
----
-
-## 🎯 **RECOMMENDATION: Focus on DataX Copilot**
-
-### **Why DataX Copilot is the Perfect Fit:**
-
-1. **Complex Workflows**: Data analysis often involves multi-step processes
-2. **Context Dependency**: Each step builds on previous analysis
-3. **User Intent**: DataX users expect intelligent, stateful interactions
-4. **Business Impact**: Improved productivity for data professionals
-
-### **AIDER Slackbot Considerations:**
-- **Simple Q&A**: Most Slack interactions are single questions
-- **Different User Expectations**: Slack users expect quick, standalone answers
-- **Resource Overhead**: May not justify the complexity for basic knowledge retrieval
-
----
-
-## 📈 **IMPLEMENTATION PHASES**
-
-### **Phase 1: DataX Copilot MVP** (4 weeks)
-- Implement core conversation manager
-- Set up Spanner schema and connections
-- Enable basic context tracking for DataX
-
-### **Phase 2: Advanced Features** (2 weeks)
-- Add context summarization
-- Implement query refinement based on history
-- Set up automated cleanup jobs
-
-### **Phase 3: Optional AIDER Extension** (2 weeks)
-- Evaluate usage metrics from DataX
-- If valuable, extend to AIDER Slackbot
-- Configure different conversation patterns per use case
-
----
-
-## 🔍 **TESTING STRATEGY**
-
-### **Conversation Flow Tests:**
-- Session creation and TTL validation
-- Multi-turn conversation accuracy
-- Context injection and weighting
-- Cleanup job execution and data purging
-
-### **Performance Tests:**
-- Spanner read/write latency
-- Context retrieval speed
-- Memory usage with active sessions
-- Database cleanup efficiency
-
----
-
-## 💡 **DISCUSSION POINTS FOR YOUR LEAD**
-
-1. **Should we prioritize DataX Copilot** over AIDER Slackbot for conversational features?
-2. **Are 24-hour sessions and 6-hour cleanup intervals** appropriate for your use cases?
-3. **How should we handle conversation context** in multi-user DataX scenarios?
-4. **What metrics should we track** to measure conversational feature success?
-5. **Do we need different conversation patterns** for different types of data analysis workflows?
-
----
-
-This architecture provides a solid foundation for intelligent, context-aware interactions that will significantly enhance the DataX Copilot user experience!
-
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                   AIDER / DataX Copilot – Architecture Flow                │
-│                      (Spanner-Based Conversation Memory)                   │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-USER CHANNELS
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│  DataX Copilot│   │   Slack Bot   │   │   Web Portal  │   │   Mobile App  │
-└───────┬───────┘   └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
-        │                   │                   │                   │
-        └───────────────┬───┴───────────────────┴───────────────────┘
-                        │  user_query
-                        ▼
-                ┌─────────────────────────────┐
-                │   CONVERSATION MANAGER      │
-                │ (conversation_manager.py)   │
-                └───────────┬─────────────────┘
-                            │
-                ┌───────────┴─────────────────────────────────────────────────┐
-                │                         FLOW                                 │
-                └──────────────────────────────────────────────────────────────┘
-
-   [1] SESSION CHECK / CREATE
-   ┌──────────────────────────────────────────────────────────────────────────┐
-   │  Does session_id exist & not expired?                                   │
-   │        ┌───────────────┐        yes                                     │
-   │   no ─▶│ Create session │──────────────┐                                 │
-   │        └──────┬────────┘              │                                 │
-   │               │ set TTL = now+24h     │                                 │
-   │               ▼                        ▼                                 │
-   │        ┌────────────────┐      ┌───────────────────────────────────────┐ │
-   │        │conversation_   │      │ active_contexts: fast context lookup  │ │
-   │        │sessions INSERT │      │ (context_window: last 10, summary)    │ │
-   │        └────────────────┘      └───────────────────────────────────────┘ │
-   └──────────────────────────────────────────────────────────────────────────┘
-
-   [2] CONTEXT RETRIEVAL
-   ┌──────────────────────────────────────────────────────────────────────────┐
-   │ Fetch session’s context_window & context_summary from active_contexts    │
-   │ → Use as input context for LLM prompting                                 │
-   └──────────────────────────────────────────────────────────────────────────┘
-
-   [3] RESPONSE GENERATION
-   ┌──────────────────────────────────────────────────────────────────────────┐
-   │ Process user_query with AIDER/DataX pipeline (+ retrieved context)       │
-   │ → Produce llm_response                                                   │
-   └──────────────────────────────────────────────────────────────────────────┘
-
-   [4] PERSIST TURN + REFRESH CONTEXT
-   ┌──────────────────────────────────────────────────────────────────────────┐
-   │ conversation_history INSERT:                                             │
-   │  - conversation_id, session_id, turn_number                              │
-   │  - user_query, llm_response, timestamps                                  │
-   │  - context_used[], response_metadata, use_case, platform                 │
-   │ Update active_contexts:                                                  │
-   │  - push latest turn (cap last 10)                                        │
-   │  - update last_updated and (optional) context_summary                    │
-   │ Update conversation_sessions.last_activity                               │
-   └──────────────────────────────────────────────────────────────────────────┘
-
-   [5] RETURN
-   ┌──────────────────────────────────────────────────────────────────────────┐
-   │ Return llm_response to originating channel (DataX/Slack/Web/Mobile)     │
-   └──────────────────────────────────────────────────────────────────────────┘
-
-
-SPANNER DATABASE OPERATIONS (tables)
-┌─────────────────────────┐   ┌─────────────────────────┐   ┌───────────────────┐
-│ conversation_sessions   │   │ conversation_history    │   │  active_contexts  │
-│ - session_id (PK)       │   │ - conversation_id (PK)  │   │ - session_id (PK) │
-│ - user_id               │   │ - session_id            │   │ - context_window  │
-│ - created_at            │   │ - turn_number           │   │ - last_updated    │
-│ - last_activity         │   │ - user_query            │   │ - context_summary │
-│ - expires_at (TTL 24h)  │   │ - llm_response          │   └───────────────────┘
-│ - session_metadata JSON │   │ - timestamps, metadata  │
-│ - is_active             │   │ - use_case, platform    │
-└─────────────────────────┘   └─────────────────────────┘
-
-PERIODIC CLEANUP (every 6h)
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Job scans conversation_sessions where expires_at < now → delete session     │
-│ → cascade/handle orphans in active_contexts & history → log stats           │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-
-
-
-
-
-
-
-# AIDER CONVERSATIONAL FEATURE ARCHITECTURE
-## Spanner-Based Conversation Management for DataX Copilot
-
-### 🎯 **EXECUTIVE SUMMARY**
-The conversational feature transforms AIDER from a stateless Q&A system into an intelligent, context-aware assistant that remembers user interactions. This is particularly valuable for **DataX Copilot** where users engage in complex, multi-step data analysis workflows.
-
----
-
-## 📊 **ARCHITECTURE DIAGRAM**
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CONVERSATIONAL FEATURE ARCHITECTURE                       │
-│                         (Google Cloud Spanner Backend)                       │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-                              ┌─ USER INTERACTION LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   DataX     │    │   Slack     │    │    Web      │    │   Mobile    │
-│  Copilot    │───▶│   Bot       │───▶│   Portal    │───▶│    App      │
-│             │    │  (bot.py)   │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       └───────────────────┼───────────────────┼───────────────────┘
-                           │                   │
-                           ▼                   ▼
-                    ┌─────────────────────────────────┐
-                    │     CONVERSATION MANAGER        │
-                    │    (conversation_manager.py)    │
-                    └─────────────────────────────────┘
-                                      │
-                                      ▼
-              ┌─ SPANNER DATABASE OPERATIONS ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   SESSION   │    │CONVERSATION │    │   ACTIVE    │    │   CLEANUP   │
-│ MANAGEMENT  │───▶│  HISTORY    │───▶│ CONTEXTS    │───▶│    JOBS     │
-│             │    │             │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                   │                   │                   │
-       ▼                   ▼                   ▼                   ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│CREATE/TRACK │    │ STORE TURNS │    │FAST CONTEXT │    │PERIODIC TTL │
-│  SESSIONS   │    │ Q&A PAIRS   │    │  RETRIEVAL  │    │   PURGING   │
-│   (24hr)    │    │(Turn-by-Turn)│    │ (Last 10)   │    │ (Every 6h)  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-```
-
----
-
-## 🗄️ **SPANNER DATABASE SCHEMA**
-
-### **Table 1: conversation_sessions**
-```sql
-CREATE TABLE conversation_sessions (
-    session_id STRING(MAX) NOT NULL,           -- Unique session identifier
-    user_id STRING(MAX) NOT NULL,              -- Slack user ID or DataX user
-    created_at TIMESTAMP NOT NULL,             -- Session creation time
-    last_activity TIMESTAMP NOT NULL,          -- Last interaction timestamp
-    expires_at TIMESTAMP NOT NULL,             -- TTL expiration (24 hours)
-    session_metadata JSON,                     -- Use case, platform, etc.
-    is_active BOOL NOT NULL,                   -- Active/inactive flag
-) PRIMARY KEY (session_id);
-```
-
-### **Table 2: conversation_history**
-```sql
-CREATE TABLE conversation_history (
-    conversation_id STRING(MAX) NOT NULL,      -- Unique conversation turn ID
-    session_id STRING(MAX) NOT NULL,           -- Links to session
-    turn_number INT64 NOT NULL,                -- Sequential turn counter
-    user_query STRING(MAX),                    -- User's question
-    query_timestamp TIMESTAMP,                 -- When question was asked
-    llm_response STRING(MAX),                  -- AIDER's response
-    response_timestamp TIMESTAMP,              -- When response was generated
-    context_used ARRAY<STRING(MAX)>,           -- Document chunks used
-    response_metadata JSON,                    -- Quality metrics, tokens, etc.
-    use_case STRING(MAX),                      -- aider, dpf-agentic-copilot
-    platform STRING(MAX),                     -- slack, web, mobile
-) PRIMARY KEY (conversation_id);
-```
-
-### **Table 3: active_contexts**
-```sql
-CREATE TABLE active_contexts (
-    session_id STRING(MAX) NOT NULL,           -- Links to session
-    context_window ARRAY<STRING(MAX)>,         -- Last 10 conversation turns
-    last_updated TIMESTAMP,                    -- Context refresh time
-    context_summary STRING(MAX),               -- AI-generated summary
-) PRIMARY KEY (session_id);
-```
-
----
-
-## 🔄 **CONVERSATION LIFECYCLE FLOW**
-
-### **STEP 1: SESSION CREATION**
-```
-User starts conversation → Generate session_id → Store in conversation_sessions
-                                                ↓
-                           Set TTL = current_time + 24 hours
-                                                ↓
-                           Initialize empty active_contexts record
-```
-
-### **STEP 2: CONVERSATION STORAGE**
-```
-User asks question → Process through AIDER pipeline → Generate response
-                                    ↓
-         Store turn in conversation_history (user_query + llm_response)
-                                    ↓
-         Update active_contexts with new turn (keep last 10 turns)
-                                    ↓
-         Update session last_activity timestamp
-```
-
-### **STEP 3: CONTEXT RETRIEVAL**
-```
-New user question → Check session validity (TTL not expired)
-                                    ↓
-            Retrieve context from active_contexts (fast lookup)
-                                    ↓
-            Inject context into current query processing
-                                    ↓
-            Generate context-aware response
-```
-
-### **STEP 4: PERIODIC CLEANUP**
-```
-Every 6 hours → Cleanup job runs → Find expired sessions (expires_at < now)
-                                                ↓
-                     Delete from conversation_sessions (cascades to other tables)
-                                                ↓
-                     Delete orphaned records from active_contexts
-                                                ↓
-                     Log cleanup statistics
-```
-
----
-
-## 💼 **BUSINESS VALUE FOR DataX COPILOT**
-
-### **Use Case Examples:**
-
-#### **Data Analysis Workflow**
-```
-Turn 1: "Show me sales data for Q3 2024"
-       → AIDER retrieves and displays data
-
-Turn 2: "What's the trend compared to Q2?"
-       → AIDER knows context is Q3 2024 sales, compares with Q2
-
-Turn 3: "Which regions performed best?"
-       → AIDER maintains Q3 sales context, analyzes by region
-
-Turn 4: "Create a visualization for the top 3 regions"
-       → AIDER uses accumulated context to generate targeted viz
-```
-
-#### **Troubleshooting Session**
-```
-Turn 1: "My data pipeline is failing"
-       → AIDER helps diagnose the issue
-
-Turn 2: "The error mentions connection timeout"
-       → AIDER knows it's about the same pipeline, focuses on connectivity
-
-Turn 3: "How do I increase the timeout setting?"
-       → AIDER provides specific configuration steps for that pipeline
-```
-
----
-
-## ⚙️ **CONFIGURATION FROM DPF_CONFIG.PY**
-
-### **Key Settings:**
-```python
-DPF_CONVERSATION_CONFIG = {
-    "enable_conversations": True,               # Feature toggle
-    "session_ttl_hours": 24,                   # 24-hour session memory
-    "max_context_turns": 10,                   # Keep last 10 interactions
-    "max_context_length": 4000,                # Character limit for context
-    "cleanup_interval_hours": 6,               # Cleanup frequency
-    "conversation_weight": 0.3,                # 30% context + 70% fresh search
-    "supported_use_cases": [                   # Where to enable conversations
-        "aider", 
-        "dpf-agentic-copilot",                 # Primary target: DataX Copilot
-        "ai_workmate"
-    ],
-    "spanner_project_id": "vz-it-np-jvtv-dev-aidedo-0",
-    "spanner_instance_id": "aider-conversations",
-    "spanner_database_id": "conversation-db"
-}
-```
-
----
-
-## 🎯 **RECOMMENDATION: Focus on DataX Copilot**
-
-### **Why DataX Copilot is the Perfect Fit:**
-
-1. **Complex Workflows**: Data analysis often involves multi-step processes
-2. **Context Dependency**: Each step builds on previous analysis
-3. **User Intent**: DataX users expect intelligent, stateful interactions
-4. **Business Impact**: Improved productivity for data professionals
-
-### **AIDER Slackbot Considerations:**
-- **Simple Q&A**: Most Slack interactions are single questions
-- **Different User Expectations**: Slack users expect quick, standalone answers
-- **Resource Overhead**: May not justify the complexity for basic knowledge retrieval
-
----
-
-## 📈 **IMPLEMENTATION PHASES**
-
-### **Phase 1: DataX Copilot MVP** (4 weeks)
-- Implement core conversation manager
-- Set up Spanner schema and connections
-- Enable basic context tracking for DataX
-
-### **Phase 2: Advanced Features** (2 weeks)
-- Add context summarization
-- Implement query refinement based on history
-- Set up automated cleanup jobs
-
-### **Phase 3: Optional AIDER Extension** (2 weeks)
-- Evaluate usage metrics from DataX
-- If valuable, extend to AIDER Slackbot
-- Configure different conversation patterns per use case
-
----
-
-## 🔍 **TESTING STRATEGY**
-
-### **Conversation Flow Tests:**
-- Session creation and TTL validation
-- Multi-turn conversation accuracy
-- Context injection and weighting
-- Cleanup job execution and data purging
-
-### **Performance Tests:**
-- Spanner read/write latency
-- Context retrieval speed
-- Memory usage with active sessions
-- Database cleanup efficiency
-
----
-
-## 💡 **DISCUSSION POINTS FOR YOUR LEAD**
-
-1. **Should we prioritize DataX Copilot** over AIDER Slackbot for conversational features?
-2. **Are 24-hour sessions and 6-hour cleanup intervals** appropriate for your use cases?
-3. **How should we handle conversation context** in multi-user DataX scenarios?
-4. **What metrics should we track** to measure conversational feature success?
-5. **Do we need different conversation patterns** for different types of data analysis workflows?
-
----
-
-This architecture provides a solid foundation for intelligent, context-aware interactions that will significantly enhance the DataX Copilot user experience!
-
-
-
-====================================================================================================
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    AUTOMATED TESTING FRAMEWORK ARCHITECTURE                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-                              ┌─ ORCHESTRATION LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   GitHub    │    │    Apex     │    │   Test      │    │  Parallel   │
-│  Actions    │───▶│ Framework   │───▶│ Scheduler   │───▶│ Execution   │
-│   (CI/CD)   │    │             │    │             │    │  Engine     │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-                              ┌─ TEST EXECUTION LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ Functional  │    │Performance  │    │Integration  │    │  Quality    │
-│   Tests     │    │   Tests     │    │   Tests     │    │Assurance    │
-│ (300+ TCs)  │    │ (Load/Perf) │    │ (E2E Flow)  │    │   Tests     │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-                              ┌─ TARGET SYSTEMS LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Legacy    │    │     DPF     │    │   Slack     │    │    Web      │
-│   FAISS     │    │  Pipeline   │    │    Bot      │    │    APIs     │
-│  Pipeline   │    │ (Elasticsearch) │    │  (bot.py)   │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-                              ┌─ REPORTING LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Quality    │    │Performance  │    │   Test      │    │   Business  │
-│   Gates     │    │ Dashboards  │    │  Reports    │    │  Metrics    │
-│ (Pass/Fail) │    │ (Real-time) │    │ (Detailed)  │    │ (KPIs/ROI)  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-
-
-# AUTOMATED TESTING FRAMEWORK ARCHITECTURE
-## Generic CI/CD Agnostic Design
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    AUTOMATED TESTING FRAMEWORK ARCHITECTURE                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-                              ┌─ ORCHESTRATION LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   CI/CD     │    │    Apex     │    │   Test      │    │  Parallel   │
-│ Platform    │───▶│ Framework   │───▶│ Scheduler   │───▶│ Execution   │
-│ (Jenkins/   │    │ (Master)    │    │             │    │  Engine     │
-│  TeamCity)  │    │             │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-                              ┌─ TEST EXECUTION LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ Functional  │    │Performance  │    │Integration  │    │  Quality    │
-│   Tests     │    │   Tests     │    │   Tests     │    │Assurance    │
-│ (300+ TCs)  │    │ (Load/Perf) │    │ (E2E Flow)  │    │   Tests     │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-                              ┌─ TARGET SYSTEMS LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Legacy    │    │     DPF     │    │   Slack     │    │    Web      │
-│   FAISS     │    │  Pipeline   │    │    Bot      │    │    APIs     │
-│  Pipeline   │    │(Elasticsearch)│    │  (bot.py)   │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-                              ┌─ REPORTING LAYER ─┐
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Quality    │    │Performance  │    │   Test      │    │   Business  │
-│   Gates     │    │ Dashboards  │    │  Reports    │    │  Metrics    │
-│ (Pass/Fail) │    │ (Real-time) │    │ (Detailed)  │    │ (KPIs/ROI)  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-```
-
-## ORCHESTRATION LAYER DETAILS
-
-### 1. CI/CD Platform (Tool Agnostic)
-- **Jenkins**: Most common enterprise choice
-- **TeamCity**: JetBrains solution
-- **Azure DevOps**: Microsoft ecosystem
-- **GitLab CI**: Git-integrated
-- **Bamboo**: Atlassian stack
-- **Or any custom orchestration tool**
-
-### 2. Apex Framework (Master Controller)
-```python
-# Example Apex Framework Structure
-class TestOrchestrator:
-    def __init__(self, config_path: str):
-        self.config = TestConfig(config_path)
-        self.scheduler = TestScheduler()
-        self.executor = ParallelExecutor()
+et = time.time() - st
+# print(f'Loading database took {et} seconds.')
+
+async def reranker(reranklist):
+    try:
+        if env!= "prod":
+            headers={
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "688379114786",
+            "endpoint_id": "4179014998757998592",
+            "usecase_name": "cross-encoder",
+            "model_type": "cross-encoder",
+            "input_request": {
+                "instances": reranklist
+            }
+        })
+        else:
+            headers={
+                'Content-Type': 'application/json',
+                'X-apikey':apikey
+            }
+            payload = json.dumps({
+            "region": "us-east4",
+            "project_id": "783334890793",
+            "endpoint_id": "6356118390498656256",
+            "usecase_name": "cross-encoder",
+            "model_type": "cross-encoder",
+            "input_request": {
+                "instances": reranklist
+            }
+        })
+        response = requests.request(
+                "POST", url, headers=headers, data=payload, verify=False).json()
         
-    def run_test_suite(self, suite_name: str):
-        # Load test configuration
-        test_suite = self.config.get_suite(suite_name)
-        
-        # Schedule tests based on dependencies
-        execution_plan = self.scheduler.create_plan(test_suite)
-        
-        # Execute in parallel where possible
-        results = self.executor.run_parallel(execution_plan)
-        
-        # Generate reports and quality gates
-        return self.generate_reports(results)
-```
+        return response
+    except Exception as e:
+        print(f"Failure from reranker API. Encountered exception: {e}")
+        raise
 
-### 3. Test Scheduler
-- **Dependency Management**: Tests that depend on others run in sequence
-- **Resource Allocation**: Distribute tests across available workers
-- **Retry Logic**: Handle flaky tests automatically
-- **Priority Queuing**: Critical tests first
 
-### 4. Parallel Execution Engine
-- **Worker Pool Management**: Spin up/down test workers
-- **Load Balancing**: Distribute tests evenly
-- **Resource Monitoring**: CPU, Memory, Network usage
-- **Failure Isolation**: One failed test doesn't break others
 
-## INTEGRATION WITH YOUR CURRENT SYSTEM
-
-### How It Plugs Into Your AIDER System:
-```
-Your Current AIDER Stack:
-├── main_serve.py (FastAPI endpoints)
-├── bot.py (Slack integration)  
-├── dpf_config.py (DPF pipeline)
-├── conversation_manager.py (Spanner sessions)
-└── index_creation.py (FAISS/Elasticsearch)
-
-Testing Framework Integration:
-├── test_api_endpoints.py (Tests main_serve.py)
-├── test_slack_bot.py (Tests bot.py functionality)
-├── test_dpf_pipeline.py (Tests dpf_config.py)
-├── test_conversation_flow.py (Tests conversation_manager.py)
-└── test_search_accuracy.py (Tests index quality)
-```
-
-## QUALITY GATES IMPLEMENTATION
-
-### Automated Decision Making:
-```python
-class QualityGate:
-    def __init__(self):
-        self.thresholds = {
-            'functional_pass_rate': 95.0,  # 95% tests must pass
-            'performance_degradation': 10.0,  # <10% performance drop
-            'integration_success': 100.0,  # All integration tests pass
-            'coverage_minimum': 80.0  # 80% code coverage
-        }
+async def faiss_search(faiss_db, request):
+    st = time.time()
+    bm25_retriever=[]
+    #retriever = faiss_db.as_retriever()
+    #faiss_results = retriever.invoke(request.query,search_kwargs={"k": 5})
+    bm25path=f'indexes/{request.index}/{request.index}_bm25_retriever.pkl'
+    with open(bm25path,'rb') as file:
+        bm25_retriever = pickle.load(file)
+        bm25_retriever.k=5
     
-    def evaluate(self, test_results):
-        gates_passed = []
-        
-        # Check each gate
-        for metric, threshold in self.thresholds.items():
-            actual_value = test_results.metrics[metric]
-            passed = self._check_threshold(metric, actual_value, threshold)
-            gates_passed.append(passed)
+
+    faiss_retriever = faiss_db.as_retriever(search_kwargs={"k":5})
+    ensemble_retriever=EnsembleRetriever(retrievers=[bm25_retriever,faiss_retriever],
+                                       weights=[0.5,0.5])
+    #faiss_results=faiss_db.similarity_search(request.query)
+    faiss_results=ensemble_retriever.invoke(request.query)
+    # print(faiss_results)
+    et = time.time() - st
+    print(f'retrieval time {et} seconds.')
+    st = time.time()
+    reranker_list=[]
+    source_documents=[]
+    cross_encoder_updated=[]
+    if isinstance(faiss_results, list) and len(faiss_results) > 0:
+        for j in faiss_results:
+            templist=[]
+            templist.append(request.query)
+            templist.append(j.page_content)
+            reranker_list.append(templist)
+
             
-        # All gates must pass for deployment
-        return all(gates_passed)
-```
+        rerank_response=await reranker(reranker_list)
+        #print("rerank_response: ",rerank_response)
+        rerank_score =np.array(rerank_response[0][0]["prediction_scores"])
+        K=4
+        rerank_score_sorted = np.argsort(-rerank_score)[:K]
+        et = time.time() - st
+        print(f'cross encoder time {et} seconds.')
+        print("rerank_score_sorted: ",rerank_score_sorted)
+        cross_encoder_updated = [faiss_results[i] for i in rerank_score_sorted]
+        for i in cross_encoder_updated:
+            if i.metadata["source"] not in source_documents:
+                source_documents.append(i.metadata["source"])
 
-## BUSINESS PRESENTATION TALKING POINTS
+    return {"llm_context":cross_encoder_updated,"source_document":source_documents}
 
-### For Technical Leadership:
+@app.post("/vegas/apps/aider-retriever/api")
+async def search( request: LLMQuery):
+    try:
+        print("--------------------------------------------------------")
+        print(f"Index:{request.index} and query:{request.query}")
+        print("env: ",env)
+        print("EMAS_URL: ",EMAS_URL)
+        default_db = db_dict.get(request.index)
+        # print(default_db)
+        #search_type = request.search
 
-1. **"No Vendor Lock-in"**: Framework works with any CI/CD tool your organization uses
-2. **"Parallel Execution"**: Reduces test suite time from hours to minutes
-3. **"Quality Gates"**: Automated go/no-go decisions prevent bad deployments
-4. **"Real-time Monitoring"**: Live dashboards show system health during tests
+        final_result = {"faiss": []}
+        # faiss
+        faiss_db = default_db['faiss']
+        # print(faiss_db.index.ntotal)
+        final_result['faiss'] = await faiss_search(faiss_db, request)
 
-### For Business Leadership:
+        return final_result
+    except Exception as e:
+        print(e)
+        return {"error": str(e)}
 
-1. **"Risk Reduction"**: Catch issues before they impact users
-2. **"Faster Releases"**: Automated testing enables faster feature delivery
-3. **"Cost Savings"**: Prevent production incidents that cost time and money
-4. **"Compliance Ready"**: Automated documentation for audit trails
+@app.post("/vegas/apps/aider-retriever/dpf/api")
+async def dpf_search_endpoint(request: DPFQuery):
+    """
+    DPF search endpoint using Elasticsearch with guaranteed consistent responses
+    """
+    try:
+        start_time = time.time()
+        result = await dpf_search(request)
+        total_time = time.time() - start_time
+        
+        result["search_metadata"]["total_pipeline_time"] = total_time
+        return result
+    except Exception as e:
+        print("exception",str(e))
+        return {"error": "Unable to process your request at this time. Please try again."}
 
-## 🎯 **SIMPLE 4-LAYER SUMMARY**
+@app.get("/vegas/apps/aider-retriever/dpf/health")
+async def dpf_health_check():
+    """
+    Health check endpoint for DPF service
+    """
+    try:
+        # Test Elasticsearch connectivity
+        test_query = {
+            "query": {"match_all": {}},
+            "size": 1
+        }
+        
+        es_result = await search_elasticsearch(
+            DPF_ELASTICSEARCH_CONFIG["api_url"], 
+            DPF_ELASTICSEARCH_CONFIG["api_key"], 
+            DPF_ELASTICSEARCH_CONFIG["index_name"], 
+            test_query
+        )
+        
+        return {
+            "status": "healthy",
+            "elasticsearch": "connected",
+            "index_name": DPF_ELASTICSEARCH_CONFIG["index_name"],
+            "total_documents": es_result.get("hits", {}).get("total", {}).get("value", 0),
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.time()
+        }
 
-### **LAYER 1: ORCHESTRATION LAYER** 
-*Command and control center*
-- **Purpose**: Manages the entire testing process
-- **Components**: CI/CD triggers, master controller, resource manager, configuration manager
-- **Responsibilities**: Trigger tests, coordinate execution, manage resources, generate reports
+async def search_elasticsearch(api_url: str, api_key: str, index_name: str, query: dict):
+    """
+    Retrieve chunks from an Elasticsearch index based on a query.
+    """
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"ApiKey {api_key}"
+    }
 
-### **LAYER 2: AIDER - TESTING LAYER**
-*The actual test execution*
-- **Functional/Performance Tests**: API response times, concurrent load, resource consumption
-- **Integration Tests**: End-to-end workflows, cross-system communication, data flow integrity  
-- **QA Tests**: Response quality, content relevance, security, user experience
-
-### **LAYER 3: AIDER - TARGET SYSTEMS**
-*What gets tested*
-- **DPF Elasticsearch Pipeline**: Document indexing, search accuracy, performance optimization
-- **Slackbot**: Message processing, command handling, user authentication, response delivery
-- **Web/Backend APIs**: REST endpoints, authentication, request validation, error handling
-
-### **LAYER 4: REPORTING LAYER**
-*Results and decisions*
-- **Quality Gates**: Automated pass/fail decisions with specific thresholds
-- **Performance Dashboards**: Real-time monitoring and resource utilization
-- **Test Reports**: Detailed execution results and failure analysis
-- **Business Metrics**: KPIs, ROI tracking, and system availability
-
----
-
-## UPDATED 4-LAYER ARCHITECTURE BREAKDOWN
-
-Based on your visual diagram, here's the detailed breakdown of each layer:
-
-### 🎯 **LAYER 1: ORCHESTRATION LAYER**
-*The command and control center*
-
-**Key Components:**
-- **CI/CD Pipeline Trigger**: Jenkins, TeamCity, Azure DevOps, or custom orchestrator
-- **Master Test Controller**: Coordinates all testing activities
-- **Resource Manager**: Allocates compute resources and manages test environments
-- **Configuration Manager**: Handles test parameters, environment variables, and secrets
-
-**Responsibilities:**
-- Trigger tests based on code changes, schedules, or manual requests
-- Coordinate test execution across multiple environments
-- Manage test data setup and teardown
-- Control parallel execution and resource allocation
-- Generate execution reports and status updates
-
----
-
-### 🧪 **LAYER 2: AIDER - TESTING LAYER**
-*The specialized test execution units*
-
-#### **Functional/Performance Tests**
-**What it tests:**
-- API response times and throughput
-- Memory usage and resource consumption
-- Concurrent user load handling
-- Database query performance
-- Search accuracy and relevance
-
-**Example Tests:**
-```python
-# Performance Test Example
-def test_concurrent_queries():
-    # Test 100 simultaneous user queries
-    start_time = time.time()
-    responses = execute_parallel_queries(100)
-    execution_time = time.time() - start_time
+    search_url = f"{api_url}/{index_name}/_search"
     
-    assert execution_time < 30.0  # All queries complete in 30 seconds
-    assert all(len(r) > 50 for r in responses)  # All responses meaningful
-```
+    try:
+        response = requests.post(search_url, headers=headers, data=json.dumps(query))
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error querying Elasticsearch: {e}")
+        raise HTTPException(status_code=500, detail="Unable to search documents at this time")
 
-#### **Integration Tests**
-**What it tests:**
-- End-to-end user workflows
-- Cross-system communication
-- Data flow integrity
-- Third-party service integration
-- Error handling and recovery
-
-**Example Tests:**
-```python
-# Integration Test Example
-def test_slack_to_response_flow():
-    # 1. Simulate Slack message
-    slack_event = create_slack_message("What is machine learning?")
+async def generate_dpf_embedding(text: str):
+    """
+    Generate embedding for DPF using the embedding endpoint
+    """
+    headers = {
+        'Content-Type': 'application/json',
+        'X-apikey': DPF_API_KEY # Use API key 
+    }
     
-    # 2. Process through entire pipeline
-    response = process_complete_workflow(slack_event)
+    # # Use the payload format 
+    payload = {
+        # "region": "us-east4",
+        # "project_id": "688379114786",
+        "text": text,
+        "usecase_name": "aider",
+        "model_name": "all-distilroberta-v1",
+        "client_metadata": {
+            "client_tx_id": "f0f0a0b5-2ac5-4f56",
+            "client_application": "aider",
+        }
+
+    }
+    print("payload_embed",payload)
     
-    # 3. Verify all components worked together
-    assert response.status == "success"
-    assert "machine learning" in response.content.lower()
-    assert response.conversation_stored == True
-```
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["embedding_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload),
+            verify=False  # Added 
+        )
+        print(f"Embedding API Response Text: {response.text}")
+        response.raise_for_status()
+        result = response.json()
+        print("result_embed",result)
+        # For the simple endpoint, the response is directly a list of floats
+        if isinstance(result, list) and all(isinstance(x, (int, float)) for x in result):
+            return result
+        
+        # Fallback extraction methods for complex response formats
+        if isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], list) and len(result[0]) > 0:
+                if isinstance(result[0][0], dict) and 'embedding' in result[0][0]:
+                    return result[0][0]['embedding']
+        
+        if isinstance(result, dict) and 'embedding' in result:
+            return result['embedding']
+        elif isinstance(result, list) and len(result) > 0:
+            # If it's a list of embeddings, take the first one
+            if isinstance(result[0], list):
+                return result[0]
+            elif isinstance(result[0], dict) and 'embedding' in result[0]:
+                return result[0]['embedding']
+            else:
+                return result
+        elif isinstance(result, list):
+            return result
+        else:
+            print(f"Unexpected embedding response format: {result}")
+            raise HTTPException(status_code=500, detail="Invalid embedding response format")
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error generating embedding: {e}")
+        raise HTTPException(status_code=500, detail="Unable to process your query at this time")
 
-#### **QA Tests**
-**What it tests:**
-- Response quality and accuracy
-- Content relevance and coherence
-- Compliance with business rules
-- Security and data privacy
-- User experience metrics
-
-**Example Tests:**
-```python
-# QA Test Example
-def test_response_quality():
-    question = "How do I implement a data pipeline?"
-    response = get_aider_response(question)
+async def dpf_reranker(sentence_pairs: List[List[str]]):
+    """
+    Rerank results using cross-encoder for DPF
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_API_KEY 
+    }
     
-    # Quality checks
-    assert calculate_relevance_score(question, response) > 0.8
-    assert not contains_sensitive_data(response)
-    assert readability_score(response) > 7.0
-    assert response_completeness(response) > 0.9
-```
+    payload = {
+        # "region": DPF_CROSS_ENCODER_CONFIG["region"],
+        # "project_id": DPF_CROSS_ENCODER_CONFIG["project_id"],
+        "endpoint_id": DPF_CROSS_ENCODER_CONFIG["endpoint_id"],
+        "usecase_name": DPF_CROSS_ENCODER_CONFIG["usecase_name"],
+        "model_type": DPF_CROSS_ENCODER_CONFIG["model_type"],
+        "input_request": {
+            "instances": sentence_pairs
+        }
+    }
+    print("reranker",payload)
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["cross_encoder_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        print("result",result)
+        # Handle different response formats
+        if isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], list) and len(result[0]) > 0:
+                if isinstance(result[0][0], dict) and "prediction_scores" in result[0][0]:
+                    return result
+                else:
+                    # If the structure is different, wrap it properly
+                    return [[{"prediction_scores": result[0] if isinstance(result[0], list) else [result[0]]}]]
+            else:
+                return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+        elif isinstance(result, dict) and 'predictions' in result:
+            return result['predictions']
+        else:
+            print(f"Unexpected reranker response format: {result}")
+            return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Error in reranking: {e}")
+        # Return default scores on error
+        return [[{"prediction_scores": [0.0] * len(sentence_pairs)}]]
 
----
-
-### 🎯 **LAYER 3: AIDER - TARGET SYSTEMS**
-*The actual components being tested*
-
-#### **DPF - Elasticsearch Pipeline**
-**Components Under Test:**
-- Document indexing and search
-- Query processing and ranking
-- Index maintenance and updates
-- Performance optimization
-
-**Test Coverage:**
-```python
-# DPF Pipeline Tests
-class TestDPFPipeline:
-    def test_document_indexing(self):
-        # Test document ingestion into Elasticsearch
+async def generate_llm_response(user_query: str, context, use_case: str):
+    """
+    Generate LLM response using with Gemini fallback 
+    """
+    # Check cache first for absolute consistency
+    # cache_key = get_llm_cache_key(user_query, context)
+    # if cache_key in RESPONSE_CACHE:
+    #     return RESPONSE_CACHE[cache_key]
+    # Get primary response
+    primary_response = await _call_llm_api(user_query, context, use_case)
+    is_unhelpful = _is_unhelpful_response(primary_response)
+    
+    if DPF_LLM_CONFIG["enable_gemini_fallback"] and is_unhelpful:
+        print(f"Primary LLM gave unhelpful response, trying aider_gemini fallback")
+        print(f"Primary response: {primary_response[:100]}")
         
-    def test_search_accuracy(self):
-        # Test retrieval quality and ranking
+        # Ensure context is always a list of strings for fallback
+        if isinstance(context, list):
+            context_list = context
+        else:
+            context_list = [str(context)]
         
-    def test_index_performance(self):
-        # Test search response times
-```
-
-#### **Slackbot**
-**Components Under Test:**
-- Message processing and parsing
-- Command handling and routing
-- User authentication and authorization
-- Response formatting and delivery
-
-**Test Coverage:**
-```python
-# Slackbot Tests
-class TestSlackbot:
-    def test_message_parsing(self):
-        # Test various message formats
+        print(f"Fallback context type: {type(context_list)}, length: {len(context_list)}")
+        print(f"Fallback context preview: {context_list[0][:100] if context_list else 'No content'}...")
         
-    def test_slash_commands(self):
-        # Test /aider commands functionality
+        # Call aider_gemini context fallback with list of strings
+        gemini_response = await _call_llm_api_with_aider_gemini(
+            user_query, 
+            context_list, 
+            use_case
+        )
+
+        is_gemini_unhelpful = _is_unhelpful_response(gemini_response)
+        print(f"Is gemini response unhelpful? {is_gemini_unhelpful}")
         
-    def test_user_context(self):
-        # Test conversation context management
-```
+        if not is_gemini_unhelpful:
+            print(f"aider_gemini fallback successful: {gemini_response[:100]}...")
+            print(f"Returning aider_gemini response instead of primary response")
+            return f"{gemini_response}||GEMINI_RESPONSE||"
+        else:
+            print(f"aider_gemini also gave unhelpful response: {gemini_response[:100]}...")
+    else:
+        print(f"Primary response is helpful or fallback is disabled, using primary response")
+            
+            # # Try one more fallback with knowledge-based approach
+            # print("Trying knowledge-based fallback...")
+            # knowledge_response = await _generate_knowledge_based_response(user_query)
+            # if knowledge_response and not _is_unhelpful_response(knowledge_response):
+            #     print(f"Knowledge-based fallback successful: {knowledge_response[:100]}...")
+            #     return knowledge_response
+    
+    print(f"Final LLM Response: {primary_response[:200]}...")
+    return primary_response
+    
+#     if DPF_LLM_CONFIG["enable_gemini_fallback"] and is_unhelpful:
+#         print(f"Primary LLM gave unhelpful response, trying Gemini fallback")
+#         print(f"Primary response: {primary_response[:100]}")
+#         # Create enhanced context for fallback ---use any prompts 
+#         enhanced_context = f"""
+# Based on the available information and general knowledge, please help answer this question: {user_query}
 
-#### **Web/Backend APIs**
-**Components Under Test:**
-- REST API endpoints
-- Authentication and authorization
-- Request/response validation
-- Error handling and status codes
+# Context from documents:
+# {context}
 
-**Test Coverage:**
-```python
-# API Tests
-class TestWebAPIs:
-    def test_health_endpoint(self):
-        # Test /health endpoint availability
+# Instructions: If the exact answer isn't in the documents, provide a helpful general explanation based on common knowledge, industry practices, or similar concepts. Be helpful and informative even if the specific term isn't mentioned in the provided documents.
+# """
         
-    def test_query_endpoint(self):
-        # Test /query POST endpoint
+#         gemini_response = await _call_llm_api_enhanced_with_different_usecase(
+#             user_query, 
+#             enhanced_context, 
+#             DPF_LLM_CONFIG["gemini_fallback_usecase"],
+#             DPF_LLM_CONFIG["gemini_fallback_context_id"]
+#         )
         
-    def test_authentication(self):
-        # Test API key validation
-```
+#         if not _is_unhelpful_response(gemini_response):
+#             print(f"Gemini fallback successful: {gemini_response[:100]}...")
+#             # Cache and return successful Gemini response
+#             RESPONSE_CACHE[cache_key] = gemini_response
+#             save_response_cache()
+#             return gemini_response
+#         else:
+#             print(f"Gemini also gave unhelpful response: {gemini_response[:100]}...")
+            
+#             # Try one more fallback with knowledge-based approach
+#             print("Trying knowledge-based fallback...")
+#             knowledge_response = await _generate_knowledge_based_response(user_query)
+#             if knowledge_response and not _is_unhelpful_response(knowledge_response):
+#                 print(f"Knowledge-based fallback successful: {knowledge_response[:100]}...")
+#                 RESPONSE_CACHE[cache_key] = knowledge_response
+#                 save_response_cache()
+#                 return knowledge_response
+    
+#     # Cache and return primary response (whether helpful or not)
+#     RESPONSE_CACHE[cache_key] = primary_response
+#     save_response_cache()
+#     print(f"Final LLM Response: {primary_response[:200]}...")
+    
 
----
+async def _call_llm_api(user_query: str, context, use_case: str):
+    """
+    Helper function to call LLM API with specified context ID
+    """
+    
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_API_KEY   # Use API key 
+    }
+     # Ensure context is always a list of strings (extract content only)
+    if isinstance(context, list):
+        # If it's a list of strings, use directly
+        if all(isinstance(item, str) for item in context):
+            context_strings = context
+        else:
+            # If it's a list of objects with text_content, extract the strings
+            context_strings = []
+            for item in context:
+                if isinstance(item, dict) and 'text_content' in item:
+                    context_strings.append(item['text_content'])
+                elif isinstance(item, str):
+                    context_strings.append(item)
+                else:
+                    context_strings.append(str(item))
+    else:
+        # Single item, convert to list
+        if isinstance(context, str):
+            context_strings = [context]
+        elif isinstance(context, dict) and 'text_content' in context:
+            context_strings = [context['text_content']]
+        else:
+            context_strings = [str(context)]
+    
+    # usecases and contextID's
+    if use_case == "aider":
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aider_context",
+            "preSeed_injection_map": {
+                "{CHUNK_INPUT}": context_strings,  # Used CHUNK_INPUT recent changes as discussed with team
+                "{QUESTION}": user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    elif use_case == "dpf-agentic-copilot":
+        payload = {
+            "useCase": "datax-agentic-copilot-prompt",
+            "contextId": "datax-copilot-rag",
+            "preSeed_injection_map": {
+                "{CHUNK_INPUT}": context_strings,  # Used CHUNK_INPUT recent changes as discussed with team
+                "{QUESTION}": user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    elif use_case == "ai_workmate":
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aiworkmate_context",
+            "preSeed_injection_map": {
+                "{CHUNK_INPUT}": context_strings,  # Used CHUNK_INPUT recent changes as discussed with team
+                "{QUESTION}": user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    else:
+        # Default fallback
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aider_context", 
+            "preSeed_injection_map": {
+                "{CHUNK_INPUT}": context_strings,
+                "{QUESTION}": user_query
+            }
+        }
+    print("payload",payload)
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        print("llm_result",result)
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        # Cache the response immediately for consistency
+        # RESPONSE_CACHE[cache_key] = llm_response
+        # save_response_cache()
+        print(f"LLM Response Generated: {llm_response[:200]}...")
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        # # Cache error responses for consistency
+        # RESPONSE_CACHE[cache_key] = error_response
+        # save_response_cache()
+        # print(f"LLM Error Response: {error_response}")
+        # print(f"LLM API Error with context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
 
-### 📊 **LAYER 4: REPORTING LAYER**
-*The results and decision-making center*
+async def _call_llm_api_enhanced(user_query: str, enhanced_context: str, context_id: str):
+    """
+    Enhanced LLM API call with modified prompt strategy for fallback
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_API_KEY #update key
+    }
+    
+    # Use a different prompt structure for enhanced fallback
+    payload = {
+        "useCase": DPF_LLM_CONFIG["usecase"],
+        "contextId": context_id,
+        "preSeed_injection_map": {
+            DPF_LLM_CONFIG["context_placeholder"]: [enhanced_context] if isinstance(enhanced_context, str) else enhanced_context,
+            DPF_LLM_CONFIG["question_placeholder"]: "Please provide a helpful response based on the context and instructions above."
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        print(f"Enhanced LLM API Error with context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
 
-#### **Quality Gates**
-**Automated Decision Points:**
-- **Pass/Fail Thresholds**: 95% functional tests pass, <10% performance degradation
-- **Coverage Requirements**: 80% code coverage minimum
-- **Security Checks**: No critical vulnerabilities detected
-- **Business Rules**: Response accuracy >90%
+async def _call_llm_api_with_aider_gemini(user_query: str, enhanced_context: str, usecase: str, context_id: str):
+    """
+    Enhanced LLM API call with different usecase and context for Gemini fallback
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_API_KEY
+    }
+    
+    # Use different usecase and context for Gemini fallback
+    payload = {
+        "useCase": usecase,  # Use AIDER instead of COMMON_RAG
+        "contextId": context_id,  # Use aider_gemini instead of GENERIC
+        "preSeed_injection_map": {
+            DPF_LLM_CONFIG["context_placeholder"]: [enhanced_context] if isinstance(enhanced_context, str) else enhanced_context,
+            DPF_LLM_CONFIG["question_placeholder"]: "Please provide a helpful response based on the context and instructions above."
+        }
+    }
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        print(f"Gemini LLM API Error with usecase {usecase} and context {context_id}: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
 
-```python
-# Quality Gate Implementation
-class QualityGateEvaluator:
-    def __init__(self):
-        self.gates = {
-            'functional_pass_rate': 95.0,
-            'performance_degradation': 10.0,
-            'response_accuracy': 90.0,
-            'security_score': 100.0
+def _is_unhelpful_response(response: str) -> bool:
+    """
+    Check if LLM response is unhelpful and should trigger fallback
+    """
+    if not response:
+        return True
+        
+    # Use configured unhelpful phrases
+    unhelpful_phrases = DPF_LLM_CONFIG["unhelpful_phrases"]
+    print(f"Checking response against {len(unhelpful_phrases)} unhelpful phrases")
+    
+    response_lower = response.lower()
+    for phrase in unhelpful_phrases:
+        if phrase.lower() in response_lower:
+            print(f"Found unhelpful phrase: '{phrase}'")
+            return True
+    
+    # Check if response is too short
+    response_length = len(response.strip())
+    min_length = DPF_LLM_CONFIG["min_response_length"]
+    if response_length < min_length:
+        print(f"DEBUG: Response too short: {response_length} < {min_length}")
+        return True
+        
+    print(f"DEBUG: Response seems helpful (length: {response_length})")
+    return False
+
+async def dpf_search(request: DPFQuery):
+    """
+    Complete DPF search pipeline with enhanced caching for 100% consistency
+    """
+    # Generate comprehensive cache key including all parameters that affect results
+    # search_cache_key = get_query_cache_key(
+    #     request.query, 
+    #     request.index_name,
+    #     request.use_case,
+    #     request.k, 
+    #     request.include_llm_response,
+    #     request.enable_hierarchical
+    # )
+    # # print("search_cache_key",search_cache_key)
+    # # Check cache first for absolute consistency
+    # if search_cache_key in RESPONSE_CACHE:
+    #     cached_result = RESPONSE_CACHE[search_cache_key].copy()
+        
+    #     # Ensure response format matches current request
+    #     if not request.include_llm_response and 'llm_response' in cached_result:
+    #         cached_result['llm_response'] = None
+    #     elif request.include_llm_response and not cached_result.get('llm_response'):
+    #         # Generate LLM response for cached results if needed
+    #         if cached_result.get('reranked_results'):
+    #             top_doc = cached_result['reranked_results'][0]
+    #             # source_links = cached_result.get('source_links', [])
+                
+    #             base_llm_response = await generate_llm_response(request.query, top_doc['text'])
+                
+    #             # if source_links:
+    #             #     llm_response = f"{base_llm_response}\n\n**Sources:**\n"
+    #             #     for i, source_info in enumerate(source_links, 1):
+    #             #         llm_response += f"[{i}] {source_info['url']}\n"
+    #             # else:
+    #             llm_response = base_llm_response
+                
+    #             cached_result['llm_response'] = llm_response
+        
+    #     return cached_result
+    
+    # 1. Generate embedding with error handling
+    embedding_start = time.time()
+    try:
+        embedding = await generate_dpf_embedding(request.query)
+    except Exception as e:
+        error_result = {
+            "retrieved_documents": [],
+            "reranked_results": [],
+            "llm_response": "Unable to process your query at this time. Please try again.",
+            "source_links": [],
+            "search_metadata": {
+                "embedding_time": 0,
+                "search_time": 0,
+                "rerank_time": 0,
+                "llm_time": 0,
+                "total_results": 0,
+                "reranked_count": 0,
+                "sources_found": 0
+            }
+        }
+        # RESPONSE_CACHE[search_cache_key] = error_result.copy()
+        # save_response_cache()
+        return error_result
+        
+    embedding_time = time.time() - embedding_start
+
+    # Set up dynamic filter clause based on use case
+    filter_clause = None
+    if hasattr(request, 'use_case') and request.use_case == "aider":
+        filter_clause = [{ "term": { "usecase_name": "aider" } }]
+        print(f"Using aider filter: {filter_clause}")
+    if hasattr(request, 'use_case') and request.use_case == "dpf-agentic-copilot":
+        filter_clause = [
+                { "term": { "usecase_name": "aider_csv" } },
+                { "term": { "usecase_name": "aider_pdf" } }
+            # "term": { "usecase_name": "aider_json" }
+        ]    
+    if hasattr(request, 'use_case') and request.use_case == "ai_workmate":
+        filter_clause = [
+                { "term": { "usecase_name": "aider_ai_workmate" } }       
+        ]     
+    if filter_clause is None:
+        # Default filter for aider
+        filter_clause = [{ "term": { "usecase_name": "aider" } }]    
+       
+    
+    # 2. Elasticsearch query 
+    es_query = {
+        "_source": [DPF_SEARCH_CONFIG["chunk_data_field"], DPF_SEARCH_CONFIG["custom_metadata_field"]],
+        "query": {
+            "bool": {
+                "filter": [
+                    {
+                        "bool": {
+                            "should": filter_clause,
+                            "minimum_should_match": 1
+                        }
+                    }
+                ],
+                "should": [
+                    {
+                        "knn": {
+                            "field": DPF_SEARCH_CONFIG["embedding_field"],
+                            "query_vector": embedding,
+                            "k": min(request.k, DPF_SEARCH_CONFIG["max_k"]),
+                            "num_candidates": DPF_SEARCH_CONFIG["num_candidates"]
+                        }
+                    }
+                ]
+            }
+        },
+        "size": min(request.k, DPF_SEARCH_CONFIG["max_k"])
+    }
+    # print("es_query",es_query)
+    search_start = time.time()
+    try:
+        es_results = await search_elasticsearch(
+            DPF_ELASTICSEARCH_CONFIG["api_url"], 
+            DPF_ELASTICSEARCH_CONFIG["api_key"], 
+            request.index_name, 
+            es_query
+        )
+    except Exception as e:
+        error_result = {
+            "retrieved_documents": [],
+            "reranked_results": [],
+            "llm_response": "Unable to search documents at this time. Please try again.",
+            "source_links": [],
+            "search_metadata": {
+                "embedding_time": embedding_time,
+                "search_time": 0,
+                "rerank_time": 0,
+                "llm_time": 0,
+                "total_results": 0,
+                "reranked_count": 0,
+                "sources_found": 0
+            }
+        }
+        # RESPONSE_CACHE[search_cache_key] = error_result
+        return error_result
+        
+    search_time = time.time() - search_start
+    elastic_search_results = es_results['hits']['hits']
+    elastic_search_results = sorted(elastic_search_results, 
+                                   key=lambda x: (-x.get('_score', 0), x.get('_id', '')))
+    print("elastic_search_results",elastic_search_results)
+    # Use enhanced document
+    # elastic_search_contexts = await get_document_context(elastic_search_results, request.query)
+    elastic_search_contexts = [contexts.get('_source').get('original_content') for contexts in elastic_search_results]
+    # if not elastic_search_contexts:
+    #     no_results = {
+    #         "retrieved_documents": [],
+    #         "reranked_results": [],
+    #         "llm_response": "No relevant documents found for your query.",
+    #         "source_links": [],
+    #         "search_metadata": {
+    #             "embedding_time": embedding_time,
+    #             "search_time": search_time,
+    #             "rerank_time": 0,
+    #             "llm_time": 0,
+    #             "total_results": 0,
+    #             "reranked_count": 0,
+    #             "sources_found": 0
+    #         }
+    #     }
+    #     RESPONSE_CACHE[search_cache_key] = no_results
+    #     return no_results
+    
+    # 3. Rerank results with error handling
+    rerank_start = time.time()
+    sentence_pairs = [[request.query, context] for context in elastic_search_contexts]
+    print("sentence_pairs",sentence_pairs)
+    try:
+        reranked_response = await dpf_reranker(sentence_pairs)
+        print("reranked_response",reranked_response)
+    except Exception as e:
+        # Use original order if reranking fails
+        reranked_response = [[{"prediction_scores": [0.5] * len(sentence_pairs)}]]
+        
+    rerank_time = time.time() - rerank_start
+    cross_scores = reranked_response[0][0].get("prediction_scores", [])
+    print("cross_scores",cross_scores)
+    # Combine scores with contexts
+    context_list = []
+    for score, context in zip(cross_scores, elastic_search_results):
+        reranked_dict = {}
+        reranked_dict['cross_score'] = score
+        reranked_dict['text'] = context
+        reranked_dict['text_content'] = context.get('_source', {}).get('original_content', '')
+        context_list.append(reranked_dict)
+        
+    # Sort by cross-encoder 
+    reranked_docs = sorted(context_list, key=lambda x: x["cross_score"], reverse=True)
+
+    top_doc = max(reranked_docs, key=lambda x: x['cross_score'])
+    
+    llm_response = None
+    llm_time = 0
+    source_links = []
+    all_content = []
+    # all_content = [doc['text'] for doc in reranked_docs]
+    all_content = [doc['text_content'] for doc in reranked_docs if doc['text_content']]
+    print("all_content",all_content)
+    base_llm_response = await generate_llm_response_with_google_fallback(request.query, all_content, request.use_case)
+
+    # Check if response came from aider_gemini
+    is_gemini_response = False
+    if "||GEMINI_RESPONSE||" in base_llm_response:
+        is_gemini_response = True
+        base_llm_response = base_llm_response.replace("||GEMINI_RESPONSE||", "")
+
+    llm_response = base_llm_response
+    # if request.include_llm_response and top_doc:
+    #     llm_start = time.time()
+    #     print("entering _llm")
+    #     # Extract source links from top documents
+    #     # source_links = await extract_source_links(reranked_docs, top_k=1)
+    #     # print(f"Source Links Extracted: {len(source_links)} links found")
+    #     # for i, link in enumerate(source_links):
+    #         # print(f"  Link {i+1}: {link['url']} (score: {link['score']:.4f})")
+        
+    #     # LLM response
+    #     all_content = [doc['text'] for doc in reranked_docs]
+    #     print("all_content",all_content)
+    #     # if request.use_case == "dpf-agentic-copilot":
+    #     base_llm_response = await generate_llm_response(request.query, all_content, request.use_case)
+    #     llm_response = base_llm_response
+    #     # else:
+    #     #     # combined_context = "\n\n".join(all_content)
+    #     #     # base_llm_response = await generate_llm_response(request.query, combined_context, request.use_case)
+    #     #     # top_doc_context = top_doc['text']
+    #     #     base_llm_response = await generate_llm_response(request.query, all_content, request.use_case)
+    #     # llm_time = time.time() - llm_start
+    print(f"Final LLM Response (source): {llm_response[:300]}...")
+    # Prepare final result
+     # Ensure top_document has proper structure for llmsummary function
+    if is_gemini_response:
+        # For aider_gemini responses, create a proper top_document structure
+        top_doc = {
+            'cross_score': 1.0,  # High score for gemini response
+            'text': {},  # Empty dict to avoid errors
+            'text_content': '',
+            'original_result': {
+                '_source': {
+                    'custom_metadata': {
+                        'source_link': 'Gemini Response'
+                    }
+                }
+            }
+        }
+    elif top_doc and 'text' in top_doc and isinstance(top_doc['text'], dict):
+        # Check if the response came from normal search (ensure original_result structure)
+        source_data = top_doc['text'].get('_source', {})
+        custom_metadata = source_data.get('custom_metadata', {})
+        
+        # If no source_link found or structure is missing, add default
+        if not custom_metadata or not custom_metadata.get('source_link'):
+            # Create the expected structure
+            top_doc_with_source = {
+                'cross_score': top_doc.get('cross_score', 0),
+                'text': top_doc['text'],
+                'text_content': top_doc.get('text_content', ''),
+                'original_result': {
+                    '_source': {
+                        'custom_metadata': {
+                            'source_link': 'Document Source'
+                        }
+                    }
+                }
+            }
+            top_doc = top_doc_with_source
+        else:
+            # Ensure original_result structure exists
+            if 'original_result' not in top_doc:
+                top_doc['original_result'] = top_doc['text']
+    elif top_doc and 'original_result' not in top_doc:
+        # Handle case where top_doc exists but doesn't have original_result
+        top_doc['original_result'] = {
+            '_source': {
+                'custom_metadata': {
+                    'source_link': 'Document Source'
+                }
+            }
+        }
+    elif not top_doc:
+        # No top document found, create a default one
+        top_doc = {
+            'cross_score': 0.0,
+            'text': {},
+            'text_content': '',
+            'original_result': {
+                '_source': {
+                    'custom_metadata': {
+                        'source_link': 'No Source Available'
+                    }
+                }
+            }
+        }
+    result = {
+        "retrieved_documents": elastic_search_results,
+        "reranked_results": reranked_docs,
+        "top_document": top_doc,
+        "llm_response": llm_response,
+        # "source_links": source_links,
+        "search_metadata": {
+            "embedding_time": embedding_time,
+            "search_time": search_time,
+            "rerank_time": rerank_time,
+            "llm_time": llm_time,
+            "total_results": len(elastic_search_results),
+            "reranked_count": len(reranked_docs),
+            # "sources_found": len(source_links)
+        }
+    }
+    
+    # RESPONSE_CACHE[search_cache_key] = result
+    return result
+
+async def detect_document_type(es_result):
+    """
+    Detect document type from Elasticsearch result for chunking strategy
+    """
+    source = es_result.get('_source', {})
+    
+    # Check for document type indicators in metadata
+    if 'file_extension' in source:
+        ext = source['file_extension'].lower()
+        if ext == 'pdf':
+            return 'pdf'
+    
+    if 'source_system' in source:
+        system = source['source_system'].lower()
+        if 'confluence' in system:
+            return 'confluence'
+        elif 'jira' in system:
+            return 'jira'
+        elif 'sharepoint' in system:
+            return 'sharepoint'
+    
+    if 'document_type' in source:
+        return source['document_type'].lower()
+    
+    return 'default'
+
+# async def get_document_context(es_results, query):
+#     """
+#     Enhanced document context retrieval with hierarchical chunking
+#     """
+#     if not DPF_ADVANCED_SEARCH_CONFIG["enable_document_context"]:
+#         # Fallback to original simple extraction
+#         return [result.get('_source', {}).get(DPF_SEARCH_CONFIG["chunk_data_field"], '') 
+#                 for result in es_results]
+    
+#     enhanced_contexts = []
+    
+#     # Process each result directly since they're already individual chunks
+#     for result in es_results:
+#         source = result.get('_source', {})
+        
+#         # Get the main content using the configured field name
+#         main_content = source.get(DPF_SEARCH_CONFIG["chunk_data_field"], '')
+        
+#         # If the main field is empty, try alternative field names
+#         if not main_content:
+#             main_content = (source.get('original_content', '') or 
+#                            source.get('chunk_data', '') or 
+#                            source.get('content', '') or 
+#                            source.get('text', ''))
+        
+#         # Add the content (with minimal metadata if needed)
+#         if main_content:
+#             enhanced_contexts.append(main_content)
+#         else:
+#             # Fallback: combine all available text fields
+#             all_text = []
+#             for key, value in source.items():
+#                 if isinstance(value, str) and len(value) > 10:  # Reasonable content length
+#                     all_text.append(value)
+#             enhanced_contexts.append(' '.join(all_text) if all_text else '')
+    
+#     return enhanced_contexts
+
+# Source link extraction disabled by Lila
+# async def extract_source_links(reranked_docs, top_k=1):
+#     """
+#     Extract source links from reranked documents
+#     """
+#     source_links = []
+#     seen_links = set()
+    
+#     # Extract from top K documents to provide multiple sources
+#     for doc in reranked_docs[:top_k]:
+#         if 'original_result' in doc:
+#             source_data = doc['original_result'].get('_source', {})
+#             custom_metadata = source_data.get(DPF_SEARCH_CONFIG["custom_metadata_field"], {})
+            
+#             source_link = None
+#             if isinstance(custom_metadata, dict):
+#                 source_link = (custom_metadata.get('source_link') or
+#                              custom_metadata.get('source_url') or 
+#                              custom_metadata.get('url') or 
+#                              custom_metadata.get('link') or 
+#                              custom_metadata.get('source') or
+#                              custom_metadata.get('document_url') or
+#                              custom_metadata.get('page_url'))
+#             elif isinstance(custom_metadata, str) and custom_metadata.strip():
+#                 source_link = custom_metadata.strip()
+            
+#             # Check other potential source fields in the main document
+#             if not source_link:
+#                 source_link = (source_data.get('source_url') or 
+#                              source_data.get('url') or 
+#                              source_data.get('source') or
+#                              source_data.get('document_url'))
+            
+#             # Add unique source links
+#             if source_link and source_link not in seen_links:
+#                 source_links.append({
+#                     'url': source_link,
+#                     'score': doc.get('cross_score', 0),
+#                     'preview': doc.get('text', '')[:100] + '...' if doc.get('text') else ''
+#                 })
+#                 seen_links.add(source_link)
+#                 print(f"Added source link: {source_link} (score: {doc.get('cross_score', 0):.4f})")
+    
+#     print(f"Total unique source links found: {len(source_links)}")
+#     return source_links
+
+import hashlib
+from typing import Dict, Any
+
+# Response cache 
+# RESPONSE_CACHE: Dict[str, Any] = {}
+
+def load_response_cache():
+    """Load response cache - DISABLED for in-memory only"""
+    global RESPONSE_CACHE
+    RESPONSE_CACHE = {}
+
+def save_response_cache():
+    """Save response cache - DISABLED for in-memory only"""
+    pass
+
+def get_query_cache_key(query: str, index_name: str,use_case: str, k: int, include_llm: bool = True, enable_hierarchical: bool = True) -> str:
+    """Generate a comprehensive cache key for a query to ensure consistency"""
+    normalized_query = query.strip().lower().replace('\n', ' ').replace('\r', ' ')
+    normalized_query = ' '.join(normalized_query.split())
+    
+    cache_data = f"{normalized_query}|{index_name}|{use_case}|{k}|{include_llm}|{enable_hierarchical}"
+    return hashlib.md5(cache_data.encode('utf-8')).hexdigest()
+
+def get_llm_cache_key(query: str, context) -> str:
+    """Generate a consistent cache key for LLM responses"""
+    normalized_query = query.strip().lower().replace('\n', ' ').replace('\r', ' ')
+    normalized_query = ' '.join(normalized_query.split())
+
+    if isinstance(context, list):
+        # For array context
+        normalized_context = "|".join([str(item).strip().replace('\n', ' ').replace('\r', ' ') for item in context])
+    else:
+        # For string
+        normalized_context = str(context).strip().replace('\n', ' ').replace('\r', ' ')
+    normalized_context = ' '.join(normalized_context.split())
+    
+    cache_data = f"{normalized_query}|{normalized_context}"
+    return hashlib.md5(cache_data.encode('utf-8')).hexdigest()
+
+# Load cache on startup
+# load_response_cache()
+
+async def _generate_knowledge_based_response(user_query: str) -> str:
+    """
+    Generate a knowledge-based response as a final fallback
+    """
+    try:
+        #knowledge-based response
+        return f"Based on your query about '{user_query}', I recommend checking the relevant documentation or contacting the appropriate team for more specific information."
+    except Exception as e:
+        print(f"Error in knowledge-based response: {e}")
+        return "I apologize, but I'm unable to provide a helpful response at this time."
+
+
+async def _call_llm_api_with_aider_gemini(user_query: str, context_list: list, use_case: str):
+    """
+    Call LLM API with aider_gemini context for fallback when primary response is unhelpful
+    """
+    headers = {
+        'Content-Type': 'application/json', 
+        'X-apikey': DPF_API_KEY
+    }
+    
+    # Ensure context_list is always a list of strings
+    if not isinstance(context_list, list):
+        context_list = [str(context_list)]
+    
+    print(f"aider_gemini fallback context type: {type(context_list)}, length: {len(context_list)}")
+    
+    # Use aider_gemini context based on use_case
+    if use_case == "aider":
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aider_gemini",  # Use aider_gemini context for fallback
+            "preSeed_injection_map": {
+                "{QUESTION}": user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    elif use_case == "dpf-agentic-copilot":
+        payload = {
+            "useCase": "datax-agentic-copilot-prompt",
+            "contextId": "aider_gemini",  # Use aider_gemini context for fallback
+            "preSeed_injection_map": {
+                DPF_LLM_CONFIG["question_placeholder"]: user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    elif use_case == "ai_workmate":
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aider_gemini",  # Use aider_gemini context for fallback
+            "preSeed_injection_map": {  # Send list of strings directly
+                "{QUESTION}": user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
+        }
+    else:
+        # Default fallback with aider_gemini context
+        payload = {
+            "useCase": "AIDER",
+            "contextId": "aider_gemini",  # Use aider_gemini context for fallback
+            "preSeed_injection_map": {  # Send list of strings directly
+                "{QUESTION}": user_query
+            },
+            "parameters": {
+                "maxOutputTokens": DPF_LLM_CONFIG["max_output_tokens"]
+            }
         }
     
-    def evaluate_deployment_readiness(self, test_results):
-        # Return True/False for deployment decision
-        return all(self._check_gate(gate, threshold, test_results) 
-                  for gate, threshold in self.gates.items())
-```
+    print(f"aider_gemini fallback payload CHUNK_INPUT type: {type(payload['preSeed_injection_map'].get('{CHUNK_INPUT}', payload['preSeed_injection_map'].get(DPF_LLM_CONFIG['context_placeholder'], 'NOT_FOUND')))}")
+    print(f"aider_gemini fallback payload: {payload}")
+    
+    try:
+        response = requests.post(
+            DPF_ENDPOINTS["llm_endpoint"], 
+            headers=headers, 
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract response from result - handle different response formats
+        llm_response = None
+        if isinstance(result, dict):
+            if 'prediction' in result:
+                llm_response = result['prediction']
+            elif 'response' in result:
+                llm_response = result['response']
+            elif 'text' in result:
+                llm_response = result['text']
+            elif 'generated_text' in result:
+                llm_response = result['generated_text']
+        elif isinstance(result, str):
+            llm_response = result
+        elif isinstance(result, list) and len(result) > 0:
+            if isinstance(result[0], dict):
+                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
+            else:
+                llm_response = str(result[0])
+        
+        if llm_response is None:
+            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
+        
+        print(f"aider_gemini LLM Response Generated: {llm_response[:200]}...")
+        return llm_response
+            
+    except requests.exceptions.RequestException as e:
+        error_response = f"I apologize, but I'm experiencing technical difficulties with the fallback system. Please try again in a moment."
+        print(f"aider_gemini LLM API Error: {e}")
+        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
+        print(f"Request payload: {json.dumps(payload, indent=2)}")
+        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
+        if hasattr(e, 'response') and e.response:
+            print(f"Response text: {e.response.text}")
+        return error_response
 
-#### **Performance Dashboards**
-**Real-time Monitoring:**
-- Test execution progress and status
-- System resource utilization
-- Response time trends
-- Error rate monitoring
-- Queue depths and bottlenecks
+# LLM response with aider_gemini fallback
+async def generate_llm_response_with_google_fallback(user_query: str, context, use_case: str):
+    """
+    Generate LLM response with aider_gemini fallback
+    """
+    return await generate_llm_response(user_query, context, use_case)
 
-#### **Test Reports**
-**Detailed Documentation:**
-- Test case execution results
-- Failure analysis and root cause
-- Performance benchmarks and trends
-- Code coverage reports
-- Security scan results
-
-#### **Business Metrics**
-**KPIs and ROI Tracking:**
-- Test automation ROI calculation
-- Defect prevention metrics
-- Release velocity improvements
-- User satisfaction scores
-- System availability metrics
-
----
-
-## 🔄 **LAYER INTERACTION FLOW**
-
-```
-1. ORCHESTRATION LAYER triggers test execution
-   ↓
-2. TESTING LAYER executes specialized test suites
-   ↓
-3. TARGET SYSTEMS receive test requests and respond
-   ↓
-4. REPORTING LAYER collects results and makes decisions
-   ↓
-5. Quality Gates determine: Deploy ✅ or Block ❌
-```
-
-## 🚀 **IMPLEMENTATION ROADMAP**
-
-### Phase 1: Foundation (Weeks 1-2)
-- Set up CI/CD pipeline integration
-- Implement basic functional tests
-- Create test data management
-
-### Phase 2: Core Testing (Weeks 3-4)
-- Build integration test suites
-- Implement performance testing
-- Set up basic reporting
-
-### Phase 3: Quality & Optimization (Weeks 5-6)
-- Implement QA test automation
-- Set up quality gates
-- Create real-time dashboards
-
-### Phase 4: Advanced Features (Weeks 7-8)
-- Parallel execution optimization
-- Advanced reporting and analytics
-- Business metrics integration
-
-This architecture ensures comprehensive testing coverage while maintaining clear separation of concerns and enabling scalable, maintainable test automation for your AIDER system.
+if __name__ == "__main__":
+    # #, reload=True)#, debug=True, workers=1)
+    uvicorn.run("main_serve:app", host='0.0.0.0',
+                port=2000, reload=True)
