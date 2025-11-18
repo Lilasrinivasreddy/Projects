@@ -328,68 +328,6 @@ async def _call_llm_api(user_query: str, context, use_case: str):
             print(f"Response text: {e.response.text}")
         return error_response
 
-async def _call_llm_api_enhanced(user_query: str, enhanced_context: str, context_id: str):
-    """
-    Enhanced LLM API call with modified prompt strategy for fallback
-    """
-    headers = {
-        'Content-Type': 'application/json', 
-        'X-apikey': DPF_API_KEY #update key
-    }
-    
-    # Use a different prompt structure for enhanced fallback
-    payload = {
-        "useCase": DPF_LLM_CONFIG["usecase"],
-        "contextId": context_id,
-        "preSeed_injection_map": {
-            DPF_LLM_CONFIG["context_placeholder"]: [enhanced_context] if isinstance(enhanced_context, str) else enhanced_context,
-            DPF_LLM_CONFIG["question_placeholder"]: "Please provide a helpful response based on the context and instructions above."
-        }
-    }
-    
-    try:
-        response = requests.post(
-            DPF_ENDPOINTS["llm_endpoint"], 
-            headers=headers, 
-            data=json.dumps(payload)
-        )
-        response.raise_for_status()
-        result = response.json()
-        
-        # Extract response from result - handle different response formats
-        llm_response = None
-        if isinstance(result, dict):
-            if 'prediction' in result:
-                llm_response = result['prediction']
-            elif 'response' in result:
-                llm_response = result['response']
-            elif 'text' in result:
-                llm_response = result['text']
-            elif 'generated_text' in result:
-                llm_response = result['generated_text']
-        elif isinstance(result, str):
-            llm_response = result
-        elif isinstance(result, list) and len(result) > 0:
-            if isinstance(result[0], dict):
-                llm_response = result[0].get('prediction', result[0].get('response', str(result[0])))
-            else:
-                llm_response = str(result[0])
-        
-        if llm_response is None:
-            llm_response = "I apologize, but I encountered an issue generating a response. Please try again."
-        
-        return llm_response
-            
-    except requests.exceptions.RequestException as e:
-        error_response = f"I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
-        print(f"Enhanced LLM API Error with context {context_id}: {e}")
-        print(f"Request URL: {DPF_ENDPOINTS['llm_endpoint']}")
-        print(f"Request payload: {json.dumps(payload, indent=2)}")
-        print(f"Response status code: {getattr(e.response, 'status_code', 'N/A') if hasattr(e, 'response') else 'N/A'}")
-        if hasattr(e, 'response') and e.response:
-            print(f"Response text: {e.response.text}")
-        return error_response
-
 async def _call_llm_api_with_aider_gemini(user_query: str, enhanced_context: str, usecase: str, context_id: str):
     """
     Enhanced LLM API call with different usecase and context for Gemini fallback
@@ -849,6 +787,7 @@ if __name__ == "__main__":
     # #, reload=True)#, debug=True, workers=1)
     uvicorn.run("main_serve:app", host='0.0.0.0',
                 port=2000, reload=True)
+
 ==============================================================
 import os
 import time
